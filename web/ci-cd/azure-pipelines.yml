@@ -21,16 +21,16 @@ steps:
 
   - script: npm ci
     displayName: "Install dependencies"
-    workingDirectory: frontend
+    workingDirectory: client
 
 
   - script: npm run lint
     displayName: "Lint (ESLint)"
-    workingDirectory: frontend
+    workingDirectory: client
 
   - script: npm run format:check
     displayName: "Format check (Prettier)"
-    workingDirectory: frontend
+    workingDirectory: client
 
   - script: npm run build
     displayName: "Build (TypeScript + Vite)"
