@@ -13,24 +13,34 @@ pr:
 pool:
   vmImage: "ubuntu-latest"
 
-steps:
-  - task: NodeTool@0
-    inputs:
-      versionSpec: "20.x"
-    displayName: "Install Node.js"
+jobs:
+  - job: Build
+    displayName: "Build and validate"
+    steps:
+      - task: NodeTool@0
+        inputs:
+          versionSpec: "20.x"
+        displayName: "Install Node.js"
 
-  - script: npm ci
-    displayName: "Install dependencies"
-    workingDirectory: client
+      - script: npm ci
+        workingDirectory: client
+        displayName: "Install dependencies"
 
+      - script: npx eslint . --format json -o eslint-results.json || true
+        workingDirectory: client
+        displayName: "Lint (ESLint) - outputs to PR comments"
+        continueOnError: true
 
-  - script: npm run lint
-    displayName: "Lint (ESLint)"
-    workingDirectory: client
+      - script: node ci-cd/eslint-to-pr-comments.mjs
+        displayName: "Post ESLint results as PR comments"
+        condition: and(succeededOrFailed(), eq(variables['Build.Reason'], 'PullRequest'))
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
-  - script: npm run format:check
-    displayName: "Format check (Prettier)"
-    workingDirectory: client
+      - script: npm run format:check
+        workingDirectory: client
+        displayName: "Format check (Prettier)"
 
-  - script: npm run build
-    displayName: "Build (TypeScript + Vite)"
+      - script: npm run build
+        workingDirectory: client
+        displayName: "Build (TypeScript + Vite)"
