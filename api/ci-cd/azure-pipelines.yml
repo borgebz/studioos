@@ -1,0 +1,90 @@
+trigger:
+  branches:
+    include:
+      - main
+      - development
+
+pr:
+  branches:
+    include:
+      - "*"
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  pythonVersion: "3.13"
+  DJANGO_SETTINGS_MODULE: "config.settings"
+  PYTHONUNBUFFERED: "1"
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: $(pythonVersion)
+  displayName: "Use Python $(pythonVersion)"
+
+# Install uv (fast Python package manager)
+- bash: |
+    set -euxo pipefail
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+    export PATH="$HOME/.cargo/bin:$PATH"
+    uv --version
+  displayName: "Install uv"
+
+# Cache uv downloads for faster CI
+- task: Cache@2
+  inputs:
+    key: 'uv | "$(Agent.OS)" | server/uv.lock'
+    restoreKeys: |
+      uv | "$(Agent.OS)"
+    path: ~/.cache/uv
+  displayName: "Cache uv"
+
+# Install deps from lockfile (server/ has pyproject.toml and uv.lock)
+- bash: |
+    set -euxo pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cd server
+    uv sync --frozen
+  displayName: "Install dependencies (uv sync --frozen)"
+
+# Format check
+- bash: |
+    set -euxo pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cd server
+    uv run black --check .
+  displayName: "Format check (black)"
+
+# Lint
+- bash: |
+    set -euxo pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cd server
+    uv run ruff check .
+  displayName: "Lint (ruff)"
+
+# Django "safe build" checks (ensures project imports & settings are valid)
+- bash: |
+    set -euxo pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cd server
+    uv run python manage.py check
+  displayName: "Django system check"
+
+# Ensure no missing migrations (helps avoid broken deploys)
+- bash: |
+    set -euxo pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cd server
+    uv run python manage.py makemigrations --check --dry-run
+  displayName: "Check migrations are committed"
+
+# Run tests
+- bash: |
+    set -euxo pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cd server
+    uv run pytest -q
+  displayName: "Run tests (pytest)"
