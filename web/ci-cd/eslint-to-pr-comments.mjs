@@ -34,12 +34,58 @@ if (!Array.isArray(results) || results.length === 0) {
   process.exit(0);
 }
 
-const baseUrl = `${collectionUri}${project}/_apis/git/repositories/${repoName}/pullRequests/${prId}/threads`;
+const repoId = process.env.BUILD_REPOSITORY_ID || repoName;
+const threadsBase = `${collectionUri}${project}/_apis/git/repositories/${repoId}/pullRequests/${prId}/threads`;
 const headers = {
   'Content-Type': 'application/json',
   'Accept': 'application/json',
   'Authorization': `Bearer ${accessToken}`,
 };
+
+const ESLINT_COMMENT_PREFIX = '**ESLint (';
+
+function isEslintThread(thread) {
+  const comments = thread?.comments || [];
+  return comments.some(
+    (c) => c?.content && String(c.content).startsWith(ESLINT_COMMENT_PREFIX)
+  );
+}
+
+async function clearExistingEslintComments() {
+  let cleared = 0;
+  try {
+    const res = await fetch(`${threadsBase}?api-version=7.1`, { headers });
+    if (!res.ok) {
+      console.warn('Could not list PR threads:', res.status, await res.text());
+      return;
+    }
+    const data = await res.json();
+    const threads = data?.value || [];
+    for (const thread of threads) {
+      if (!isEslintThread(thread)) continue;
+      const comments = thread.comments || [];
+      for (const comment of comments) {
+        try {
+          const delRes = await fetch(
+            `${threadsBase}/${thread.id}/comments/${comment.id}?api-version=7.1`,
+            { method: 'DELETE', headers }
+          );
+          if (delRes.ok) cleared++;
+          else
+            console.warn(
+              `Failed to delete comment ${comment.id}:`,
+              delRes.status
+            );
+        } catch (err) {
+          console.warn('Failed to delete comment:', err.message);
+        }
+      }
+    }
+    if (cleared > 0) console.log(`Cleared ${cleared} previous ESLint comment(s).`);
+  } catch (err) {
+    console.warn('Error clearing ESLint comments:', err.message);
+  }
+}
 
 function toRepoPath(filePath) {
   const normalized = filePath.replace(/\\/g, '/');
@@ -53,40 +99,46 @@ function toRepoPath(filePath) {
 }
 
 async function main() {
-let posted = 0;
-for (const file of results) {
-  if (!file.messages?.length) continue;
-  const repoFilePath = '/' + toRepoPath(file.filePath);
+  await clearExistingEslintComments();
 
-  for (const msg of file.messages) {
-    if (msg.severity !== 2) continue; // only errors
-    const line = msg.line || 1;
-    const body = {
-      comments: [{
-        parentCommentId: 0,
-        content: `**ESLint (${msg.ruleId || 'error'})**: ${msg.message}`,
-        commentType: 1,
-      }],
-      status: 1,
-      threadContext: {
-        filePath: repoFilePath,
-        rightFileStart: { line, offset: 1 },
-        rightFileEnd: { line, offset: 1 },
-      },
-    };
-    try {
-      const res = await fetch(`${baseUrl}?api-version=7.1-preview.1`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-      if (res.ok) posted++;
-      else console.warn(`Failed to post comment (${res.status}):`, await res.text());
-    } catch (err) {
-      console.warn('API error:', err.message);
+  let posted = 0;
+  for (const file of results) {
+    if (!file.messages?.length) continue;
+    const repoFilePath = '/' + toRepoPath(file.filePath);
+
+    for (const msg of file.messages) {
+      if (msg.severity !== 2) continue; // only errors
+      const line = msg.line || 1;
+      const body = {
+        comments: [{
+          parentCommentId: 0,
+          content: `**ESLint (${msg.ruleId || 'error'})**: ${msg.message}`,
+          commentType: 1,
+        }],
+        status: 1,
+        threadContext: {
+          filePath: repoFilePath,
+          rightFileStart: { line, offset: 1 },
+          rightFileEnd: { line, offset: 1 },
+        },
+      };
+      try {
+        const res = await fetch(`${threadsBase}?api-version=7.1-preview.1`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body),
+        });
+        if (res.ok) posted++;
+        else
+          console.warn(
+            `Failed to post comment (${res.status}):`,
+            await res.text()
+          );
+      } catch (err) {
+        console.warn('API error:', err.message);
+      }
     }
   }
-}
-console.log(`Posted ${posted} ESLint comment(s) to the PR.`);
+  console.log(`Posted ${posted} ESLint comment(s) to the PR.`);
 }
 main().catch(err => { console.error(err); process.exit(1); });
