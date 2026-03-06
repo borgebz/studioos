@@ -38,7 +38,9 @@ export function TooltipPage() {
                       {side}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side={side as 'top' | 'right' | 'bottom' | 'left'}>
+                  <TooltipContent
+                    side={side as 'top' | 'right' | 'bottom' | 'left'}
+                  >
                     {t('designSystem.tooltipContent', { side })}
                   </TooltipContent>
                 </Tooltip>
@@ -55,9 +57,7 @@ export function TooltipPage() {
               <TooltipTrigger asChild>
                 <Button variant="outline">Hover me</Button>
               </TooltipTrigger>
-              <TooltipContent>
-                {t('designSystem.tooltipHover')}
-              </TooltipContent>
+              <TooltipContent>{t('designSystem.tooltipHover')}</TooltipContent>
             </Tooltip>
           </div>
         </section>

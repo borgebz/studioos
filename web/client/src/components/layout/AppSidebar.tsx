@@ -34,10 +34,14 @@ export function AppSidebar() {
                     : location.pathname.startsWith(to)
                 return (
                   <SidebarMenuItem key={to}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={t(labelKey)}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={t(labelKey)}
+                    >
                       <NavLink to={to}>
-                      <Icon />
-                      <span>{t(labelKey)}</span>
+                        <Icon />
+                        <span>{t(labelKey)}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

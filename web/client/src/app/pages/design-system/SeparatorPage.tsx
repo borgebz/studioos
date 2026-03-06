@@ -52,7 +52,9 @@ export function SeparatorPage() {
             {t('designSystem.separatorInContent')}
           </h2>
           <div className="rounded-lg border border-border p-4 w-full max-w-md">
-            <h3 className="font-semibold">{t('designSystem.separatorTitle')}</h3>
+            <h3 className="font-semibold">
+              {t('designSystem.separatorTitle')}
+            </h3>
             <p className="text-sm text-muted-foreground mt-1">
               {t('designSystem.separatorBody')}
             </p>

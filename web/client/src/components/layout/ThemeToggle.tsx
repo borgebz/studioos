@@ -20,11 +20,7 @@ export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme()
 
   const Icon =
-    theme === 'system'
-      ? Monitor
-      : resolvedTheme === 'dark'
-        ? Moon
-        : Sun
+    theme === 'system' ? Monitor : resolvedTheme === 'dark' ? Moon : Sun
 
   return (
     <DropdownMenu>
@@ -43,7 +39,9 @@ export function ThemeToggle() {
           <DropdownMenuItem
             key={value}
             onClick={() => setTheme(value)}
-            className={theme === value ? 'bg-accent text-accent-foreground' : ''}
+            className={
+              theme === value ? 'bg-accent text-accent-foreground' : ''
+            }
           >
             <IconOption className="size-4" />
             {t(labelKey)}

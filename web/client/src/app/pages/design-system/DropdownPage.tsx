@@ -113,7 +113,9 @@ export function DropdownPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel inset>{t('designSystem.dropdownMyAccount')}</DropdownMenuLabel>
+              <DropdownMenuLabel inset>
+                {t('designSystem.dropdownMyAccount')}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <User className="size-4" />
@@ -172,7 +174,9 @@ export function DropdownPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>{t('designSystem.dropdownAppearance')}</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {t('designSystem.dropdownAppearance')}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
                 checked={checkboxValues.showToolbar}
@@ -206,9 +210,14 @@ export function DropdownPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>{t('designSystem.dropdownThemeLabel')}</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {t('designSystem.dropdownThemeLabel')}
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={radioValue} onValueChange={setRadioValue}>
+              <DropdownMenuRadioGroup
+                value={radioValue}
+                onValueChange={setRadioValue}
+              >
                 <DropdownMenuRadioItem value="light">
                   <Sun className="size-4 mr-2" />
                   {t('theme.light')}
@@ -238,16 +247,24 @@ export function DropdownPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem>{t('designSystem.dropdownBack')}</DropdownMenuItem>
-              <DropdownMenuItem>{t('designSystem.dropdownForward')}</DropdownMenuItem>
+              <DropdownMenuItem>
+                {t('designSystem.dropdownBack')}
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                {t('designSystem.dropdownForward')}
+              </DropdownMenuItem>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <Keyboard className="size-4" />
                   {t('designSystem.dropdownMoreTools')}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
-                  <DropdownMenuItem>{t('designSystem.dropdownSavePage')}</DropdownMenuItem>
-                  <DropdownMenuItem>{t('designSystem.dropdownPrint')}</DropdownMenuItem>
+                  <DropdownMenuItem>
+                    {t('designSystem.dropdownSavePage')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    {t('designSystem.dropdownPrint')}
+                  </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </DropdownMenuContent>

@@ -4,7 +4,8 @@ import { initReactI18next } from 'react-i18next'
 import pt from './locales/pt-pt/common.json'
 import en from './locales/en-us/common.json'
 
-const storedLng = typeof window !== 'undefined' ? localStorage.getItem('i18nextLng') : null
+const storedLng =
+  typeof window !== 'undefined' ? localStorage.getItem('i18nextLng') : null
 
 i18n.use(initReactI18next).init({
   resources: {
