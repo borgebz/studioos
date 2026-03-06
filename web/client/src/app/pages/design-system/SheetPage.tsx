@@ -49,7 +49,19 @@ export function SheetPage() {
                       ? setOpenBottom
                       : setOpenLeft
               return (
-                <Sheet key={side} open={side === 'top' ? openTop : side === 'right' ? openRight : side === 'bottom' ? openBottom : openLeft} onOpenChange={setter}>
+                <Sheet
+                  key={side}
+                  open={
+                    side === 'top'
+                      ? openTop
+                      : side === 'right'
+                        ? openRight
+                        : side === 'bottom'
+                          ? openBottom
+                          : openLeft
+                  }
+                  onOpenChange={setter}
+                >
                   <SheetTrigger asChild>
                     <Button variant="outline" size="sm">
                       {t('designSystem.sheetOpen', { side })}

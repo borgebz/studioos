@@ -39,7 +39,9 @@ export function LanguageSwitcher() {
           <DropdownMenuItem
             key={code}
             onClick={() => handleChange(code)}
-            className={currentLang === code ? 'bg-accent text-accent-foreground' : ''}
+            className={
+              currentLang === code ? 'bg-accent text-accent-foreground' : ''
+            }
           >
             {t(labelKey)}
           </DropdownMenuItem>

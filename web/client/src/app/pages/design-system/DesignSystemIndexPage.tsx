@@ -93,9 +93,7 @@ export function DesignSystemIndexPage() {
             <Link key={to} to={to}>
               <div className="rounded-lg border border-border bg-card p-6 transition-colors hover:bg-accent/50">
                 <Icon className="mb-3 size-8 text-muted-foreground" />
-                <h3 className="font-semibold text-foreground">
-                  {t(labelKey)}
-                </h3>
+                <h3 className="font-semibold text-foreground">{t(labelKey)}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {t(descriptionKey)}
                 </p>

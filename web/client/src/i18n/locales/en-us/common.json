@@ -1,6 +1,10 @@
 {
   "lang": { "pt": "Português", "en": "English" },
-  "nav": { "home": "Home", "designSystem": "Design System", "brand": "StudioOS" },
+  "nav": {
+    "home": "Home",
+    "designSystem": "Design System",
+    "brand": "StudioOS"
+  },
   "theme": {
     "light": "Light",
     "dark": "Dark",

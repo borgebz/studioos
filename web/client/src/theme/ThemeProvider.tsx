@@ -47,8 +47,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
-    const resolved =
-      theme === 'system' ? getSystemTheme() : theme
+    const resolved = theme === 'system' ? getSystemTheme() : theme
     setResolvedTheme(resolved)
     applyTheme(resolved)
   }, [theme])

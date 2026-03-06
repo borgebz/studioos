@@ -46,9 +46,7 @@ export function PlaygroundPage() {
       <section className="space-y-8">
         {/* Select */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">
-            Select
-          </h2>
+          <h2 className="text-xl font-semibold text-foreground">Select</h2>
           <p className="text-sm text-muted-foreground">
             {t('playground.selectDesc')}
           </p>
