@@ -11,4 +11,5 @@ dependencies = [
     "ruff>=0.8.0",
     "pytest>=8.0.0",
     "pytest-django>=4.9.0",
+    "djangorestframework-simplejwt>=5.5.1",
 ]
