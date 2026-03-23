@@ -1,0 +1,94 @@
+{
+  "info": {
+    "_postman_id": "cda3a730-f57b-415a-b937-e1f0182ecc62",
+    "name": "studioos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "login",
+      "id": "915e8669-84b4-4054-8949-8aef7598a588",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"joborges@gmail.com\",\n    \"password\": \"your_password\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/accounts/login",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "accounts",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "create_user",
+      "id": "5e814b2d-1c2d-468d-9936-96f0b9703ce9",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MTkzMjI5LCJpYXQiOjE3NzQxOTIzMjksImp0aSI6Ijg5MTMxYjkyNzc2YTQ2MTBhOGM5NGM4MDY0NDdhZWMxIiwidXNlcl9pZCI6IjEifQ.j-5jPfGHjv3Eb73KiJkLoZAX4OP_FTs-w9AIP_uH_Js",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"teacher@studioos.dev\",\n    \"first_name\": \"Ana\",\n    \"last_name\": \"Silva\",\n    \"role_code\": \"teacher_internal\",\n    \"phone\": \"912345678\",\n    \"phone_country_code\": \"+351\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/accounts/users/",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "accounts",
+            "users",
+            ""
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
