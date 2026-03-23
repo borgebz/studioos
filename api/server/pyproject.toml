@@ -12,4 +12,6 @@ dependencies = [
     "pytest>=8.0.0",
     "pytest-django>=4.9.0",
     "djangorestframework-simplejwt>=5.5.1",
+    "python-decouple>=3.8",
+    "django-cors-headers>=4.9.0",
 ]
