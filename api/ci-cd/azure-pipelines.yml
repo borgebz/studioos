@@ -38,7 +38,7 @@ steps:
     key: 'uv | "$(Agent.OS)" | server/uv.lock'
     restoreKeys: |
       uv | "$(Agent.OS)"
-    path: ~/.cache/uv
+    path: $(HOME)/.cache/uv
   displayName: "Cache uv"
 
 # Install deps from lockfile (server/ has pyproject.toml and uv.lock)
