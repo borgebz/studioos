@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    "drf_spectacular",
     # Local
     "accounts",
     "core",
@@ -142,8 +143,14 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
 }
 
+SPECTACULAR_SETTINGS = {
+    "TITLE": "StudioOS API",
+    "DESCRIPTION": "School dance management platform",
+    "VERSION": "1.0.0",
+}
 
 # -----------------------------------------------------------------------------
 # JWT

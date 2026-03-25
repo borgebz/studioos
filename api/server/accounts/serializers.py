@@ -110,3 +110,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         if value.size > 0 * 1024 * 1024:
             raise serializers.ValidationError("FileSizeExceeds5MB")
         return value
+
+class TokenPairSerializer(serializers.Serializer):
+    access = serializers.CharField(help_text="Short-lived access token.")
+    refresh = serializers.CharField(help_text="Long-lived refresh token.")
