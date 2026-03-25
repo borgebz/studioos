@@ -44,7 +44,7 @@ class RefreshView(TokenRefreshView):
  
     @extend_schema(
         request=inline_serializer(
-            name="RefreshToken",
+            name="RefreshParam",
             fields={
                 "refresh": serializers.CharField(),
             },
@@ -66,7 +66,7 @@ class LogoutView(TokenBlacklistView):
  
     @extend_schema(
         request=inline_serializer(
-            name="RefreshToken",
+            name="LogoutParam",
             fields={
                 "refresh": serializers.CharField(),
             },
@@ -120,7 +120,7 @@ class MeView(APIView):
         }
     )
     def get(self, request):
-        serializer = MeSerializer(request.user)
+        serializer = MeSerializer(request.user, context={"request": request})
         return Response(serializer.data)
 
 class MyProfileView(APIView):
@@ -146,7 +146,7 @@ class MyProfileView(APIView):
         try:
             profile = Profile.objects.get(user=request.user)
         except Profile.DoesNotExist:
-            return NotFound()
+            raise NotFound()
         serializer = ProfileSerializer(profile, context={"request": request})
         return Response(serializer.data)
 
@@ -160,7 +160,7 @@ class MyProfileView(APIView):
     @require_perm("accounts.can_have_profile")
     def post(self, request):
         if Profile.objects.filter(user=request.user).exists():
-            return ValidationError({"non_field": ["ProfileAlreadyExists"]})
+            raise ValidationError({"messages": ["ProfileAlreadyExists"]})
         serializer = ProfileSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
