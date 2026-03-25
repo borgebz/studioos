@@ -69,7 +69,7 @@ class ProfileSummarySerializer(PhotoUrlMixin, serializers.ModelSerializer):
         model = Profile
         fields = ["display_name", "photo_url"]
 
-class ProfileSerializer(serializers.ModelSerializer):
+class ProfileSerializer(PhotoUrlMixin, serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
  
     class Meta:

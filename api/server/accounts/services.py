@@ -1,3 +1,4 @@
+from django.utils.html import ValidationError
 from accounts.models import Role, User
 
 def create_user(*, email, first_name, last_name, role_code, created_by, phone="", phone_country_code=""):
@@ -7,7 +8,7 @@ def create_user(*, email, first_name, last_name, role_code, created_by, phone=""
     try:
         role = Role.objects.select_related("group").get(code=role_code)
     except Role.DoesNotExist:
-        raise ValueError(f"RoleNotFound '{role_code}'")
+        raise ValidationError({"messages": ["RoleNotFound"]})
 
     user = User.objects.create_user(
         email=email,
