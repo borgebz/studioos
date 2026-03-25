@@ -6,6 +6,7 @@ from core.managers import AllObjectsManager, SoftDeleteManager
 
 # Create your models here.
 
+
 class AuditMixin(models.Model):
     """Adds created/updated timestamps and user tracking."""
 

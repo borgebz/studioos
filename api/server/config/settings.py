@@ -2,7 +2,6 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 
-
 # -----------------------------------------------------------------------------
 # Base
 # -----------------------------------------------------------------------------
@@ -122,7 +121,9 @@ DATABASES = {
 # -----------------------------------------------------------------------------
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},

@@ -46,7 +46,9 @@ class Command(BaseCommand):
                 role = Role.objects.select_related("group").get(code=role_code)
             except Role.DoesNotExist:
                 self.stdout.write(
-                    self.style.WARNING(f"  {role_code}: role not found, run seed_roles first")
+                    self.style.WARNING(
+                        f"  {role_code}: role not found, run seed_roles first"
+                    )
                 )
                 continue
 
@@ -69,6 +71,8 @@ class Command(BaseCommand):
                         )
 
                 role.group.permissions.set(permission_objects)
-                self.stdout.write(f"  {role_code}: {len(permission_objects)} permissions")
+                self.stdout.write(
+                    f"  {role_code}: {len(permission_objects)} permissions"
+                )
 
         self.stdout.write(self.style.SUCCESS("Permissions assigned."))

@@ -1,11 +1,19 @@
-import logging 
+import logging
 from rest_framework import status, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from core.decorators import require_perm
-from .serializers import CreateUserSerializer, UserResponseSerializer, MeSerializer, Profile, ProfileSerializer, LoginSerializer, TokenPairSerializer
+from .serializers import (
+    CreateUserSerializer,
+    UserResponseSerializer,
+    MeSerializer,
+    Profile,
+    ProfileSerializer,
+    LoginSerializer,
+    TokenPairSerializer,
+)
 from .services import create_user
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -16,32 +24,34 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-logger = logging.getLogger(__name__) 
- 
+logger = logging.getLogger(__name__)
+
+
 class LoginView(TokenObtainPairView):
     """
     POST /api/accounts/auth/login/
     Accepts email + password, returns access and refresh tokens.
     """
- 
+
     @extend_schema(
         request=LoginSerializer,
         responses={
             200: TokenPairSerializer,
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         logger.info("User logged in: %s", request.data.get("email"))
         return response
- 
+
+
 class RefreshView(TokenRefreshView):
     """
     POST /api/accounts/auth/refresh/
     Accepts refresh token, returns new access and rotated refresh tokens.
     """
- 
+
     @extend_schema(
         request=inline_serializer(
             name="RefreshParam",
@@ -52,18 +62,18 @@ class RefreshView(TokenRefreshView):
         responses={
             200: TokenPairSerializer,
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
- 
- 
+
+
 class LogoutView(TokenBlacklistView):
     """
     POST /api/accounts/auth/logout/
     Blacklists the provided refresh token. Token is invalid after this call.
     """
- 
+
     @extend_schema(
         request=inline_serializer(
             name="LogoutParam",
@@ -74,13 +84,13 @@ class LogoutView(TokenBlacklistView):
         responses={
             204: None,  # No content on successful logout
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     def post(self, request, *args, **kwargs):
         super().post(request, *args, **kwargs)
         logger.info("User logged out")
         return Response(status=204)
- 
+
 
 class UserListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -90,7 +100,7 @@ class UserListView(APIView):
         responses={
             201: UserResponseSerializer,
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     @require_perm("accounts.add_user")
     def post(self, request):
@@ -103,25 +113,25 @@ class UserListView(APIView):
             logger.error(e)
             raise ValidationError({"messages": ["FailedCreatingUser"]})
 
-        return Response(UserResponseSerializer(user).data, status=status.HTTP_201_CREATED)
-    
+        return Response(
+            UserResponseSerializer(user).data, status=status.HTTP_201_CREATED
+        )
+
+
 class MeView(APIView):
     """
     GET /auth/me/
     Returns authenticated user data, role, permissions and profile.
     Used by the frontend to bootstrap session state and drive RBAC.
     """
+
     permission_classes = [IsAuthenticated]
- 
-    @extend_schema(
-        responses={
-            200: MeSerializer,
-            **DEFAULT_ERROR_RESPONSES
-        }
-    )
+
+    @extend_schema(responses={200: MeSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request):
         serializer = MeSerializer(request.user, context={"request": request})
         return Response(serializer.data)
+
 
 class MyProfileView(APIView):
     """
@@ -129,18 +139,13 @@ class MyProfileView(APIView):
     POST /api/accounts/profile/me/ - creates profile
     PATCH /api/accounts/profile/me/ — update own profile (including photo upload)
     """
- 
+
     permission_classes = [IsAuthenticated]
     # MultiPartParser and FormParser needed for file uploads
     # JSONParser kept for non-file updates
     parser_classes = [MultiPartParser, FormParser, JSONParser]
- 
-    @extend_schema(
-        responses={
-            200: ProfileSerializer,
-            **DEFAULT_ERROR_RESPONSES
-        }
-    )
+
+    @extend_schema(responses={200: ProfileSerializer, **DEFAULT_ERROR_RESPONSES})
     @require_perm("accounts.can_have_profile")
     def get(self, request):
         try:
@@ -152,10 +157,7 @@ class MyProfileView(APIView):
 
     @extend_schema(
         request=ProfileSerializer,
-        responses={
-            201: ProfileSerializer,
-            **DEFAULT_ERROR_RESPONSES
-        }
+        responses={201: ProfileSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("accounts.can_have_profile")
     def post(self, request):
@@ -172,7 +174,7 @@ class MyProfileView(APIView):
         responses={
             200: ProfileSerializer,
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     @require_perm("accounts.can_have_profile")
     def patch(self, request):
@@ -190,4 +192,3 @@ class MyProfileView(APIView):
         serializer.save()
         logger.info("Profile updated for user %s", request.user.email)
         return Response(serializer.data)
- 

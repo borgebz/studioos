@@ -1,7 +1,17 @@
 from django.utils.html import ValidationError
 from accounts.models import Role, User
 
-def create_user(*, email, first_name, last_name, role_code, created_by, phone="", phone_country_code=""):
+
+def create_user(
+    *,
+    email,
+    first_name,
+    last_name,
+    role_code,
+    created_by,
+    phone="",
+    phone_country_code=""
+):
     """
     Create a new user with a role assignment.
     """

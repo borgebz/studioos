@@ -2,7 +2,6 @@
 from drf_spectacular.utils import inline_serializer
 from rest_framework import serializers
 
-
 ErrorResponseSerializer = inline_serializer(
     name="ErrorResponse",
     fields={
@@ -22,9 +21,9 @@ ErrorResponseSerializer = inline_serializer(
                     required=False,
                     help_text="Field-level validation errors keyed by field name.",
                 ),
-            }
+            },
         )
-    }
+    },
 )
 
 DEFAULT_ERROR_RESPONSES = {

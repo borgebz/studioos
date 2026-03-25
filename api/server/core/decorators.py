@@ -9,5 +9,7 @@ def require_perm(perm_code):
             if not request.user.has_perm(perm_code):
                 raise PermissionDenied(f"PermissionDenied: {perm_code}")
             return method(self, request, *args, **kwargs)
+
         return wrapper
+
     return decorator

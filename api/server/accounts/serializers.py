@@ -4,6 +4,7 @@ from accounts.models import Profile
 from pathlib import Path
 from drf_spectacular.utils import extend_schema_field
 
+
 class CreateUserSerializer(serializers.Serializer):
     """Input serializer for creating a new user."""
 
@@ -18,6 +19,7 @@ class CreateUserSerializer(serializers.Serializer):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("EmailAlreadyExists")
         return value.lower()
+
 
 class UserResponseSerializer(serializers.ModelSerializer):
     """Output serializer for user data in API responses."""
@@ -51,6 +53,7 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
 
+
 class PhotoUrlMixin:
     @extend_schema_field(serializers.CharField(allow_null=True))
     def get_photo_url(self, obj):
@@ -69,9 +72,10 @@ class ProfileSummarySerializer(PhotoUrlMixin, serializers.ModelSerializer):
         model = Profile
         fields = ["display_name", "photo_url"]
 
+
 class ProfileSerializer(PhotoUrlMixin, serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
- 
+
     class Meta:
         model = Profile
         fields = ["display_name", "bio", "photo", "photo_url", "is_public"]
@@ -88,6 +92,7 @@ class ProfileSerializer(PhotoUrlMixin, serializers.ModelSerializer):
         if value.size > 5 * 1024 * 1024:
             raise serializers.ValidationError("FileSizeExceeds5MB")
         return value
+
 
 class MeSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -113,6 +118,7 @@ class MeSerializer(serializers.Serializer):
         if profile is None:
             return None
         return ProfileSummarySerializer(profile, context=self.context).data
+
 
 class TokenPairSerializer(serializers.Serializer):
     access = serializers.CharField(help_text="Short-lived access token.")

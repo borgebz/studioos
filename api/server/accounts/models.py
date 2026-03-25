@@ -7,6 +7,7 @@ from pathlib import Path
 
 # Create your models here.
 
+
 class User(AuditMixin, SoftDeleteMixin, AbstractUser):
     """
     Custom user model. Email is the login identifier.
@@ -42,7 +43,7 @@ class User(AuditMixin, SoftDeleteMixin, AbstractUser):
 
     objects = UserManager()
     all_objects = AllUsersManager()
-    
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()
@@ -70,15 +71,13 @@ def profile_photo_path(instance, filename):
     ext = Path(filename).suffix.lower()
     return f"profiles/{uuid.uuid4()}{ext}"
 
+
 class Profile(BaseModel):
     """
     Public profile for users.
     """
 
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE
-    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     display_name = models.CharField(max_length=200, blank=True)
     bio = models.TextField(blank=True)
     photo = models.ImageField(upload_to=profile_photo_path, null=True, blank=True)
@@ -88,4 +87,3 @@ class Profile(BaseModel):
         permissions = [
             ("can_have_profile", "Can create and manage a profile"),
         ]
-    
