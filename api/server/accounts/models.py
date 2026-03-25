@@ -2,6 +2,8 @@ from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from accounts.managers import UserManager, AllUsersManager
 from core.models import AuditMixin, BaseModel, SoftDeleteMixin
+import uuid
+from pathlib import Path
 
 # Create your models here.
 
@@ -63,6 +65,11 @@ class Role(BaseModel):
     class Meta:
         ordering = ["code"]
 
+
+def profile_photo_path(instance, filename):
+    ext = Path(filename).suffix.lower()
+    return f"profiles/{uuid.uuid4()}{ext}"
+
 class Profile(BaseModel):
     """
     Public profile for users.
@@ -74,4 +81,11 @@ class Profile(BaseModel):
     )
     display_name = models.CharField(max_length=200, blank=True)
     bio = models.TextField(blank=True)
-    photo_url = models.URLField(blank=True)
+    photo = models.ImageField(upload_to=profile_photo_path, null=True, blank=True)
+    is_public = models.BooleanField(default=False)
+
+    class Meta:
+        permissions = [
+            ("can_have_profile", "Can create and manage a profile"),
+        ]
+    

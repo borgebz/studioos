@@ -182,3 +182,5 @@ cython_debug/
 
 server/.DS_Store
 .DS_Store
+
+server/media

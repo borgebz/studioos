@@ -5,10 +5,12 @@ from accounts.models import Role
 
 ROLE_PERMISSIONS = {
     "direction": [
-        "accounts.add_user",
         "accounts.change_user",
         "accounts.view_user",
         "accounts.delete_user",
+        "accounts.add_role",
+        "accounts.change_role",
+        "accounts.delete_role",
     ],
     "coordination": [
         "accounts.view_user",
@@ -18,9 +20,11 @@ ROLE_PERMISSIONS = {
     ],
     "teacher_internal": [
         "accounts.view_user",
+        "accounts.can_have_profile",
     ],
     "teacher_external": [
         "accounts.view_user",
+        "accounts.can_have_profile",
     ],
     "parent": [
         "accounts.view_user",
