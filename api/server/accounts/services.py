@@ -1,4 +1,4 @@
-from django.utils.html import ValidationError
+from rest_framework.exceptions import ValidationError
 from accounts.models import Role, User
 
 

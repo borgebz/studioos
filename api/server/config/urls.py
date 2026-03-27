@@ -23,6 +23,7 @@ from drf_spectacular.views import SpectacularAPIView
 urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/accounts/", include("accounts.urls")),
+    path("api/enrollments/", include("enrollments.urls")),
 ]
 
 # Serve media files in development only

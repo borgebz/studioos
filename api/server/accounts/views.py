@@ -1,6 +1,6 @@
 import logging
 from rest_framework import status, serializers
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -13,6 +13,7 @@ from .serializers import (
     ProfileSerializer,
     LoginSerializer,
     TokenPairSerializer,
+    ActivateAccountSerializer
 )
 from .services import create_user
 from core.schemas import DEFAULT_ERROR_RESPONSES
@@ -23,6 +24,10 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from django.contrib.auth import get_user_model
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from accounts.emails import account_activation_token
 
 logger = logging.getLogger(__name__)
 
@@ -192,3 +197,48 @@ class MyProfileView(APIView):
         serializer.save()
         logger.info("Profile updated for user %s", request.user.email)
         return Response(serializer.data)
+
+
+class ActivateAccountView(APIView):
+    """
+    POST /api/accounts/activate/
+    Verifies the activation token, sets the password, and activates the user.
+    Public endpoint — the user isn't authenticated yet.
+    """
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=ActivateAccountSerializer,
+        responses={
+            200: inline_serializer(
+                name="ActivationSuccess",
+                fields={"message": serializers.CharField()},
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def post(self, request):
+        serializer = ActivateAccountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        User = get_user_model()
+
+        try:
+            uid = force_str(urlsafe_base64_decode(serializer.validated_data["uid"]))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise ValidationError({"messages": ["InvalidActivationLink"]})
+
+        if user.is_active:
+            raise ValidationError({"messages": ["AccountAlreadyActive"]})
+
+        if not account_activation_token.check_token(user, serializer.validated_data["token"]):
+            raise ValidationError({"messages": ["InvalidOrExpiredToken"]})
+
+        user.set_password(serializer.validated_data["password"])
+        user.is_active = True
+        user.save()
+
+        logger.info("Account activated: %s", user.email)
+        return Response({"message": "AccountActivated"})

@@ -100,6 +100,7 @@ class MeSerializer(serializers.Serializer):
     full_name = serializers.CharField()
     role = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
+    language = serializers.CharField()
     profile = serializers.SerializerMethodField()
 
     def get_role(self, obj):
@@ -123,3 +124,9 @@ class MeSerializer(serializers.Serializer):
 class TokenPairSerializer(serializers.Serializer):
     access = serializers.CharField(help_text="Short-lived access token.")
     refresh = serializers.CharField(help_text="Long-lived refresh token.")
+
+class ActivateAccountSerializer(serializers.Serializer):
+    """Input for account activation — uid + token + new password."""
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(min_length=8)

@@ -7,6 +7,9 @@ from pathlib import Path
 
 # Create your models here.
 
+class Language(models.TextChoices):
+    PT = "pt", "Português"
+    EN = "en", "English"
 
 class User(AuditMixin, SoftDeleteMixin, AbstractUser):
     """
@@ -31,6 +34,12 @@ class User(AuditMixin, SoftDeleteMixin, AbstractUser):
     document_expiry = models.DateField(null=True, blank=True)
     address = models.TextField(blank=True)
     postal_code = models.CharField(max_length=20, blank=True)
+
+    language = models.CharField(
+        max_length=5,
+        choices=Language.choices,
+        default=Language.PT,
+    )
 
     # Guardian -> Student relationship
     parent = models.ForeignKey(
