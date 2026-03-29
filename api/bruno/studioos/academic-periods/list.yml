@@ -1,0 +1,15 @@
+info:
+  name: list
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: http://127.0.0.1:8000/api/enrollments/periods/
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

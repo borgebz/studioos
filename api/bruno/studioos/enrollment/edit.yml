@@ -1,0 +1,26 @@
+info:
+  name: edit
+  type: http
+  seq: 4
+
+http:
+  method: patch
+  url: http://127.0.0.1:8000/api/enrollments//
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer XXX
+  body:
+    type: json
+    data: |-
+      {
+        "student_name": "Maria Silva Updated"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

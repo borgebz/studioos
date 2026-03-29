@@ -1,0 +1,31 @@
+info:
+  name: add-user
+  type: http
+  seq: 3
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/accounts/users/
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer XXX
+  body:
+    type: json
+    data: |-
+      {
+        "email": "new.user@example.com",
+        "first_name": "Ana",
+        "last_name": "Costa",
+        "role_code": "direction",
+        "phone": "912345678",
+        "phone_country_code": "+351"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

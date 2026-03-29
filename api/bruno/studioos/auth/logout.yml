@@ -1,0 +1,26 @@
+info:
+  name: logout
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/accounts/auth/logout/
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer XXX
+  body:
+    type: json
+    data: |-
+      {
+        "refresh": "XXX"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

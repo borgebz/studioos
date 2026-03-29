@@ -1,0 +1,23 @@
+info:
+  name: cancel
+  type: http
+  seq: 7
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/enrollments//cancel/
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer XXX
+  body:
+    type: json
+    data: "{}"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,23 @@
+info:
+  name: close-period
+  type: http
+  seq: 6
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/enrollments/periods/1/close/
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0ODAwNzY5LCJpYXQiOjE3NzQ3OTcxNjksImp0aSI6IjQyNTc5N2YxOThmNDRlYWE4ZDg5MDkxMGQ5MGVkYjY1IiwidXNlcl9pZCI6IjIifQ.MFFl44V9e08HBWC-oR6BFDHzzDQYUnzIkx7nicv0-CE
+  body:
+    type: json
+    data: "{}"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,23 @@
+info:
+  name: reject
+  type: http
+  seq: 6
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/enrollments//reject/
+  headers:
+    - name: Content-Type
+      value: application/json
+    - name: Authorization
+      value: Bearer XXX
+  body:
+    type: json
+    data: "{}"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
