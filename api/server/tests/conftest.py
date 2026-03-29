@@ -1,0 +1,127 @@
+"""Shared pytest fixtures for Django + DRF."""
+
+from __future__ import annotations
+
+import uuid
+from datetime import date, datetime, timezone as dt_timezone
+
+import pytest
+from django.core.management import call_command
+
+
+@pytest.fixture(scope="session")
+def django_db_setup(django_db_setup, django_db_blocker):
+    with django_db_blocker.unblock():
+        call_command("seed_roles")
+        call_command("seed_permissions")
+        call_command("seed_modalities")
+
+
+@pytest.fixture
+def api_client():
+    from rest_framework.test import APIClient
+
+    return APIClient()
+
+
+@pytest.fixture
+def direction_user(db):
+    """User with the `direction` role and all enrollment/account permissions."""
+    from django.contrib.auth import get_user_model
+
+    from accounts.models import Role
+
+    User = get_user_model()
+    user = User.objects.create_user(
+        email=f"direction_{uuid.uuid4().hex[:10]}@test.local",
+        password="test-pass-123",
+        first_name="Direction",
+        last_name="User",
+        is_active=True,
+    )
+    role = Role.objects.get(code="direction")
+    user.groups.add(role.group)
+    user.refresh_from_db()
+    return user
+
+
+@pytest.fixture
+def auth_client(api_client, direction_user):
+    api_client.force_authenticate(user=direction_user)
+    return api_client
+
+
+@pytest.fixture
+def modality(db):
+    from studios.models import Modality
+
+    m, _ = Modality.objects.get_or_create(
+        name="___Test Modality___",
+        defaults={"description": ""},
+    )
+    return m
+
+
+@pytest.fixture
+def frozen_enrollment_march_2026():
+    """Patch `enrollments.services.timezone.now` to mid-March 2026 (UTC)."""
+    from unittest.mock import patch
+
+    fixed = datetime(2026, 3, 15, 12, 0, 0, tzinfo=dt_timezone.utc)
+    with patch("enrollments.services.timezone.now", return_value=fixed):
+        yield fixed
+
+
+def enrollment_submit_kwargs(*, modality_id: int, student_email: str | None = None, parent_email: str | None = None):
+    """Build kwargs for `enrollments.services.submit_enrollment`."""
+    from enrollments.models import ConsentType, EnrollmentType
+
+    sid = student_email or f"student_{uuid.uuid4().hex[:8]}@test.local"
+    pid = parent_email or f"parent_{uuid.uuid4().hex[:8]}@test.local"
+    return {
+        "enrollment_data": {
+            "enrollment_type": EnrollmentType.NEW,
+            "student_email": sid,
+            "student_name": "Test Student",
+            "student_date_of_birth": date(2015, 5, 1),
+            "parent_name": "Test Parent",
+            "parent_email": pid,
+            "parent_phone": "912345678",
+        },
+        "modality_ids": [modality_id],
+        "consents": [
+            {
+                "consent_type": ConsentType.RGPD,
+                "accepted": True,
+                "ip_address": "127.0.0.1",
+                "user_agent": "pytest",
+            },
+            {
+                "consent_type": ConsentType.INTERNAL_REGULATION,
+                "accepted": True,
+                "ip_address": "127.0.0.1",
+                "user_agent": "pytest",
+            },
+        ],
+    }
+
+
+@pytest.fixture
+def open_enrollment_period(db):
+    """Open period spanning today so `_get_open_period` succeeds without mocking time."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from enrollments import services
+    from enrollments.models import PeriodType
+
+    today = timezone.now().date()
+    return services.create_period(
+        created_by=None,
+        academic_year="2025/2026",
+        period_type=PeriodType.BOTH,
+        start_date=today - timedelta(days=30),
+        end_date=today + timedelta(days=30),
+        is_open=True,
+    )

@@ -17,3 +17,9 @@ dependencies = [
     "pillow>=12.1.1",
     "drf-spectacular>=0.29.0",
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "-ra"]
