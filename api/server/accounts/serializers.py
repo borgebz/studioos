@@ -1,8 +1,28 @@
-from rest_framework import serializers
-from accounts.models import User
-from accounts.models import Profile
 from pathlib import Path
-from drf_spectacular.utils import extend_schema_field
+
+from drf_spectacular.utils import extend_schema_field, inline_serializer
+from rest_framework import serializers
+
+from accounts.models import Profile, User
+
+UserResponseRoleOutput = inline_serializer(
+    name="UserResponseRoleOutput",
+    fields={
+        "code": serializers.CharField(),
+        "name": serializers.CharField(),
+    },
+)
+
+MeEndpointProfileOutput = inline_serializer(
+    name="MeEndpointProfileOutput",
+    fields={
+        "display_name": serializers.CharField(
+            required=False,
+            allow_blank=True,
+        ),
+        "photo_url": serializers.CharField(allow_null=True, required=False),
+    },
+)
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -24,7 +44,7 @@ class CreateUserSerializer(serializers.Serializer):
 class UserResponseSerializer(serializers.ModelSerializer):
     """Output serializer for user data in API responses."""
 
-    role = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField(allow_null=True)
 
     class Meta:
         model = User
@@ -40,6 +60,7 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+    @extend_schema_field(UserResponseRoleOutput)
     def get_role(self, obj):
         group = obj.groups.first()
         if group and hasattr(group, "role"):
@@ -101,8 +122,9 @@ class MeSerializer(serializers.Serializer):
     role = serializers.SerializerMethodField()
     permissions = serializers.SerializerMethodField()
     language = serializers.CharField()
-    profile = serializers.SerializerMethodField()
+    profile = serializers.SerializerMethodField(allow_null=True)
 
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_role(self, obj):
         roles = []
         for group in obj.groups.select_related("role").all():
@@ -111,9 +133,11 @@ class MeSerializer(serializers.Serializer):
                 roles.append(role.code)
         return roles
 
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_permissions(self, obj):
         return sorted(obj.get_all_permissions())
 
+    @extend_schema_field(MeEndpointProfileOutput)
     def get_profile(self, obj):
         profile = getattr(obj, "profile", None)
         if profile is None:

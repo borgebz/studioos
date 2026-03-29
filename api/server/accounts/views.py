@@ -9,26 +9,25 @@ from .serializers import (
     CreateUserSerializer,
     UserResponseSerializer,
     MeSerializer,
-    Profile,
     ProfileSerializer,
     LoginSerializer,
     TokenPairSerializer,
-    ActivateAccountSerializer
+    ActivateAccountSerializer,
 )
-from .services import create_user
+from .services import (
+    activate_account,
+    create_profile_for_user,
+    create_user,
+    get_profile_for_user,
+    update_profile_for_user,
+)
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema, inline_serializer
-from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework_simplejwt.views import (
     TokenBlacklistView,
     TokenObtainPairView,
     TokenRefreshView,
 )
-from django.contrib.auth import get_user_model
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_decode
-from accounts.emails import account_activation_token
-
 logger = logging.getLogger(__name__)
 
 
@@ -37,6 +36,8 @@ class LoginView(TokenObtainPairView):
     POST /api/accounts/auth/login/
     Accepts email + password, returns access and refresh tokens.
     """
+
+    permission_classes = [AllowAny]
 
     @extend_schema(
         request=LoginSerializer,
@@ -56,6 +57,8 @@ class RefreshView(TokenRefreshView):
     POST /api/accounts/auth/refresh/
     Accepts refresh token, returns new access and rotated refresh tokens.
     """
+
+    permission_classes = [AllowAny]
 
     @extend_schema(
         request=inline_serializer(
@@ -78,6 +81,8 @@ class LogoutView(TokenBlacklistView):
     POST /api/accounts/auth/logout/
     Blacklists the provided refresh token. Token is invalid after this call.
     """
+
+    permission_classes = [AllowAny]
 
     @extend_schema(
         request=inline_serializer(
@@ -112,11 +117,7 @@ class UserListView(APIView):
         serializer = CreateUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        try:
-            user = create_user(**serializer.validated_data, created_by=request.user)
-        except ValueError as e:
-            logger.error(e)
-            raise ValidationError({"messages": ["FailedCreatingUser"]})
+        user = create_user(**serializer.validated_data, created_by=request.user)
 
         return Response(
             UserResponseSerializer(user).data, status=status.HTTP_201_CREATED
@@ -153,10 +154,7 @@ class MyProfileView(APIView):
     @extend_schema(responses={200: ProfileSerializer, **DEFAULT_ERROR_RESPONSES})
     @require_perm("accounts.can_have_profile")
     def get(self, request):
-        try:
-            profile = Profile.objects.get(user=request.user)
-        except Profile.DoesNotExist:
-            raise NotFound()
+        profile = get_profile_for_user(user=request.user)
         serializer = ProfileSerializer(profile, context={"request": request})
         return Response(serializer.data)
 
@@ -166,13 +164,16 @@ class MyProfileView(APIView):
     )
     @require_perm("accounts.can_have_profile")
     def post(self, request):
-        if Profile.objects.filter(user=request.user).exists():
-            raise ValidationError({"messages": ["ProfileAlreadyExists"]})
         serializer = ProfileSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        profile = create_profile_for_user(
+            user=request.user,
+            created_by=request.user,
+            **serializer.validated_data,
+        )
         logger.info("Profile created for user %s", request.user.email)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        out = ProfileSerializer(profile, context={"request": request})
+        return Response(out.data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
         request=ProfileSerializer,
@@ -183,10 +184,7 @@ class MyProfileView(APIView):
     )
     @require_perm("accounts.can_have_profile")
     def patch(self, request):
-        try:
-            profile = Profile.objects.get(user=request.user)
-        except Profile.DoesNotExist:
-            raise NotFound()
+        profile = get_profile_for_user(user=request.user)
         serializer = ProfileSerializer(
             profile,
             data=request.data,
@@ -194,9 +192,13 @@ class MyProfileView(APIView):
             context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        profile = update_profile_for_user(
+            profile=profile,
+            updated_by=request.user,
+            **serializer.validated_data,
+        )
         logger.info("Profile updated for user %s", request.user.email)
-        return Response(serializer.data)
+        return Response(ProfileSerializer(profile, context={"request": request}).data)
 
 
 class ActivateAccountView(APIView):
@@ -222,23 +224,5 @@ class ActivateAccountView(APIView):
         serializer = ActivateAccountSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        User = get_user_model()
-
-        try:
-            uid = force_str(urlsafe_base64_decode(serializer.validated_data["uid"]))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            raise ValidationError({"messages": ["InvalidActivationLink"]})
-
-        if user.is_active:
-            raise ValidationError({"messages": ["AccountAlreadyActive"]})
-
-        if not account_activation_token.check_token(user, serializer.validated_data["token"]):
-            raise ValidationError({"messages": ["InvalidOrExpiredToken"]})
-
-        user.set_password(serializer.validated_data["password"])
-        user.is_active = True
-        user.save()
-
-        logger.info("Account activated: %s", user.email)
+        activate_account(**serializer.validated_data)
         return Response({"message": "AccountActivated"})

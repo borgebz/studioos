@@ -425,5 +425,22 @@ def confirm_payment(*, payment, confirmed_by=None):
     return payment
 
 
+def confirm_payment_for_enrollment(
+    *,
+    enrollment_pk,
+    payment_pk,
+    confirmed_by=None,
+):
+    """Load payment by id scoped to enrollment, then confirm."""
+    try:
+        payment = EnrollmentPayment.objects.get(
+            pk=payment_pk,
+            enrollment_id=enrollment_pk,
+        )
+    except EnrollmentPayment.DoesNotExist:
+        raise NotFound()
+    return confirm_payment(payment=payment, confirmed_by=confirmed_by)
+
+
 def list_payments(*, enrollment):
     return enrollment.payments.all()

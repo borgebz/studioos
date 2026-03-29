@@ -6,12 +6,11 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 from core.decorators import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema
 from enrollments import services
-from enrollments.models import EnrollmentPayment
 from enrollments.serializers import (
     EnrollmentPaymentCreateSerializer,
     EnrollmentPaymentReadSerializer,
@@ -38,11 +37,24 @@ class EnrollmentPeriodListCreateView(APIView):
 
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        responses={
+            200: EnrollmentPeriodSerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
     def get(self, request):
         periods = services.list_periods()
         serializer = EnrollmentPeriodSerializer(periods, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=EnrollmentPeriodSerializer,
+        responses={
+            201: EnrollmentPeriodSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
     @require_perm("enrollments.can_manage_periods")
     def post(self, request):
         serializer = EnrollmentPeriodSerializer(data=request.data)
@@ -68,10 +80,23 @@ class EnrollmentPeriodDetailView(APIView):
     def get_object(self, pk):
         return services.get_period(pk=pk)
 
+    @extend_schema(
+        responses={
+            200: EnrollmentPeriodSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
     def get(self, request, pk):
         period = self.get_object(pk)
         return Response(EnrollmentPeriodSerializer(period).data)
 
+    @extend_schema(
+        request=EnrollmentPeriodSerializer,
+        responses={
+            200: EnrollmentPeriodSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
     @require_perm("enrollments.can_manage_periods")
     def patch(self, request, pk):
         period = self.get_object(pk)
@@ -92,6 +117,12 @@ class EnrollmentPeriodOpenView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={
+            200: EnrollmentPeriodSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
     @require_perm("enrollments.can_manage_periods")
     def post(self, request, pk):
         period = services.get_period(pk=pk)
@@ -104,6 +135,12 @@ class EnrollmentPeriodCloseView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={
+            200: EnrollmentPeriodSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
     @require_perm("enrollments.can_manage_periods")
     def post(self, request, pk):
         period = services.get_period(pk=pk)
@@ -378,12 +415,9 @@ class EnrollmentPaymentConfirmView(APIView):
     )
     @require_perm("enrollments.can_manage_enrollment_payments")
     def post(self, request, pk, payment_pk):
-        try:
-            payment = EnrollmentPayment.objects.get(pk=payment_pk, enrollment_id=pk)
-        except EnrollmentPayment.DoesNotExist:
-            raise NotFound()
-        payment = services.confirm_payment(
-            payment=payment,
+        payment = services.confirm_payment_for_enrollment(
+            enrollment_pk=pk,
+            payment_pk=payment_pk,
             confirmed_by=request.user,
         )
         return Response(EnrollmentPaymentReadSerializer(payment).data)
