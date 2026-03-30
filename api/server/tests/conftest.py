@@ -72,7 +72,12 @@ def frozen_enrollment_march_2026():
         yield fixed
 
 
-def enrollment_submit_kwargs(*, modality_id: int, student_email: str | None = None, parent_email: str | None = None):
+def enrollment_submit_kwargs(
+    *,
+    modality_id: int,
+    student_email: str | None = None,
+    parent_email: str | None = None,
+):
     """Build kwargs for `enrollments.services.submit_enrollment`."""
     from enrollments.models import ConsentType, EnrollmentType
 

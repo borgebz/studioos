@@ -5,7 +5,7 @@ from .views import (
     LogoutView,
     MeView,
     RefreshView,
-    ActivateAccountView
+    ActivateAccountView,
 )
 from django.urls import path
 
@@ -23,5 +23,4 @@ urlpatterns = [
     path("profile/me/", MyProfileView.as_view(), name="profile-me"),
     # Activate
     path("activate/", ActivateAccountView.as_view(), name="account-activate"),
-
 ]

@@ -149,8 +149,10 @@ class TokenPairSerializer(serializers.Serializer):
     access = serializers.CharField(help_text="Short-lived access token.")
     refresh = serializers.CharField(help_text="Long-lived refresh token.")
 
+
 class ActivateAccountSerializer(serializers.Serializer):
     """Input for account activation — uid + token + new password."""
+
     uid = serializers.CharField()
     token = serializers.CharField()
     password = serializers.CharField(min_length=8)

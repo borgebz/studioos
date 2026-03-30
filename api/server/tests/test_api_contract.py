@@ -6,6 +6,8 @@ from unittest.mock import MagicMock
 
 import pytest
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+
+
 @pytest.mark.django_db
 def test_custom_exception_handler_validation_error_messages_shape():
     from rest_framework.response import Response

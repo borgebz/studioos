@@ -102,7 +102,9 @@ MODALITIES = [
 
 
 class Command(BaseCommand):
-    help = "Seed the database with StudioOS modalities from the 2025/2026 matrícula form."
+    help = (
+        "Seed the database with StudioOS modalities from the 2025/2026 matrícula form."
+    )
 
     def handle(self, *args, **options):
         created_count = 0
@@ -130,4 +132,3 @@ class Command(BaseCommand):
                 f"\nDone. Created {created_count}, skipped {existing_count} existing."
             )
         )
-        

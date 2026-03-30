@@ -7,9 +7,11 @@ from pathlib import Path
 
 # Create your models here.
 
+
 class Language(models.TextChoices):
     PT = "pt", "Português"
     EN = "en", "English"
+
 
 class User(AuditMixin, SoftDeleteMixin, AbstractUser):
     """

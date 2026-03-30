@@ -28,6 +28,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+
 logger = logging.getLogger(__name__)
 
 

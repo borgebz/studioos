@@ -117,7 +117,9 @@ class TestSubmitEnrollment:
         assert EnrollmentModality.objects.filter(enrollment=e).count() == 1
         assert EnrollmentConsent.objects.filter(enrollment=e).count() == 2
 
-    def test_atomic_rollback_on_model_validation_error(self, open_enrollment_period, modality):
+    def test_atomic_rollback_on_model_validation_error(
+        self, open_enrollment_period, modality
+    ):
         """Invalid enrollment data fails full_clean inside atomic — no enrollment row."""
         from django.core.exceptions import ValidationError as DjangoValidationError
 
@@ -167,7 +169,9 @@ class TestStatusTransitions:
 
 @pytest.mark.django_db
 class TestApproveEnrollment:
-    def test_student_and_parent_email_must_differ(self, open_enrollment_period, modality):
+    def test_student_and_parent_email_must_differ(
+        self, open_enrollment_period, modality
+    ):
         from enrollments import services
 
         shared = f"same_{uuid.uuid4().hex[:8]}@test.local"

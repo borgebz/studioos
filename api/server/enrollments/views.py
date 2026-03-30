@@ -101,7 +101,9 @@ class EnrollmentPeriodDetailView(APIView):
     def patch(self, request, pk):
         period = self.get_object(pk)
         serializer = EnrollmentPeriodSerializer(
-            period, data=request.data, partial=True,
+            period,
+            data=request.data,
+            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         period = services.update_period(
@@ -195,11 +197,13 @@ class EnrollmentSubmitView(APIView):
         if request.FILES:
             files_data = []
             for key, file_obj in request.FILES.items():
-                file_serializer = FileUploadSerializer(data={
-                    "file": file_obj,
-                    "original_filename": file_obj.name,
-                    "mime_type": file_obj.content_type or "",
-                })
+                file_serializer = FileUploadSerializer(
+                    data={
+                        "file": file_obj,
+                        "original_filename": file_obj.name,
+                        "mime_type": file_obj.content_type or "",
+                    }
+                )
                 file_serializer.is_valid(raise_exception=True)
                 files_data.append(file_serializer.validated_data)
             uploaded_files = files_data
@@ -207,12 +211,14 @@ class EnrollmentSubmitView(APIView):
         # --- Build consent dicts with request metadata ---
         consents = []
         for consent in serializer.validated_data["consents"]:
-            consents.append({
-                "consent_type": consent["consent_type"],
-                "accepted": consent["accepted"],
-                "ip_address": self._get_client_ip(request),
-                "user_agent": request.META.get("HTTP_USER_AGENT", ""),
-            })
+            consents.append(
+                {
+                    "consent_type": consent["consent_type"],
+                    "accepted": consent["accepted"],
+                    "ip_address": self._get_client_ip(request),
+                    "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+                }
+            )
 
         enrollment = services.submit_enrollment(
             enrollment_data=serializer.get_enrollment_data(),
@@ -292,7 +298,9 @@ class EnrollmentDetailView(APIView):
     def patch(self, request, pk):
         enrollment = self.get_object(pk)
         serializer = EnrollmentUpdateSerializer(
-            enrollment, data=request.data, partial=True,
+            enrollment,
+            data=request.data,
+            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         enrollment = services.update_enrollment(
@@ -376,7 +384,10 @@ class EnrollmentPaymentListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        responses={200: EnrollmentPaymentReadSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
+        responses={
+            200: EnrollmentPaymentReadSerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
     )
     @require_perm("enrollments.can_manage_enrollment_payments")
     def get(self, request, pk):

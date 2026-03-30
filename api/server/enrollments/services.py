@@ -83,15 +83,12 @@ def _get_open_period(*, enrollment_type):
         matching_period_types.append(PeriodType.RENEWAL)
 
     today = timezone.now().date()
-    period = (
-        EnrollmentPeriod.objects.filter(
-            is_open=True,
-            period_type__in=matching_period_types,
-            start_date__lte=today,
-            end_date__gte=today,
-        )
-        .first()
-    )
+    period = EnrollmentPeriod.objects.filter(
+        is_open=True,
+        period_type__in=matching_period_types,
+        start_date__lte=today,
+        end_date__gte=today,
+    ).first()
 
     if not period:
         raise ValidationError({"messages": ["NoOpenEnrollmentPeriod"]})
@@ -126,7 +123,6 @@ def submit_enrollment(
     """
     if not modality_ids:
         raise ValidationError({"messages": ["AtLeastOneModalityRequired"]})
-
 
     # --- Validate open period ---
     enrollment_type = enrollment_data.get("enrollment_type", EnrollmentType.NEW)
@@ -179,7 +175,9 @@ def submit_enrollment(
 
 def list_enrollments(*, filters=None):
     qs = Enrollment.objects.select_related(
-        "student", "parent", "period",
+        "student",
+        "parent",
+        "period",
     ).prefetch_related(
         "enrollment_modalities__modality",
         "payments",
@@ -194,17 +192,18 @@ def list_enrollments(*, filters=None):
 def get_enrollment(*, pk):
     try:
         return (
-        Enrollment.objects.select_related("student", "parent", "period")
-        .prefetch_related(
-            "enrollment_modalities__modality",
-            "payments",
-            "consents",
-            "files",
+            Enrollment.objects.select_related("student", "parent", "period")
+            .prefetch_related(
+                "enrollment_modalities__modality",
+                "payments",
+                "consents",
+                "files",
+            )
+            .get(pk=pk)
         )
-        .get(pk=pk)
-    )
     except Enrollment.DoesNotExist:
         raise NotFound()
+
 
 # ---------------------------------------------------------------------------
 # Update (data fields only — no status changes)
@@ -243,9 +242,7 @@ VALID_TRANSITIONS = {
 def _validate_transition(enrollment, target_status):
     allowed = VALID_TRANSITIONS.get(enrollment.status, [])
     if target_status not in allowed:
-        raise ValidationError(
-            {"messages": ["InvalidStatusTransition"]}
-        )
+        raise ValidationError({"messages": ["InvalidStatusTransition"]})
 
 
 def _update_user_from_enrollment(user, enrollment, field_map):
@@ -264,7 +261,9 @@ def _assign_role(user, role_code):
     try:
         role = Role.objects.select_related("group").get(code=role_code)
     except Role.DoesNotExist:
-        logger.error("Role '%s' not found — user %s has no role assigned", role_code, user.email)
+        logger.error(
+            "Role '%s' not found — user %s has no role assigned", role_code, user.email
+        )
         return
     user.groups.add(role.group)
 
@@ -325,10 +324,14 @@ def approve_enrollment(*, enrollment, updated_by=None):
     )
 
     if is_renewal and not parent_created:
-        _update_user_from_enrollment(parent_user, enrollment, {
-            "parent_phone": "phone",
-            "parent_phone_country_code": "phone_country_code",
-        })
+        _update_user_from_enrollment(
+            parent_user,
+            enrollment,
+            {
+                "parent_phone": "phone",
+                "parent_phone_country_code": "phone_country_code",
+            },
+        )
 
     # --- Student user ---
     name_parts = enrollment.student_name.split() if enrollment.student_name else [""]
@@ -349,14 +352,18 @@ def approve_enrollment(*, enrollment, updated_by=None):
     )
 
     if is_renewal and not student_created:
-        _update_user_from_enrollment(student_user, enrollment, {
-            "student_nif": "nif",
-            "student_nationality": "nationality",
-            "student_document_number": "document_number",
-            "student_document_expiry": "document_expiry",
-            "address": "address",
-            "postal_code": "postal_code",
-        })
+        _update_user_from_enrollment(
+            student_user,
+            enrollment,
+            {
+                "student_nif": "nif",
+                "student_nationality": "nationality",
+                "student_document_number": "document_number",
+                "student_document_expiry": "document_expiry",
+                "address": "address",
+                "postal_code": "postal_code",
+            },
+        )
 
     if not parent_created:
         _assign_role(parent_user, "parent")

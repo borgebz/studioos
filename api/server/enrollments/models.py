@@ -3,7 +3,6 @@ from django.db import models
 import uuid
 from core.models import BaseModel
 
-
 # ---------------------------------------------------------------------------
 # Choices
 # ---------------------------------------------------------------------------
@@ -172,7 +171,10 @@ class Enrollment(BaseModel):
             ("can_reject_enrollment", "Can reject an enrollment"),
             ("can_cancel_enrollment", "Can cancel an enrollment"),
             ("can_manage_periods", "Can create and manage enrollment periods"),
-            ("can_manage_enrollment_payments", "Can create and confirm enrollment payments"),
+            (
+                "can_manage_enrollment_payments",
+                "Can create and confirm enrollment payments",
+            ),
         ]
 
     def __str__(self):
@@ -217,6 +219,7 @@ class EnrollmentFile(BaseModel):
 
     def enrollment_file_path(instance, filename):
         from pathlib import Path
+
         ext = Path(filename).suffix.lower()
         return f"enrollments/files/{uuid.uuid4()}{ext}"
 

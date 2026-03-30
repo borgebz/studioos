@@ -9,7 +9,9 @@ import pytest
 
 @pytest.mark.django_db
 class TestEnrollmentSubmitHttp:
-    def test_json_submit_returns_201(self, api_client, open_enrollment_period, modality):
+    def test_json_submit_returns_201(
+        self, api_client, open_enrollment_period, modality
+    ):
         from enrollments.models import ConsentType, EnrollmentType
 
         sid = f"api_student_{uuid.uuid4().hex[:8]}@test.local"
@@ -34,10 +36,14 @@ class TestEnrollmentSubmitHttp:
         assert body["student_email"] == sid
         assert len(body["consents"]) == 2
 
-    def test_invalid_json_in_multipart_data_field(self, api_client, open_enrollment_period):
+    def test_invalid_json_in_multipart_data_field(
+        self, api_client, open_enrollment_period
+    ):
         from django.core.files.uploadedfile import SimpleUploadedFile
 
-        file = SimpleUploadedFile("proof.pdf", b"%PDF-1.4 minimal", content_type="application/pdf")
+        file = SimpleUploadedFile(
+            "proof.pdf", b"%PDF-1.4 minimal", content_type="application/pdf"
+        )
         resp = api_client.post(
             "/api/enrollments/",
             {"data": "not-json{{{", "files": file},

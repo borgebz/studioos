@@ -60,11 +60,17 @@ def test_services_do_not_import_views_or_serializers(app):
         mod = node.module or ""
         if mod.endswith(".views") or ".views." in mod or mod.endswith("views"):
             pytest.fail(f"{path.relative_to(SERVER_ROOT)} imports views: {mod}")
-        if mod.endswith(".serializers") or ".serializers." in mod or mod.endswith("serializers"):
+        if (
+            mod.endswith(".serializers")
+            or ".serializers." in mod
+            or mod.endswith("serializers")
+        ):
             pytest.fail(f"{path.relative_to(SERVER_ROOT)} imports serializers: {mod}")
         base = _module_basename_from_import(mod)
         if base == "views" or base == "serializers":
-            pytest.fail(f"{path.relative_to(SERVER_ROOT)} imports layer {base} via {mod}")
+            pytest.fail(
+                f"{path.relative_to(SERVER_ROOT)} imports layer {base} via {mod}"
+            )
 
 
 @pytest.mark.parametrize(

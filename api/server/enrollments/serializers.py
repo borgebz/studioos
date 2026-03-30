@@ -8,9 +8,8 @@ from enrollments.models import (
     EnrollmentPayment,
     EnrollmentPeriod,
     EnrollmentType,
-    ConsentType
+    ConsentType,
 )
-
 
 # ---------------------------------------------------------------------------
 # Enrollment Period
@@ -168,15 +167,21 @@ class EnrollmentSubmitSerializer(serializers.Serializer):
     student_name = serializers.CharField(max_length=255)
     student_date_of_birth = serializers.DateField()
     student_nif = serializers.CharField(max_length=20, required=False, default="")
-    student_nationality = serializers.CharField(max_length=100, required=False, default="")
-    student_document_number = serializers.CharField(max_length=50, required=False, default="")
+    student_nationality = serializers.CharField(
+        max_length=100, required=False, default=""
+    )
+    student_document_number = serializers.CharField(
+        max_length=50, required=False, default=""
+    )
     student_document_expiry = serializers.DateField(required=False, allow_null=True)
     address = serializers.CharField(required=False, default="")
     postal_code = serializers.CharField(max_length=20, required=False, default="")
     parent_name = serializers.CharField(max_length=255)
     parent_email = serializers.EmailField()
     parent_phone = serializers.CharField(max_length=30)
-    parent_phone_country_code = serializers.CharField(max_length=5, required=False, default="")
+    parent_phone_country_code = serializers.CharField(
+        max_length=5, required=False, default=""
+    )
     historical_notes = serializers.CharField(required=False, default="")
 
     # nested
@@ -206,6 +211,7 @@ class FileUploadSerializer(serializers.Serializer):
 
     def validate_file(self, value):
         from pathlib import Path
+
         ext = Path(value.name).suffix.lower()
         if ext not in self.ALLOWED_EXTENSIONS:
             raise serializers.ValidationError("FileTypeNotSupported")
