@@ -5,6 +5,7 @@ from .views import (
     LogoutView,
     MeView,
     RefreshView,
+    ActivateAccountView,
 )
 from django.urls import path
 
@@ -20,4 +21,6 @@ urlpatterns = [
     path("users/", UserListView.as_view(), name="user-list"),
     # Profile
     path("profile/me/", MyProfileView.as_view(), name="profile-me"),
+    # Activate
+    path("activate/", ActivateAccountView.as_view(), name="account-activate"),
 ]

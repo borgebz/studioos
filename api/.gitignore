@@ -185,3 +185,5 @@ server/.DS_Store
 
 server/media
 .cursorrules
+
+.idea

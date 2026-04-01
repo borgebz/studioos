@@ -5,15 +5,29 @@ from accounts.models import Role
 
 ROLE_PERMISSIONS = {
     "direction": [
+        # accounts
         "accounts.change_user",
         "accounts.view_user",
         "accounts.delete_user",
         "accounts.add_role",
         "accounts.change_role",
         "accounts.delete_role",
+        # enrollments
+        "enrollments.can_review_enrollment",
+        "enrollments.can_approve_enrollment",
+        "enrollments.can_reject_enrollment",
+        "enrollments.can_cancel_enrollment",
+        "enrollments.can_manage_periods",
+        "enrollments.can_manage_enrollment_payments",
     ],
     "coordination": [
         "accounts.view_user",
+        # enrollments
+        "enrollments.can_review_enrollment",
+        "enrollments.can_approve_enrollment",
+        "enrollments.can_reject_enrollment",
+        "enrollments.can_cancel_enrollment",
+        "enrollments.can_manage_enrollment_payments",
     ],
     "collaborator": [
         "accounts.view_user",

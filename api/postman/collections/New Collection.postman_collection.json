@@ -19,7 +19,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"joborges@gmail.com\",\n    \"password\": \"123456\"\n}",
+              "raw": "{\n    \"email\": \"admin@local.test\",\n    \"password\": \"your-dev-password\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -27,7 +27,7 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:8000/api/accounts/login/",
+              "raw": "http://127.0.0.1:8000/api/accounts/auth/login/",
               "protocol": "http",
               "host": [
                 "127",
@@ -39,6 +39,7 @@
               "path": [
                 "api",
                 "accounts",
+                "auth",
                 "login",
                 ""
               ]
@@ -145,7 +146,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE4ODE5LCJpYXQiOjE3NzQzMTc5MTksImp0aSI6IjBiYWZmNmY5Mzk5ZjQ1ZDFhMjE1MzU4N2JkY2RiNmYyIiwidXNlcl9pZCI6IjIifQ.YS0h9bqKhSFBjbb_YMNcQfjghMFNirI_co3fd-rn85g",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NjUyLCJpYXQiOjE3NzQzMTg3NTIsImp0aSI6ImNlZjgyMjkxOGNiOTRmZGNiNzkzZjM0MzQzYzM4MTdiIiwidXNlcl9pZCI6IjIifQ.JAQL7zaKxW9kD99Sf0dBArb5-lZ_5EeQQ_-VdmLB5-Y",
                   "type": "string"
                 }
               ]
@@ -233,7 +234,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NjUyLCJpYXQiOjE3NzQzMTg3NTIsImp0aSI6ImNlZjgyMjkxOGNiOTRmZGNiNzkzZjM0MzQzYzM4MTdiIiwidXNlcl9pZCI6IjIifQ.JAQL7zaKxW9kD99Sf0dBArb5-lZ_5EeQQ_-VdmLB5-Y",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0NTMyMzU2LCJpYXQiOjE3NzQ1MzE0NTYsImp0aSI6IjYyMzM1OTkwNjYwMTQ4NWJiMDdiZDc5OWM0NmEyNWQzIiwidXNlcl9pZCI6IjIifQ.rB4xQo-fZ2jkAJby08nSzs1MeEG4qZmA3S0VnE4sbNs",
                   "type": "string"
                 }
               ]
@@ -297,7 +298,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NjUyLCJpYXQiOjE3NzQzMTg3NTIsImp0aSI6ImNlZjgyMjkxOGNiOTRmZGNiNzkzZjM0MzQzYzM4MTdiIiwidXNlcl9pZCI6IjIifQ.JAQL7zaKxW9kD99Sf0dBArb5-lZ_5EeQQ_-VdmLB5-Y",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0NDY5NDMyLCJpYXQiOjE3NzQ0Njg1MzIsImp0aSI6ImZjYjVlMWYzNWI4ZjQwZDk4NTY3OGQ0YjBkYzc1OThkIiwidXNlcl9pZCI6IjIifQ._Zdj79FAEdPrumFFIxR_7NHB0DDSnu7gHE0v7h4XbwQ",
                   "type": "string"
                 }
               ]
@@ -329,52 +330,58 @@
       "id": "c837b4a8-6d58-41ed-ad75-e806f17dc04d"
     },
     {
-      "name": "create_user",
-      "id": "5e814b2d-1c2d-468d-9936-96f0b9703ce9",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
-              "type": "string"
+      "name": "users",
+      "item": [
+        {
+          "name": "create_user",
+          "id": "5e814b2d-1c2d-468d-9936-96f0b9703ce9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"joborges@gmail.com\",\n    \"first_name\": \"joao\",\n    \"last_name\": \"borges\",\n    \"role_code\": \"direction\",\n    \"phone\": \"912345678\",\n    \"phone_country_code\": \"+351\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/accounts/users/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "accounts",
+                "users",
+                ""
+              ]
             }
-          ]
-        },
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"email\": \"joborges@gmail.com\",\n    \"first_name\": \"joao\",\n    \"last_name\": \"borges\",\n    \"role_code\": \"direction\",\n    \"phone\": \"912345678\",\n    \"phone_country_code\": \"+351\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "http://127.0.0.1:8000/api/accounts/users/",
-          "protocol": "http",
-          "host": [
-            "127",
-            "0",
-            "0",
-            "1"
-          ],
-          "port": "8000",
-          "path": [
-            "api",
-            "accounts",
-            "users",
-            ""
-          ]
+          },
+          "response": []
         }
-      },
-      "response": []
+      ],
+      "id": "dec996c7-de05-4f7f-af6b-c0129c2d762d"
     }
   ]
 }

@@ -1,0 +1,31 @@
+info:
+  name: create
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/accounts/profile/me/
+  headers:
+    - name: Authorization
+      value: Bearer XXX
+  body:
+    type: multipart-form
+    data:
+      - name: photo
+        type: file
+        value:
+          - /private/var/folders/gp/m9nqfyln3jv8_0f4bmygz_1m0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=CA69613F-AAAD-4478-9EF4-B90882F8DD66&code=001&library=1&type=1&mode=1&loc=true&cap=true.jpeg/IMG_2419.jpeg
+      - name: display_name
+        type: text
+        value: Jorge
+      - name: bio
+        type: text
+        value: cozinheiro
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
