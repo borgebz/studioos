@@ -8,7 +8,7 @@ from . import services
 
 
 class StudioListCreateView(generics.ListCreateAPIView):
-    queryset = Studio.objects.all()
+    queryset = services.get_all_studios()
     serializer_class = StudioSerializer
 
     def create(self, request, *args, **kwargs):
@@ -19,12 +19,12 @@ class StudioListCreateView(generics.ListCreateAPIView):
 
 
 class StudioRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Studio.objects.all()
+    queryset = services.get_all_studios()
     serializer_class = StudioSerializer
 
 
 class ModalityListCreateView(generics.ListCreateAPIView):
-    queryset = Modality.objects.all()
+    queryset = services.get_all_modalities()
     serializer_class = ModalitySerializer
 
     def create(self, request, *args, **kwargs):
