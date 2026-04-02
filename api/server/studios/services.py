@@ -27,8 +27,10 @@ def create_modality(data):
 
     return modality
 
+
 def get_all_studios():
     return Studio.objects.all()
+
 
 def get_all_modalities():
     return Modality.objects.all()
