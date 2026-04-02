@@ -6,6 +6,7 @@ from .models import Studio, Modality
 from .serializers import StudioSerializer, ModalitySerializer
 from . import services
 
+
 class StudioListCreateView(generics.ListCreateAPIView):
     queryset = Studio.objects.all()
     serializer_class = StudioSerializer
@@ -16,9 +17,11 @@ class StudioListCreateView(generics.ListCreateAPIView):
         studio = services.create_studio(serializer.validated_data)
         return Response(StudioSerializer(studio).data, status=status.HTTP_201_CREATED)
 
+
 class StudioRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Studio.objects.all()
     serializer_class = StudioSerializer
+
 
 class ModalityListCreateView(generics.ListCreateAPIView):
     queryset = Modality.objects.all()
@@ -28,7 +31,10 @@ class ModalityListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         modality = services.create_modality(serializer.validated_data)
-        return Response(ModalitySerializer(modality).data, status=status.HTTP_201_CREATED)
+        return Response(
+            ModalitySerializer(modality).data, status=status.HTTP_201_CREATED
+        )
+
 
 class ModalityRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Modality.objects.all()

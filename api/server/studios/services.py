@@ -1,15 +1,17 @@
 from rest_framework.exceptions import ValidationError
 from .models import Studio, Modality
 
+
 def create_studio(data):
     return Studio.objects.create(**data)
 
+
 def create_modality(data):
-    studio_ids = data.pop('allowed_studio_ids', [])
+    studio_ids = data.pop("allowed_studio_ids", [])
 
     # Validação de Idades
-    min_age = data.get('min_age_months')
-    max_age = data.get('max_age_months')
+    min_age = data.get("min_age_months")
+    max_age = data.get("max_age_months")
 
     if min_age is not None and max_age is not None and min_age > max_age:
         raise ValidationError({"messages": ["InvalidAgeRange"]})
