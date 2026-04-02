@@ -2,7 +2,6 @@
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Studio, Modality
 from .serializers import StudioSerializer, ModalitySerializer
 from . import services
 
@@ -37,5 +36,5 @@ class ModalityListCreateView(generics.ListCreateAPIView):
 
 
 class ModalityRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Modality.objects.all()
+    queryset = services.get_all_modalities()
     serializer_class = ModalitySerializer
