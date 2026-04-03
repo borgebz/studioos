@@ -4,9 +4,11 @@ from django.db import models
 class SoftDeleteQuerySet(models.QuerySet):
     """QuerySet that filters out soft-deleted records by default."""
 
-    def delete(self):
-        """Soft delete all records in the queryset."""
-        return self.update(deleted_at=models.functions.Now())
+    def delete(self, deleted_by=None):
+        return self.update(
+            deleted_at=models.functions.Now(),
+            deleted_by=deleted_by,
+        )
 
     def hard_delete(self):
         """Permanently delete all records in the queryset."""
