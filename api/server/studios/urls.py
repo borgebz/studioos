@@ -2,12 +2,14 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("studios/", views.StudioListCreateView.as_view(), name="studio-list-create"),
+    # Studios (Root of the application)
+    path("", views.StudioListCreateView.as_view(), name="studio-list-create"),
     path(
-        "studios/<int:pk>/",
+        "<int:pk>/",
         views.StudioRetrieveUpdateDestroyView.as_view(),
         name="studio-detail",
     ),
+    # Modalities
     path(
         "modalities/",
         views.ModalityListCreateView.as_view(),
