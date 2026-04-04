@@ -67,12 +67,13 @@ INSTALLED_APPS = [
     "enrollments",
 ]
 
+# API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.
+# JWT auth is handled by DRF; Django's auth middleware requires sessions.
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
