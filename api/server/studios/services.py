@@ -1,8 +1,9 @@
 import logging
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from rest_framework.exceptions import NotFound, ValidationError
-from .models import Studio, Modality
+
+from .models import Modality, Studio
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +28,12 @@ def create_studio(*, user, **data):
 
     studio = Studio(**data, created_by=user)
     studio.full_clean()
-    studio.save()
+    try:
+        studio.save()
+    except IntegrityError as exc:
+        raise ValidationError({"name": ["StudioNameAlreadyExists"]}) from exc
 
-    logger.info(f"Studio {studio.name} created by user {user.id}")
+    logger.info("Studio %s created by user %s", studio.name, user.id)
     return studio
 
 
@@ -51,9 +55,12 @@ def update_studio(*, pk: int, user, **data):
 
     studio.updated_by = user
     studio.full_clean()
-    studio.save()
+    try:
+        studio.save()
+    except IntegrityError as exc:
+        raise ValidationError({"name": ["StudioNameAlreadyExists"]}) from exc
 
-    logger.info(f"Studio {studio.name} updated by user {user.id}")
+    logger.info("Studio %s updated by user %s", studio.name, user.id)
     return studio
 
 
@@ -62,7 +69,7 @@ def delete_studio(*, pk: int, user):
     studio = get_studio(pk=pk)
     studio.delete(deleted_by=user)
 
-    logger.info(f"Studio {studio.name} deleted by user {user.id}")
+    logger.info("Studio %s deleted by user %s", studio.name, user.id)
 
 
 # Modality
@@ -96,16 +103,24 @@ def create_modality(*, user, allowed_studio_ids=None, **data):
 
     modality = Modality(**data, created_by=user)
     modality.full_clean()
-    modality.save()
+    try:
+        modality.save()
+    except IntegrityError as exc:
+        raise ValidationError({"name": ["ModalityNameAlreadyExists"]}) from exc
 
-    logger.info(f"Modality {modality.name} created by user {user.id}")
+    logger.info("Modality %s created by user %s", modality.name, user.id)
 
     # Addresses reviewer feedback: ensures relationships are updated on PATCH
     if allowed_studio_ids is not None:
         studios = Studio.objects.filter(id__in=allowed_studio_ids)
         if len(studios) != len(allowed_studio_ids):
             raise ValidationError({"messages": ["OneOrMoreStudiosNotFound"]})
-        modality.studios.set(studios)
+        try:
+            modality.studios.set(studios)
+        except IntegrityError as exc:
+            raise ValidationError(
+                {"messages": ["StudioModalityLinkConflict"]}
+            ) from exc
 
     return modality
 
@@ -134,15 +149,23 @@ def update_modality(*, pk: int, user, allowed_studio_ids=None, **data):
 
     modality.updated_by = user
     modality.full_clean()
-    modality.save()
+    try:
+        modality.save()
+    except IntegrityError as exc:
+        raise ValidationError({"name": ["ModalityNameAlreadyExists"]}) from exc
 
-    logger.info(f"Modality {modality.name} updated by user {user.id}")
+    logger.info("Modality %s updated by user %s", modality.name, user.id)
 
     if allowed_studio_ids is not None:
         studios = Studio.objects.filter(id__in=allowed_studio_ids)
         if len(studios) != len(allowed_studio_ids):
             raise ValidationError({"messages": ["OneOrMoreStudiosNotFound"]})
-        modality.studios.set(studios)
+        try:
+            modality.studios.set(studios)
+        except IntegrityError as exc:
+            raise ValidationError(
+                {"messages": ["StudioModalityLinkConflict"]}
+            ) from exc
 
     return modality
 
@@ -152,4 +175,4 @@ def delete_modality(*, pk: int, user):
     modality = get_modality(pk=pk)
     modality.delete(deleted_by=user)
 
-    logger.info(f"Modality {modality.name} deleted by user {user.id}")
+    logger.info("Modality %s deleted by user %s", modality.name, user.id)
