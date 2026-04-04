@@ -87,7 +87,11 @@ def create_modality(*, user, allowed_studio_ids=None, **data):
 
     min_age = data.get("min_age_months")
     max_age = data.get("max_age_months")
-    if min_age and max_age and min_age > max_age:
+    if (
+        min_age is not None
+        and max_age is not None
+        and min_age > max_age
+    ):
         raise ValidationError({"messages": ["InvalidAgeRange"]})
 
     modality = Modality(**data, created_by=user)
@@ -122,8 +126,8 @@ def update_modality(*, pk: int, user, allowed_studio_ids=None, **data):
         setattr(modality, field, value)
 
     if (
-        modality.min_age_months
-        and modality.max_age_months
+        modality.min_age_months is not None
+        and modality.max_age_months is not None
         and modality.min_age_months > modality.max_age_months
     ):
         raise ValidationError({"messages": ["InvalidAgeRange"]})
