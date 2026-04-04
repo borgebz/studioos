@@ -94,11 +94,7 @@ def create_modality(*, user, allowed_studio_ids=None, **data):
 
     min_age = data.get("min_age_months")
     max_age = data.get("max_age_months")
-    if (
-        min_age is not None
-        and max_age is not None
-        and min_age > max_age
-    ):
+    if min_age is not None and max_age is not None and min_age > max_age:
         raise ValidationError({"messages": ["InvalidAgeRange"]})
 
     modality = Modality(**data, created_by=user)
@@ -118,9 +114,7 @@ def create_modality(*, user, allowed_studio_ids=None, **data):
         try:
             modality.studios.set(studios)
         except IntegrityError as exc:
-            raise ValidationError(
-                {"messages": ["StudioModalityLinkConflict"]}
-            ) from exc
+            raise ValidationError({"messages": ["StudioModalityLinkConflict"]}) from exc
 
     return modality
 
@@ -163,9 +157,7 @@ def update_modality(*, pk: int, user, allowed_studio_ids=None, **data):
         try:
             modality.studios.set(studios)
         except IntegrityError as exc:
-            raise ValidationError(
-                {"messages": ["StudioModalityLinkConflict"]}
-            ) from exc
+            raise ValidationError({"messages": ["StudioModalityLinkConflict"]}) from exc
 
     return modality
 

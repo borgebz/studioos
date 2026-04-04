@@ -60,26 +60,47 @@ class TestAllowAnyVsProtectedEndpoints:
         assert resp.status_code == 200
         assert isinstance(resp.json(), list)
 
-    def test_post_period_requires_permission(self, api_client):
+    def test_post_period_create_unauthenticated_returns_401(self, api_client):
+        """POST /periods/create/ with no token must return 401, not 403."""
         resp = api_client.post(
-            "/api/enrollments/periods/",
+            "/api/enrollments/periods/create/",
             {
-                "academic_year": "2026/2027",
+                "academic_year": "2040/2041",
                 "period_type": "both",
-                "start_date": "2026-01-01",
-                "end_date": "2026-12-31",
+                "start_date": "2040-01-01",
+                "end_date": "2040-12-31",
+                "is_open": False,
+            },
+            format="json",
+        )
+        assert resp.status_code == 401
+        assert "NotAuthenticated" in resp.json()["errors"]["messages"]
+
+    def test_post_period_create_wrong_role_returns_403(self, student_auth_client):
+        """POST /periods/create/ with a student token must return 403."""
+        resp = student_auth_client.post(
+            "/api/enrollments/periods/create/",
+            {
+                "academic_year": "2041/2042",
+                "period_type": "both",
+                "start_date": "2041-01-01",
+                "end_date": "2041-12-31",
                 "is_open": False,
             },
             format="json",
         )
         assert resp.status_code == 403
-        body = resp.json()
-        assert "errors" in body
-        assert "PermissionDenied" in body["errors"]["messages"]
+        assert "PermissionDenied" in resp.json()["errors"]["messages"]
+
+    def test_get_period_detail_allow_any(self, api_client, open_enrollment_period):
+        """GET /periods/<pk>/ must be reachable without a token."""
+        resp = api_client.get(f"/api/enrollments/periods/{open_enrollment_period.pk}/")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == open_enrollment_period.pk
 
     def test_post_period_succeeds_for_direction(self, auth_client):
         resp = auth_client.post(
-            "/api/enrollments/periods/",
+            "/api/enrollments/periods/create/",
             {
                 "academic_year": "2030/2031",
                 "period_type": "both",

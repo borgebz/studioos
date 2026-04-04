@@ -5,6 +5,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from accounts.emails import send_activation_email
 from accounts.models import Role
 from enrollments.models import (
+    ConsentType,
     Enrollment,
     EnrollmentConsent,
     EnrollmentFile,
@@ -16,10 +17,14 @@ from enrollments.models import (
     PaymentStatus,
     PeriodType,
 )
+from studios.models import Modality
+
 import logging
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+_REQUIRED_CONSENT_TYPES = (ConsentType.RGPD, ConsentType.INTERNAL_REGULATION)
 
 
 # ---------------------------------------------------------------------------
@@ -124,10 +129,32 @@ def submit_enrollment(
     if not modality_ids:
         raise ValidationError({"messages": ["AtLeastOneModalityRequired"]})
 
+    modality_ids = list(dict.fromkeys(modality_ids))
+
     # --- Validate open period ---
     enrollment_type = enrollment_data.get("enrollment_type", EnrollmentType.NEW)
     period = _get_open_period(enrollment_type=enrollment_type)
     enrollment_data["period"] = period
+
+    student_email = enrollment_data.get("student_email")
+    parent_email = enrollment_data.get("parent_email")
+    if student_email and parent_email and student_email == parent_email:
+        raise ValidationError({"messages": ["StudentAndParentEmailMustBeDifferent"]})
+
+    if Enrollment.objects.filter(period=period, student_email=student_email).exists():
+        raise ValidationError({"messages": ["EnrollmentAlreadySubmittedForThisPeriod"]})
+
+    unique_modality_ids = set(modality_ids)
+    found_count = Modality.objects.filter(pk__in=modality_ids).count()
+    if found_count != len(unique_modality_ids):
+        raise ValidationError({"messages": ["OneOrMoreModalitiesNotFound"]})
+
+    for consent_type in _REQUIRED_CONSENT_TYPES:
+        if not any(
+            c.get("consent_type") == consent_type and c.get("accepted")
+            for c in consents
+        ):
+            raise ValidationError({"messages": ["RequiredConsentsNotAccepted"]})
 
     enrollment = Enrollment(**enrollment_data, created_by=created_by)
     enrollment.full_clean()
@@ -211,6 +238,8 @@ def get_enrollment(*, pk):
 
 
 def update_enrollment(*, enrollment, updated_by=None, **data):
+    if enrollment.status == EnrollmentStatus.APPROVED:
+        raise ValidationError({"messages": ["CannotUpdateApprovedEnrollment"]})
     for field, value in data.items():
         setattr(enrollment, field, value)
     enrollment.updated_by = updated_by
@@ -227,8 +256,6 @@ def update_enrollment(*, enrollment, updated_by=None, **data):
 VALID_TRANSITIONS = {
     EnrollmentStatus.SUBMITTED: [
         EnrollmentStatus.UNDER_REVIEW,
-        EnrollmentStatus.APPROVED,
-        EnrollmentStatus.REJECTED,
         EnrollmentStatus.CANCELLED,
     ],
     EnrollmentStatus.UNDER_REVIEW: [
@@ -243,6 +270,16 @@ def _validate_transition(enrollment, target_status):
     allowed = VALID_TRANSITIONS.get(enrollment.status, [])
     if target_status not in allowed:
         raise ValidationError({"messages": ["InvalidStatusTransition"]})
+
+
+@transaction.atomic
+def start_review(*, enrollment, updated_by=None):
+    """Move an enrollment from SUBMITTED to UNDER_REVIEW."""
+    _validate_transition(enrollment, EnrollmentStatus.UNDER_REVIEW)
+    enrollment.status = EnrollmentStatus.UNDER_REVIEW
+    enrollment.updated_by = updated_by
+    enrollment.save()
+    return enrollment
 
 
 def _update_user_from_enrollment(user, enrollment, field_map):
@@ -307,9 +344,6 @@ def approve_enrollment(*, enrollment, updated_by=None):
     _validate_transition(enrollment, EnrollmentStatus.APPROVED)
 
     is_renewal = enrollment.enrollment_type == EnrollmentType.RENEWAL
-
-    if enrollment.student_email == enrollment.parent_email:
-        raise ValidationError({"messages": ["StudentAndParentEmailMustBeDifferent"]})
 
     # --- Parent user ---
     name_parts = enrollment.parent_name.split() if enrollment.parent_name else [""]

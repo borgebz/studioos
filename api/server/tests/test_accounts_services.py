@@ -55,7 +55,7 @@ class TestCreateUser:
 
 @pytest.mark.django_db
 class TestProfile:
-    def test_duplicate_profile_rejected(self, direction_user):
+    def test_create_profile_duplicate_is_400(self, direction_user):
         from accounts import services
         from accounts.models import Profile
 

@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -178,9 +177,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "file",
-                    models.FileField(
-                        upload_to=enrollments.models.EnrollmentFile.enrollment_file_path
-                    ),
+                    models.FileField(upload_to=enrollments.models.enrollment_file_path),
                 ),
                 ("original_filename", models.CharField(max_length=255)),
                 ("mime_type", models.CharField(blank=True, default="", max_length=100)),

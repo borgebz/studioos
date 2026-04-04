@@ -29,10 +29,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class EnrollmentPeriodListCreateView(APIView):
+class EnrollmentPeriodListView(APIView):
     """
-    GET  /api/enrollments/periods/       — list all periods (public)
-    POST /api/enrollments/periods/       — create a period
+    GET /api/enrollments/periods/
+    Public — no authentication required.
+    Used by the enrollment form to display the open period and its fees.
     """
 
     permission_classes = [AllowAny]
@@ -45,8 +46,16 @@ class EnrollmentPeriodListCreateView(APIView):
     )
     def get(self, request):
         periods = services.list_periods()
-        serializer = EnrollmentPeriodSerializer(periods, many=True)
-        return Response(serializer.data)
+        return Response(EnrollmentPeriodSerializer(periods, many=True).data)
+
+
+class EnrollmentPeriodCreateView(APIView):
+    """
+    POST /api/enrollments/periods/create/
+    Direction only. Creates a new enrollment period.
+    """
+
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=EnrollmentPeriodSerializer,
@@ -71,14 +80,17 @@ class EnrollmentPeriodListCreateView(APIView):
 
 class EnrollmentPeriodDetailView(APIView):
     """
-    GET   /api/enrollments/periods/<pk>/  — retrieve a period
-    PATCH /api/enrollments/periods/<pk>/  — update a period
+    GET   /api/enrollments/periods/<pk>/ — public, no auth required
+    PATCH /api/enrollments/periods/<pk>/ — direction only
     """
 
-    permission_classes = [IsAuthenticated]
-
-    def get_object(self, pk):
-        return services.get_period(pk=pk)
+    def get_permissions(self):
+        # get_permissions() is used here because GET and PATCH share the same URL+pk
+        # and cannot be split into separate view classes. This is the only accepted
+        # use of method-based permission dispatch in this codebase.
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     @extend_schema(
         responses={
@@ -87,7 +99,7 @@ class EnrollmentPeriodDetailView(APIView):
         },
     )
     def get(self, request, pk):
-        period = self.get_object(pk)
+        period = services.get_period(pk=pk)
         return Response(EnrollmentPeriodSerializer(period).data)
 
     @extend_schema(
@@ -99,7 +111,7 @@ class EnrollmentPeriodDetailView(APIView):
     )
     @require_perm("enrollments.can_manage_periods")
     def patch(self, request, pk):
-        period = self.get_object(pk)
+        period = services.get_period(pk=pk)
         serializer = EnrollmentPeriodSerializer(
             period,
             data=request.data,
@@ -314,6 +326,24 @@ class EnrollmentDetailView(APIView):
 # ---------------------------------------------------------------------------
 # Status transitions
 # ---------------------------------------------------------------------------
+
+
+class EnrollmentStartReviewView(APIView):
+    """POST /api/enrollments/<pk>/start-review/"""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: EnrollmentReadSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("enrollments.can_review_enrollment")
+    def post(self, request, pk):
+        enrollment = services.get_enrollment(pk=pk)
+        enrollment = services.start_review(
+            enrollment=enrollment,
+            updated_by=request.user,
+        )
+        return Response(EnrollmentReadSerializer(enrollment).data)
 
 
 class EnrollmentApproveView(APIView):
