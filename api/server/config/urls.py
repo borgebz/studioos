@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/accounts/", include("accounts.urls")),
     path("api/enrollments/", include("enrollments.urls")),
+    path("api/studios/", include("studios.urls")),
 ]
 
 # Serve media files in development only

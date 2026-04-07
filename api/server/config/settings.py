@@ -51,11 +51,8 @@ CORS_ALLOW_CREDENTIALS = True
 # -----------------------------------------------------------------------------
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
     "django.contrib.staticfiles",
     # Third party
     "rest_framework",
@@ -70,14 +67,13 @@ INSTALLED_APPS = [
     "enrollments",
 ]
 
+# API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.
+# JWT auth is handled by DRF; Django's auth middleware requires sessions.
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -95,7 +91,6 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
             ],
         },
     },

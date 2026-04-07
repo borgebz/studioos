@@ -130,3 +130,50 @@ def open_enrollment_period(db):
         end_date=today + timedelta(days=30),
         is_open=True,
     )
+
+
+@pytest.fixture
+def submitted_enrollment(open_enrollment_period, modality):
+    """A freshly submitted enrollment in SUBMITTED state."""
+    from enrollments import services
+
+    return services.submit_enrollment(
+        **enrollment_submit_kwargs(modality_id=modality.pk)
+    )
+
+
+@pytest.fixture
+def under_review_enrollment(submitted_enrollment, direction_user):
+    """An enrollment that has been moved to UNDER_REVIEW."""
+    from enrollments import services
+
+    return services.start_review(
+        enrollment=submitted_enrollment, updated_by=direction_user
+    )
+
+
+@pytest.fixture
+def student_user(db):
+    """Active user with the student role. Used for 403 permission tests."""
+    from django.contrib.auth import get_user_model
+
+    from accounts.models import Role
+
+    User = get_user_model()
+    user = User.objects.create_user(
+        email=f"student_{uuid.uuid4().hex[:8]}@test.local",
+        password="test-pass-123",
+        first_name="Student",
+        last_name="User",
+        is_active=True,
+    )
+    role = Role.objects.get(code="student")
+    user.groups.add(role.group)
+    return user
+
+
+@pytest.fixture
+def student_auth_client(api_client, student_user):
+    """API client authenticated as a student. Used for 403 permission tests."""
+    api_client.force_authenticate(user=student_user)
+    return api_client

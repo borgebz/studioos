@@ -39,7 +39,7 @@ class TestCreateUserSerializerEmailUniqueness:
                 "role_code": "student",
             }
         )
-        
+
         assert serializer.is_valid() is False
         assert "email" in serializer.errors
         assert any(

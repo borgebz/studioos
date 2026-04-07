@@ -54,6 +54,36 @@ class TestEnrollmentSubmitHttp:
 
 
 @pytest.mark.django_db
+class TestEnrollmentStatusTransitionsHttp:
+    def test_start_review_http(self, auth_client, submitted_enrollment):
+        resp = auth_client.post(
+            f"/api/enrollments/{submitted_enrollment.pk}/start-review/",
+            {},
+            format="json",
+        )
+        assert resp.status_code == 200, resp.content
+        assert resp.json()["status"] == "under_review"
+
+    def test_start_review_requires_auth(self, api_client, submitted_enrollment):
+        resp = api_client.post(
+            f"/api/enrollments/{submitted_enrollment.pk}/start-review/",
+            {},
+            format="json",
+        )
+        assert resp.status_code == 401
+        assert "NotAuthenticated" in resp.json()["errors"]["messages"]
+
+    def test_approve_without_review_fails(self, auth_client, submitted_enrollment):
+        resp = auth_client.post(
+            f"/api/enrollments/{submitted_enrollment.pk}/approve/",
+            {},
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "InvalidStatusTransition" in resp.json()["errors"]["messages"]
+
+
+@pytest.mark.django_db
 class TestActivateAccountHttp:
     def test_post_activation_success(self, api_client):
         from django.contrib.auth import get_user_model

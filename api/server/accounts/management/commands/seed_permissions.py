@@ -19,6 +19,15 @@ ROLE_PERMISSIONS = {
         "enrollments.can_cancel_enrollment",
         "enrollments.can_manage_periods",
         "enrollments.can_manage_enrollment_payments",
+        # studios
+        "studios.add_studio",
+        "studios.change_studio",
+        "studios.delete_studio",
+        "studios.view_studio",
+        "studios.add_modality",
+        "studios.change_modality",
+        "studios.delete_modality",
+        "studios.view_modality",
     ],
     "coordination": [
         "accounts.view_user",
@@ -28,17 +37,32 @@ ROLE_PERMISSIONS = {
         "enrollments.can_reject_enrollment",
         "enrollments.can_cancel_enrollment",
         "enrollments.can_manage_enrollment_payments",
+        # studios
+        "studios.add_studio",
+        "studios.change_studio",
+        "studios.delete_studio",
+        "studios.view_studio",
+        "studios.add_modality",
+        "studios.change_modality",
+        "studios.delete_modality",
+        "studios.view_modality",
     ],
     "collaborator": [
         "accounts.view_user",
+        "studios.view_studio",
+        "studios.view_modality",
     ],
     "teacher_internal": [
         "accounts.view_user",
         "accounts.can_have_profile",
+        "studios.view_studio",
+        "studios.view_modality",
     ],
     "teacher_external": [
         "accounts.view_user",
         "accounts.can_have_profile",
+        "studios.view_studio",
+        "studios.view_modality",
     ],
     "parent": [
         "accounts.view_user",

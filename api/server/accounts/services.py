@@ -1,6 +1,8 @@
 import logging
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError, transaction
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework.exceptions import NotFound, ValidationError
@@ -11,6 +13,7 @@ from accounts.models import Profile, Role, User
 logger = logging.getLogger(__name__)
 
 
+@transaction.atomic
 def create_user(
     *,
     email,
@@ -19,7 +22,7 @@ def create_user(
     role_code,
     created_by,
     phone="",
-    phone_country_code=""
+    phone_country_code="",
 ):
     """
     Create a new user with a role assignment.
@@ -58,11 +61,18 @@ def get_profile_for_user(*, user):
 
 
 def create_profile_for_user(*, user, created_by=None, **fields):
-    if Profile.objects.filter(user=user).exists():
-        raise ValidationError({"messages": ["ProfileAlreadyExists"]})
     profile = Profile(user=user, created_by=created_by, **fields)
-    profile.full_clean()
-    profile.save()
+    try:
+        profile.full_clean()
+    except DjangoValidationError as exc:
+        errs = getattr(exc, "error_dict", None) or {}
+        if "user" in errs:
+            raise ValidationError({"messages": ["ProfileAlreadyExists"]}) from exc
+        raise
+    try:
+        profile.save()
+    except IntegrityError:
+        raise ValidationError({"messages": ["ProfileAlreadyExists"]})
     return profile
 
 

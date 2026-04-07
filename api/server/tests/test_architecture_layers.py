@@ -47,7 +47,7 @@ def _uses_objects_accessor(tree: ast.AST) -> list[int]:
 
 @pytest.mark.parametrize(
     "app",
-    ["accounts", "enrollments", "core"],
+    ["accounts", "enrollments", "studios", "core"],
 )
 def test_services_do_not_import_views_or_serializers(app):
     path = SERVER_ROOT / app / "services.py"
@@ -95,7 +95,7 @@ def test_models_do_not_import_higher_layers(app):
 
 @pytest.mark.parametrize(
     "app",
-    ["accounts", "enrollments"],
+    ["accounts", "enrollments", "studios"],
 )
 def test_serializers_do_not_import_services(app):
     path = SERVER_ROOT / app / "serializers.py"

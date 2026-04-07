@@ -8,10 +8,12 @@ from enrollments.views import (
     EnrollmentPaymentConfirmView,
     EnrollmentPaymentListCreateView,
     EnrollmentPeriodCloseView,
+    EnrollmentPeriodCreateView,
     EnrollmentPeriodDetailView,
-    EnrollmentPeriodListCreateView,
+    EnrollmentPeriodListView,
     EnrollmentPeriodOpenView,
     EnrollmentRejectView,
+    EnrollmentStartReviewView,
     EnrollmentSubmitView,
 )
 
@@ -19,8 +21,11 @@ app_name = "enrollments"
 
 urlpatterns = [
     # Periods
+    path("periods/", EnrollmentPeriodListView.as_view(), name="period-list"),
     path(
-        "periods/", EnrollmentPeriodListCreateView.as_view(), name="period-list-create"
+        "periods/create/",
+        EnrollmentPeriodCreateView.as_view(),
+        name="period-create",
     ),
     path(
         "periods/<int:pk>/", EnrollmentPeriodDetailView.as_view(), name="period-detail"
@@ -39,6 +44,11 @@ urlpatterns = [
     path("list/", EnrollmentListView.as_view(), name="enrollment-list"),
     path("<int:pk>/", EnrollmentDetailView.as_view(), name="enrollment-detail"),
     # Status transitions
+    path(
+        "<int:pk>/start-review/",
+        EnrollmentStartReviewView.as_view(),
+        name="enrollment-start-review",
+    ),
     path(
         "<int:pk>/approve/", EnrollmentApproveView.as_view(), name="enrollment-approve"
     ),

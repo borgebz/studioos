@@ -135,6 +135,111 @@ class TestSubmitEnrollment:
 
 
 @pytest.mark.django_db
+class TestSubmitEnrollmentGuards:
+    def test_submit_with_nonexistent_modality_id(
+        self, open_enrollment_period, modality
+    ):
+        from enrollments import services
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+        kwargs["modality_ids"] = [999_999]
+        with pytest.raises(ValidationError) as exc:
+            services.submit_enrollment(**kwargs)
+        assert "OneOrMoreModalitiesNotFound" in str(exc.value.detail)
+
+    def test_submit_missing_required_consent(self, open_enrollment_period, modality):
+        from enrollments import services
+        from enrollments.models import ConsentType
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+        kwargs["consents"] = [
+            {
+                "consent_type": ConsentType.RGPD,
+                "accepted": True,
+                "ip_address": "",
+                "user_agent": "",
+            },
+        ]
+        with pytest.raises(ValidationError) as exc:
+            services.submit_enrollment(**kwargs)
+        assert "RequiredConsentsNotAccepted" in str(exc.value.detail)
+
+    def test_submit_consent_not_accepted(self, open_enrollment_period, modality):
+        from enrollments import services
+        from enrollments.models import ConsentType
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+        kwargs["consents"] = [
+            {
+                "consent_type": ConsentType.RGPD,
+                "accepted": False,
+                "ip_address": "",
+                "user_agent": "",
+            },
+            {
+                "consent_type": ConsentType.INTERNAL_REGULATION,
+                "accepted": True,
+                "ip_address": "",
+                "user_agent": "",
+            },
+        ]
+        with pytest.raises(ValidationError) as exc:
+            services.submit_enrollment(**kwargs)
+        assert "RequiredConsentsNotAccepted" in str(exc.value.detail)
+
+    def test_submit_same_student_parent_email(self, open_enrollment_period, modality):
+        from enrollments import services
+
+        shared = f"same_{uuid.uuid4().hex[:8]}@test.local"
+        with pytest.raises(ValidationError) as exc:
+            services.submit_enrollment(
+                **enrollment_submit_kwargs(
+                    modality_id=modality.pk,
+                    student_email=shared,
+                    parent_email=shared,
+                ),
+            )
+        assert "StudentAndParentEmailMustBeDifferent" in str(exc.value.detail)
+
+    def test_submit_duplicate_enrollment(self, open_enrollment_period, modality):
+        from enrollments import services
+
+        student_email = f"dup_student_{uuid.uuid4().hex[:8]}@test.local"
+        kwargs1 = enrollment_submit_kwargs(
+            modality_id=modality.pk,
+            student_email=student_email,
+            parent_email=f"dup_parent_a_{uuid.uuid4().hex[:8]}@test.local",
+        )
+        kwargs2 = enrollment_submit_kwargs(
+            modality_id=modality.pk,
+            student_email=student_email,
+            parent_email=f"dup_parent_b_{uuid.uuid4().hex[:8]}@test.local",
+        )
+        services.submit_enrollment(**kwargs1)
+        with pytest.raises(ValidationError) as exc:
+            services.submit_enrollment(**kwargs2)
+        assert "EnrollmentAlreadySubmittedForThisPeriod" in str(exc.value.detail)
+
+    def test_update_approved_enrollment_fails(
+        self, open_enrollment_period, modality, direction_user
+    ):
+        from enrollments import services
+
+        e = services.submit_enrollment(
+            **enrollment_submit_kwargs(modality_id=modality.pk),
+        )
+        e = services.start_review(enrollment=e, updated_by=direction_user)
+        e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
+        with pytest.raises(ValidationError) as exc:
+            services.update_enrollment(
+                enrollment=e,
+                updated_by=direction_user,
+                student_name="Nope",
+            )
+        assert "CannotUpdateApprovedEnrollment" in str(exc.value.detail)
+
+
+@pytest.mark.django_db
 class TestStatusTransitions:
     def _submitted_enrollment(self, open_enrollment_period, modality):
         from enrollments import services
@@ -154,38 +259,105 @@ class TestStatusTransitions:
             services.reject_enrollment(enrollment=e, updated_by=None)
         assert "InvalidStatusTransition" in str(exc.value.detail)
 
-    def test_reject_and_cancel_from_submitted(self, open_enrollment_period, modality):
+    def test_submitted_to_under_review(self, open_enrollment_period, modality):
         from enrollments import services
         from enrollments.models import EnrollmentStatus
 
         e = self._submitted_enrollment(open_enrollment_period, modality)
+        e = services.start_review(enrollment=e, updated_by=None)
+        assert e.status == EnrollmentStatus.UNDER_REVIEW
+
+    def test_under_review_to_approved(
+        self, open_enrollment_period, modality, direction_user
+    ):
+        from enrollments import services
+        from enrollments.models import EnrollmentStatus
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        e = services.start_review(enrollment=e, updated_by=direction_user)
+        with patch("enrollments.services.send_activation_email"):
+            e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
+        assert e.status == EnrollmentStatus.APPROVED
+
+    def test_submitted_cannot_be_approved_directly(
+        self, open_enrollment_period, modality
+    ):
+        from enrollments import services
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        with pytest.raises(ValidationError) as exc:
+            with patch("enrollments.services.send_activation_email"):
+                services.approve_enrollment(enrollment=e, updated_by=None)
+        assert "InvalidStatusTransition" in str(exc.value.detail)
+
+    def test_submitted_cannot_be_rejected_directly(
+        self, open_enrollment_period, modality
+    ):
+        from enrollments import services
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        with pytest.raises(ValidationError) as exc:
+            services.reject_enrollment(enrollment=e, updated_by=None)
+        assert "InvalidStatusTransition" in str(exc.value.detail)
+
+    def test_under_review_can_be_rejected(self, open_enrollment_period, modality):
+        from enrollments import services
+        from enrollments.models import EnrollmentStatus
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        e = services.start_review(enrollment=e, updated_by=None)
+        e = services.reject_enrollment(enrollment=e, updated_by=None)
+        assert e.status == EnrollmentStatus.REJECTED
+
+    def test_under_review_can_be_cancelled(self, open_enrollment_period, modality):
+        from enrollments import services
+        from enrollments.models import EnrollmentStatus
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        e = services.start_review(enrollment=e, updated_by=None)
+        e = services.cancel_enrollment(enrollment=e, updated_by=None)
+        assert e.status == EnrollmentStatus.CANCELLED
+
+    def test_submitted_can_be_cancelled(self, open_enrollment_period, modality):
+        from enrollments import services
+        from enrollments.models import EnrollmentStatus
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        e = services.cancel_enrollment(enrollment=e, updated_by=None)
+        assert e.status == EnrollmentStatus.CANCELLED
+
+    def test_approved_has_no_valid_transitions(
+        self, open_enrollment_period, modality, direction_user
+    ):
+        from enrollments import services
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        e = services.start_review(enrollment=e, updated_by=direction_user)
+        with patch("enrollments.services.send_activation_email"):
+            e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
+        with pytest.raises(ValidationError) as exc:
+            services.cancel_enrollment(enrollment=e, updated_by=direction_user)
+        assert "InvalidStatusTransition" in str(exc.value.detail)
+
+    def test_reject_and_cancel_from_under_review(
+        self, open_enrollment_period, modality
+    ):
+        from enrollments import services
+        from enrollments.models import EnrollmentStatus
+
+        e = self._submitted_enrollment(open_enrollment_period, modality)
+        e = services.start_review(enrollment=e, updated_by=None)
         e = services.reject_enrollment(enrollment=e, updated_by=None)
         assert e.status == EnrollmentStatus.REJECTED
 
         e2 = self._submitted_enrollment(open_enrollment_period, modality)
+        e2 = services.start_review(enrollment=e2, updated_by=None)
         e2 = services.cancel_enrollment(enrollment=e2, updated_by=None)
         assert e2.status == EnrollmentStatus.CANCELLED
 
 
 @pytest.mark.django_db
 class TestApproveEnrollment:
-    def test_student_and_parent_email_must_differ(
-        self, open_enrollment_period, modality
-    ):
-        from enrollments import services
-
-        shared = f"same_{uuid.uuid4().hex[:8]}@test.local"
-        e = services.submit_enrollment(
-            **enrollment_submit_kwargs(
-                modality_id=modality.pk,
-                student_email=shared,
-                parent_email=shared,
-            ),
-        )
-        with pytest.raises(ValidationError) as exc:
-            services.approve_enrollment(enrollment=e, updated_by=None)
-        assert "StudentAndParentEmailMustBeDifferent" in str(exc.value.detail)
-
     @pytest.mark.django_db(transaction=True)
     def test_new_creates_users_and_sends_activation(
         self, open_enrollment_period, modality
@@ -195,6 +367,7 @@ class TestApproveEnrollment:
         e = services.submit_enrollment(
             **enrollment_submit_kwargs(modality_id=modality.pk),
         )
+        e = services.start_review(enrollment=e, updated_by=None)
         with patch("enrollments.services.send_activation_email") as send_mail:
             services.approve_enrollment(enrollment=e, updated_by=None)
         assert send_mail.call_count == 2
@@ -235,6 +408,7 @@ class TestApproveEnrollment:
         kwargs["enrollment_data"]["enrollment_type"] = EnrollmentType.RENEWAL
         kwargs["enrollment_data"]["parent_phone"] = "911111111"
         e = services.submit_enrollment(**kwargs)
+        e = services.start_review(enrollment=e, updated_by=direction_user)
 
         with patch("enrollments.services.send_activation_email"):
             services.approve_enrollment(enrollment=e, updated_by=direction_user)

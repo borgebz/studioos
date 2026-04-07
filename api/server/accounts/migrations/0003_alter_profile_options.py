@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("accounts", "0002_remove_profile_photo_url_profile_is_public_and_more"),
     ]

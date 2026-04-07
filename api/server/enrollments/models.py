@@ -1,7 +1,17 @@
-from django.conf import settings
-from django.db import models
 import uuid
+from pathlib import Path
+
+from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import models
+
 from core.models import BaseModel
+
+
+def enrollment_file_path(instance, filename):
+    ext = Path(filename).suffix.lower()
+    return f"enrollments/files/{uuid.uuid4()}{ext}"
+
 
 # ---------------------------------------------------------------------------
 # Choices
@@ -91,6 +101,11 @@ class EnrollmentPeriod(BaseModel):
 
     class Meta:
         ordering = ["-start_date"]
+
+    def clean(self):
+        super().clean()
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise DjangoValidationError({"end_date": ["PeriodEndBeforeStart"]})
 
     def __str__(self):
         status = "open" if self.is_open else "closed"
@@ -216,12 +231,6 @@ class EnrollmentFile(BaseModel):
     Files attached to an enrollment (e.g. payment proof).
     Uses Django's FileField — files are stored in MEDIA_ROOT.
     """
-
-    def enrollment_file_path(instance, filename):
-        from pathlib import Path
-
-        ext = Path(filename).suffix.lower()
-        return f"enrollments/files/{uuid.uuid4()}{ext}"
 
     enrollment = models.ForeignKey(
         Enrollment,
