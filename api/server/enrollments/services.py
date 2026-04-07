@@ -17,7 +17,7 @@ from enrollments.models import (
     PaymentStatus,
     PeriodType,
 )
-from studios.models import Modality
+from modality.models import Modality
 
 import logging
 

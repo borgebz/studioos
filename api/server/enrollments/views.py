@@ -171,9 +171,12 @@ class EnrollmentSubmitView(APIView):
     """
     POST /api/enrollments/ — submit a new enrollment (public)
 
-    Accepts multipart/form-data with:
-    - `data`: JSON string containing enrollment fields, modality_ids, and consents
-    - `files`: one or more file uploads (e.g. payment proof)
+    Accepts multipart/form-data with either:
+    - `data`: JSON string containing enrollment fields, modality_ids, and consents; or
+    - flat form fields (same keys as the submit serializer), including optional
+      `consent_rgpd` and `consent_internal_regulation` booleans instead of a
+      `consents` JSON array when not using the `data` field.
+    Plus one or more file uploads (e.g. payment proof) as usual.
 
     Also accepts pure application/json (without files).
     """

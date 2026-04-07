@@ -208,7 +208,7 @@ class EnrollmentModality(BaseModel):
         related_name="enrollment_modalities",
     )
     modality = models.ForeignKey(
-        "studios.Modality",
+        "modality.Modality",
         on_delete=models.PROTECT,
         related_name="enrollment_modalities",
     )

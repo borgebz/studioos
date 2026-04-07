@@ -189,7 +189,34 @@ class EnrollmentSubmitSerializer(serializers.Serializer):
         child=serializers.IntegerField(),
         min_length=1,
     )
-    consents = ConsentInputSerializer(many=True)
+    consents = ConsentInputSerializer(many=True, required=False)
+    # multipart-friendly alternative to `consents` (both required if `consents` omitted)
+    consent_rgpd = serializers.BooleanField(required=False, write_only=True)
+    consent_internal_regulation = serializers.BooleanField(
+        required=False, write_only=True
+    )
+
+    def validate(self, attrs):
+        consents = attrs.get("consents") or []
+        if consents:
+            attrs.pop("consent_rgpd", None)
+            attrs.pop("consent_internal_regulation", None)
+            return attrs
+
+        flat_rgpd = attrs.pop("consent_rgpd", None)
+        flat_ir = attrs.pop("consent_internal_regulation", None)
+        if flat_rgpd is None or flat_ir is None:
+            raise serializers.ValidationError(
+                {"messages": ["ConsentsOrConsentFlagsRequired"]},
+            )
+        attrs["consents"] = [
+            {"consent_type": ConsentType.RGPD, "accepted": bool(flat_rgpd)},
+            {
+                "consent_type": ConsentType.INTERNAL_REGULATION,
+                "accepted": bool(flat_ir),
+            },
+        ]
+        return attrs
 
     def get_enrollment_data(self):
         """Extract only the Enrollment model fields from validated data."""
