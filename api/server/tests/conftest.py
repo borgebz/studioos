@@ -53,7 +53,7 @@ def auth_client(api_client, direction_user):
 
 @pytest.fixture
 def modality(db):
-    from studios.models import Modality
+    from modality.models import Modality
 
     m, _ = Modality.objects.get_or_create(
         name="___Test Modality___",

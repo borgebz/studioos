@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     # Local
     "accounts",
     "core",
+    "modality",
     "studios",
     "enrollments",
 ]

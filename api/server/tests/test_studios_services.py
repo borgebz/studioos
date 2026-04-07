@@ -53,13 +53,13 @@ class TestStudio:
 @pytest.mark.django_db
 class TestModality:
     def test_create_modality_success(self, direction_user):
-        from studios import services
+        from modality import services
 
         m = services.create_modality(user=direction_user, name="__Ballet__")
         assert m.pk is not None
 
     def test_create_modality_invalid_age_range(self, direction_user):
-        from studios import services
+        from modality import services
 
         with pytest.raises(ValidationError) as exc:
             services.create_modality(
@@ -71,13 +71,14 @@ class TestModality:
         assert "InvalidAgeRange" in str(exc.value.detail)
 
     def test_create_modality_with_studio_ids(self, direction_user):
-        from studios import services
+        from modality import services as modality_services
+        from studios import services as studio_services
         from studios.models import StudioModality
 
-        studio = services.create_studio(
+        studio = studio_services.create_studio(
             user=direction_user, name="__Linked Studio__", max_capacity=8
         )
-        m = services.create_modality(
+        m = modality_services.create_modality(
             user=direction_user,
             name="__Linked Modality__",
             allowed_studio_ids=[studio.pk],
@@ -85,7 +86,7 @@ class TestModality:
         assert StudioModality.objects.filter(studio=studio, modality=m).exists()
 
     def test_create_modality_invalid_studio_id(self, direction_user):
-        from studios import services
+        from modality import services
 
         with pytest.raises(ValidationError) as exc:
             services.create_modality(
@@ -96,25 +97,30 @@ class TestModality:
         assert "OneOrMoreStudiosNotFound" in str(exc.value.detail)
 
     def test_update_modality_studio_ids_replaces_links(self, direction_user):
-        from studios import services
+        from modality import services as modality_services
+        from studios import services as studio_services
         from studios.models import StudioModality
 
-        s1 = services.create_studio(user=direction_user, name="__S1__", max_capacity=8)
-        s2 = services.create_studio(user=direction_user, name="__S2__", max_capacity=8)
-        m = services.create_modality(
+        s1 = studio_services.create_studio(
+            user=direction_user, name="__S1__", max_capacity=8
+        )
+        s2 = studio_services.create_studio(
+            user=direction_user, name="__S2__", max_capacity=8
+        )
+        m = modality_services.create_modality(
             user=direction_user,
             name="__Update Links__",
             allowed_studio_ids=[s1.pk],
         )
-        services.update_modality(
+        modality_services.update_modality(
             pk=m.pk, user=direction_user, allowed_studio_ids=[s2.pk]
         )
         assert not StudioModality.objects.filter(studio=s1, modality=m).exists()
         assert StudioModality.objects.filter(studio=s2, modality=m).exists()
 
     def test_delete_modality_soft(self, direction_user):
-        from studios import services
-        from studios.models import Modality
+        from modality import services
+        from modality.models import Modality
 
         m = services.create_modality(user=direction_user, name="__Soft Del__")
         services.delete_modality(pk=m.pk, user=direction_user)

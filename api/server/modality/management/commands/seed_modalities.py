@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from studios.models import Modality
+from modality.models import Modality
 
 MODALITIES = [
     {

@@ -36,6 +36,39 @@ class TestEnrollmentSubmitHttp:
         assert body["student_email"] == sid
         assert len(body["consents"]) == 2
 
+    def test_flat_multipart_submit_returns_201(
+        self, api_client, open_enrollment_period, modality
+    ):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        sid = f"api_student_{uuid.uuid4().hex[:8]}@test.local"
+        pid = f"api_parent_{uuid.uuid4().hex[:8]}@test.local"
+        proof = SimpleUploadedFile(
+            "proof.pdf", b"%PDF-1.4 minimal", content_type="application/pdf"
+        )
+        resp = api_client.post(
+            "/api/enrollments/",
+            {
+                "enrollment_type": "new",
+                "student_email": sid,
+                "student_name": "API Student",
+                "student_date_of_birth": "2014-06-01",
+                "parent_name": "API Parent",
+                "parent_email": pid,
+                "parent_phone": "913333333",
+                "parent_phone_country_code": "+351",
+                "modality_ids": modality.pk,
+                "consent_rgpd": True,
+                "consent_internal_regulation": True,
+                "payment_proof": proof,
+            },
+            format="multipart",
+        )
+        assert resp.status_code == 201, resp.content
+        body = resp.json()
+        assert body["student_email"] == sid
+        assert len(body["consents"]) == 2
+
     def test_invalid_json_in_multipart_data_field(
         self, api_client, open_enrollment_period
     ):
