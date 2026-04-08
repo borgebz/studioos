@@ -3,7 +3,7 @@ import logging
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import NotFound, ValidationError
 
-from modality.models import Modality
+from modality.models import Modality, UserModality
 from studios.models import Studio
 
 logger = logging.getLogger(__name__)
@@ -100,3 +100,51 @@ def delete_modality(*, pk: int, user):
     modality.delete(deleted_by=user)
 
     logger.info("Modality %s deleted by user %s", modality.name, user.id)
+
+
+def get_user_modalities(*, user_id: int):
+    return (
+        UserModality.objects.filter(user_id=user_id)
+        .select_related("modality")
+        .prefetch_related("modality__studios")
+    )
+
+
+@transaction.atomic
+def add_user_modality(*, user_id: int, modality_id: int, requesting_user):
+    modality = get_modality(pk=modality_id)
+
+    if UserModality.objects.filter(user_id=user_id, modality=modality).exists():
+        raise ValidationError({"messages": ["UserModalityAlreadyExists"]})
+
+    link = UserModality(
+        user_id=user_id,
+        modality=modality,
+        created_by=requesting_user,
+    )
+    link.full_clean()
+    try:
+        link.save()
+    except IntegrityError as exc:
+        raise ValidationError({"messages": ["UserModalityAlreadyExists"]}) from exc
+
+    logger.info(
+        "UserModality user=%s modality=%s created by %s",
+        user_id,
+        modality_id,
+        requesting_user.id,
+    )
+    return UserModality.objects.select_related("modality").prefetch_related(
+        "modality__studios"
+    ).get(pk=link.pk)
+
+
+@transaction.atomic
+def remove_user_modality(*, user_id: int, pk: int, requesting_user):
+    try:
+        link = UserModality.objects.get(pk=pk, user_id=user_id)
+    except UserModality.DoesNotExist:
+        raise NotFound()
+
+    link.delete(deleted_by=requesting_user)
+    logger.info("UserModality %s deleted by %s", pk, requesting_user.id)

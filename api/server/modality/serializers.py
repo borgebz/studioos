@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from modality.models import Modality
+from modality.models import Modality, UserModality
 from studios.serializers import StudioSerializer
 
 
@@ -39,3 +39,15 @@ class ModalitySerializer(serializers.ModelSerializer):
             "max_age_months",
             "studios",
         ]
+
+
+class UserModalitySubmitSerializer(serializers.Serializer):
+    modality_id = serializers.IntegerField()
+
+
+class UserModalitySerializer(serializers.ModelSerializer):
+    modality = ModalitySerializer(read_only=True)
+
+    class Meta:
+        model = UserModality
+        fields = ["id", "modality"]

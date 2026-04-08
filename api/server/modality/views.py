@@ -11,6 +11,8 @@ from modality.serializers import (
     ModalitySerializer,
     ModalitySubmitSerializer,
     ModalityUpdateSerializer,
+    UserModalitySerializer,
+    UserModalitySubmitSerializer,
 )
 
 
@@ -69,4 +71,45 @@ class ModalityRetrieveUpdateDestroyView(APIView):
     @require_perm("modality.delete_modality")
     def delete(self, request, pk):
         services.delete_modality(pk=pk, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UserModalityListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: UserModalitySerializer(many=True), **DEFAULT_ERROR_RESPONSES}
+    )
+    @require_perm("modality.view_usermodality")
+    def get(self, request, user_id):
+        links = services.get_user_modalities(user_id=user_id)
+        return Response(UserModalitySerializer(links, many=True).data)
+
+    @extend_schema(
+        request=UserModalitySubmitSerializer,
+        responses={201: UserModalitySerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("modality.add_usermodality")
+    def post(self, request, user_id):
+        serializer = UserModalitySubmitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        link = services.add_user_modality(
+            user_id=user_id,
+            modality_id=serializer.validated_data["modality_id"],
+            requesting_user=request.user,
+        )
+        return Response(
+            UserModalitySerializer(link).data, status=status.HTTP_201_CREATED
+        )
+
+
+class UserModalityDestroyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
+    @require_perm("modality.delete_usermodality")
+    def delete(self, request, user_id, pk):
+        services.remove_user_modality(
+            user_id=user_id, pk=pk, requesting_user=request.user
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)

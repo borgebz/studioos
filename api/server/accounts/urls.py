@@ -1,13 +1,16 @@
+from django.urls import path
+
+from modality.views import UserModalityDestroyView, UserModalityListCreateView
+
 from .views import (
-    UserListView,
-    MyProfileView,
+    ActivateAccountView,
     LoginView,
     LogoutView,
     MeView,
+    MyProfileView,
     RefreshView,
-    ActivateAccountView,
+    UserListView,
 )
-from django.urls import path
 
 app_name = "accounts"
 
@@ -19,6 +22,16 @@ urlpatterns = [
     path("me/", MeView.as_view(), name="auth-me"),
     # Users
     path("users/", UserListView.as_view(), name="user-list"),
+    path(
+        "users/<int:user_id>/modalities/",
+        UserModalityListCreateView.as_view(),
+        name="user-modality-list-create",
+    ),
+    path(
+        "users/<int:user_id>/modalities/<int:pk>/",
+        UserModalityDestroyView.as_view(),
+        name="user-modality-destroy",
+    ),
     # Profile
     path("profile/me/", MyProfileView.as_view(), name="profile-me"),
     # Activate
