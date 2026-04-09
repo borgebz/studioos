@@ -44,4 +44,5 @@ def send_templated_email(*, to, subject, template_name, context=None, language=N
         logger.info("Email sent to %s: %s", to, subject)
     except Exception:
         logger.exception("Failed to send email to %s: %s", to, subject)
-        raise
+        # Do not re-raise: email failure should not abort the caller.
+        # The exception is fully logged above for monitoring and alerting.

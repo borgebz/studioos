@@ -12,6 +12,7 @@ from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema
 from enrollments import services
 from enrollments.serializers import (
+    EnrollmentListQuerySerializer,
     EnrollmentPaymentCreateSerializer,
     EnrollmentPaymentReadSerializer,
     EnrollmentPeriodSerializer,
@@ -266,6 +267,7 @@ class EnrollmentListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        parameters=[EnrollmentListQuerySerializer],
         responses={
             200: EnrollmentReadSerializer(many=True),
             **DEFAULT_ERROR_RESPONSES,
@@ -273,13 +275,15 @@ class EnrollmentListView(APIView):
     )
     @require_perm("enrollments.can_review_enrollment")
     def get(self, request):
+        q = EnrollmentListQuerySerializer(data=request.query_params)
+        q.is_valid(raise_exception=True)
         filters = {}
-        if "status" in request.query_params:
-            filters["status"] = request.query_params["status"]
-        if "academic_year" in request.query_params:
-            filters["period__academic_year"] = request.query_params["academic_year"]
-        if "enrollment_type" in request.query_params:
-            filters["enrollment_type"] = request.query_params["enrollment_type"]
+        if "status" in q.validated_data:
+            filters["status"] = q.validated_data["status"]
+        if "academic_year" in q.validated_data:
+            filters["period__academic_year"] = q.validated_data["academic_year"]
+        if "enrollment_type" in q.validated_data:
+            filters["enrollment_type"] = q.validated_data["enrollment_type"]
 
         enrollments = services.list_enrollments(filters=filters or None)
         serializer = EnrollmentReadSerializer(enrollments, many=True)

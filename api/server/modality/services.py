@@ -3,6 +3,7 @@ import logging
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import NotFound, ValidationError
 
+from accounts.models import User
 from modality.models import Modality, UserModality
 from studios.models import Studio
 
@@ -97,6 +98,11 @@ def update_modality(*, pk: int, user, allowed_studio_ids=None, **data):
 @transaction.atomic
 def delete_modality(*, pk: int, user):
     modality = get_modality(pk=pk)
+
+    active_links = UserModality.objects.filter(modality=modality)
+    for link in active_links:
+        link.delete(deleted_by=user)
+
     modality.delete(deleted_by=user)
 
     logger.info("Modality %s deleted by user %s", modality.name, user.id)
@@ -112,6 +118,14 @@ def get_user_modalities(*, user_id: int):
 
 @transaction.atomic
 def add_user_modality(*, user_id: int, modality_id: int, requesting_user):
+    try:
+        target_user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        raise NotFound()
+
+    if not target_user.has_perm("accounts.can_teach"):
+        raise ValidationError({"messages": ["UserCannotTeach"]})
+
     modality = get_modality(pk=modality_id)
 
     if UserModality.objects.filter(user_id=user_id, modality=modality).exists():
@@ -134,9 +148,11 @@ def add_user_modality(*, user_id: int, modality_id: int, requesting_user):
         modality_id,
         requesting_user.id,
     )
-    return UserModality.objects.select_related("modality").prefetch_related(
-        "modality__studios"
-    ).get(pk=link.pk)
+    return (
+        UserModality.objects.select_related("modality")
+        .prefetch_related("modality__studios")
+        .get(pk=link.pk)
+    )
 
 
 @transaction.atomic

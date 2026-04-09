@@ -7,9 +7,23 @@ from enrollments.models import (
     EnrollmentModality,
     EnrollmentPayment,
     EnrollmentPeriod,
+    EnrollmentStatus,
     EnrollmentType,
     ConsentType,
 )
+
+# ---------------------------------------------------------------------------
+# List / filter query
+# ---------------------------------------------------------------------------
+
+
+class EnrollmentListQuerySerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=EnrollmentStatus.choices, required=False)
+    academic_year = serializers.CharField(required=False)
+    enrollment_type = serializers.ChoiceField(
+        choices=EnrollmentType.choices, required=False
+    )
+
 
 # ---------------------------------------------------------------------------
 # Enrollment Period

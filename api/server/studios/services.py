@@ -3,7 +3,7 @@ import logging
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import NotFound, ValidationError
 
-from studios.models import Studio
+from studios.models import Studio, StudioModality
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,11 @@ def update_studio(*, pk: int, user, **data):
 @transaction.atomic
 def delete_studio(*, pk: int, user):
     studio = get_studio(pk=pk)
+
+    active_links = StudioModality.objects.filter(studio=studio)
+    for link in active_links:
+        link.delete(deleted_by=user)
+
     studio.delete(deleted_by=user)
 
     logger.info("Studio %s deleted by user %s", studio.name, user.id)

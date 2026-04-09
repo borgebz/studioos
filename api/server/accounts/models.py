@@ -55,6 +55,11 @@ class User(AuditMixin, SoftDeleteMixin, AbstractUser):
     objects = UserManager()
     all_objects = AllUsersManager()
 
+    class Meta:
+        permissions = [
+            ("can_teach", "Can be assigned teaching modalities"),
+        ]
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()

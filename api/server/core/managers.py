@@ -8,6 +8,7 @@ class SoftDeleteQuerySet(models.QuerySet):
         return self.update(
             deleted_at=models.functions.Now(),
             deleted_by=deleted_by,
+            updated_at=models.functions.Now(),
         )
 
     def hard_delete(self):

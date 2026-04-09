@@ -3,6 +3,24 @@ from django.core.management.base import BaseCommand
 
 from accounts.models import Role
 
+COACHINGS_PERMISSIONS = [
+    "coachings.view_teacheravailability",
+    "coachings.add_teacheravailability",
+    "coachings.change_teacheravailability",
+    "coachings.delete_teacheravailability",
+    "coachings.can_manage_teacher_availability_for_others",
+    "coachings.view_coachingclass",
+    "coachings.add_coachingclass",
+    "coachings.change_coachingclass",
+    "coachings.delete_coachingclass",
+    "coachings.can_accept_coaching_as_teacher",
+    "coachings.can_reject_coaching_as_teacher",
+    "coachings.view_coachingparticipant",
+    "coachings.add_coachingparticipant",
+    "coachings.change_coachingparticipant",
+    "coachings.delete_coachingparticipant",
+]
+
 ROLE_PERMISSIONS = {
     "direction": [
         # accounts
@@ -31,6 +49,7 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
+        *COACHINGS_PERMISSIONS,
     ],
     "coordination": [
         "accounts.view_user",
@@ -52,29 +71,53 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
+        *COACHINGS_PERMISSIONS,
     ],
     "collaborator": [
         "accounts.view_user",
         "studios.view_studio",
         "modality.view_modality",
+        "coachings.view_coachingclass",
     ],
     "teacher_internal": [
+        "accounts.can_teach",
         "accounts.view_user",
         "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_modality",
+        "modality.view_usermodality",
+        "coachings.view_teacheravailability",
+        "coachings.add_teacheravailability",
+        "coachings.change_teacheravailability",
+        "coachings.delete_teacheravailability",
+        "coachings.view_coachingclass",
+        "coachings.can_accept_coaching_as_teacher",
+        "coachings.can_reject_coaching_as_teacher",
     ],
     "teacher_external": [
+        "accounts.can_teach",
         "accounts.view_user",
         "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_modality",
+        "modality.view_usermodality",
+        "coachings.view_teacheravailability",
+        "coachings.add_teacheravailability",
+        "coachings.change_teacheravailability",
+        "coachings.delete_teacheravailability",
+        "coachings.view_coachingclass",
+        "coachings.can_accept_coaching_as_teacher",
+        "coachings.can_reject_coaching_as_teacher",
     ],
     "parent": [
         "accounts.view_user",
+        "coachings.view_coachingclass",
+        "coachings.add_coachingclass",
     ],
     "student": [
         "accounts.view_user",
+        "coachings.view_coachingclass",
+        "coachings.add_coachingclass",
     ],
 }
 

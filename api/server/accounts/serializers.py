@@ -60,12 +60,14 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    @extend_schema_field(UserResponseRoleOutput)
+    @extend_schema_field(serializers.ListField(child=UserResponseRoleOutput))
     def get_role(self, obj):
-        group = obj.groups.first()
-        if group and hasattr(group, "role"):
-            return {"code": group.role.code, "name": group.name}
-        return None
+        roles = []
+        for group in obj.groups.select_related("role").all():
+            role = getattr(group, "role", None)
+            if role:
+                roles.append({"code": role.code, "name": group.name})
+        return roles
 
 
 class LoginSerializer(serializers.Serializer):
