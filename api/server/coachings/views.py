@@ -203,9 +203,8 @@ class CoachingRejectView(APIView):
         reason = serializer.validated_data.get("rejection_reason", "")
 
         if coaching.status == CoachingStatus.REQUESTED:
-            if (
-                coaching.teacher_id == request.user.id
-                and request.user.has_perm("coachings.can_reject_coaching_as_teacher")
+            if coaching.teacher_id == request.user.id and request.user.has_perm(
+                "coachings.can_reject_coaching_as_teacher"
             ):
                 coaching = services.teacher_reject_coaching(
                     coaching=coaching,

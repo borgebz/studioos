@@ -224,9 +224,7 @@ class TestCoachingLifecycle:
         from coachings import services
 
         with pytest.raises(ValidationError) as exc:
-            services.teacher_reject_coaching(
-                pk=pending_coaching.pk, user=teacher_user
-            )
+            services.teacher_reject_coaching(pk=pending_coaching.pk, user=teacher_user)
         assert "InvalidStatusTransition" in str(exc.value.detail)
 
     def test_coordination_reject_pending_approval(
