@@ -194,7 +194,7 @@ def teacher_user(db):
         last_name="User",
         is_active=True,
     )
-    role = Role.objects.get(code="teacher_internal")
+    role = Role.objects.get(code="teacher")
     user.groups.add(role.group)
     user.refresh_from_db()
     return user

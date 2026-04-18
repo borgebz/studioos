@@ -3,24 +3,25 @@ import logging
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import NotFound, ValidationError
 
+from modality.models import Modality
 from studios.models import Studio, StudioModality
 
 logger = logging.getLogger(__name__)
 
 
 def get_all_studios():
-    return Studio.objects.all()
+    return Studio.objects.prefetch_related("modalities").all()
 
 
 def get_studio(*, pk: int) -> Studio:
     try:
-        return Studio.objects.get(pk=pk)
+        return Studio.objects.prefetch_related("modalities").get(pk=pk)
     except Studio.DoesNotExist:
         raise NotFound()
 
 
 @transaction.atomic
-def create_studio(*, user, **data):
+def create_studio(*, user, allowed_modality_ids=None, **data):
     if Studio.all_objects.filter(name=data.get("name")).exists():
         raise ValidationError({"name": ["StudioNameAlreadyExists"]})
 
@@ -32,11 +33,21 @@ def create_studio(*, user, **data):
         raise ValidationError({"name": ["StudioNameAlreadyExists"]}) from exc
 
     logger.info("Studio %s created by user %s", studio.name, user.id)
+
+    if allowed_modality_ids is not None:
+        modalities = Modality.objects.filter(id__in=allowed_modality_ids)
+        if len(modalities) != len(allowed_modality_ids):
+            raise ValidationError({"messages": ["OneOrMoreModalitiesNotFound"]})
+        try:
+            studio.modalities.set(modalities)
+        except IntegrityError as exc:
+            raise ValidationError({"messages": ["StudioModalityLinkConflict"]}) from exc
+
     return studio
 
 
 @transaction.atomic
-def update_studio(*, pk: int, user, **data):
+def update_studio(*, pk: int, user, allowed_modality_ids=None, **data):
     studio = get_studio(pk=pk)
 
     new_name = data.get("name")
@@ -58,6 +69,16 @@ def update_studio(*, pk: int, user, **data):
         raise ValidationError({"name": ["StudioNameAlreadyExists"]}) from exc
 
     logger.info("Studio %s updated by user %s", studio.name, user.id)
+
+    if allowed_modality_ids is not None:
+        modalities = Modality.objects.filter(id__in=allowed_modality_ids)
+        if len(modalities) != len(allowed_modality_ids):
+            raise ValidationError({"messages": ["OneOrMoreModalitiesNotFound"]})
+        try:
+            studio.modalities.set(modalities)
+        except IntegrityError as exc:
+            raise ValidationError({"messages": ["StudioModalityLinkConflict"]}) from exc
+
     return studio
 
 

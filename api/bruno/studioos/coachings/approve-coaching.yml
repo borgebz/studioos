@@ -1,0 +1,22 @@
+info:
+  name: approve-coaching
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/coachings/7/approve/
+  body:
+    type: json
+    data: |-
+      {
+        "studio_id": 1,
+        "total_price": "45.00"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -20,9 +20,9 @@ ROLES = [
         "description": "Collaborator",
     },
     {
-        "code": "teacher_internal",
-        "name": "InternalTeacher",
-        "description": "InternalTeacher",
+        "code": "teacher",
+        "name": "Teacher",
+        "description": "Teacher",
     },
     {
         "code": "teacher_external",

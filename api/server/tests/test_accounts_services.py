@@ -172,6 +172,47 @@ class TestActivateAccount:
 
 
 @pytest.mark.django_db
+def test_list_teachers_returns_users_with_can_teach(teacher_user, student_user):
+    from accounts import services
+
+    teachers = list(services.list_teachers())
+    emails = {u.email for u in teachers}
+    assert teacher_user.email in emails
+    assert student_user.email not in emails
+
+
+@pytest.mark.django_db
+def test_user_can_teach_matches_list_teachers(teacher_user, student_user, direction_user):
+    from accounts import services
+
+    assert services.user_can_teach(user=teacher_user) is True
+    assert services.user_can_teach(user=student_user) is False
+    assert services.user_can_teach(user=direction_user) is False
+
+
+@pytest.mark.django_db
+def test_assert_user_can_teach_raises(student_user):
+    from accounts import services
+
+    with pytest.raises(ValidationError) as exc:
+        services.assert_user_can_teach(user=student_user)
+    assert "UserCannotTeach" in exc.value.detail["messages"]
+
+
+@pytest.mark.django_db
+def test_get_teacher_user_by_pk(teacher_user, student_user):
+    from accounts import services
+    from core.exceptions import AppNotFound
+
+    assert services.get_teacher_user_by_pk(pk=teacher_user.pk).pk == teacher_user.pk
+    with pytest.raises(ValidationError) as exc:
+        services.get_teacher_user_by_pk(pk=student_user.pk)
+    assert "UserCannotTeach" in exc.value.detail["messages"]
+    with pytest.raises(AppNotFound):
+        services.get_teacher_user_by_pk(pk=999_999_999)
+
+
+@pytest.mark.django_db
 def test_get_profile_for_user_not_found(direction_user):
     from accounts import services
 

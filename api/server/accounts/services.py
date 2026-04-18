@@ -1,6 +1,9 @@
 import logging
+from functools import lru_cache
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group, Permission
+from django.db.models import Prefetch, Q
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.utils.encoding import force_str
@@ -9,8 +12,98 @@ from rest_framework.exceptions import NotFound, ValidationError
 
 from accounts.emails import account_activation_token
 from accounts.models import Profile, Role, User
+from core.exceptions import AppNotFound
 
 logger = logging.getLogger(__name__)
+
+
+def get_user_by_pk(*, pk, app_not_found_code=None):
+    """
+    Return a user by primary key.
+
+    If the user does not exist: raises ``NotFound()`` by default, or
+    ``AppNotFound(app_not_found_code)`` when ``app_not_found_code`` is set (PascalCase i18n key).
+    """
+    try:
+        return User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        if app_not_found_code is not None:
+            raise AppNotFound(app_not_found_code)
+        raise NotFound()
+
+
+def list_users():
+    """
+    Return all active (non–soft-deleted) users with roles prefetched for listing.
+    """
+    return (
+        User.objects.all()
+        .prefetch_related(
+            Prefetch(
+                "groups",
+                queryset=Group.objects.select_related("role"),
+            )
+        )
+        .order_by("email")
+    )
+
+
+@lru_cache(maxsize=1)
+def _can_teach_permission():
+    return Permission.objects.get(
+        content_type__app_label="accounts",
+        codename="can_teach",
+    )
+
+
+def _teaching_users_queryset():
+    perm = _can_teach_permission()
+    return User.objects.filter(
+        Q(groups__permissions=perm) | Q(user_permissions=perm)
+    ).distinct()
+
+
+def list_teachers():
+    """
+    Return users who have ``accounts.can_teach`` (via group or direct permission).
+    """
+    return _teaching_users_queryset().order_by("email")
+
+
+def user_can_teach(*, user) -> bool:
+    """
+    True if ``user`` has ``accounts.can_teach`` (via group or direct permission).
+    Same membership rule as :func:`list_teachers`.
+    """
+    return _teaching_users_queryset().filter(pk=user.pk).exists()
+
+
+def get_teacher_user_by_pk(*, pk):
+    """
+    Return a user by primary key only if they have ``accounts.can_teach``.
+
+    Raises ``AppNotFound("TeacherNotFound")`` if the user does not exist,
+    ``ValidationError`` with ``UserCannotTeach`` if they exist but cannot teach.
+    Uses at most two database queries (one when the user is a valid teacher).
+    """
+    perm = _can_teach_permission()
+    teacher = (
+        User.objects.filter(pk=pk)
+        .filter(Q(groups__permissions=perm) | Q(user_permissions=perm))
+        .distinct()
+        .first()
+    )
+    if teacher is not None:
+        return teacher
+    if User.objects.filter(pk=pk).exists():
+        raise ValidationError({"messages": ["UserCannotTeach"]})
+    raise AppNotFound("TeacherNotFound")
+
+
+def assert_user_can_teach(*, user):
+    """Raise ``ValidationError`` if the user is not allowed to act as a teacher."""
+    if not user_can_teach(user=user):
+        raise ValidationError({"messages": ["UserCannotTeach"]})
 
 
 @transaction.atomic
