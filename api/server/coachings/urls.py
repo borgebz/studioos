@@ -13,7 +13,6 @@ urlpatterns = [
         views.CoachingScheduledCreateView.as_view(),
         name="coaching-scheduled-create",
     ),
-
     # --- Teacher availability (per teacher user) ---
     path(
         "teachers/<int:user_id>/availability/<int:pk>/",
@@ -25,7 +24,6 @@ urlpatterns = [
         views.TeacherAvailabilityListCreateView.as_view(),
         name="teacher-availability-list-create",
     ),
-
     # --- Coaching participants ---
     path(
         "<int:coaching_id>/participants/<int:pk>/cancel/",
@@ -37,7 +35,6 @@ urlpatterns = [
         views.ParticipantListCreateView.as_view(),
         name="participant-list-create",
     ),
-
     # --- Coaching workflow (single coaching by pk) ---
     path(
         "<int:pk>/accept/",
@@ -64,7 +61,6 @@ urlpatterns = [
         views.CoachingCancelView.as_view(),
         name="coaching-cancel",
     ),
-
     # --- Coaching CRUD ---
     path(
         "<int:pk>/",

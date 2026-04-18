@@ -162,9 +162,7 @@ class TestCoachingRequest:
             )
         assert "TeacherNotFound" in str(exc.value.detail)
 
-    def test_create_request_teacher_must_have_can_teach(
-        self, direction_user, modality
-    ):
+    def test_create_request_teacher_must_have_can_teach(self, direction_user, modality):
         from coachings import services
 
         with pytest.raises(ValidationError) as exc:
@@ -217,9 +215,9 @@ class TestCoachingRequest:
                 end_datetime=_dt(2.5),
                 requesting_user=direction_user,
             )
-        assert "TeacherScheduleConflict" in str(exc.value.detail) or "StudioScheduleConflict" in str(
+        assert "TeacherScheduleConflict" in str(
             exc.value.detail
-        )
+        ) or "StudioScheduleConflict" in str(exc.value.detail)
 
 
 @pytest.mark.django_db
@@ -878,9 +876,7 @@ class TestParticipants:
             )
         assert "CoachingNotEligibleForParticipantCancellation" in str(exc.value.detail)
 
-    def test_reenroll_after_cancel(
-        self, scheduled_coaching, student, direction_user
-    ):
+    def test_reenroll_after_cancel(self, scheduled_coaching, student, direction_user):
         from coachings import services
 
         p = services.add_participant(
@@ -1007,7 +1003,9 @@ class TestUpdateCoaching:
             )
         assert "TeacherIdNotEditable" in str(exc.value.detail)
 
-    def test_update_teacher_id_success(self, requested_coaching, direction_user, teacher_user):
+    def test_update_teacher_id_success(
+        self, requested_coaching, direction_user, teacher_user
+    ):
         from django.contrib.auth import get_user_model
 
         from accounts.models import Role
@@ -1103,9 +1101,9 @@ class TestUpdateCoaching:
                     "end_datetime": _dt(2.5),
                 },
             )
-        assert "TeacherScheduleConflict" in str(exc.value.detail) or "StudioScheduleConflict" in str(
+        assert "TeacherScheduleConflict" in str(
             exc.value.detail
-        )
+        ) or "StudioScheduleConflict" in str(exc.value.detail)
 
     def test_update_scheduled_notes_no_conflict_check(
         self, direction_user, teacher_user, modality, studio_with_modality

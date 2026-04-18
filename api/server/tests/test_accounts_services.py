@@ -182,7 +182,9 @@ def test_list_teachers_returns_users_with_can_teach(teacher_user, student_user):
 
 
 @pytest.mark.django_db
-def test_user_can_teach_matches_list_teachers(teacher_user, student_user, direction_user):
+def test_user_can_teach_matches_list_teachers(
+    teacher_user, student_user, direction_user
+):
     from accounts import services
 
     assert services.user_can_teach(user=teacher_user) is True

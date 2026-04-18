@@ -73,9 +73,7 @@ class TestStudio:
             )
         assert "OneOrMoreModalitiesNotFound" in str(exc.value.detail)
 
-    def test_update_studio_modality_ids_replaces_links(
-        self, direction_user, modality
-    ):
+    def test_update_studio_modality_ids_replaces_links(self, direction_user, modality):
         from modality import services as modality_services
         from studios import services
         from studios.models import StudioModality

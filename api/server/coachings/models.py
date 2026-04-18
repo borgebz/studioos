@@ -12,10 +12,14 @@ class CoachingStatus(models.TextChoices):
     PENDING_APPROVAL = "pending_approval", "Pending Approval"
     SCHEDULED = "scheduled", "Scheduled"
     WAITING_CONFIRMATION = "waiting_confirmation", "Waiting Confirmation"
-    PENDING_COMPLETION_APPROVAL = "pending_completion_approval", "Pending Completion Approval"
+    PENDING_COMPLETION_APPROVAL = (
+        "pending_completion_approval",
+        "Pending Completion Approval",
+    )
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
     REJECTED = "rejected", "Rejected"
+
 
 class CoachingParticipantStatus(models.TextChoices):
     INVITED = "invited", "Invited"
@@ -24,8 +28,9 @@ class CoachingParticipantStatus(models.TextChoices):
     PENDING_COMPLETION = "pending_completion", "Pending Completion"
     ATTENDED = "attended", "Attended"
     ABSENT = "absent", "Absent"
-    CANCELLED = "cancelled", "Cancelled" 
+    CANCELLED = "cancelled", "Cancelled"
     LATE_CANCELLED = "late_cancelled", "Late Cancelled"
+
 
 class TeacherAvailability(BaseModel):
     """
@@ -119,7 +124,7 @@ class CoachingClass(BaseModel):
 
     cancellation_reason = models.TextField(blank=True, default="")
     cancelled_at = models.DateTimeField(null=True, blank=True)
-    
+
     notes = models.TextField(blank=True, default="")
 
     class Meta:

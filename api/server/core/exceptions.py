@@ -69,7 +69,10 @@ def _simplejwt_error_code(exc):
         detail = getattr(exc, "detail", None)
         if isinstance(detail, dict):
             for item in detail.get("messages") or []:
-                if isinstance(item, dict) and "expired" in (item.get("message") or "").lower():
+                if (
+                    isinstance(item, dict)
+                    and "expired" in (item.get("message") or "").lower()
+                ):
                     return "TokenExpired"
         return "TokenNotValid"
     if isinstance(exc, SimpleJWTAuthenticationFailed):

@@ -114,7 +114,7 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
-        "studios.view_studio"
+        "studios.view_studio",
     ],
     "student": [
         "accounts.view_user",
@@ -122,7 +122,6 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
         "studios.view_studio",
-        
     ],
 }
 

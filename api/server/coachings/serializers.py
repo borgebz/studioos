@@ -17,7 +17,6 @@ from coachings.models import (
 from modality.serializers import ModalitySerializer
 from studios.serializers import StudioSerializer
 
-
 # --- Teacher availability (slots): filters, body payloads, read model ---
 
 

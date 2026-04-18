@@ -182,9 +182,7 @@ def _ensure_scheduled_slot_free(
             start_datetime__lt=end_datetime,
             end_datetime__gt=start_datetime,
         )
-        .filter(
-            models.Q(teacher_id=teacher_id) | models.Q(studio_id=studio_id)
-        )
+        .filter(models.Q(teacher_id=teacher_id) | models.Q(studio_id=studio_id))
     )
     if exclude_pk is not None:
         conflict_lock_qs = conflict_lock_qs.exclude(pk=exclude_pk)
@@ -378,24 +376,16 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
     else:
         new_teacher_id = coaching.teacher_id
 
-    scheduled_fields_changed = (
-        coaching.status == CoachingStatus.SCHEDULED
-        and (
-            ("start_datetime" in updates and new_start != coaching.start_datetime)
-            or ("end_datetime" in updates and new_end != coaching.end_datetime)
-            or ("teacher_id" in updates and new_teacher_id != coaching.teacher_id)
-            or (
-                "studio_id" in updates
-                and new_studio_id != coaching.studio_id
-            )
-        )
+    scheduled_fields_changed = coaching.status == CoachingStatus.SCHEDULED and (
+        ("start_datetime" in updates and new_start != coaching.start_datetime)
+        or ("end_datetime" in updates and new_end != coaching.end_datetime)
+        or ("teacher_id" in updates and new_teacher_id != coaching.teacher_id)
+        or ("studio_id" in updates and new_studio_id != coaching.studio_id)
     )
 
     if scheduled_fields_changed:
         if new_studio_id is None:
-            raise ValidationError(
-                {"messages": ["StudioRequiredForScheduledCoaching"]}
-            )
+            raise ValidationError({"messages": ["StudioRequiredForScheduledCoaching"]})
         _ensure_scheduled_slot_free(
             teacher_id=new_teacher_id,
             studio_id=new_studio_id,
@@ -722,11 +712,11 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
         CoachingStatus.REJECTED,
     ):
         raise ValidationError({"messages": ["CoachingNotOpenForParticipants"]})
- 
+
     student = get_user_by_pk(pk=student_id)
     if not student.has_perm("accounts.can_participate_in_coaching"):
         raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
-    
+
     max_cap = coaching.modality.max_capacity
     if max_cap is not None:
         if _active_participant_count(coaching_class=coaching) >= max_cap:
@@ -780,9 +770,11 @@ def cancel_coaching_participant(
     may_cancel_on_behalf_of_others (coordination with change permission).
     """
     try:
-        coaching = CoachingClass.objects.select_for_update().select_related(
-            "modality"
-        ).get(pk=coaching_class_id)
+        coaching = (
+            CoachingClass.objects.select_for_update()
+            .select_related("modality")
+            .get(pk=coaching_class_id)
+        )
     except CoachingClass.DoesNotExist:
         raise NotFound()
 

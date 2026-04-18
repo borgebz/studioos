@@ -6,7 +6,10 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("coachings", "0003_coachingclass_cancelled_at_coachingclass_rejected_at_and_more"),
+        (
+            "coachings",
+            "0003_coachingclass_cancelled_at_coachingclass_rejected_at_and_more",
+        ),
     ]
 
     operations = [
