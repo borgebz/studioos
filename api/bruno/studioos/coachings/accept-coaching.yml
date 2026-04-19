@@ -1,0 +1,15 @@
+info:
+  name: accept-coaching
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/coachings/7/accept/
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

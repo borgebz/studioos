@@ -41,6 +41,21 @@ class CreateUserSerializer(serializers.Serializer):
         return value.lower()
 
 
+class TeacherSummarySerializer(serializers.ModelSerializer):
+    """Minimal teacher row for pickers (users with ``accounts.can_teach``)."""
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "phone_country_code",
+        ]
+
+
 class UserResponseSerializer(serializers.ModelSerializer):
     """Output serializer for user data in API responses."""
 

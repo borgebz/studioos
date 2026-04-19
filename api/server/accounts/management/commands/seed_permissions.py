@@ -18,7 +18,6 @@ COACHINGS_PERMISSIONS = [
     "coachings.view_coachingparticipant",
     "coachings.add_coachingparticipant",
     "coachings.change_coachingparticipant",
-    "coachings.delete_coachingparticipant",
 ]
 
 ROLE_PERMISSIONS = {
@@ -26,6 +25,7 @@ ROLE_PERMISSIONS = {
         # accounts
         "accounts.change_user",
         "accounts.view_user",
+        "accounts.can_list_users",
         "accounts.delete_user",
         "accounts.add_role",
         "accounts.change_role",
@@ -53,6 +53,7 @@ ROLE_PERMISSIONS = {
     ],
     "coordination": [
         "accounts.view_user",
+        "accounts.can_list_users",
         # enrollments
         "enrollments.can_review_enrollment",
         "enrollments.can_approve_enrollment",
@@ -79,7 +80,7 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "coachings.view_coachingclass",
     ],
-    "teacher_internal": [
+    "teacher": [
         "accounts.can_teach",
         "accounts.view_user",
         "accounts.can_have_profile",
@@ -113,11 +114,14 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
+        "studios.view_studio",
     ],
     "student": [
         "accounts.view_user",
+        "accounts.can_participate_in_coaching",
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
+        "studios.view_studio",
     ],
 }
 

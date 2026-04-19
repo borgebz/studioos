@@ -15,8 +15,10 @@ from coachings.serializers import (
     CoachingDirectScheduleSerializer,
     CoachingListQuerySerializer,
     CoachingParticipantSerializer,
+    ParticipantCancelSerializer,
     CoachingRejectSerializer,
     CoachingRequestSerializer,
+    CoachingUpdateSerializer,
     TeacherAvailabilityQuerySerializer,
     TeacherAvailabilitySerializer,
     TeacherAvailabilitySubmitSerializer,
@@ -172,6 +174,32 @@ class CoachingDetailView(APIView):
         coaching = services.get_coaching(pk=pk)
         return Response(CoachingClassSerializer(coaching).data)
 
+    @extend_schema(
+        request=CoachingUpdateSerializer,
+        responses={200: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    def patch(self, request, pk):
+        coaching = services.get_coaching(pk=pk)
+        can_change_all = request.user.has_perm("coachings.change_coachingclass")
+        is_party = request.user.id == coaching.teacher_id or (
+            coaching.requested_by_id is not None
+            and request.user.id == coaching.requested_by_id
+        )
+        if not can_change_all and not (
+            is_party and request.user.has_perm("coachings.view_coachingclass")
+        ):
+            raise PermissionDenied()
+
+        serializer = CoachingUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        coaching = services.update_coaching(
+            pk=pk,
+            requesting_user=request.user,
+            allow_teacher_change=can_change_all,
+            updates=serializer.validated_data,
+        )
+        return Response(CoachingClassSerializer(coaching).data)
+
 
 class CoachingAcceptView(APIView):
     permission_classes = [IsAuthenticated]
@@ -203,9 +231,8 @@ class CoachingRejectView(APIView):
         reason = serializer.validated_data.get("rejection_reason", "")
 
         if coaching.status == CoachingStatus.REQUESTED:
-            if (
-                coaching.teacher_id == request.user.id
-                and request.user.has_perm("coachings.can_reject_coaching_as_teacher")
+            if coaching.teacher_id == request.user.id and request.user.has_perm(
+                "coachings.can_reject_coaching_as_teacher"
             ):
                 coaching = services.teacher_reject_coaching(
                     coaching=coaching,
@@ -319,15 +346,28 @@ class ParticipantListCreateView(APIView):
         )
 
 
-class ParticipantDestroyView(APIView):
+class ParticipantCancelView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
-    @require_perm("coachings.delete_coachingparticipant")
-    def delete(self, request, coaching_id, pk):
-        services.remove_participant(
+    @extend_schema(
+        request=ParticipantCancelSerializer,
+        responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_any_perm(
+        "coachings.change_coachingparticipant",
+        "accounts.can_participate_in_coaching",
+    )
+    def post(self, request, coaching_id, pk):
+        can_manage = request.user.has_perm("coachings.change_coachingparticipant")
+        serializer = ParticipantCancelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        participant = services.cancel_coaching_participant(
             coaching_class_id=coaching_id,
-            pk=pk,
+            participant_pk=pk,
             requesting_user=request.user,
+            cancellation_reason=serializer.validated_data.get(
+                "cancellation_reason", "CancelledByAdministrator"
+            ),
+            may_cancel_on_behalf_of_others=can_manage,
         )
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(CoachingParticipantSerializer(participant).data)

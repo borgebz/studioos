@@ -34,6 +34,7 @@ class StudioListCreateView(APIView):
         serializer = StudioSubmitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         studio = services.create_studio(**serializer.validated_data, user=request.user)
+        studio = services.get_studio(pk=studio.pk)
         return Response(StudioSerializer(studio).data, status=status.HTTP_201_CREATED)
 
 
@@ -57,6 +58,7 @@ class StudioRetrieveUpdateDestroyView(APIView):
         studio = services.update_studio(
             pk=pk, **serializer.validated_data, user=request.user
         )
+        studio = services.get_studio(pk=pk)
         return Response(StudioSerializer(studio).data)
 
     @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})

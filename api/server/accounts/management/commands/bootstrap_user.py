@@ -6,7 +6,7 @@ from accounts.models import Role, User
 
 class Command(BaseCommand):
     help = (
-        "Create or update a superuser and attach a Role (Django Group). "
+        "Create or update a normal (non-superuser) account and attach a Role (Django Group). "
         "Use after migrate + seed_roles. Intended for local development."
     )
 
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            user = User.objects.create_superuser(
+            user = User.objects.create_user(
                 email=email,
                 password=options["password"],
                 first_name=options["first_name"],
@@ -46,8 +46,8 @@ class Command(BaseCommand):
         else:
             user.first_name = options["first_name"] or user.first_name
             user.last_name = options["last_name"] or user.last_name
-            user.is_staff = True
-            user.is_superuser = True
+            user.is_staff = False
+            user.is_superuser = False
             user.is_active = True
             user.set_password(options["password"])
             user.save()
@@ -57,5 +57,5 @@ class Command(BaseCommand):
 
         action = "Created" if created else "Updated"
         self.stdout.write(
-            self.style.SUCCESS(f"{action} superuser {email} with role {role.code}.")
+            self.style.SUCCESS(f"{action} user {email} with role {role.code}.")
         )

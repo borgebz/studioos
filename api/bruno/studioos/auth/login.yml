@@ -10,10 +10,8 @@ http:
     type: json
     data: |-
       {
-          "email": "dbatista@ipca.pt",
-          "password": "olamundo"
+
       }
-  auth: inherit
 
 settings:
   encodeUrl: true

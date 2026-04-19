@@ -7,6 +7,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from core.decorators import require_perm
 from .serializers import (
     CreateUserSerializer,
+    TeacherSummarySerializer,
     UserResponseSerializer,
     MeSerializer,
     ProfileSerializer,
@@ -19,6 +20,8 @@ from .services import (
     create_profile_for_user,
     create_user,
     get_profile_for_user,
+    list_teachers,
+    list_users,
     update_profile_for_user,
 )
 from core.schemas import DEFAULT_ERROR_RESPONSES
@@ -104,7 +107,23 @@ class LogoutView(TokenBlacklistView):
 
 
 class UserListView(APIView):
+    """
+    GET  /api/accounts/users/ — list users (coordination & direction).
+    POST /api/accounts/users/ — create user.
+    """
+
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: UserResponseSerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.can_list_users")
+    def get(self, request):
+        users = list_users()
+        return Response(UserResponseSerializer(users, many=True).data)
 
     @extend_schema(
         request=CreateUserSerializer,
@@ -123,6 +142,24 @@ class UserListView(APIView):
         return Response(
             UserResponseSerializer(user).data, status=status.HTTP_201_CREATED
         )
+
+
+class TeacherListView(APIView):
+    """
+    GET /api/accounts/teachers/ — users with ``accounts.can_teach`` (minimal fields).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: TeacherSummarySerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def get(self, request):
+        users = list_teachers()
+        return Response(TeacherSummarySerializer(users, many=True).data)
 
 
 class MeView(APIView):

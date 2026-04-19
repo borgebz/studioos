@@ -3,7 +3,7 @@ import logging
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import NotFound, ValidationError
 
-from accounts.models import User
+from accounts.services import get_user_by_pk
 from modality.models import Modality, UserModality
 from studios.models import Studio
 
@@ -118,10 +118,7 @@ def get_user_modalities(*, user_id: int):
 
 @transaction.atomic
 def add_user_modality(*, user_id: int, modality_id: int, requesting_user):
-    try:
-        target_user = User.objects.get(pk=user_id)
-    except User.DoesNotExist:
-        raise NotFound()
+    target_user = get_user_by_pk(pk=user_id)
 
     if not target_user.has_perm("accounts.can_teach"):
         raise ValidationError({"messages": ["UserCannotTeach"]})
