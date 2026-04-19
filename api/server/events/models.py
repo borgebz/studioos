@@ -23,23 +23,23 @@ class EventState(models.TextChoices):
     COMPLETED =  "completed", "Completed"
 
 class Event(BaseModel):
-    title = models.CharField(max_lenght=255)
+    title = models.CharField(max_length=255)
     description = models.TextField()
     body = models.TextField(blank=True)
 
     cover_photo_url = models.URLField(blank=True)
-    location = models.CharField(max_lenght=255, blank=True)
+    location = models.CharField(max_length=255, blank=True)
     event_date = models.DateTimeField(null=True, blank=True)
 
     event_state = models.CharField(
-        max_lenght=20,
+        max_length=20,
         choices=EventState.choices,
         default=EventState.PLANNED,
     )
     visibility_state = models.CharField(
-        max_lenght=20,
+        max_length=20,
         choices=EventVisibilityState.choices,
-        default=EventState.DRAFT,
+        default=EventVisibilityState.DRAFT,
     )
     contact_info = models.TextField(blank=True)
     publication_scheduled_at = models.DateTimeField(null=True, blank=True)
@@ -71,7 +71,7 @@ class EventFile(BaseModel):
         related_name="files",
     )
     file = models.FileField(upload_to=event_file_path)
-    file_name = models.CharField(max_lenght=255, blank=True)
+    file_name = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return self.file_name or f"File #{self.pk}"
@@ -117,7 +117,7 @@ class EventInterest(BaseModel):
     )
 
     class Meta:
-        constrainsts = [
+        constraints = [
             models.UniqueConstraint(
                 fields=["event","user"],
                 condition=models.Q(deleted_at__isnull=True),
@@ -134,7 +134,7 @@ class EventPost(BaseModel):
         on_delete=models.CASCADE,
         related_name="posts",
     )
-    title = models.CharField(max_lenght=255)
+    title = models.CharField(max_length=255)
     body = models.TextField()
 
     publication_scheduled_at = models.DateTimeField(null=True, blank=True)
