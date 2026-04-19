@@ -13,12 +13,13 @@ class CreateSizeSerializer(serializers.Serializer):
 
         # validar se existe SizeSystem
         if not SizeSystem.objects.filter(pk=size_system_id).exists():
-            raise serializers.ValidationError({"size_system_id": ["SizeSystemNotFound"]})
+            raise serializers.ValidationError(
+                {"size_system_id": ["SizeSystemNotFound"]}
+            )
 
         # validar duplicados
         if Size.objects.filter(
-            name__iexact=name,
-            size_system_id=size_system_id
+            name__iexact=name, size_system_id=size_system_id
         ).exists():
             raise serializers.ValidationError({"messages": ["SizeAlreadyExists"]})
 

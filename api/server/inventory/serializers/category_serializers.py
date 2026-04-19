@@ -44,13 +44,12 @@ class CreateCategorySerializer(serializers.Serializer):
         if size_system_id:
             qs = SizeSystem.objects.filter(pk=size_system_id, is_active=True)
             if not qs.exists():
-                raise serializers.ValidationError({"size_system_id": ["InvalidOrInactive"]})
+                raise serializers.ValidationError(
+                    {"size_system_id": ["InvalidOrInactive"]}
+                )
 
         # validar duplicados no mesmo nível
-        if Category.objects.filter(
-                name__iexact=name,
-                parent_id=parent_id
-        ).exists():
+        if Category.objects.filter(name__iexact=name, parent_id=parent_id).exists():
             raise serializers.ValidationError({"messages": ["CategoryAlreadyExists"]})
 
         return data

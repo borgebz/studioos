@@ -10,7 +10,7 @@ from .serializers import SizeSystemSerializer
 
 
 class SizeSystemViewSet(viewsets.ModelViewSet):
-    queryset = SizeSystem.objects.all().order_by('name')
+    queryset = SizeSystem.objects.all().order_by("name")
     serializer_class = SizeSystemSerializer
     permission_classes = [IsAuthenticated, IsAdminUser]
 
@@ -25,7 +25,7 @@ class SizeSystemViewSet(viewsets.ModelViewSet):
         if has_products:
             return Response(
                 {"detail": "SizeSystemHasAssociatedProducts"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # Se só existir Category → limpar FK
@@ -34,7 +34,7 @@ class SizeSystemViewSet(viewsets.ModelViewSet):
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def activate(self, request, pk=None):
         instance = self.get_object()
         instance.is_active = True
@@ -42,7 +42,7 @@ class SizeSystemViewSet(viewsets.ModelViewSet):
 
         return Response({"status": "activated"})
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=["post"])
     def deactivate(self, request, pk=None):
         instance = self.get_object()
         instance.is_active = False

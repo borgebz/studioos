@@ -14,6 +14,7 @@ from inventory.serializers.size_serializers import (
     SizeSerializer,
 )
 
+
 class SizeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -27,8 +28,7 @@ class SizeView(APIView):
         serializer.is_valid(raise_exception=True)
 
         size = services.create_size(
-            **serializer.validated_data,
-            created_by=request.user
+            **serializer.validated_data, created_by=request.user
         )
 
         return Response(SizeSerializer(size).data, status=status.HTTP_201_CREATED)
@@ -44,7 +44,8 @@ class SizeView(APIView):
 
         return Response(SizeSerializer(sizes, many=True).data)
 
-#Delete
+
+# Delete
 class SizeDeleteView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -59,7 +60,8 @@ class SizeDeleteView(APIView):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-#Activate
+
+# Activate
 class SizeActivateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -74,7 +76,8 @@ class SizeActivateView(APIView):
 
         return Response(SizeSerializer(size).data)
 
-#Deactivate
+
+# Deactivate
 class SizeDeactivateView(APIView):
     permission_classes = [IsAuthenticated]
 

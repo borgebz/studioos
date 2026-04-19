@@ -4,13 +4,13 @@ from django.db.models import Q
 
 from inventory.models import Product, Category, ProductMedia, ProductVariant
 
-
 ALLOWED_STATUS = ["active", "inactive", "archived"]
 
 
 # ===============================
 # HELPERS
 # ===============================
+
 
 def _validate_status(status):
     if status and status not in ALLOWED_STATUS:
@@ -49,11 +49,11 @@ def _check_delete_dependencies(product):
 # LIST
 # ===============================
 
+
 def list_products(user, filters=None):
-    queryset = Product.objects.filter(
-        owner_type="member",
-        owner_id=user.id
-    ).exclude(status="archived")
+    queryset = Product.objects.filter(owner_type="member", owner_id=user.id).exclude(
+        status="archived"
+    )
 
     if filters:
         if filters.get("category_id"):
@@ -72,9 +72,7 @@ def list_school_products(user, filters=None):
     if not user.has_perm("inventory.view_school_product"):
         raise ValidationError("Sem acesso ao inventário da escola.")
 
-    queryset = Product.objects.filter(
-        owner_type="school"
-    ).exclude(status="archived")
+    queryset = Product.objects.filter(owner_type="school").exclude(status="archived")
 
     if filters:
         if filters.get("category_id"):
@@ -92,6 +90,7 @@ def list_school_products(user, filters=None):
 # ===============================
 # GET DETAIL
 # ===============================
+
 
 def get_product(pk, user):
     try:
@@ -118,6 +117,7 @@ def get_school_product(pk, user):
 # ===============================
 # CREATE
 # ===============================
+
 
 @transaction.atomic
 def create_product(user, **data):
@@ -196,6 +196,7 @@ def create_school_product(user, **data):
 # UPDATE
 # ===============================
 
+
 @transaction.atomic
 def update_product(pk, user, **data):
     product = get_product(pk, user)
@@ -210,8 +211,12 @@ def update_product(pk, user, **data):
 
     # campos editáveis
     for field in [
-        "name", "description", "target_gender",
-        "brand", "material", "status"
+        "name",
+        "description",
+        "target_gender",
+        "brand",
+        "material",
+        "status",
     ]:
         if field in data:
             setattr(product, field, data[field])
@@ -233,8 +238,12 @@ def update_school_product(pk, user, **data):
     _validate_status(data.get("status"))
 
     for field in [
-        "name", "description", "target_gender",
-        "brand", "material", "status"
+        "name",
+        "description",
+        "target_gender",
+        "brand",
+        "material",
+        "status",
     ]:
         if field in data:
             setattr(product, field, data[field])
@@ -253,6 +262,7 @@ def update_school_product(pk, user, **data):
 # ===============================
 # DELETE (SOFT)
 # ===============================
+
 
 @transaction.atomic
 def delete_product(pk, user):
@@ -281,6 +291,7 @@ def delete_school_product(pk, user):
 # MEDIA
 # ===============================
 
+
 def _handle_media(product, media_list):
     if not media_list:
         return
@@ -290,7 +301,7 @@ def _handle_media(product, media_list):
             product=product,
             file=item.get("file"),
             is_primary=item.get("is_primary", False),
-            order=item.get("order", 0)
+            order=item.get("order", 0),
         )
 
 
@@ -306,6 +317,7 @@ def _handle_media_update(product, media_list):
 # ===============================
 # VARIANTS (BÁSICO)
 # ===============================
+
 
 def _handle_variants(product, variants):
     if not variants:

@@ -4,7 +4,6 @@ from rest_framework.exceptions import NotFound, ValidationError
 
 from inventory.models import Color, ProductVariant
 
-
 HEX_REGEX = r"^#(?:[0-9a-fA-F]{3}){1,2}$"
 
 
@@ -51,6 +50,7 @@ def delete_color(*, color):
 
     color.delete()
     return {"messages": ["ColorDeletedSuccessfully"]}
+
 
 def activate_color(*, color):
     color.is_active = True

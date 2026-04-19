@@ -30,13 +30,11 @@ class SizeSystemView(APIView):
         serializer.is_valid(raise_exception=True)
 
         size_system = services.create_size_system(
-            **serializer.validated_data,
-            created_by=request.user
+            **serializer.validated_data, created_by=request.user
         )
 
         return Response(
-            SizeSystemSerializer(size_system).data,
-            status=status.HTTP_201_CREATED
+            SizeSystemSerializer(size_system).data, status=status.HTTP_201_CREATED
         )
 
     @extend_schema(
@@ -46,9 +44,7 @@ class SizeSystemView(APIView):
     def get(self, request):
         size_systems = services.list_size_systems()
 
-        return Response(
-            SizeSystemSerializer(size_systems, many=True).data
-        )
+        return Response(SizeSystemSerializer(size_systems, many=True).data)
 
 
 # SizeSystem Detail (Update + Delete)
@@ -81,10 +77,7 @@ class SizeSystemDetailView(APIView):
     def delete(self, request, sizeSystemId):
         size_system = services.get_size_system(pk=sizeSystemId)
 
-        services.delete_size_system(
-            size_system=size_system,
-            deleted_by=request.user
-        )
+        services.delete_size_system(size_system=size_system, deleted_by=request.user)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -101,8 +94,7 @@ class SizeSystemActivateView(APIView):
         size_system = services.get_size_system(pk=sizeSystemId)
 
         size_system = services.activate_size_system(
-            size_system=size_system,
-            updated_by=request.user
+            size_system=size_system, updated_by=request.user
         )
 
         return Response(SizeSystemSerializer(size_system).data)
@@ -120,8 +112,7 @@ class SizeSystemDeactivateView(APIView):
         size_system = services.get_size_system(pk=sizeSystemId)
 
         size_system = services.deactivate_size_system(
-            size_system=size_system,
-            updated_by=request.user
+            size_system=size_system, updated_by=request.user
         )
 
         return Response(SizeSystemSerializer(size_system).data)

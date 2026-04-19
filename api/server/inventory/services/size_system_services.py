@@ -51,7 +51,7 @@ def update_size_system(*, size_system, name, updated_by=None):
 
 # 🔹 DELETE (Soft + regras)
 def delete_size_system(*, size_system, deleted_by=None):
-    #BLOQUEAR se houver ProductVariants associados
+    # BLOQUEAR se houver ProductVariants associados
     has_variants = ProductVariant.objects.filter(
         product__category__size_system=size_system
     ).exists()
@@ -59,7 +59,7 @@ def delete_size_system(*, size_system, deleted_by=None):
     if has_variants:
         raise ValidationError({"messages": ["SizeSystemHasAssociatedProducts"]})
 
-    #LIMPAR categories
+    # LIMPAR categories
     Category.objects.filter(size_system=size_system).update(size_system=None)
 
     # ✔️ Soft delete (se tiveres BaseModel com delete override, usa)

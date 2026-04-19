@@ -6,7 +6,7 @@ from .models import SizeSystem, Size, Category, ProductVariant
 class SizeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Size
-        fields = ['id', 'name', 'sort_order']
+        fields = ["id", "name", "sort_order"]
 
 
 class SizeSystemSerializer(serializers.ModelSerializer):
@@ -14,7 +14,7 @@ class SizeSystemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SizeSystem
-        fields = ['id', 'name', 'is_active', 'sizes']
+        fields = ["id", "name", "is_active", "sizes"]
 
     def validate_name(self, value):
         normalized = value.strip().lower()
@@ -24,12 +24,14 @@ class SizeSystemSerializer(serializers.ModelSerializer):
             qs = qs.exclude(id=self.instance.id)
 
         if qs.exists():
-            raise serializers.ValidationError("Já existe um sistema de tamanhos com este nome")
+            raise serializers.ValidationError(
+                "Já existe um sistema de tamanhos com este nome"
+            )
 
         return value
 
     def validate_sizes(self, value):
-        names = [s['name'].strip().lower() for s in value]
+        names = [s["name"].strip().lower() for s in value]
 
         if len(names) != len(set(names)):
             raise serializers.ValidationError("Existem tamanhos duplicados no pedido")
@@ -38,7 +40,7 @@ class SizeSystemSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        sizes_data = validated_data.pop('sizes', [])
+        sizes_data = validated_data.pop("sizes", [])
 
         size_system = SizeSystem.objects.create(**validated_data)
 
@@ -49,24 +51,24 @@ class SizeSystemSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        sizes_data = validated_data.pop('sizes', None)
+        sizes_data = validated_data.pop("sizes", None)
 
-        instance.name = validated_data.get('name', instance.name)
+        instance.name = validated_data.get("name", instance.name)
         instance.save()
 
         # Opcional: atualizar sizes (se quiseres permitir)
         if sizes_data is not None:
             for size in sizes_data:
-                if 'id' in size:
-                    s = Size.objects.get(id=size['id'])
+                if "id" in size:
+                    s = Size.objects.get(id=size["id"])
 
                     if s.size_system_id != instance.id:
                         raise serializers.ValidationError(
                             "Não é permitido alterar sizes de outro sistema"
                         )
 
-                    s.name = size.get('name', s.name)
-                    s.sort_order = size.get('sort_order', s.sort_order)
+                    s.name = size.get("name", s.name)
+                    s.sort_order = size.get("sort_order", s.sort_order)
                     s.save()
                 else:
                     Size.objects.create(size_system=instance, **size)

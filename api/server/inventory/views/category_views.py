@@ -15,7 +15,8 @@ from inventory.serializers.category_serializers import (
     CategorySerializer,
 )
 
-#Base View
+
+# Base View
 class CategoryView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -45,7 +46,8 @@ class CategoryView(APIView):
 
         return Response(CategorySerializer(categories, many=True).data)
 
-#Detail View
+
+# Detail View
 class CategoryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -57,8 +59,7 @@ class CategoryDetailView(APIView):
         category = services.get_category(pk=categoryId)
 
         category = services.update_category(
-            category=category,
-            **serializer.validated_data
+            category=category, **serializer.validated_data
         )
 
         return Response(CategorySerializer(category).data)
@@ -71,7 +72,8 @@ class CategoryDetailView(APIView):
 
         return Response(status=204)
 
-#Activate/Deactivate View
+
+# Activate/Deactivate View
 class CategoryActivateView(APIView):
     permission_classes = [IsAuthenticated]
 

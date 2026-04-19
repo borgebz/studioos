@@ -9,10 +9,10 @@ from inventory.serializers.product_serializers import (
     ProductDetailSerializer,
 )
 
-
 # ===============================
 # MEMBER
 # ===============================
+
 
 class ProductListCreateView(APIView):
 
@@ -28,14 +28,10 @@ class ProductListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
 
         product = services.create_product(
-            user=request.user,
-            **serializer.validated_data
+            user=request.user, **serializer.validated_data
         )
 
-        return Response(
-            ProductDetailSerializer(product).data,
-            status=201
-        )
+        return Response(ProductDetailSerializer(product).data, status=201)
 
 
 class ProductDetailView(APIView):
@@ -51,9 +47,7 @@ class ProductDetailView(APIView):
         serializer.is_valid(raise_exception=True)
 
         product = services.update_product(
-            pk=pk,
-            user=request.user,
-            **serializer.validated_data
+            pk=pk, user=request.user, **serializer.validated_data
         )
 
         return Response(ProductDetailSerializer(product).data)
@@ -61,15 +55,13 @@ class ProductDetailView(APIView):
     @require_perm("inventory.delete_product")
     def delete(self, request, pk):
         services.delete_product(pk=pk, user=request.user)
-        return Response(
-            {"messages": ["ProductDeletedSuccessfully"]},
-            status=200
-        )
+        return Response({"messages": ["ProductDeletedSuccessfully"]}, status=200)
 
 
 # ===============================
 # SCHOOL
 # ===============================
+
 
 class SchoolProductListCreateView(APIView):
 
@@ -84,14 +76,10 @@ class SchoolProductListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
 
         product = services.create_school_product(
-            user=request.user,
-            **serializer.validated_data
+            user=request.user, **serializer.validated_data
         )
 
-        return Response(
-            ProductDetailSerializer(product).data,
-            status=201
-        )
+        return Response(ProductDetailSerializer(product).data, status=201)
 
 
 class SchoolProductDetailView(APIView):
@@ -107,9 +95,7 @@ class SchoolProductDetailView(APIView):
         serializer.is_valid(raise_exception=True)
 
         product = services.update_school_product(
-            pk=pk,
-            user=request.user,
-            **serializer.validated_data
+            pk=pk, user=request.user, **serializer.validated_data
         )
 
         return Response(ProductDetailSerializer(product).data)
@@ -117,7 +103,4 @@ class SchoolProductDetailView(APIView):
     @require_perm("inventory.delete_school_product")
     def delete(self, request, pk):
         services.delete_school_product(pk=pk, user=request.user)
-        return Response(
-            {"messages": ["ProductDeletedSuccessfully"]},
-            status=200
-        )
+        return Response({"messages": ["ProductDeletedSuccessfully"]}, status=200)

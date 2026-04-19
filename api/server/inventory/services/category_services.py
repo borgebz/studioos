@@ -11,6 +11,7 @@ def _is_descendant(parent, child):
         parent = parent.parent_category
     return False
 
+
 # GET
 def get_category(*, pk):
     try:
@@ -53,16 +54,14 @@ def create_category(
 
     # validar duplicados no mesmo nível
     if Category.objects.filter(
-        name__iexact=name.strip(),
-        parent_id=parent_category_id
+        name__iexact=name.strip(), parent_id=parent_category_id
     ).exists():
         raise ValidationError({"messages": ["CategoryAlreadyExists"]})
 
     size_system = None
     if size_system_id:
         size_system = SizeSystem.objects.filter(
-            pk=size_system_id,
-            is_active=True
+            pk=size_system_id, is_active=True
         ).first()
         if not size_system:
             raise ValidationError({"messages": ["InvalidSizeSystem"]})
@@ -115,18 +114,18 @@ def update_category(*, category, **data):
 
     name = data.get("name", category.name)
 
-    if Category.objects.filter(
-        name__iexact=name.strip(),
-        parent=category.parent
-    ).exclude(pk=category.id).exists():
+    if (
+        Category.objects.filter(name__iexact=name.strip(), parent=category.parent)
+        .exclude(pk=category.id)
+        .exists()
+    ):
         raise ValidationError({"messages": ["CategoryAlreadyExists"]})
 
     category.name = name
 
     if "size_system_id" in data:
         size_system = SizeSystem.objects.filter(
-            pk=data["size_system_id"],
-            is_active=True
+            pk=data["size_system_id"], is_active=True
         ).first()
 
         if not size_system:

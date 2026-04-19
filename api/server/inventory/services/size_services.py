@@ -4,7 +4,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from inventory.models import Size, SizeSystem, ProductVariant
 
 
-#GET
+# GET
 def get_size(*, pk):
     try:
         return Size.objects.get(pk=pk)
@@ -36,7 +36,7 @@ def create_size(*, name, size_system_id, is_active=True, created_by=None):
         size_system=size_system,
         sort_order=next_order,
         is_active=is_active,
-        created_by=created_by
+        created_by=created_by,
     )
 
     size.full_clean()
@@ -47,7 +47,7 @@ def create_size(*, name, size_system_id, is_active=True, created_by=None):
 
 # DELETE
 def delete_size(*, size, deleted_by=None):
-    #bloquear se estiver em uso
+    # bloquear se estiver em uso
     if ProductVariant.objects.filter(size=size).exists():
         raise ValidationError({"messages": ["SizeInUse"]})
 

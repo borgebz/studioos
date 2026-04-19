@@ -5,13 +5,12 @@ from inventory.services import color_services as services
 from inventory.serializers.color_serializers import ColorSerializer
 from core.permissions import require_perm
 
+
 class ColorListCreateApi(APIView):
 
     @require_perm("inventory.view_color")
     def get(self, request):
-        colors = services.list_colors(
-            is_active=request.query_params.get("is_active")
-        )
+        colors = services.list_colors(is_active=request.query_params.get("is_active"))
         return Response(ColorSerializer(colors, many=True).data)
 
     @require_perm("inventory.add_color")
