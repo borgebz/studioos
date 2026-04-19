@@ -141,9 +141,7 @@ def _participant_row_for_add_participant(*, coaching, student_id, requesting_use
     ):
         return CoachingParticipantStatus.PENDING, False
 
-    invited_by_staff = requesting_user.has_perm(
-        "coachings.change_coachingparticipant"
-    )
+    invited_by_staff = requesting_user.has_perm("coachings.change_coachingparticipant")
     if coaching.status == CoachingStatus.SCHEDULED:
         if invited_by_staff:
             return CoachingParticipantStatus.ACTIVE, True
@@ -805,13 +803,11 @@ def advance_scheduled_to_waiting_confirmation_batch(*, now=None, updated_by=None
     """
     at = timezone.now() if now is None else now
     transitioned = 0
-    for pk in eligible_scheduled_coachings_queryset(now=at).values_list("pk", flat=True):
+    for pk in eligible_scheduled_coachings_queryset(now=at).values_list(
+        "pk", flat=True
+    ):
         with transaction.atomic():
-            coaching = (
-                CoachingClass.objects.select_for_update()
-                .filter(pk=pk)
-                .first()
-            )
+            coaching = CoachingClass.objects.select_for_update().filter(pk=pk).first()
             if coaching is None:
                 continue
             if coaching.status != CoachingStatus.SCHEDULED:
@@ -902,7 +898,9 @@ def confirm_participant_attendance(
         student.parent_id is not None and user.id == student.parent_id
     )
     if not actor_ok:
-        raise ValidationError({"messages": ["CannotConfirmAttendanceForThisParticipant"]})
+        raise ValidationError(
+            {"messages": ["CannotConfirmAttendanceForThisParticipant"]}
+        )
 
     participant.status = (
         CoachingParticipantStatus.ATTENDED
@@ -1021,11 +1019,17 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
         max_cap = coaching.modality.max_capacity
         if max_cap is not None:
             active = _active_participant_count(coaching_class=coaching)
-            old_contrib = 1 if _participant_status_counts_toward_capacity(existing.status) else 0
-            new_contrib = 1 if _participant_status_counts_toward_capacity(new_status) else 0
+            old_contrib = (
+                1 if _participant_status_counts_toward_capacity(existing.status) else 0
+            )
+            new_contrib = (
+                1 if _participant_status_counts_toward_capacity(new_status) else 0
+            )
             projected = active - old_contrib + new_contrib
             if projected > max_cap:
-                raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
+                raise ValidationError(
+                    {"messages": ["CoachingParticipantCapacityReached"]}
+                )
 
         existing.status = new_status
         existing.invited_by_staff = invited_by_staff
@@ -1085,9 +1089,11 @@ def student_accept_coaching_invitation(*, coaching_class_id, user):
     Staff-invited rows: INVITED → ACTIVE. Legacy / peer invites: INVITED → PENDING.
     """
     try:
-        coaching = CoachingClass.objects.select_for_update().select_related(
-            "modality"
-        ).get(pk=coaching_class_id)
+        coaching = (
+            CoachingClass.objects.select_for_update()
+            .select_related("modality")
+            .get(pk=coaching_class_id)
+        )
     except CoachingClass.DoesNotExist:
         raise NotFound()
 
@@ -1126,7 +1132,9 @@ def student_accept_coaching_invitation(*, coaching_class_id, user):
 
 
 @transaction.atomic
-def staff_approve_pending_participant(*, coaching_class_id, participant_pk, approving_user):
+def staff_approve_pending_participant(
+    *, coaching_class_id, participant_pk, approving_user
+):
     """
     Coordination/direction approves a peer-invited participant on an already-scheduled
     coaching (pending → active).
@@ -1137,7 +1145,9 @@ def staff_approve_pending_participant(*, coaching_class_id, participant_pk, appr
         raise AppNotFound("CoachingNotFound")
 
     if coaching.status != CoachingStatus.SCHEDULED:
-        raise ValidationError({"messages": ["CoachingNotEligibleForParticipantApproval"]})
+        raise ValidationError(
+            {"messages": ["CoachingNotEligibleForParticipantApproval"]}
+        )
 
     try:
         participant = CoachingParticipant.objects.select_for_update().get(

@@ -154,7 +154,9 @@ class TestCoachingRequest:
         )
         assert coaching.pk is not None
         assert coaching.status == CoachingStatus.REQUESTED
-        assert not CoachingParticipant.objects.filter(coaching_class_id=coaching.pk).exists()
+        assert not CoachingParticipant.objects.filter(
+            coaching_class_id=coaching.pk
+        ).exists()
 
     def test_create_request_enrolls_requester_when_can_participate(
         self, student_user, teacher_user, modality
@@ -1717,7 +1719,9 @@ class TestTeacherConfirmAndParticipantAttendance:
         services.advance_scheduled_to_waiting_confirmation_batch(now=after_end)
 
         with pytest.raises(ValidationError) as exc:
-            services.teacher_confirm_coaching(pk=scheduled_coaching.pk, user=teacher_user)
+            services.teacher_confirm_coaching(
+                pk=scheduled_coaching.pk, user=teacher_user
+            )
         assert "CoachingSessionNotEndedYet" in str(exc.value.detail)
 
     def test_teacher_confirm_and_attendance_advance_to_pending_completion(
@@ -1735,10 +1739,14 @@ class TestTeacherConfirmAndParticipantAttendance:
         services.advance_scheduled_to_waiting_confirmation_batch(now=after_end)
 
         with patch("coachings.services.timezone.now", return_value=after_end):
-            services.teacher_confirm_coaching(pk=scheduled_coaching.pk, user=teacher_user)
+            services.teacher_confirm_coaching(
+                pk=scheduled_coaching.pk, user=teacher_user
+            )
             out = services.confirm_participant_attendance(
                 coaching_class_id=scheduled_coaching.pk,
-                participant_pk=scheduled_coaching.participants.get(student_id=student.pk).pk,
+                participant_pk=scheduled_coaching.participants.get(
+                    student_id=student.pk
+                ).pk,
                 user=student,
                 attended=True,
             )
@@ -1761,7 +1769,9 @@ class TestTeacherConfirmAndParticipantAttendance:
         services.advance_scheduled_to_waiting_confirmation_batch(now=after_end)
 
         with patch("coachings.services.timezone.now", return_value=after_end):
-            services.teacher_confirm_coaching(pk=scheduled_coaching.pk, user=teacher_user)
+            services.teacher_confirm_coaching(
+                pk=scheduled_coaching.pk, user=teacher_user
+            )
             with pytest.raises(ValidationError) as exc:
                 services.teacher_confirm_coaching(
                     pk=scheduled_coaching.pk, user=teacher_user
@@ -1800,10 +1810,14 @@ class TestTeacherConfirmAndParticipantAttendance:
         services.advance_scheduled_to_waiting_confirmation_batch(now=after_end)
 
         with patch("coachings.services.timezone.now", return_value=after_end):
-            services.teacher_confirm_coaching(pk=scheduled_coaching.pk, user=teacher_user)
+            services.teacher_confirm_coaching(
+                pk=scheduled_coaching.pk, user=teacher_user
+            )
             services.confirm_participant_attendance(
                 coaching_class_id=scheduled_coaching.pk,
-                participant_pk=scheduled_coaching.participants.get(student_id=student.pk).pk,
+                participant_pk=scheduled_coaching.participants.get(
+                    student_id=student.pk
+                ).pk,
                 user=parent,
                 attended=False,
             )
@@ -1851,7 +1865,9 @@ class TestParticipantConfirmAttendanceHTTP:
         after_end = scheduled_coaching.end_datetime + timedelta(minutes=1)
         services.advance_scheduled_to_waiting_confirmation_batch(now=after_end)
         with patch("coachings.services.timezone.now", return_value=after_end):
-            services.teacher_confirm_coaching(pk=scheduled_coaching.pk, user=teacher_user)
+            services.teacher_confirm_coaching(
+                pk=scheduled_coaching.pk, user=teacher_user
+            )
         part_pk = scheduled_coaching.participants.get(student_id=student_user.pk).pk
         return part_pk, after_end
 
@@ -1997,6 +2013,7 @@ class TestParticipantConfirmAttendanceHTTP:
                 format="json",
             )
         assert resp.status_code == 400
-        assert "CannotConfirmAttendanceForThisParticipant" in resp.json()["errors"][
-            "messages"
-        ]
+        assert (
+            "CannotConfirmAttendanceForThisParticipant"
+            in resp.json()["errors"]["messages"]
+        )
