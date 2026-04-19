@@ -1,0 +1,28 @@
+info:
+  name: Create
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/inventory/size-systems/
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Roupa",
+        "sizes": [
+          {"name": "S", "sort_order": 1},
+          {"name": "M", "sort_order": 2},
+          {"name": "L", "sort_order": 3}
+        ]
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjIxNDk5LCJpYXQiOjE3NzY2MjA1OTksImp0aSI6ImFkZWI0ODk1MTMzNzQ1ZDg5MzVjYjA0OThlODlkYmEwIiwidXNlcl9pZCI6IjEifQ.mIvlSejI4ASQCS1iap-Dbk8expb2Lkw6co9gPHUxhfw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,27 @@
+info:
+  name: Create Color
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/inventory/colors/
+  body:
+    type: json
+    data: |-
+      {
+
+        "name": "Preto",
+
+        "hex_code": "#000000"
+
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjI4NTAyLCJpYXQiOjE3NzY2Mjc2MDIsImp0aSI6ImU3ZTg2NGFiOTJiMzRiMDE4NTUwZjM0MjQzN2QxZTg0IiwidXNlcl9pZCI6IjEifQ.Jg7l2vqI6wJzt7F7yE6Jz_ds45J88U8yqKvXplM730I
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

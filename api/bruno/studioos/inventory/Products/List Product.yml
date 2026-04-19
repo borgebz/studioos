@@ -1,0 +1,17 @@
+info:
+  name: List Product
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://127.0.0.1:8000/inventory/products/
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjMyMzI3LCJpYXQiOjE3NzY2MzE0MjcsImp0aSI6IjBhODY0ZTdlMWFhNDQzNDFiN2JjNTMwMDA3ZGU1YzgzIiwidXNlcl9pZCI6IjEifQ.jCJsMrusWZOJ9HKaYhYvv52IIAvC_vCIszNlMNzJFYE
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
