@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import SizeSystem, Size, Category, ProductVariant
+from .models import SizeSystem, Size
 
 
 class SizeSerializer(serializers.ModelSerializer):

@@ -3,7 +3,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
-from django.db.models import Exists, OuterRef
 
 from .models import SizeSystem, Category, ProductVariant
 from .serializers import SizeSystemSerializer

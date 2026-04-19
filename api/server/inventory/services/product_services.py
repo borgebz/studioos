@@ -1,6 +1,5 @@
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from django.db.models import Q
 
 from inventory.models import Product, Category, ProductMedia, ProductVariant
 
