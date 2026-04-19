@@ -1,0 +1,7 @@
+info:
+  name: coachings-participants
+  type: folder
+  seq: 10
+
+request:
+  auth: inherit

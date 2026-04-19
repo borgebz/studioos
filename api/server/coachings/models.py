@@ -125,6 +125,16 @@ class CoachingClass(BaseModel):
     cancellation_reason = models.TextField(blank=True, default="")
     cancelled_at = models.DateTimeField(null=True, blank=True)
 
+    teacher_notes = models.TextField(blank=True, default="")
+    teacher_confirmed_at = models.DateTimeField(null=True, blank=True)
+    teacher_confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="coaching_classes_teacher_confirmed",
+    )
+
     notes = models.TextField(blank=True, default="")
 
     class Meta:
@@ -168,6 +178,13 @@ class CoachingParticipant(BaseModel):
         choices=CoachingParticipantStatus.choices,
         default=CoachingParticipantStatus.PENDING,
     )
+    invited_by_staff = models.BooleanField(
+        default=False,
+        help_text=(
+            "True when a coordination/direction user invited this student "
+            "(invite → accept becomes active without a pending approval step)."
+        ),
+    )
 
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancellation_reason = models.TextField(blank=True, default="")
@@ -175,6 +192,12 @@ class CoachingParticipant(BaseModel):
     class Meta:
         db_table = "coaching_participants"
         ordering = ["created_at"]
+        permissions = [
+            (
+                "can_confirm_dependent_coaching_attendance",
+                "Can confirm attendance for a dependent participant",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["coaching_class", "student"],

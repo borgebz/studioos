@@ -1,11 +1,11 @@
 info:
-  name: get-teachers
+  name: accept-invite
   type: http
-  seq: 6
+  seq: 2
 
 http:
-  method: GET
-  url: http://127.0.0.1:8000/api/accounts/teachers/
+  method: POST
+  url: http://127.0.0.1:8000/api/coachings/16/participants/accept/
   auth: inherit
 
 settings:

@@ -74,6 +74,14 @@ class CoachingCancelSerializer(serializers.Serializer):
     cancellation_reason = serializers.CharField(required=False, allow_blank=True)
 
 
+class TeacherConfirmCoachingSerializer(serializers.Serializer):
+    teacher_notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class ConfirmParticipantAttendanceSerializer(serializers.Serializer):
+    attended = serializers.BooleanField()
+
+
 class CoachingUpdateSerializer(serializers.Serializer):
     teacher_id = serializers.IntegerField(required=False)
     modality_id = serializers.IntegerField(required=False)
@@ -133,6 +141,7 @@ class CoachingParticipantSerializer(serializers.ModelSerializer):
             "id",
             "student",
             "status",
+            "invited_by_staff",
             "cancelled_at",
             "cancellation_reason",
         ]
@@ -143,6 +152,7 @@ class CoachingClassSerializer(serializers.ModelSerializer):
     studio = StudioSerializer(read_only=True)
     teacher = UserResponseSerializer(read_only=True)
     requested_by = UserResponseSerializer(read_only=True)
+    teacher_confirmed_by = UserResponseSerializer(read_only=True)
     participants = CoachingParticipantSerializer(many=True, read_only=True)
 
     class Meta:
@@ -159,6 +169,9 @@ class CoachingClassSerializer(serializers.ModelSerializer):
             "total_price",
             "requested_by",
             "notes",
+            "teacher_notes",
+            "teacher_confirmed_at",
+            "teacher_confirmed_by",
             "rejection_reason",
             "cancellation_reason",
             "participants",

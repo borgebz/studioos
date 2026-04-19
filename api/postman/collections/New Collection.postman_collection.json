@@ -73,7 +73,7 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:8000/api/accounts/logout/",
+              "raw": "http://127.0.0.1:8000/api/accounts/auth/logout/",
               "protocol": "http",
               "host": [
                 "127",
@@ -85,6 +85,7 @@
               "path": [
                 "api",
                 "accounts",
+                "auth",
                 "logout",
                 ""
               ]
@@ -118,7 +119,7 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:8000/api/accounts/refresh/",
+              "raw": "http://127.0.0.1:8000/api/accounts/auth/refresh/",
               "protocol": "http",
               "host": [
                 "127",
@@ -130,6 +131,7 @@
               "path": [
                 "api",
                 "accounts",
+                "auth",
                 "refresh",
                 ""
               ]
@@ -379,9 +381,326 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "list_users",
+          "id": "55c3998a-7fa2-4a8a-85c2-ed13329729bc",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/accounts/users/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "accounts", "users", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get_teachers",
+          "id": "8f79ced1-c105-4168-9f72-e80f63b3719f",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/accounts/teachers/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "accounts", "teachers", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "edit_user",
+          "id": "ddebc6c9-058c-4401-9f6c-cf771859a996",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"first_name\": \"student\",\n    \"last_name\": \"STUDENT\",\n    \"email\": \"student@teste.com\",\n    \"phone\": \"912345678\",\n    \"phone_country_code\": \"+351\",\n    \"language\": \"pt\",\n    \"parent_id\": 15,\n    \"address\": \"Rua Example 1\",\n    \"postal_code\": \"4000-007\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/accounts/users/9/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "accounts", "users", "9", ""]
+            }
+          },
+          "response": []
         }
       ],
       "id": "dec996c7-de05-4f7f-af6b-c0129c2d762d"
+    },
+    {
+      "name": "coachings",
+      "id": "8e5454b0-89e6-46e9-8515-0dd222bac43c",
+      "item": [
+        {
+          "name": "teacher-confirm-coaching",
+          "id": "73c96261-abfa-44e5-853a-359048cd1f4d",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"teacher_notes\": \"aluno x faltou\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/coachings/16/teacher-confirm/",
+              "protocol": "http",
+              "host": ["127", "0", "0", "1"],
+              "port": "8000",
+              "path": ["api", "coachings", "16", "teacher-confirm", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "participants",
+          "id": "bfd40edf-34bc-49d2-b68c-bbb3c1ddc4c1",
+          "item": [
+            {
+              "name": "accept-invite",
+              "id": "676eac89-16e4-4efd-98eb-96c3e84d2d87",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NjUyLCJpYXQiOjE3NzQzMTg3NTIsImp0aSI6ImNlZjgyMjkxOGNiOTRmZGNiNzkzZjM0MzQzYzM4MTdiIiwidXNlcl9pZCI6IjIifQ.JAQL7zaKxW9kD99Sf0dBArb5-lZ_5EeQQ_-VdmLB5-Y",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/coachings/16/participants/accept/",
+                  "protocol": "http",
+                  "host": ["127", "0", "0", "1"],
+                  "port": "8000",
+                  "path": ["api", "coachings", "16", "participants", "accept", ""]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "list-participants",
+              "id": "3d566569-a35d-49bf-aa23-954b85181476",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/coachings/16/participants/",
+                  "protocol": "http",
+                  "host": ["127", "0", "0", "1"],
+                  "port": "8000",
+                  "path": ["api", "coachings", "16", "participants", ""]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "create-participant",
+              "id": "891e17d9-dca0-4054-84de-0c6d51bdd843",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"student_id\": 14\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/coachings/16/participants/",
+                  "protocol": "http",
+                  "host": ["127", "0", "0", "1"],
+                  "port": "8000",
+                  "path": ["api", "coachings", "16", "participants", ""]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "approve-participant",
+              "id": "bca862ff-2060-4041-9e08-2a2db7042ca7",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/coachings/16/participants/30/approve/",
+                  "protocol": "http",
+                  "host": ["127", "0", "0", "1"],
+                  "port": "8000",
+                  "path": ["api", "coachings", "16", "participants", "30", "approve", ""]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "cancel-participant",
+              "id": "8145462b-10d6-4541-b529-5a5e34171650",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"cancellation_reason\": \"test\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/coachings/16/participants/30/cancel/",
+                  "protocol": "http",
+                  "host": ["127", "0", "0", "1"],
+                  "port": "8000",
+                  "path": ["api", "coachings", "16", "participants", "30", "cancel", ""]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "confirm-attendance",
+              "id": "39fa7474-9e87-4186-aa77-eb85ba06ba13",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"attended\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://127.0.0.1:8000/api/coachings/16/participants/31/confirm-attendance/",
+                  "protocol": "http",
+                  "host": ["127", "0", "0", "1"],
+                  "port": "8000",
+                  "path": ["api", "coachings", "16", "participants", "31", "confirm-attendance", ""]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
     }
   ]
 }

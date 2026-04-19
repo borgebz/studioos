@@ -1,16 +1,16 @@
 info:
-  name: create-participant
+  name: cancel-participant
   type: http
-  seq: 13
+  seq: 14
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/coachings/4/participants/
+  url: http://127.0.0.1:8000/api/coachings/11/participants/16/cancel/
   body:
     type: json
     data: |-
       {
-        "student_id": 
+        "cancellation_reason": "test"
       }
   auth: inherit
 

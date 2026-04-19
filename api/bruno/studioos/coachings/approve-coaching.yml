@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/coachings/7/approve/
+  url: http://127.0.0.1:8000/api/coachings/16/approve/
   body:
     type: json
     data: |-

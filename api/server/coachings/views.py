@@ -13,6 +13,7 @@ from coachings.serializers import (
     CoachingCancelSerializer,
     CoachingClassSerializer,
     CoachingDirectScheduleSerializer,
+    ConfirmParticipantAttendanceSerializer,
     CoachingListQuerySerializer,
     CoachingParticipantSerializer,
     ParticipantCancelSerializer,
@@ -23,6 +24,7 @@ from coachings.serializers import (
     TeacherAvailabilitySerializer,
     TeacherAvailabilitySubmitSerializer,
     TeacherAvailabilityUpdateSerializer,
+    TeacherConfirmCoachingSerializer,
 )
 from core.decorators import require_any_perm, require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
@@ -202,6 +204,8 @@ class CoachingDetailView(APIView):
 
 
 class CoachingAcceptView(APIView):
+    """POST — teacher accepts the request (coaching status only; participants unchanged)."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -210,6 +214,27 @@ class CoachingAcceptView(APIView):
     @require_perm("coachings.can_accept_coaching_as_teacher")
     def post(self, request, pk):
         coaching = services.teacher_accept_coaching(pk=pk, user=request.user)
+        return Response(CoachingClassSerializer(coaching).data)
+
+
+class CoachingTeacherConfirmView(APIView):
+    """POST — assigned teacher confirms the session took place (waiting_confirmation)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=TeacherConfirmCoachingSerializer,
+        responses={200: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("coachings.can_accept_coaching_as_teacher")
+    def post(self, request, pk):
+        serializer = TeacherConfirmCoachingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        coaching = services.teacher_confirm_coaching(
+            pk=pk,
+            user=request.user,
+            teacher_notes=serializer.validated_data.get("teacher_notes", ""),
+        )
         return Response(CoachingClassSerializer(coaching).data)
 
 
@@ -262,6 +287,8 @@ class CoachingRejectView(APIView):
 
 
 class CoachingApproveView(APIView):
+    """POST — coordination schedules the coaching; activates ``pending`` roster rows only."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -313,6 +340,48 @@ class CoachingCancelView(APIView):
         return Response(CoachingClassSerializer(coaching).data)
 
 
+class ParticipantAcceptInviteView(APIView):
+    """POST — invited student confirms attendance (staff invite → active; legacy invite → pending)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("accounts.can_participate_in_coaching")
+    def post(self, request, coaching_id):
+        participant = services.student_accept_coaching_invitation(
+            coaching_class_id=coaching_id,
+            user=request.user,
+        )
+        return Response(CoachingParticipantSerializer(participant).data)
+
+
+class ParticipantConfirmAttendanceView(APIView):
+    """POST — student or parent confirms ATTENDED / ABSENT after session end."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=ConfirmParticipantAttendanceSerializer,
+        responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_any_perm(
+        "accounts.can_participate_in_coaching",
+        "coachings.can_confirm_dependent_coaching_attendance",
+    )
+    def post(self, request, coaching_id, pk):
+        serializer = ConfirmParticipantAttendanceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        participant = services.confirm_participant_attendance(
+            coaching_class_id=coaching_id,
+            participant_pk=pk,
+            user=request.user,
+            attended=serializer.validated_data["attended"],
+        )
+        return Response(CoachingParticipantSerializer(participant).data)
+
+
 class ParticipantListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -344,6 +413,24 @@ class ParticipantListCreateView(APIView):
             CoachingParticipantSerializer(participant).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class ParticipantStaffApproveView(APIView):
+    """POST — coordination approves a peer-invited pending participant (scheduled coachings)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("coachings.change_coachingparticipant")
+    def post(self, request, coaching_id, pk):
+        participant = services.staff_approve_pending_participant(
+            coaching_class_id=coaching_id,
+            participant_pk=pk,
+            approving_user=request.user,
+        )
+        return Response(CoachingParticipantSerializer(participant).data)
 
 
 class ParticipantCancelView(APIView):

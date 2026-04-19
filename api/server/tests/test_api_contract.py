@@ -228,6 +228,87 @@ def test_list_users_ok_for_direction(auth_client, direction_user):
 
 
 @pytest.mark.django_db
+def test_patch_user_core_fields_ok(auth_client, student_user):
+    resp = auth_client.patch(
+        f"/api/accounts/users/{student_user.pk}/",
+        data={"first_name": "Patched", "language": "en"},
+        format="json",
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["first_name"] == "Patched"
+    student_user.refresh_from_db()
+    assert student_user.first_name == "Patched"
+    assert student_user.language == "en"
+
+
+@pytest.mark.django_db
+def test_patch_user_forbidden_without_change_user(student_auth_client, teacher_user):
+    resp = student_auth_client.patch(
+        f"/api/accounts/users/{teacher_user.pk}/",
+        data={"first_name": "Nope"},
+        format="json",
+    )
+    assert resp.status_code == 403
+    assert "PermissionDenied" in resp.json()["errors"]["messages"]
+
+
+@pytest.mark.django_db
+def test_patch_user_not_found(auth_client):
+    resp = auth_client.patch(
+        "/api/accounts/users/999999/",
+        data={"first_name": "X"},
+        format="json",
+    )
+    assert resp.status_code == 404
+    assert "NotFound" in resp.json()["errors"]["messages"]
+
+
+@pytest.mark.django_db
+def test_patch_user_parent_address_postal(auth_client, student_user, teacher_user):
+    resp = auth_client.patch(
+        f"/api/accounts/users/{student_user.pk}/",
+        data={
+            "parent_id": teacher_user.pk,
+            "address": "Rua Example",
+            "postal_code": "1000-001",
+        },
+        format="json",
+    )
+    assert resp.status_code == 200
+    student_user.refresh_from_db()
+    assert student_user.parent_id == teacher_user.pk
+    assert student_user.address == "Rua Example"
+    assert student_user.postal_code == "1000-001"
+
+
+@pytest.mark.django_db
+def test_patch_user_parent_cannot_be_self(auth_client, student_user):
+    resp = auth_client.patch(
+        f"/api/accounts/users/{student_user.pk}/",
+        data={"parent_id": student_user.pk},
+        format="json",
+    )
+    assert resp.status_code == 400
+    errs = resp.json()["errors"]
+    assert "parent_id" in errs
+    assert any("ParentCannotBeSelf" in str(v) for v in errs["parent_id"])
+
+
+@pytest.mark.django_db
+def test_patch_user_parent_not_found(auth_client, student_user):
+    resp = auth_client.patch(
+        f"/api/accounts/users/{student_user.pk}/",
+        data={"parent_id": 999_999},
+        format="json",
+    )
+    assert resp.status_code == 400
+    errs = resp.json()["errors"]
+    assert "parent_id" in errs
+    assert any("ParentNotFound" in str(v) for v in errs["parent_id"])
+
+
+@pytest.mark.django_db
 def test_list_teachers_requires_authentication(api_client):
     resp = api_client.get("/api/accounts/teachers/")
     assert resp.status_code == 401

@@ -54,6 +54,72 @@ class TestCreateUser:
 
 
 @pytest.mark.django_db
+class TestUpdateUserCoreFields:
+    def test_updates_first_name(self, direction_user, student_user):
+        from accounts import services
+
+        out = services.update_user_core_fields(
+            pk=student_user.pk,
+            updated_by=direction_user,
+            first_name="Updated",
+        )
+        assert out.first_name == "Updated"
+        assert out.updated_by_id == direction_user.pk
+
+    def test_email_conflict(self, direction_user, student_user, teacher_user):
+        from accounts import services
+
+        with pytest.raises(ValidationError) as exc:
+            services.update_user_core_fields(
+                pk=student_user.pk,
+                updated_by=direction_user,
+                email=teacher_user.email,
+            )
+        assert "EmailAlreadyExists" in exc.value.detail["messages"]
+
+    def test_not_found(self, direction_user):
+        from accounts import services
+
+        with pytest.raises(NotFound):
+            services.update_user_core_fields(
+                pk=999_999,
+                updated_by=direction_user,
+                first_name="X",
+            )
+
+    def test_updates_address_postal_parent(
+        self, direction_user, student_user, teacher_user
+    ):
+        from accounts import services
+
+        services.update_user_core_fields(
+            pk=student_user.pk,
+            updated_by=direction_user,
+            address="Rua do Teste",
+            postal_code="4000-007",
+            parent_id=teacher_user.pk,
+        )
+        student_user.refresh_from_db()
+        assert student_user.address == "Rua do Teste"
+        assert student_user.postal_code == "4000-007"
+        assert student_user.parent_id == teacher_user.pk
+
+    def test_clear_parent(self, direction_user, student_user, teacher_user):
+        from accounts import services
+
+        student_user.parent = teacher_user
+        student_user.save(update_fields=["parent"])
+
+        services.update_user_core_fields(
+            pk=student_user.pk,
+            updated_by=direction_user,
+            parent_id=None,
+        )
+        student_user.refresh_from_db()
+        assert student_user.parent_id is None
+
+
+@pytest.mark.django_db
 class TestProfile:
     def test_create_profile_duplicate_is_400(self, direction_user):
         from accounts import services

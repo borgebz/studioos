@@ -79,6 +79,7 @@ ROLE_PERMISSIONS = {
         "studios.view_studio",
         "modality.view_modality",
         "coachings.view_coachingclass",
+        "coachings.view_coachingparticipant",
     ],
     "teacher": [
         "accounts.can_teach",
@@ -94,6 +95,7 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
+        "coachings.view_coachingparticipant",
     ],
     "teacher_external": [
         "accounts.can_teach",
@@ -109,12 +111,15 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
+        "coachings.view_coachingparticipant",
     ],
     "parent": [
         "accounts.view_user",
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
         "studios.view_studio",
+        "coachings.view_coachingparticipant",
+        "coachings.can_confirm_dependent_coaching_attendance",
     ],
     "student": [
         "accounts.view_user",
@@ -122,6 +127,8 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
         "studios.view_studio",
+        "coachings.view_coachingparticipant",
+        "coachings.add_coachingparticipant",
     ],
 }
 

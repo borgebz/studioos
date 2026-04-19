@@ -26,9 +26,24 @@ urlpatterns = [
     ),
     # --- Coaching participants ---
     path(
+        "<int:coaching_id>/participants/<int:pk>/approve/",
+        views.ParticipantStaffApproveView.as_view(),
+        name="participant-staff-approve",
+    ),
+    path(
         "<int:coaching_id>/participants/<int:pk>/cancel/",
         views.ParticipantCancelView.as_view(),
         name="participant-cancel",
+    ),
+    path(
+        "<int:coaching_id>/participants/accept/",
+        views.ParticipantAcceptInviteView.as_view(),
+        name="participant-accept-invite",
+    ),
+    path(
+        "<int:coaching_id>/participants/<int:pk>/confirm-attendance/",
+        views.ParticipantConfirmAttendanceView.as_view(),
+        name="participant-confirm-attendance",
     ),
     path(
         "<int:coaching_id>/participants/",
@@ -40,6 +55,11 @@ urlpatterns = [
         "<int:pk>/accept/",
         views.CoachingAcceptView.as_view(),
         name="coaching-accept",
+    ),
+    path(
+        "<int:pk>/teacher-confirm/",
+        views.CoachingTeacherConfirmView.as_view(),
+        name="coaching-teacher-confirm",
     ),
     path(
         "<int:pk>/reject/",

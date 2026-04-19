@@ -8,6 +8,7 @@ from .views import (
     MyProfileView,
     RefreshView,
     TeacherListView,
+    UserDetailView,
     UserListView,
 )
 
@@ -20,6 +21,7 @@ urlpatterns = [
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", MeView.as_view(), name="auth-me"),
     # Users
+    path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),
     path("users/", UserListView.as_view(), name="user-list"),
     path("teachers/", TeacherListView.as_view(), name="teacher-list"),
     # Profile

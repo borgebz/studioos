@@ -48,6 +48,26 @@ def list_users():
     )
 
 
+def get_user_with_roles_prefetched(*, pk):
+    """
+    Return a non-deleted user by pk with ``groups`` + ``role`` prefetched
+    (same shape as :func:`list_users` rows).
+    """
+    try:
+        return (
+            User.objects.all()
+            .prefetch_related(
+                Prefetch(
+                    "groups",
+                    queryset=Group.objects.select_related("role"),
+                )
+            )
+            .get(pk=pk)
+        )
+    except User.DoesNotExist:
+        raise NotFound()
+
+
 @lru_cache(maxsize=1)
 def _can_teach_permission():
     return Permission.objects.get(
@@ -176,6 +196,40 @@ def update_profile_for_user(*, profile, updated_by=None, **fields):
     profile.full_clean()
     profile.save()
     return profile
+
+
+@transaction.atomic
+def update_user_core_fields(*, pk, updated_by, **updates):
+    """
+    Partial update of principal user fields (name, contact, language, parent, address).
+
+    Intended for callers that hold ``accounts.change_user`` (direction).
+    """
+    if not updates:
+        return get_user_with_roles_prefetched(pk=pk)
+
+    user = get_user_by_pk(pk=pk)
+    for key, value in updates.items():
+        setattr(user, key, value)
+    user.updated_by = updated_by
+    try:
+        user.full_clean()
+        user.save()
+    except DjangoValidationError as exc:
+        error_dict = getattr(exc, "error_dict", {}) or {}
+        if "email" in error_dict:
+            raise ValidationError({"messages": ["EmailAlreadyExists"]}) from exc
+        raise ValidationError({"messages": ["InvalidUserData"]}) from exc
+    except IntegrityError as exc:
+        raise ValidationError({"messages": ["EmailAlreadyExists"]}) from exc
+
+    logger.info(
+        "User core fields updated: pk=%s updated_by=%s fields=%s",
+        pk,
+        getattr(updated_by, "email", updated_by),
+        sorted(updates.keys()),
+    )
+    return get_user_with_roles_prefetched(pk=user.pk)
 
 
 def activate_account(*, uid, token, password):
