@@ -1,8 +1,19 @@
+"""
+Coachings app URL routes.
+"""
+
 from django.urls import path
 
 from coachings import views
 
 urlpatterns = [
+    # --- Scheduled coaching ---
+    path(
+        "scheduled/",
+        views.CoachingScheduledCreateView.as_view(),
+        name="coaching-scheduled-create",
+    ),
+    # --- Teacher availability (per teacher user) ---
     path(
         "teachers/<int:user_id>/availability/<int:pk>/",
         views.TeacherAvailabilityDetailView.as_view(),
@@ -13,26 +24,47 @@ urlpatterns = [
         views.TeacherAvailabilityListCreateView.as_view(),
         name="teacher-availability-list-create",
     ),
+    # --- Coaching participants ---
     path(
-        "scheduled/",
-        views.CoachingScheduledCreateView.as_view(),
-        name="coaching-scheduled-create",
+        "<int:coaching_id>/participants/<int:pk>/approve/",
+        views.ParticipantStaffApproveView.as_view(),
+        name="participant-staff-approve",
     ),
     path(
-        "<int:coaching_id>/participants/<int:pk>/",
-        views.ParticipantDestroyView.as_view(),
-        name="participant-destroy",
+        "<int:coaching_id>/participants/<int:pk>/cancel/",
+        views.ParticipantCancelView.as_view(),
+        name="participant-cancel",
+    ),
+    path(
+        "<int:coaching_id>/participants/accept/",
+        views.ParticipantAcceptInviteView.as_view(),
+        name="participant-accept-invite",
+    ),
+    path(
+        "<int:coaching_id>/participants/<int:pk>/confirm-attendance/",
+        views.ParticipantConfirmAttendanceView.as_view(),
+        name="participant-confirm-attendance",
     ),
     path(
         "<int:coaching_id>/participants/",
         views.ParticipantListCreateView.as_view(),
         name="participant-list-create",
     ),
+    # --- Coaching workflow (single coaching by pk) ---
     path(
-        "<int:pk>/accept/", views.CoachingAcceptView.as_view(), name="coaching-accept"
+        "<int:pk>/accept/",
+        views.CoachingAcceptView.as_view(),
+        name="coaching-accept",
     ),
     path(
-        "<int:pk>/reject/", views.CoachingRejectView.as_view(), name="coaching-reject"
+        "<int:pk>/teacher-confirm/",
+        views.CoachingTeacherConfirmView.as_view(),
+        name="coaching-teacher-confirm",
+    ),
+    path(
+        "<int:pk>/reject/",
+        views.CoachingRejectView.as_view(),
+        name="coaching-reject",
     ),
     path(
         "<int:pk>/approve/",
@@ -45,8 +77,19 @@ urlpatterns = [
         name="coaching-complete",
     ),
     path(
-        "<int:pk>/cancel/", views.CoachingCancelView.as_view(), name="coaching-cancel"
+        "<int:pk>/cancel/",
+        views.CoachingCancelView.as_view(),
+        name="coaching-cancel",
     ),
-    path("<int:pk>/", views.CoachingDetailView.as_view(), name="coaching-detail"),
-    path("", views.CoachingListCreateView.as_view(), name="coaching-list-create"),
+    # --- Coaching CRUD ---
+    path(
+        "<int:pk>/",
+        views.CoachingDetailView.as_view(),
+        name="coaching-detail",
+    ),
+    path(
+        "",
+        views.CoachingListCreateView.as_view(),
+        name="coaching-list-create",
+    ),
 ]

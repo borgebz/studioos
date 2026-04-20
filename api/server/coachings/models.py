@@ -8,11 +8,28 @@ from studios.models import Studio
 
 class CoachingStatus(models.TextChoices):
     REQUESTED = "requested", "Requested"
+    PENDING_TEACHER_APPROVAL = "pending_teacher_approval", "Peding Teacher Approval"
     PENDING_APPROVAL = "pending_approval", "Pending Approval"
     SCHEDULED = "scheduled", "Scheduled"
+    WAITING_CONFIRMATION = "waiting_confirmation", "Waiting Confirmation"
+    PENDING_COMPLETION_APPROVAL = (
+        "pending_completion_approval",
+        "Pending Completion Approval",
+    )
     COMPLETED = "completed", "Completed"
     CANCELLED = "cancelled", "Cancelled"
     REJECTED = "rejected", "Rejected"
+
+
+class CoachingParticipantStatus(models.TextChoices):
+    INVITED = "invited", "Invited"
+    PENDING = "pending", "Pending"
+    ACTIVE = "active", "Active"
+    PENDING_COMPLETION = "pending_completion", "Pending Completion"
+    ATTENDED = "attended", "Attended"
+    ABSENT = "absent", "Absent"
+    CANCELLED = "cancelled", "Cancelled"
+    LATE_CANCELLED = "late_cancelled", "Late Cancelled"
 
 
 class TeacherAvailability(BaseModel):
@@ -60,7 +77,7 @@ class CoachingClass(BaseModel):
     """
 
     status = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=CoachingStatus.choices,
         default=CoachingStatus.REQUESTED,
     )
@@ -80,11 +97,12 @@ class CoachingClass(BaseModel):
         blank=True,
         on_delete=models.PROTECT,
         related_name="coaching_classes",
-        help_text="Assigned by coordination at approval. Null until then.",
     )
+
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
     completed_at = models.DateTimeField(null=True, blank=True)
+
     total_price = models.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -92,6 +110,7 @@ class CoachingClass(BaseModel):
         blank=True,
         help_text="Set by coordination at approval.",
     )
+
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -99,8 +118,23 @@ class CoachingClass(BaseModel):
         on_delete=models.SET_NULL,
         related_name="coaching_classes_requested",
     )
+
     rejection_reason = models.TextField(blank=True, default="")
+    rejected_at = models.DateTimeField(null=True, blank=True)
+
     cancellation_reason = models.TextField(blank=True, default="")
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+
+    teacher_notes = models.TextField(blank=True, default="")
+    teacher_confirmed_at = models.DateTimeField(null=True, blank=True)
+    teacher_confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="coaching_classes_teacher_confirmed",
+    )
+
     notes = models.TextField(blank=True, default="")
 
     class Meta:
@@ -139,13 +173,41 @@ class CoachingParticipant(BaseModel):
         related_name="coaching_participations",
     )
 
+    status = models.CharField(
+        max_length=30,
+        choices=CoachingParticipantStatus.choices,
+        default=CoachingParticipantStatus.PENDING,
+    )
+    invited_by_staff = models.BooleanField(
+        default=False,
+        help_text=(
+            "True when a coordination/direction user invited this student "
+            "(invite → accept becomes active without a pending approval step)."
+        ),
+    )
+
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancellation_reason = models.TextField(blank=True, default="")
+
     class Meta:
         db_table = "coaching_participants"
         ordering = ["created_at"]
+        permissions = [
+            (
+                "can_confirm_dependent_coaching_attendance",
+                "Can confirm attendance for a dependent participant",
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["coaching_class", "student"],
-                condition=models.Q(deleted_at__isnull=True),
+                condition=models.Q(deleted_at__isnull=True)
+                & ~models.Q(
+                    status__in=[
+                        CoachingParticipantStatus.CANCELLED,
+                        CoachingParticipantStatus.LATE_CANCELLED,
+                    ]
+                ),
                 name="unique_active_coaching_participant",
             )
         ]

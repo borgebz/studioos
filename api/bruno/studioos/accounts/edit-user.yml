@@ -1,0 +1,32 @@
+info:
+  name: edit-user
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: http://127.0.0.1:8000/api/accounts/users/9/
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "first_name": "student",
+        "last_name": "STUDENT",
+        "email": "student@teste.com",
+        "phone": "912345678",
+        "phone_country_code": "+351",
+        "language": "pt",
+        "parent_id": 15,
+        "address": "Rua Example 1",
+        "postal_code": "4000-007"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

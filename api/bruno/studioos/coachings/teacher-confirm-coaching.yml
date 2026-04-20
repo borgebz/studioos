@@ -1,0 +1,21 @@
+info:
+  name: teacher-confirm-coaching
+  type: http
+  seq: 12
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/coachings/16/teacher-confirm/
+  body:
+    type: json
+    data: |-
+      {
+        "teacher_notes": "aluno x faltou"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

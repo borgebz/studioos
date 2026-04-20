@@ -1,0 +1,21 @@
+info:
+  name: cancel-coaching
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/coachings/1/cancel/
+  body:
+    type: json
+    data: |-
+      {
+        "cancellation_reason": "urgencia de ultima hora"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

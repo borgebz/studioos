@@ -10,11 +10,10 @@ http:
     type: json
     data: |-
       {
-        "max_capacity": 30
+        "max_capacity": 30,
+        "allowed_modality_ids": [1]
       }
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc1NDIyNjc5LCJpYXQiOjE3NzU0MjE3NzksImp0aSI6IjNlODU3ZjI2Nzk5NTRlMDFiNWFiOTI2YTU2YWFkMjk0IiwidXNlcl9pZCI6IjEifQ.IlaNWwqh1t2WyrBCeD7fQJnhVz4TBvQBckn3XYjLDQU
+  auth: inherit
 
 settings:
   encodeUrl: true

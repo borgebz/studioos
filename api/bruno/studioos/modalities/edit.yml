@@ -10,7 +10,8 @@ http:
     type: json
     data: |-
       {
-        "max_capacity": 20
+        "max_capacity": 20,
+        "allowed_studio_ids": [1]
       }
   auth:
     type: bearer

@@ -58,6 +58,11 @@ class User(AuditMixin, SoftDeleteMixin, AbstractUser):
     class Meta:
         permissions = [
             ("can_teach", "Can be assigned teaching modalities"),
+            ("can_list_users", "Can list all users"),
+            (
+                "can_participate_in_coaching",
+                "Can be enrolled as a participant in coaching classes",
+            ),
         ]
 
     @property

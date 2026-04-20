@@ -49,6 +49,50 @@ class TestStudio:
         with pytest.raises(NotFound):
             services.get_studio(pk=999_999)
 
+    def test_create_studio_with_modality_ids(self, direction_user, modality):
+        from studios import services
+        from studios.models import StudioModality
+
+        s = services.create_studio(
+            user=direction_user,
+            name="__Studio With Mod__",
+            max_capacity=8,
+            allowed_modality_ids=[modality.pk],
+        )
+        assert StudioModality.objects.filter(studio=s, modality=modality).exists()
+
+    def test_create_studio_invalid_modality_id(self, direction_user):
+        from studios import services
+
+        with pytest.raises(ValidationError) as exc:
+            services.create_studio(
+                user=direction_user,
+                name="__Bad Mod Studio__",
+                max_capacity=8,
+                allowed_modality_ids=[999_999],
+            )
+        assert "OneOrMoreModalitiesNotFound" in str(exc.value.detail)
+
+    def test_update_studio_modality_ids_replaces_links(self, direction_user, modality):
+        from modality import services as modality_services
+        from studios import services
+        from studios.models import StudioModality
+
+        m2 = modality_services.create_modality(
+            user=direction_user, name="__Second Mod For Studio__"
+        )
+        s = services.create_studio(
+            user=direction_user,
+            name="__Studio Replace Mods__",
+            max_capacity=8,
+            allowed_modality_ids=[modality.pk],
+        )
+        services.update_studio(
+            pk=s.pk, user=direction_user, allowed_modality_ids=[m2.pk]
+        )
+        assert not StudioModality.objects.filter(studio=s, modality=modality).exists()
+        assert StudioModality.objects.filter(studio=s, modality=m2).exists()
+
 
 @pytest.mark.django_db
 class TestModality:
