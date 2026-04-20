@@ -1,0 +1,22 @@
+info:
+  name: create-post
+  type: http
+  seq: 18
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/events/1/posts/
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Atualização do evento",
+        "body": "Texto do post."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,27 @@
+info:
+  name: create-event
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/events/
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Workshop de dança",
+        "description": "Descrição curta do evento.",
+        "body": "Corpo detalhado opcional.",
+        "cover_photo_url": "",
+        "location": "Estúdio principal",
+        "event_date": "2026-05-15T18:00:00Z",
+        "contact_info": "contacto@example.com"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

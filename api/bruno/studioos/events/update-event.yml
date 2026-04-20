@@ -1,0 +1,27 @@
+info:
+  name: update-event
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://127.0.0.1:8000/api/events/1/
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Workshop de dança (atualizado)",
+        "description": "Descrição atualizada.",
+        "body": "Corpo atualizado.",
+        "cover_photo_url": "",
+        "location": "Estúdio principal",
+        "event_date": "2026-05-16T18:00:00Z",
+        "contact_info": "contacto@example.com"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
