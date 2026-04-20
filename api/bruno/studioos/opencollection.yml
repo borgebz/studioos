@@ -13,6 +13,59 @@ config:
         username: ""
         password: ""
       bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: "{{access_token}}"
+  scripts:
+    - type: before-request
+      code: |-
+        const path = req.getPath() || "";
+        if (path.includes("/auth/login")) {
+          return;
+        }
+
+        const baseUrl =
+          bru.getEnvVar("base_url") ||
+          bru.getCollectionVar("base_url") ||
+          "http://127.0.0.1:8000";
+        const email =
+          bru.getEnvVar("login_email") || bru.getCollectionVar("login_email");
+        const password =
+          bru.getEnvVar("login_password") ||
+          bru.getCollectionVar("login_password");
+
+        if (!email || !password) {
+          throw new Error(
+            "Set login_email and login_password on the active environment (or collection variables)."
+          );
+        }
+
+        let res;
+        try {
+          res = await bru.sendRequest({
+            method: "POST",
+            url: `${baseUrl}/api/accounts/auth/login/`,
+            headers: { "Content-Type": "application/json" },
+            data: { email, password },
+          });
+        } catch (err) {
+          const body = err.response?.data ?? err.message;
+          throw new Error(
+            "Login failed: " +
+              (typeof body === "string" ? body : JSON.stringify(body))
+          );
+        }
+
+        if (res.status !== 200 || !res.data || !res.data.access) {
+          throw new Error("Login failed: " + JSON.stringify(res.data ?? res.status));
+        }
+
+        bru.setVar("access_token", res.data.access);
+        bru.setVar("refresh_token", res.data.refresh);
+        bru.setEnvVar("access_token", res.data.access, { persist: true });
+        bru.setEnvVar("refresh_token", res.data.refresh, { persist: true });
 bundled: false
 extensions:
   bruno:

@@ -47,7 +47,7 @@ def _uses_objects_accessor(tree: ast.AST) -> list[int]:
 
 @pytest.mark.parametrize(
     "app",
-    ["accounts", "enrollments", "studios", "core"],
+    ["accounts", "enrollments", "studios", "core", "modality", "coachings"],
 )
 def test_services_do_not_import_views_or_serializers(app):
     path = SERVER_ROOT / app / "services.py"
@@ -75,7 +75,7 @@ def test_services_do_not_import_views_or_serializers(app):
 
 @pytest.mark.parametrize(
     "app",
-    ["accounts", "enrollments", "core", "studios"],
+    ["accounts", "enrollments", "core", "studios", "modality", "coachings"],
 )
 def test_models_do_not_import_higher_layers(app):
     for path in _iter_py_files(app):
@@ -95,7 +95,7 @@ def test_models_do_not_import_higher_layers(app):
 
 @pytest.mark.parametrize(
     "app",
-    ["accounts", "enrollments", "studios"],
+    ["accounts", "enrollments", "studios", "modality", "coachings"],
 )
 def test_serializers_do_not_import_services(app):
     path = SERVER_ROOT / app / "serializers.py"
@@ -117,6 +117,8 @@ def test_serializers_do_not_import_services(app):
         "enrollments/views.py",
         "core/views.py",
         "studios/views.py",
+        "modality/views.py",
+        "coachings/views.py",
     ],
 )
 def test_views_do_not_query_orm_via_objects_manager(relative_path):

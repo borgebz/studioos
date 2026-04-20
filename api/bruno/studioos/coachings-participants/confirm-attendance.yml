@@ -1,0 +1,21 @@
+info:
+  name: confirm-attendance
+  type: http
+  seq: 14
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/coachings/16/participants/31/confirm-attendance/
+  body:
+    type: json
+    data: |-
+      {
+        "attended": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

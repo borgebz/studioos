@@ -16,6 +16,8 @@ variables:
   pythonVersion: "3.13"
   DJANGO_SETTINGS_MODULE: "config.settings"
   PYTHONUNBUFFERED: "1"
+  # uv cache lives under $HOME/.cache/uv — Cache@2 does not expand "~" in path:
+  UV_CACHE_DIR: "$(Agent.HomeDirectory)/.cache/uv"
 
 steps:
 - task: UsePythonVersion@0
@@ -38,7 +40,7 @@ steps:
     key: 'uv | "$(Agent.OS)" | server/uv.lock'
     restoreKeys: |
       uv | "$(Agent.OS)"
-    path: ~/.cache/uv
+    path: "$(Agent.HomeDirectory)/.cache/uv"
   displayName: "Cache uv"
 
 # Install deps from lockfile (server/ has pyproject.toml and uv.lock)

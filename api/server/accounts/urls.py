@@ -1,13 +1,16 @@
+from django.urls import path
+
 from .views import (
-    UserListView,
-    MyProfileView,
+    ActivateAccountView,
     LoginView,
     LogoutView,
     MeView,
+    MyProfileView,
     RefreshView,
-    ActivateAccountView,
+    TeacherListView,
+    UserDetailView,
+    UserListView,
 )
-from django.urls import path
 
 app_name = "accounts"
 
@@ -18,7 +21,9 @@ urlpatterns = [
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
     path("me/", MeView.as_view(), name="auth-me"),
     # Users
+    path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),
     path("users/", UserListView.as_view(), name="user-list"),
+    path("teachers/", TeacherListView.as_view(), name="teacher-list"),
     # Profile
     path("profile/me/", MyProfileView.as_view(), name="profile-me"),
     # Activate

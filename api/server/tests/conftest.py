@@ -53,7 +53,7 @@ def auth_client(api_client, direction_user):
 
 @pytest.fixture
 def modality(db):
-    from studios.models import Modality
+    from modality.models import Modality
 
     m, _ = Modality.objects.get_or_create(
         name="___Test Modality___",
@@ -169,6 +169,7 @@ def student_user(db):
     )
     role = Role.objects.get(code="student")
     user.groups.add(role.group)
+    user.refresh_from_db()
     return user
 
 
@@ -177,3 +178,40 @@ def student_auth_client(api_client, student_user):
     """API client authenticated as a student. Used for 403 permission tests."""
     api_client.force_authenticate(user=student_user)
     return api_client
+
+
+@pytest.fixture
+def teacher_user(db):
+    from django.contrib.auth import get_user_model
+
+    from accounts.models import Role
+
+    User = get_user_model()
+    user = User.objects.create_user(
+        email=f"teacher_{uuid.uuid4().hex[:8]}@test.local",
+        password="test-pass-123",
+        first_name="Teacher",
+        last_name="User",
+        is_active=True,
+    )
+    role = Role.objects.get(code="teacher")
+    user.groups.add(role.group)
+    user.refresh_from_db()
+    return user
+
+
+@pytest.fixture
+def studio_with_modality(db, direction_user, modality):
+    """A studio linked to the shared `modality` fixture."""
+    from studios import services as studio_services
+    from studios.models import StudioModality
+
+    studio = studio_services.create_studio(
+        user=direction_user,
+        name=f"__Test Studio {uuid.uuid4().hex[:6]}__",
+        max_capacity=8,
+    )
+    StudioModality.objects.create(
+        studio=studio, modality=modality, created_by=direction_user
+    )
+    return studio

@@ -63,8 +63,10 @@ INSTALLED_APPS = [
     # Local
     "accounts",
     "core",
+    "modality",
     "studios",
     "enrollments",
+    "coachings",
 ]
 
 # API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.

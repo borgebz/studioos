@@ -3,7 +3,7 @@ from pathlib import Path
 from drf_spectacular.utils import extend_schema_field, inline_serializer
 from rest_framework import serializers
 
-from accounts.models import Profile, User
+from accounts.models import Language, Profile, User
 
 UserResponseRoleOutput = inline_serializer(
     name="UserResponseRoleOutput",
@@ -25,6 +25,40 @@ MeEndpointProfileOutput = inline_serializer(
 )
 
 
+class UserCoreUpdateSerializer(serializers.Serializer):
+    """Partial update of principal user fields (direction / ``accounts.change_user``)."""
+
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+    email = serializers.EmailField(required=False)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    phone_country_code = serializers.CharField(
+        max_length=5, required=False, allow_blank=True
+    )
+    language = serializers.ChoiceField(choices=Language.choices, required=False)
+    parent_id = serializers.IntegerField(required=False, allow_null=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    postal_code = serializers.CharField(max_length=20, required=False, allow_blank=True)
+
+    def validate_parent_id(self, value):
+        if value is None:
+            return None
+        user_pk = self.context.get("user_pk")
+        if user_pk is not None and value == user_pk:
+            raise serializers.ValidationError("ParentCannotBeSelf")
+        if not User.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("ParentNotFound")
+        return value
+
+    def validate_email(self, value):
+        pk = self.context.get("user_pk")
+        if pk is None:
+            raise serializers.ValidationError("MissingUserContext")
+        if User.all_objects.filter(email=value.lower()).exclude(pk=pk).exists():
+            raise serializers.ValidationError("EmailAlreadyExists")
+        return value.lower()
+
+
 class CreateUserSerializer(serializers.Serializer):
     """Input serializer for creating a new user."""
 
@@ -39,6 +73,21 @@ class CreateUserSerializer(serializers.Serializer):
         if User.all_objects.filter(email=value).exists():
             raise serializers.ValidationError("EmailAlreadyExists")
         return value.lower()
+
+
+class TeacherSummarySerializer(serializers.ModelSerializer):
+    """Minimal teacher row for pickers (users with ``accounts.can_teach``)."""
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "phone_country_code",
+        ]
 
 
 class UserResponseSerializer(serializers.ModelSerializer):
@@ -60,12 +109,14 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    @extend_schema_field(UserResponseRoleOutput)
+    @extend_schema_field(serializers.ListField(child=UserResponseRoleOutput))
     def get_role(self, obj):
-        group = obj.groups.first()
-        if group and hasattr(group, "role"):
-            return {"code": group.role.code, "name": group.name}
-        return None
+        roles = []
+        for group in obj.groups.select_related("role").all():
+            role = getattr(group, "role", None)
+            if role:
+                roles.append({"code": role.code, "name": group.name})
+        return roles
 
 
 class LoginSerializer(serializers.Serializer):

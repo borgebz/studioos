@@ -7,6 +7,8 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from core.decorators import require_perm
 from .serializers import (
     CreateUserSerializer,
+    TeacherSummarySerializer,
+    UserCoreUpdateSerializer,
     UserResponseSerializer,
     MeSerializer,
     ProfileSerializer,
@@ -19,7 +21,10 @@ from .services import (
     create_profile_for_user,
     create_user,
     get_profile_for_user,
+    list_teachers,
+    list_users,
     update_profile_for_user,
+    update_user_core_fields,
 )
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema, inline_serializer
@@ -104,7 +109,23 @@ class LogoutView(TokenBlacklistView):
 
 
 class UserListView(APIView):
+    """
+    GET  /api/accounts/users/ — list users (coordination & direction).
+    POST /api/accounts/users/ — create user.
+    """
+
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: UserResponseSerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.can_list_users")
+    def get(self, request):
+        users = list_users()
+        return Response(UserResponseSerializer(users, many=True).data)
 
     @extend_schema(
         request=CreateUserSerializer,
@@ -123,6 +144,56 @@ class UserListView(APIView):
         return Response(
             UserResponseSerializer(user).data, status=status.HTTP_201_CREATED
         )
+
+
+class UserDetailView(APIView):
+    """
+    PATCH /api/accounts/users/<pk>/ — update principal fields (direction only).
+
+    Requires ``accounts.change_user``.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=UserCoreUpdateSerializer,
+        responses={
+            200: UserResponseSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.change_user")
+    def patch(self, request, pk):
+        serializer = UserCoreUpdateSerializer(
+            data=request.data,
+            partial=True,
+            context={"user_pk": int(pk)},
+        )
+        serializer.is_valid(raise_exception=True)
+        user = update_user_core_fields(
+            pk=int(pk),
+            updated_by=request.user,
+            **serializer.validated_data,
+        )
+        return Response(UserResponseSerializer(user).data)
+
+
+class TeacherListView(APIView):
+    """
+    GET /api/accounts/teachers/ — users with ``accounts.can_teach`` (minimal fields).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: TeacherSummarySerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def get(self, request):
+        users = list_teachers()
+        return Response(TeacherSummarySerializer(users, many=True).data)
 
 
 class MeView(APIView):

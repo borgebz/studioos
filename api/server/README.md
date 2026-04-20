@@ -8,7 +8,7 @@ uv run python manage.py migrate             # migrate/create database
 uv run python manage.py seed_roles          #feed database with pre defined info
 uv run python manage.py seed_permissions
 uv run python manage.py seed_modalities
-uv run python manage.py bootstrap_superuser --email admin@local.test --password 'your-dev-password' --role direction     # optional
+uv run python manage.py bootstrap_user --email dev@test.com --password '123456' --role direction     # optional;
 uv run python manage.py runserver
 ```
 

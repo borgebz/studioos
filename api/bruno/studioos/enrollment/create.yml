@@ -6,35 +6,46 @@ info:
 http:
   method: post
   url: http://127.0.0.1:8000/api/enrollments/
-  headers:
-    - name: Content-Type
-      value: application/json
   body:
-    type: json
-    data: |-
-      {
-        "enrollment_type": "new",
-        "student_email": "student@example.com",
-        "student_name": "student name",
-        "student_date_of_birth": "2010-05-15",
-        "parent_name": "parent name",
-        "parent_email": "parent@example.com",
-        "parent_phone": "912345678",
-        "parent_phone_country_code": "+351",
-        "modality_ids": [
-          1
-        ],
-        "consents": [
-          {
-            "consent_type": "rgpd",
-            "accepted": true
-          },
-          {
-            "consent_type": "internal_regulation",
-            "accepted": true
-          }
-        ]
-      }
+    type: multipart-form
+    data:
+      - name: enrollment_type
+        type: text
+        value: new
+      - name: student_email
+        type: text
+        value: student1@example.com
+      - name: student_name
+        type: text
+        value: student name
+      - name: student_date_of_birth
+        type: text
+        value: 2010-05-15
+      - name: parent_name
+        type: text
+        value: parent name
+      - name: parent_email
+        type: text
+        value: parent@example.com
+      - name: parent_phone
+        type: text
+        value: "912345678"
+      - name: parent_phone_country_code
+        type: text
+        value: "+351"
+      - name: modality_ids
+        type: text
+        value: "1"
+      - name: consent_rgpd
+        type: text
+        value: "true"
+      - name: consent_internal_regulation
+        type: text
+        value: "true"
+      - name: payment_proof
+        type: file
+        value:
+          - ./enrollment/files/payment-proof.png
   auth: inherit
 
 settings:

@@ -15,7 +15,7 @@ http:
       - name: photo
         type: file
         value:
-          - /private/var/folders/gp/m9nqfyln3jv8_0f4bmygz_1m0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=CA69613F-AAAD-4478-9EF4-B90882F8DD66&code=001&library=1&type=1&mode=1&loc=true&cap=true.jpeg/IMG_2419.jpeg
+          - ./profile/files/profile-photo.png
       - name: display_name
         type: text
         value: Jorge

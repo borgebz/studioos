@@ -1,0 +1,24 @@
+info:
+  name: edit-availability
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: http://127.0.0.1:8000/api/coachings/teachers/6/availability/1/
+  body:
+    type: json
+    data: |-
+      {
+        "start_datetime": "2026-04-10T09:30:00Z",
+        "end_datetime": "2026-04-10T12:30:00Z",
+        "modality_id": 1,
+        "notes": ""
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
