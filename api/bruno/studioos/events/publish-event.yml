@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "send_notification": false
+        "notification": "none"
       }
   auth: inherit
 

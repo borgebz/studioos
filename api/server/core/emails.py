@@ -46,3 +46,35 @@ def send_templated_email(*, to, subject, template_name, context=None, language=N
         logger.exception("Failed to send email to %s: %s", to, subject)
         # Do not re-raise: email failure should not abort the caller.
         # The exception is fully logged above for monitoring and alerting.
+
+
+def send_simple_email(*, to, subject, body):
+    """
+    Send one email without Django HTML templates.
+    If `body` looks like HTML, sends multipart/alternative (plain + HTML).
+    """
+    from django.utils.html import strip_tags
+
+    if isinstance(to, str):
+        to_list = [to]
+    else:
+        to_list = list(to)
+
+    plain = strip_tags(body) if ("<" in body and ">" in body) else body
+    if not plain.strip():
+        plain = body if body.strip() else " "
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=plain,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=to_list,
+    )
+    if "<" in body and ">" in body:
+        msg.attach_alternative(body, "text/html")
+
+    try:
+        msg.send()
+        logger.info("Simple email sent to %s: %s", to_list, subject)
+    except Exception:
+        logger.exception("Failed to send simple email to %s: %s", to_list, subject)

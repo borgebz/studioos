@@ -13,6 +13,13 @@ urlpatterns = [
     path("<int:event_id>/interests/", views.EventInterestCreateView.as_view(), name="event-interest-create"),
     path("<int:event_id>/interests/me/", views.MyEventInterestDeleteView.as_view(), name="event-interest-delete-me"),
 
+    path("<int:event_id>/files/", views.EventFileListCreateView.as_view(), name="event-file-list-create"),
+    path(
+        "<int:event_id>/files/<int:file_id>/",
+        views.EventFileDetailView.as_view(),
+        name="event-file-detail",
+    ),
+
     path("<int:event_id>/comments/", views.EventCommentListCreateView.as_view(), name="event-comment-list-create"),
     path("<int:event_id>/comments/<int:comment_id>/", views.EventCommentDetailView.as_view(), name="event-comment-detail"),
 
