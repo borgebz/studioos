@@ -1,53 +1,11 @@
-from email.policy import default
-
 from django.db import models
-from django.db import settings
-
-from config.settings import AUTH_USER_MODEL
+from django.conf import settings
 from core.models import BaseModel
 
-class PaymentStatus(models.TextChoices):
-    PENDING = "Pendente", "pendente"
-    PAID = "Pago", "pago"
-    CANCELLED = "Anulada", "anulada"
-
-class EnrollmentPaymentType(models.TextChoices):
-    MATRICULA = "Matricula", "matricula"
-    SEGURO = "Seguro", "seguro"
-
-class RegimeType(models.TextChoices):
-    GENERAL = "Regime Geral", "geral"
-    INTENSIVO = "Regime Intensivo", "intensivo"
-
-class EnrollmentPayment(BaseModel):
-    """
-    Represents a payment directly associated with a student's enrollment.
-    This usually covers fixed annual fees such as registration ('matrícula') and insurance.
-    """
-    enrollment = models.ForeignKey(
-        "enrollments.Enrollment",
-        on_delete=models.CASCADE,
-        related_name="payments",
-    )
-    payment_type = models.CharField(max_length=20, choices=EnrollmentPaymentType.choices)
-    amount = models.DecimalField(max_digits=6, decimal_places=2)
-    regime = models.CharField(max_length=20, choices=RegimeType.choices, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
-
-    # Tracks which staff member validated this specific payment
-    confirmed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="confirmed_enrollment_payments",
-    )
-
-    class Meta:
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"{self.get_payment_type_display()} - {self.amount}€ ({self.status})"
+class BillingStatus(models.TextChoices):
+    PENDING = "pending", "Pendente"
+    PAID = "paid", "Pago"
+    CANCELLED = "cancelled", "Anulada"
 
 class CoachingBillingEntry(BaseModel):
     """
@@ -68,8 +26,8 @@ class CoachingBillingEntry(BaseModel):
         null=True,
         related_name="billing_entries",
     )
-    amount = models.DecimalField(max_digits=6, decimal_places=2)
-    status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=50, choices=BillingStatus.choices, default=BillingStatus.PENDING)
 
     class Meta:
         verbose_name_plural = "coaching billing entries"
@@ -98,13 +56,14 @@ class Fine(BaseModel):
         related_name="fines",
     )
     reason = models.CharField(max_length=255)
-    amount = models.DecimalField(max_digits=6, decimal_places=2)
-    status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=50, choices=BillingStatus.choices, default=BillingStatus.PENDING)
 
     # The staff member who decided to apply this fine
     issued_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
+        null=True,
         related_name="issued_fines",
     )
 
