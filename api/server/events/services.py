@@ -219,13 +219,14 @@ def delete_my_interest(*, event, user):
 def list_comments(*, event, user):
     if event.visibility_state != EventVisibilityState.PUBLISHED:
         if not (
-            user.is_authenticated
-            and user.has_perm("events.can_view_unpublished_event")
+            user.is_authenticated and user.has_perm("events.can_view_unpublished_event")
         ):
             raise NotFound()
 
-    qs = EventComment.objects.filter(event=event).select_related("owner").order_by(
-        "created_at"
+    qs = (
+        EventComment.objects.filter(event=event)
+        .select_related("owner")
+        .order_by("created_at")
     )
     comments = list(qs)
     children_map = defaultdict(list)
@@ -287,9 +288,7 @@ def delete_comment(*, comment, user):
 
 
 def list_posts(*, event, user):
-    if user.is_authenticated and user.has_perm(
-        "events.can_view_unpublished_eventpost"
-    ):
+    if user.is_authenticated and user.has_perm("events.can_view_unpublished_eventpost"):
         return EventPost.objects.filter(event=event)
 
     return EventPost.objects.filter(event=event, published_at__isnull=False)
@@ -385,8 +384,7 @@ def schedule_post_publication(
 def list_event_files(*, event, user):
     if event.visibility_state != EventVisibilityState.PUBLISHED:
         if not (
-            user.is_authenticated
-            and user.has_perm("events.can_view_unpublished_event")
+            user.is_authenticated and user.has_perm("events.can_view_unpublished_event")
         ):
             raise NotFound()
     return EventFile.objects.filter(event=event)

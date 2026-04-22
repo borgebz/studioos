@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 from core.models import BaseModel
 
+
 def event_file_path(instance, filename):
     ext = Path(filename).suffix.lower()
     return f"events/files/{uuid.uuid4()}{ext}"
@@ -14,11 +15,13 @@ def event_cover_path(instance, filename):
     ext = Path(filename).suffix.lower()
     return f"events/covers/{uuid.uuid4()}{ext}"
 
+
 class EventVisibilityState(models.TextChoices):
     DRAFT = "draft", "Draft"
-    SCHEDULED = "scheduled","Scheduled"
+    SCHEDULED = "scheduled", "Scheduled"
     PUBLISHED = "published", "Published"
     ARCHIVED = "archived", "Archived"
+
 
 class EventState(models.TextChoices):
     PLANNED = "planned", "Planned"
@@ -72,6 +75,7 @@ class Event(BaseModel):
     def __str__(self):
         return self.title
 
+
 class EventFile(BaseModel):
     event = models.ForeignKey(
         Event,
@@ -83,6 +87,7 @@ class EventFile(BaseModel):
 
     def __str__(self):
         return self.file_name or f"File #{self.pk}"
+
 
 class EventComment(BaseModel):
     event = models.ForeignKey(
@@ -112,6 +117,7 @@ class EventComment(BaseModel):
     def __str__(self):
         return f"Comment #{self.pk}"
 
+
 class EventInterest(BaseModel):
     event = models.ForeignKey(
         Event,
@@ -127,14 +133,15 @@ class EventInterest(BaseModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["event","user"],
+                fields=["event", "user"],
                 condition=models.Q(deleted_at__isnull=True),
                 name="unique_active_event_interest_per_user",
             ),
         ]
-    
+
     def __str__(self):
         return f"Interest #{self.pk}"
+
 
 class EventPost(BaseModel):
     event = models.ForeignKey(
@@ -152,7 +159,10 @@ class EventPost(BaseModel):
         permissions = [
             ("can_view_unpublished_eventpost", "Can view unpublished post"),
             ("can_publish_eventpost", "Can publish event post"),
-            ("can_schedule_eventpost_publication", "Can schedule event post publication"),
+            (
+                "can_schedule_eventpost_publication",
+                "Can schedule event post publication",
+            ),
         ]
 
     def __str__(self):

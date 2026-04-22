@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from django.utils import timezone
 
+
 @pytest.mark.django_db
 class TestEventServices:
     def test_create_event_no_date_uses_date_tbd(self, direction_user):
