@@ -9,6 +9,11 @@ def event_file_path(instance, filename):
     ext = Path(filename).suffix.lower()
     return f"events/files/{uuid.uuid4()}{ext}"
 
+
+def event_cover_path(instance, filename):
+    ext = Path(filename).suffix.lower()
+    return f"events/covers/{uuid.uuid4()}{ext}"
+
 class EventVisibilityState(models.TextChoices):
     DRAFT = "draft", "Draft"
     SCHEDULED = "scheduled","Scheduled"
@@ -33,7 +38,10 @@ class Event(BaseModel):
     description = models.TextField()
     body = models.TextField(blank=True)
 
-    cover_photo_url = models.URLField(blank=True)
+    cover_photo = models.ImageField(
+        upload_to=event_cover_path,
+        blank=True,
+    )
     location = models.CharField(max_length=255, blank=True)
     event_date = models.DateTimeField(null=True, blank=True)
 

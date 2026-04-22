@@ -1,6 +1,8 @@
+import json
+
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -25,23 +27,44 @@ from events.serializers import (
     EventPostUpdateSerializer,
     EventPublishSerializer,
     EventSchedulePublicationSerializer,
+    EventListSerializer,
     EventSerializer,
     EventUpdateSerializer,
 )
 
 
+def _event_writable_payload(request):
+    """JSON body, or multipart with optional `data` JSON string + `cover_photo` file."""
+    if "data" in request.data and isinstance(request.data["data"], str):
+        try:
+            payload = json.loads(request.data["data"])
+        except json.JSONDecodeError:
+            raise ValidationError({"messages": ["InvalidJsonInDataField"]})
+        file_obj = request.FILES.get("cover_photo")
+        if file_obj is not None:
+            payload["cover_photo"] = file_obj
+        return payload
+    return request.data
+
+
 class EventListCreateView(APIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
     def get_permissions(self):
         if self.request.method == "POST":
             return [IsAuthenticated()]
         return [AllowAny()]
 
     @extend_schema(
-        responses={200: EventSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
+        responses={200: EventListSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
     )
     def get(self, request):
         events = services.list_events(user=request.user)
-        serializer = EventSerializer(events, many=True)
+        serializer = EventListSerializer(
+            events,
+            many=True,
+            context={"request": request},
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @extend_schema(
@@ -50,17 +73,22 @@ class EventListCreateView(APIView):
     )
     @require_perm("events.add_event")
     def post(self, request):
-        serializer = EventCreateSerializer(data=request.data)
+        serializer = EventCreateSerializer(data=_event_writable_payload(request))
         serializer.is_valid(raise_exception=True)
 
         event = services.create_event(
             **serializer.validated_data,
             created_by=request.user,
         )
-        return Response(EventSerializer(event).data, status=status.HTTP_201_CREATED)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class EventDetailView(APIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
     def get_permissions(self):
         if self.request.method == "GET":
             return [AllowAny()]
@@ -79,7 +107,10 @@ class EventDetailView(APIView):
             ):
                 raise NotFound()
 
-        return Response(EventSerializer(event).data, status=status.HTTP_200_OK)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
     @extend_schema(
         request=EventUpdateSerializer,
@@ -89,7 +120,7 @@ class EventDetailView(APIView):
     def put(self, request, pk):
         event = services.get_event(pk=pk)
 
-        serializer = EventUpdateSerializer(data=request.data)
+        serializer = EventUpdateSerializer(data=_event_writable_payload(request))
         serializer.is_valid(raise_exception=True)
 
         event = services.update_event(
@@ -97,7 +128,10 @@ class EventDetailView(APIView):
             updated_by=request.user,
             **serializer.validated_data,
         )
-        return Response(EventSerializer(event).data, status=status.HTTP_200_OK)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
     @extend_schema(
         responses={204: None, **DEFAULT_ERROR_RESPONSES},
@@ -128,7 +162,10 @@ class EventPublishView(APIView):
             updated_by=request.user,
             notification=serializer.validated_data["notification"],
         )
-        return Response(EventSerializer(event).data, status=status.HTTP_200_OK)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class EventSchedulePublicationView(APIView):
@@ -153,7 +190,10 @@ class EventSchedulePublicationView(APIView):
             updated_by=request.user,
             notification=serializer.validated_data["notification"],
         )
-        return Response(EventSerializer(event).data, status=status.HTTP_200_OK)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class EventArchiveView(APIView):
@@ -166,7 +206,10 @@ class EventArchiveView(APIView):
     def post(self, request, pk):
         event = services.get_event(pk=pk)
         event = services.archive_event(event=event, updated_by=request.user)
-        return Response(EventSerializer(event).data, status=status.HTTP_200_OK)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class EventCancelView(APIView):
@@ -179,7 +222,10 @@ class EventCancelView(APIView):
     def post(self, request, pk):
         event = services.get_event(pk=pk)
         event = services.cancel_event(event=event, updated_by=request.user)
-        return Response(EventSerializer(event).data, status=status.HTTP_200_OK)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class EventCompleteView(APIView):
@@ -192,7 +238,10 @@ class EventCompleteView(APIView):
     def post(self, request, pk):
         event = services.get_event(pk=pk)
         event = services.complete_event(event=event, updated_by=request.user)
-        return Response(EventSerializer(event).data, status=status.HTTP_200_OK)
+        return Response(
+            EventSerializer(event, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 class EventInterestCreateView(APIView):

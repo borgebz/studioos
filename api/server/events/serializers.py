@@ -15,9 +15,43 @@ from events.models import (
 
 MAX_EVENT_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_EVENT_FILE_EXTENSIONS = [".pdf", ".jpg", ".jpeg", ".png", ".webp"]
+ALLOWED_COVER_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
+
+
+def event_cover_photo_absolute_url(*, serializer, obj):
+    if not obj.cover_photo:
+        return ""
+    request = serializer.context.get("request")
+    url = obj.cover_photo.url
+    if request:
+        return request.build_absolute_uri(url)
+    return url
+
+
+class EventListSerializer(serializers.ModelSerializer):
+    """Compact shape for GET /events/ list responses."""
+
+    cover_photo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Event
+        fields = [
+            "id",
+            "title",
+            "cover_photo_url",
+            "location",
+            "event_date",
+            "event_state",
+        ]
+
+    @extend_schema_field(serializers.URLField(allow_blank=True))
+    def get_cover_photo_url(self, obj):
+        return event_cover_photo_absolute_url(serializer=self, obj=obj)
 
 
 class EventSerializer(serializers.ModelSerializer):
+    cover_photo_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Event
         fields = [
@@ -37,6 +71,19 @@ class EventSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @extend_schema_field(serializers.URLField(allow_blank=True))
+    def get_cover_photo_url(self, obj):
+        return event_cover_photo_absolute_url(serializer=self, obj=obj)
+
+
+def _validate_cover_image(value):
+    ext = Path(value.name).suffix.lower()
+    if ext not in ALLOWED_COVER_EXTENSIONS:
+        raise serializers.ValidationError(["FileTypeNotSupported"])
+    if value.size > MAX_EVENT_FILE_SIZE:
+        raise serializers.ValidationError(["FileSizeExceeds10MB"])
+    return value
+
 
 class EventCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,11 +92,19 @@ class EventCreateSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "body",
-            "cover_photo_url",
+            "cover_photo",
             "location",
             "event_date",
             "contact_info",
         ]
+        extra_kwargs = {
+            "cover_photo": {"required": False, "write_only": True},
+        }
+
+    def validate_cover_photo(self, value):
+        if value is None:
+            return value
+        return _validate_cover_image(value)
 
 
 class EventUpdateSerializer(serializers.ModelSerializer):
@@ -59,11 +114,19 @@ class EventUpdateSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "body",
-            "cover_photo_url",
+            "cover_photo",
             "location",
             "event_date",
             "contact_info",
         ]
+        extra_kwargs = {
+            "cover_photo": {"required": False, "write_only": True},
+        }
+
+    def validate_cover_photo(self, value):
+        if value is None:
+            return value
+        return _validate_cover_image(value)
 
 
 class EventPublishSerializer(serializers.Serializer):

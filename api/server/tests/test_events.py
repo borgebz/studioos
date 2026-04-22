@@ -41,7 +41,6 @@ class TestEventServices:
             title="T",
             description="D",
             body="",
-            cover_photo_url="",
             location="",
             contact_info="",
         )

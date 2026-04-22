@@ -7,17 +7,102 @@ http:
   method: POST
   url: http://127.0.0.1:8000/api/events/
   body:
-    type: json
-    data: |-
-      {
-        "title": "Workshop de dança",
-        "description": "Descrição curta do evento.",
-        "body": "Corpo detalhado opcional.",
-        "cover_photo_url": "",
-        "location": "Estúdio principal",
-        "event_date": "2026-05-15T18:00:00Z",
-        "contact_info": "contacto@example.com"
-      }
+    type: multipart-form
+    data:
+      - name: title
+        type: text
+        value: Workshop de dança
+      - name: description
+        type: text
+        value: Descrição curta do evento.
+      - name: body
+        type: text
+        value: |-
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a1a;">
+
+            <div style="background-color: #0f7da8; padding: 32px 24px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: 1px;">
+                Espetáculo de Final de Ano 2025
+              </h1>
+              <p style="color: #cceeff; margin: 8px 0 0; font-size: 15px;">
+                StudioOS — Escola de Dança
+              </p>
+            </div>
+
+            <div style="padding: 32px 24px;">
+              <p style="font-size: 16px; line-height: 1.6;">
+                Caros encarregados de educação e alunos,
+              </p>
+              <p style="font-size: 16px; line-height: 1.6;">
+                É com grande entusiasmo que anunciamos o nosso <strong>Espetáculo de Final de Ano 2025</strong>,
+                o momento mais especial do calendário da StudioOS, onde todos os alunos têm a oportunidade
+                de mostrar o trabalho desenvolvido ao longo do ano letivo.
+              </p>
+
+              <div style="background-color: #f0f8ff; border-left: 4px solid #0f7da8; padding: 16px 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0 0 8px; font-size: 15px;"><strong>📅 Data:</strong> 28 de junho de 2025</p>
+                <p style="margin: 0 0 8px; font-size: 15px;"><strong>🕗 Hora:</strong> 19h00</p>
+                <p style="margin: 0 0 8px; font-size: 15px;"><strong>📍 Local:</strong> Teatro Circo de Braga</p>
+                <p style="margin: 0; font-size: 15px;"><strong>🎟️ Bilhetes:</strong> Disponíveis a partir de 1 de junho</p>
+              </div>
+
+              <p style="font-size: 16px; line-height: 1.6;">
+                Este ano o espetáculo contará com atuações de todas as modalidades:
+              </p>
+
+              <ul style="font-size: 15px; line-height: 2; padding-left: 20px; color: #333;">
+                <li>Ballet Clássico</li>
+                <li>Dança Contemporânea</li>
+                <li>Jazz & Comercial Fusion</li>
+                <li>Hip-Hop</li>
+                <li>Teatro Musical</li>
+                <li>Acrodance & Ginástica Acrobática</li>
+                <li>Baby Class I e II</li>
+              </ul>
+
+              <p style="font-size: 16px; line-height: 1.6;">
+                Mais informações sobre ensaios gerais, figurinos e logística serão comunicadas
+                nas próximas semanas através da plataforma.
+              </p>
+
+              <div style="text-align: center; margin: 32px 0;">
+                <a href="#"
+                   style="background-color: #0f7da8; color: #ffffff; padding: 14px 32px;
+                          text-decoration: none; border-radius: 6px; font-size: 16px;
+                          font-weight: bold; display: inline-block;">
+                  Marcar Presença
+                </a>
+              </div>
+
+              <p style="font-size: 14px; color: #666; line-height: 1.6;">
+                Para qualquer questão, entre em contacto connosco através da plataforma
+                ou pelo email <a href="mailto:geral@studioos.dev" style="color: #0f7da8;">geral@studioos.dev</a>.
+              </p>
+            </div>
+
+            <div style="background-color: #f5f5f5; padding: 20px 24px; text-align: center; border-top: 1px solid #e0e0e0;">
+              <p style="margin: 0; font-size: 13px; color: #888;">
+                StudioOS — Escola de Dança · Braga, Portugal
+              </p>
+              <p style="margin: 4px 0 0; font-size: 12px; color: #aaa;">
+                Recebeu este email porque está registado na plataforma StudioOS.
+              </p>
+            </div>
+
+          </div>
+      - name: location
+        type: text
+        value: Estúdio principal
+      - name: event_date
+        type: text
+        value: 2026-05-15T18:00:00Z
+      - name: contact_info
+        type: text
+        value: contacto@example.com
+      - name: cover_photo
+        type: file
+        value:
+          - /private/var/folders/gp/m9nqfyln3jv8_0f4bmygz_1m0000gn/T/TemporaryItems/com.apple.Photos.NSItemProvider/uuid=D9108634-AC12-4783-BEE8-0A32D12445E4&code=001&library=1&type=1&mode=2&loc=true&cap=true.jpeg/IMG_2440.jpeg
   auth: inherit
 
 settings:
