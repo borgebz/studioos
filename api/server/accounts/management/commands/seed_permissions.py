@@ -3,6 +3,39 @@ from django.core.management.base import BaseCommand
 
 from accounts.models import Role
 
+EVENTS_PERMISSIONS_MANAGEMENT = [
+    "events.view_event",
+    "events.add_event",
+    "events.change_event",
+    "events.delete_event",
+    "events.can_view_unpublished_event",
+    "events.can_publish_event",
+    "events.can_schedule_event_publication",
+    "events.can_archive_event",
+    "events.can_cancel_event",
+    "events.can_complete_event",
+    "events.view_eventfile",
+    "events.add_eventfile",
+    "events.change_eventfile",
+    "events.delete_eventfile",
+    "events.view_eventpost",
+    "events.add_eventpost",
+    "events.change_eventpost",
+    "events.delete_eventpost",
+    "events.can_view_unpublished_eventpost",
+    "events.can_publish_eventpost",
+    "events.can_schedule_eventpost_publication",
+    "events.view_eventcomment",
+    "events.add_eventcomment",
+    "events.change_eventcomment",
+    "events.delete_eventcomment",
+    "events.can_moderate_eventcomment",
+    "events.view_eventinterest",
+    "events.add_eventinterest",
+    "events.change_eventinterest",
+    "events.delete_eventinterest",
+]
+
 COACHINGS_PERMISSIONS = [
     "coachings.view_teacheravailability",
     "coachings.add_teacheravailability",
@@ -50,6 +83,7 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
+        *EVENTS_PERMISSIONS_MANAGEMENT,
     ],
     "coordination": [
         "accounts.view_user",
@@ -73,6 +107,7 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
+        *EVENTS_PERMISSIONS_MANAGEMENT,
     ],
     "collaborator": [
         "accounts.view_user",

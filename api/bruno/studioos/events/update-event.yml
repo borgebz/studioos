@@ -1,0 +1,36 @@
+info:
+  name: update-event
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://127.0.0.1:8000/api/events/1/
+  body:
+    type: multipart-form
+    data:
+      - name: title
+        type: text
+        value: Workshop de dança (atualizado)
+      - name: description
+        type: text
+        value: Descrição atualizada.
+      - name: body
+        type: text
+        value: Corpo atualizado.
+      - name: location
+        type: text
+        value: Estúdio principal
+      - name: event_date
+        type: text
+        value: "2026-05-16T18:00:00Z"
+      - name: contact_info
+        type: text
+        value: contacto@example.com
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

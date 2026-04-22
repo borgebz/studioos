@@ -1,0 +1,21 @@
+info:
+  name: update-comment
+  type: http
+  seq: 15
+
+http:
+  method: PUT
+  url: http://127.0.0.1:8000/api/events/1/comments/1/
+  body:
+    type: json
+    data: |-
+      {
+        "body": "Comentário atualizado."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
