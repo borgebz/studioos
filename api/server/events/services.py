@@ -1,3 +1,5 @@
+import json
+import logging
 from collections import defaultdict
 
 from django.db import transaction
@@ -14,6 +16,56 @@ from events.models import (
     EventVisibilityState,
     NotificationDelivery,
 )
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Beat schedule helpers
+# ---------------------------------------------------------------------------
+
+
+def _beat_task_name_for_event(event_id):
+    return f"schedule_event_publication_{event_id}"
+
+
+def _beat_task_name_for_post(post_id):
+    return f"schedule_post_publication_{post_id}"
+
+
+def _register_beat_publication(*, task_name, task_path, scheduled_at, args):
+    """
+    Create (or replace) a one-off ClockedSchedule + PeriodicTask for a scheduled publication.
+    Runs inside the caller's transaction — Beat entry is only committed if the whole
+    service call succeeds.
+    """
+    from django_celery_beat.models import ClockedSchedule, PeriodicTask
+
+    # Remove any existing entry for this entity first (reschedule case).
+    PeriodicTask.objects.filter(name=task_name).delete()
+
+    clocked, _ = ClockedSchedule.objects.get_or_create(clocked_time=scheduled_at)
+    PeriodicTask.objects.create(
+        name=task_name,
+        task=task_path,
+        clocked=clocked,
+        one_off=True,
+        args=json.dumps(args),
+        enabled=True,
+    )
+    logger.info("Beat entry registered: %s at %s", task_name, scheduled_at)
+
+
+def _cancel_beat_publication(*, task_name):
+    """Delete a pending Beat publication entry if it exists."""
+    from django_celery_beat.models import PeriodicTask
+
+    deleted, _ = PeriodicTask.objects.filter(name=task_name).delete()
+    if deleted:
+        logger.info("Beat entry cancelled: %s", task_name)
+
+
+# ---------------------------------------------------------------------------
 
 
 def get_event(*, pk):
@@ -92,6 +144,7 @@ def update_event(*, event, updated_by=None, **data):
 
 
 def delete_event(*, event, deleted_by=None):
+    _cancel_beat_publication(task_name=_beat_task_name_for_event(event.pk))
     event.delete(deleted_by=deleted_by)
 
 
@@ -101,6 +154,9 @@ def publish_event(
     updated_by=None,
     notification=NotificationDelivery.NONE,
 ):
+    # Cancel any pending scheduled publication Beat entry.
+    _cancel_beat_publication(task_name=_beat_task_name_for_event(event.pk))
+
     event.visibility_state = EventVisibilityState.PUBLISHED
     event.published_at = timezone.now()
     event.updated_by = updated_by
@@ -143,23 +199,18 @@ def schedule_event_publication(
     event.full_clean()
     event.save()
 
-    if notification != NotificationDelivery.NONE:
-
-        def _notify(ev=event, user=updated_by, mode=notification):
-            from events import emails
-
-            emails.send_event_notification_emails(
-                event=ev,
-                requesting_user=user,
-                delivery=mode,
-            )
-
-        transaction.on_commit(_notify)
+    _register_beat_publication(
+        task_name=_beat_task_name_for_event(event.pk),
+        task_path="events.tasks.publish_scheduled_event",
+        scheduled_at=publication_scheduled_at,
+        args=[event.pk, notification, updated_by.pk if updated_by else None],
+    )
 
     return event
 
 
 def archive_event(*, event, updated_by=None):
+    _cancel_beat_publication(task_name=_beat_task_name_for_event(event.pk))
     event.visibility_state = EventVisibilityState.ARCHIVED
     event.updated_by = updated_by
     event.full_clean()
@@ -168,6 +219,7 @@ def archive_event(*, event, updated_by=None):
 
 
 def cancel_event(*, event, updated_by=None):
+    _cancel_beat_publication(task_name=_beat_task_name_for_event(event.pk))
     event.event_state = EventState.CANCELLED
     event.updated_by = updated_by
     event.full_clean()
@@ -317,6 +369,7 @@ def update_post(*, post, updated_by=None, **data):
 
 
 def delete_post(*, post, deleted_by=None):
+    _cancel_beat_publication(task_name=_beat_task_name_for_post(post.pk))
     post.delete(deleted_by=deleted_by)
 
 
@@ -326,6 +379,9 @@ def publish_post(
     updated_by=None,
     notification=NotificationDelivery.NONE,
 ):
+    # Cancel any pending scheduled publication Beat entry.
+    _cancel_beat_publication(task_name=_beat_task_name_for_post(post.pk))
+
     post.published_at = timezone.now()
     post.publication_scheduled_at = None
     post.updated_by = updated_by
@@ -365,18 +421,12 @@ def schedule_post_publication(
     post.full_clean()
     post.save()
 
-    if notification != NotificationDelivery.NONE:
-
-        def _notify(p=post, user=updated_by, mode=notification):
-            from events import emails
-
-            emails.send_event_post_notification_emails(
-                post=p,
-                requesting_user=user,
-                delivery=mode,
-            )
-
-        transaction.on_commit(_notify)
+    _register_beat_publication(
+        task_name=_beat_task_name_for_post(post.pk),
+        task_path="events.tasks.publish_scheduled_post",
+        scheduled_at=publication_scheduled_at,
+        args=[post.pk, notification, updated_by.pk if updated_by else None],
+    )
 
     return post
 
