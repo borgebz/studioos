@@ -612,6 +612,10 @@ def create_coaching_request(
             student_id=requesting_user.pk,
             requesting_user=requesting_user,
         )
+
+    from coachings.tasks import notify_new_coaching_request
+    transaction.on_commit(lambda cid=coaching.pk: notify_new_coaching_request.delay(cid))
+
     return coaching
 
 
@@ -765,6 +769,10 @@ def approve_coaching(*, pk, studio_id, total_price, user):
         participant.save()
 
     logger.info("CoachingClass %s approved by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_approved
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_approved.delay(cid))
+
     return get_coaching(pk=pk)
 
 
@@ -931,6 +939,10 @@ def cancel_coaching(*, pk, user, cancellation_reason=""):
     coaching.updated_by = user
     coaching.save()
     logger.info("CoachingClass %s cancelled by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_cancelled
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_cancelled.delay(cid))
+
     return get_coaching(pk=pk)
 
 
@@ -964,19 +976,15 @@ def _enqueue_participant_cancel_side_effects(
     """Runs after commit — fines, notifications, and any async work must not roll back DB."""
 
     def _run():
-        # TODO: Auto-generate a Fine when is_late_cancelled is True (billing / fines module).
-        # TODO: Notify the teacher (teacher_id) that a participant cancelled coaching_class_id.
-        # TODO: Notify coordination about the cancellation (coaching_class_id, participant_id).
-        # TODO: Capacity — slot is released by persisting status cancelled / late_cancelled;
-        #       confirm reporting and any waitlist promotion when that exists.
-        logger.info(
-            "Participant cancel side-effects queued (TODO): participant=%s coaching=%s "
-            "teacher=%s late=%s",
+        from coachings.tasks import notify_participant_cancelled
+
+        notify_participant_cancelled.delay(
             participant_id,
             coaching_class_id,
-            teacher_id,
             is_late_cancelled,
         )
+        # TODO: Auto-generate a Fine when is_late_cancelled is True (billing/fines module).
+        # TODO: Notify coordination about the cancellation (coaching_class_id, participant_id).
 
     transaction.on_commit(_run)
 

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aula Cancelada</title>
+  </head>
+  <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f4f4;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+      style="max-width:600px;margin:40px auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+      <tr>
+        <td style="background-color:#1a1a2e;padding:30px 40px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:24px;">StudioOS</h1>
+          <p style="color:#cccccc;margin:8px 0 0;font-size:14px;">Escola de Dança</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color:#ffebee;padding:12px 40px;border-bottom:1px solid #ffcdd2;">
+          <p style="margin:0;color:#c62828;font-size:14px;font-weight:bold;">❌ Aula cancelada</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:40px;">
+          <h2 style="color:#1a1a2e;margin:0 0 16px;font-size:20px;">Olá {{ recipient.first_name }},</h2>
+          <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 24px;">
+            A sua aula de <strong>{{ modality }}</strong> agendada para <strong>{{ coaching_date }}</strong> foi cancelada.
+          </p>
+          {% if cancellation_reason %}
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+            style="background-color:#f8f8f8;border-radius:6px;margin:0 0 24px;">
+            <tr>
+              <td style="padding:20px;">
+                <p style="margin:0;color:#666666;font-size:14px;"><strong style="color:#1a1a2e;">Motivo:</strong> {{ cancellation_reason }}</p>
+              </td>
+            </tr>
+          </table>
+          {% endif %}
+          <p style="color:#666666;font-size:14px;line-height:1.5;margin:0;">
+            Se tiver dúvidas, por favor contacte a coordenação.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #eeeeee;">
+          <p style="color:#999999;font-size:12px;margin:0;">StudioOS — Escola de Dança</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

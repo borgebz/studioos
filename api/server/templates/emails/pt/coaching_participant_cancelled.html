@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cancelamento de Participante</title>
+  </head>
+  <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f4f4;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+      style="max-width:600px;margin:40px auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+      <tr>
+        <td style="background-color:#1a1a2e;padding:30px 40px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:24px;">StudioOS</h1>
+          <p style="color:#cccccc;margin:8px 0 0;font-size:14px;">Escola de Dança</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color:{% if is_late_cancelled %}#fff3e0{% else %}#fff8e1{% endif %};padding:12px 40px;border-bottom:1px solid {% if is_late_cancelled %}#ffe0b2{% else %}#ffe082{% endif %};">
+          <p style="margin:0;color:{% if is_late_cancelled %}#e65100{% else %}#f57f17{% endif %};font-size:14px;font-weight:bold;">
+            {% if is_late_cancelled %}⚠️ Cancelamento tardio de participante{% else %}ℹ️ Cancelamento de participante{% endif %}
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:40px;">
+          <h2 style="color:#1a1a2e;margin:0 0 16px;font-size:20px;">Olá {{ teacher.first_name }},</h2>
+          <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 24px;">
+            Um participante cancelou a sua inscrição na sua aula de <strong>{{ modality }}</strong>.
+          </p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+            style="background-color:#f8f8f8;border-radius:6px;margin:0 0 24px;">
+            <tr>
+              <td style="padding:20px;">
+                <p style="margin:0 0 8px;color:#666666;font-size:14px;"><strong style="color:#1a1a2e;">Modalidade:</strong> {{ modality }}</p>
+                <p style="margin:0 0 8px;color:#666666;font-size:14px;"><strong style="color:#1a1a2e;">Data e hora:</strong> {{ coaching_date }}</p>
+                <p style="margin:0 0 8px;color:#666666;font-size:14px;"><strong style="color:#1a1a2e;">Participante:</strong> {{ student_name }}</p>
+                <p style="margin:0 0 8px;color:#666666;font-size:14px;">
+                  <strong style="color:#1a1a2e;">Tipo:</strong>
+                  {% if is_late_cancelled %}<span style="color:#e65100;font-weight:bold;">Cancelamento tardio</span>{% else %}Cancelamento{% endif %}
+                </p>
+                {% if cancellation_reason %}
+                <p style="margin:0;color:#666666;font-size:14px;"><strong style="color:#1a1a2e;">Motivo:</strong> {{ cancellation_reason }}</p>
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+          {% if is_late_cancelled %}
+          <p style="color:#e65100;font-size:14px;line-height:1.5;margin:0 0 16px;padding:12px;background-color:#fff3e0;border-radius:6px;">
+            Este cancelamento foi efetuado dentro do período de aviso mínimo. Pode ser aplicada uma multa ao participante.
+          </p>
+          {% endif %}
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 0;">
+            <tr>
+              <td style="border-radius:6px;background-color:#1a1a2e;">
+                <a href="{{ coaching_url }}" style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">Ver Aula</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #eeeeee;">
+          <p style="color:#999999;font-size:12px;margin:0;">StudioOS — Escola de Dança</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

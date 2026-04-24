@@ -38,6 +38,177 @@ def advance_scheduled_to_waiting_confirmation(self):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_participant_cancelled(self, participant_id, coaching_id, is_late_cancelled):
+    """
+    Notify the teacher that a participant cancelled their enrolment.
+    """
+    try:
+        from coachings.models import CoachingClass, CoachingParticipant
+        from coachings.emails import send_participant_cancelled_notification
+
+        try:
+            coaching = CoachingClass.objects.select_related(
+                "teacher", "modality", "studio"
+            ).get(pk=coaching_id)
+        except CoachingClass.DoesNotExist:
+            logger.warning(
+                "notify_participant_cancelled: coaching %s not found.", coaching_id
+            )
+            return
+
+        try:
+            participant = CoachingParticipant.objects.select_related("student").get(
+                pk=participant_id
+            )
+        except CoachingParticipant.DoesNotExist:
+            logger.warning(
+                "notify_participant_cancelled: participant %s not found.", participant_id
+            )
+            return
+
+        send_participant_cancelled_notification(
+            coaching=coaching,
+            teacher=coaching.teacher,
+            student=participant.student,
+            is_late_cancelled=is_late_cancelled,
+            cancellation_reason=participant.cancellation_reason or "",
+        )
+        logger.info(
+            "notify_participant_cancelled: teacher notified for coaching=%s participant=%s.",
+            coaching_id,
+            participant_id,
+        )
+    except Exception as exc:
+        logger.error(
+            "notify_participant_cancelled failed for participant %s: %s",
+            participant_id,
+            exc,
+            exc_info=True,
+        )
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_coaching_approved(self, coaching_id):
+    """
+    Notify all active/pending/invited participants and the teacher
+    that the coaching has been approved and scheduled.
+    """
+    try:
+        from coachings.models import CoachingClass, CoachingParticipantStatus
+        from coachings.emails import send_coaching_approved_notification
+
+        _NOTIFY_STATUSES = {
+            CoachingParticipantStatus.ACTIVE,
+            CoachingParticipantStatus.PENDING,
+            CoachingParticipantStatus.INVITED,
+        }
+
+        try:
+            coaching = (
+                CoachingClass.objects
+                .select_related("teacher", "modality", "studio")
+                .prefetch_related("participants__student")
+                .get(pk=coaching_id)
+            )
+        except CoachingClass.DoesNotExist:
+            logger.warning("notify_coaching_approved: coaching %s not found.", coaching_id)
+            return
+
+        recipients = set()
+        for p in coaching.participants.all():
+            if p.status in _NOTIFY_STATUSES:
+                recipients.add(p.student)
+
+        for recipient in recipients:
+            send_coaching_approved_notification(coaching=coaching, recipient=recipient)
+
+        # Notify teacher separately with their own language
+        send_coaching_approved_notification(coaching=coaching, recipient=coaching.teacher)
+
+        logger.info(
+            "notify_coaching_approved: notified %d recipient(s) + teacher for coaching %s.",
+            len(recipients),
+            coaching_id,
+        )
+    except Exception as exc:
+        logger.error("notify_coaching_approved failed for coaching %s: %s", coaching_id, exc, exc_info=True)
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_coaching_cancelled(self, coaching_id):
+    """
+    Notify all non-cancelled participants and the teacher
+    that the coaching has been cancelled.
+    """
+    try:
+        from coachings.models import CoachingClass, CoachingParticipantStatus
+        from coachings.emails import send_coaching_cancelled_notification
+
+        _EXCLUDED_STATUSES = {
+            CoachingParticipantStatus.CANCELLED,
+            CoachingParticipantStatus.LATE_CANCELLED,
+        }
+
+        try:
+            coaching = (
+                CoachingClass.objects
+                .select_related("teacher", "modality", "studio")
+                .prefetch_related("participants__student")
+                .get(pk=coaching_id)
+            )
+        except CoachingClass.DoesNotExist:
+            logger.warning("notify_coaching_cancelled: coaching %s not found.", coaching_id)
+            return
+
+        recipients = set()
+        for p in coaching.participants.all():
+            if p.status not in _EXCLUDED_STATUSES:
+                recipients.add(p.student)
+
+        for recipient in recipients:
+            send_coaching_cancelled_notification(coaching=coaching, recipient=recipient)
+
+        send_coaching_cancelled_notification(coaching=coaching, recipient=coaching.teacher)
+
+        logger.info(
+            "notify_coaching_cancelled: notified %d recipient(s) + teacher for coaching %s.",
+            len(recipients),
+            coaching_id,
+        )
+    except Exception as exc:
+        logger.error("notify_coaching_cancelled failed for coaching %s: %s", coaching_id, exc, exc_info=True)
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_new_coaching_request(self, coaching_id):
+    """
+    Notify the assigned teacher that a new coaching request has been submitted.
+    """
+    try:
+        from coachings.models import CoachingClass
+        from coachings.emails import send_new_coaching_request_notification
+
+        try:
+            coaching = (
+                CoachingClass.objects
+                .select_related("teacher", "modality", "studio", "requested_by")
+                .get(pk=coaching_id)
+            )
+        except CoachingClass.DoesNotExist:
+            logger.warning("notify_new_coaching_request: coaching %s not found.", coaching_id)
+            return
+
+        send_new_coaching_request_notification(coaching=coaching, teacher=coaching.teacher)
+        logger.info("notify_new_coaching_request: notified teacher for coaching %s.", coaching_id)
+    except Exception as exc:
+        logger.error("notify_new_coaching_request failed for coaching %s: %s", coaching_id, exc, exc_info=True)
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_waiting_confirmation_reminders(self):
     """
     Runs every hour. For each coaching in WAITING_CONFIRMATION with no teacher
