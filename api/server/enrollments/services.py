@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
-from accounts.emails import send_activation_email
 from accounts.models import Role
 from enrollments.models import (
     ConsentType,
@@ -412,10 +411,16 @@ def approve_enrollment(*, enrollment, updated_by=None):
     enrollment.save()
 
     # --- Send activation emails after transaction commits ---
+    from accounts.tasks import send_activation_email_task
+
     if parent_created:
-        transaction.on_commit(lambda: send_activation_email(parent_user))
+        transaction.on_commit(
+            lambda uid=parent_user.pk: send_activation_email_task.delay(uid)
+        )
     if student_created:
-        transaction.on_commit(lambda: send_activation_email(student_user))
+        transaction.on_commit(
+            lambda uid=student_user.pk: send_activation_email_task.delay(uid)
+        )
 
     return enrollment
 

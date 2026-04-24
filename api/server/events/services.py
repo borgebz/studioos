@@ -165,17 +165,11 @@ def publish_event(
     event.save()
 
     if notification != NotificationDelivery.NONE:
-
-        def _notify(ev=event, user=updated_by, mode=notification):
-            from events import emails
-
-            emails.send_event_notification_emails(
-                event=ev,
-                requesting_user=user,
-                delivery=mode,
-            )
-
-        transaction.on_commit(_notify)
+        from events.tasks import send_event_notification_emails_task
+        transaction.on_commit(
+            lambda eid=event.pk, uid=updated_by.pk if updated_by else None, mode=notification:
+                send_event_notification_emails_task.delay(eid, uid, mode)
+        )
 
     return event
 
@@ -389,17 +383,11 @@ def publish_post(
     post.save()
 
     if notification != NotificationDelivery.NONE:
-
-        def _notify(p=post, user=updated_by, mode=notification):
-            from events import emails
-
-            emails.send_event_post_notification_emails(
-                post=p,
-                requesting_user=user,
-                delivery=mode,
-            )
-
-        transaction.on_commit(_notify)
+        from events.tasks import send_event_post_notification_emails_task
+        transaction.on_commit(
+            lambda pid=post.pk, uid=updated_by.pk if updated_by else None, mode=notification:
+                send_event_post_notification_emails_task.delay(pid, uid, mode)
+        )
 
     return post
 

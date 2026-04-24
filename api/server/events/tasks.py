@@ -1,55 +1,49 @@
-import json
 import logging
 
 from celery import shared_task
-from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
 
-User = get_user_model()
-
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def publish_scheduled_event(self, event_id, notification, triggered_by_user_id):
+def send_event_notification_emails_task(self, event_id, requesting_user_id, delivery):
     """
-    Fired by Celery Beat at the scheduled publication datetime.
-    Guards against state changes: if the event is no longer SCHEDULED
-    (manually published, cancelled, archived), skips silently.
+    Send notification emails to the event audience after publication.
     """
     try:
-        from events.models import Event, EventVisibilityState
-        from events.services import get_event, publish_event
+        from django.contrib.auth import get_user_model
+        from events.models import Event
+        from events.emails import send_event_notification_emails
+
+        User = get_user_model()
 
         try:
-            event = get_event(pk=event_id)
-        except Exception:
+            event = Event.objects.get(pk=event_id)
+        except Event.DoesNotExist:
             logger.warning(
-                "publish_scheduled_event: event %s not found, skipping.", event_id
-            )
-            return
-
-        if event.visibility_state != EventVisibilityState.SCHEDULED:
-            logger.info(
-                "publish_scheduled_event: event %s is no longer SCHEDULED (state=%s), skipping.",
+                "send_event_notification_emails_task: event %s not found, skipping.",
                 event_id,
-                event.visibility_state,
             )
             return
 
         try:
-            triggered_by = User.objects.get(pk=triggered_by_user_id)
+            requesting_user = User.objects.get(pk=requesting_user_id)
         except User.DoesNotExist:
-            triggered_by = None
+            requesting_user = None
 
-        publish_event(event=event, updated_by=triggered_by, notification=notification)
+        send_event_notification_emails(
+            event=event,
+            requesting_user=requesting_user,
+            delivery=delivery,
+        )
         logger.info(
-            "publish_scheduled_event: event %s published (notification=%s).",
+            "send_event_notification_emails_task: emails sent for event %s (delivery=%s).",
             event_id,
-            notification,
+            delivery,
         )
     except Exception as exc:
         logger.error(
-            "publish_scheduled_event failed for event %s: %s",
+            "send_event_notification_emails_task failed for event %s: %s",
             event_id,
             exc,
             exc_info=True,
@@ -58,50 +52,46 @@ def publish_scheduled_event(self, event_id, notification, triggered_by_user_id):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def publish_scheduled_post(self, post_id, notification, triggered_by_user_id):
+def send_event_post_notification_emails_task(
+    self, post_id, requesting_user_id, delivery
+):
     """
-    Fired by Celery Beat at the scheduled publication datetime.
-    Guards against state changes: if the post is already published or deleted, skips silently.
+    Send notification emails to the event audience after post publication.
     """
     try:
+        from django.contrib.auth import get_user_model
         from events.models import EventPost
-        from events.services import publish_post
+        from events.emails import send_event_post_notification_emails
+
+        User = get_user_model()
 
         try:
             post = EventPost.objects.select_related("event").get(pk=post_id)
         except EventPost.DoesNotExist:
             logger.warning(
-                "publish_scheduled_post: post %s not found, skipping.", post_id
-            )
-            return
-
-        if post.published_at is not None:
-            logger.info(
-                "publish_scheduled_post: post %s already published, skipping.", post_id
-            )
-            return
-
-        if post.publication_scheduled_at is None:
-            logger.info(
-                "publish_scheduled_post: post %s schedule was cleared, skipping.",
+                "send_event_post_notification_emails_task: post %s not found, skipping.",
                 post_id,
             )
             return
 
         try:
-            triggered_by = User.objects.get(pk=triggered_by_user_id)
+            requesting_user = User.objects.get(pk=requesting_user_id)
         except User.DoesNotExist:
-            triggered_by = None
+            requesting_user = None
 
-        publish_post(post=post, updated_by=triggered_by, notification=notification)
+        send_event_post_notification_emails(
+            post=post,
+            requesting_user=requesting_user,
+            delivery=delivery,
+        )
         logger.info(
-            "publish_scheduled_post: post %s published (notification=%s).",
+            "send_event_post_notification_emails_task: emails sent for post %s (delivery=%s).",
             post_id,
-            notification,
+            delivery,
         )
     except Exception as exc:
         logger.error(
-            "publish_scheduled_post failed for post %s: %s",
+            "send_event_post_notification_emails_task failed for post %s: %s",
             post_id,
             exc,
             exc_info=True,
