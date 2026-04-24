@@ -36,6 +36,9 @@ Services:
 - API: http://localhost:8000
 - Mailpit UI: http://localhost:8025
 - Postgres: localhost:5433
+- Flower (Celery monitor): http://localhost:5555
+- RedisInsight: http://localhost:5540
+- Portainer (container monitor): http://localhost:9000
 
 ## Tests
 

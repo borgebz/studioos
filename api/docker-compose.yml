@@ -1,4 +1,6 @@
 services:
+
+  # ── Database ────────────────────────────────────────────────────────────────
   db:
     image: postgres:16-alpine
     env_file:
@@ -13,16 +15,18 @@ services:
       timeout: 5s
       retries: 5
 
-  mailpit:
-    image: axllent/mailpit
+  # ── Broker ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
     ports:
-      - "8025:8025"   # Web UI
-      - "1025:1025"   # SMTP
-    environment:
-      MP_MAX_MESSAGES: 500
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # ── API ─────────────────────────────────────────────────────────────────────
   api:
     build:
       context: ./server
@@ -33,10 +37,81 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       mailpit:
         condition: service_started
     volumes:
       - ./server:/app
 
+  # ── Celery Worker ───────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ./server
+    command: uv run celery -A config worker --loglevel=info
+    env_file:
+      - ./server/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+
+  # ── Celery Beat (scheduler) ─────────────────────────────────────────────────
+  beat:
+    build:
+      context: ./server
+    command: uv run celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - ./server/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+
+  # ── Mail ────────────────────────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  # ── Monitoring ──────────────────────────────────────────────────────────────
+  flower:
+    image: mher/flower
+    ports:
+      - "5555:5555"
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      FLOWER_PORT: 5555
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  redisinsight:
+    image: redis/redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+
+  portainer:
+    image: portainer/portainer-ce
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
 volumes:
   postgres_data:
+  portainer_data:
