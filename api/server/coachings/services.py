@@ -17,6 +17,8 @@ from coachings.models import (
 from modality.models import Modality
 from studios.models import Studio, StudioModality
 
+from billing.services import generate_coaching_billing
+
 logger = logging.getLogger(__name__)
 
 _VALID_TRANSITIONS = {
@@ -778,8 +780,10 @@ def complete_coaching(*, pk, user):
     coaching.full_clean()
     coaching.save()
     logger.info("CoachingClass %s completed by user=%s", pk, user.id)
-    return get_coaching(pk=pk)
 
+    # Direct Billing App injection: Automatically generate billing entries
+    generate_coaching_billing(coaching_class=coaching, created_by=user)
+    return get_coaching(pk=pk)
 
 def eligible_scheduled_coachings_queryset(*, now=None):
     """

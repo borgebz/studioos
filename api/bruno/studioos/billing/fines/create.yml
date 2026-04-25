@@ -1,0 +1,25 @@
+info:
+  name: create
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/billing/fines/
+  body:
+    type: json
+    data: |-
+      {
+        "student": 1, 
+        "coaching": null,
+        "reason": "Atraso de 15 minutos na aula",
+        "amount": "10.00",
+        "notes": "Multa de teste via Bruno."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
