@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "enrollments",
     "coachings",
     "events",
+    "billing",
 ]
 
 # API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.
