@@ -1,0 +1,22 @@
+info:
+  name: update-post
+  type: http
+  seq: 20
+
+http:
+  method: PUT
+  url: http://127.0.0.1:8000/api/events/1/posts/1/
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Atualização do evento (editado)",
+        "body": "Texto do post atualizado."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

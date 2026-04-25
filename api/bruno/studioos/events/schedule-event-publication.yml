@@ -1,0 +1,22 @@
+info:
+  name: schedule-event-publication
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/events/1/schedule-publication/
+  body:
+    type: json
+    data: |-
+      {
+        "publication_scheduled_at": "2027-06-01T10:00:00Z",
+        "notification": "none"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

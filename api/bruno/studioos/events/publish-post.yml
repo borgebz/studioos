@@ -1,0 +1,21 @@
+info:
+  name: publish-post
+  type: http
+  seq: 22
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/events/1/posts/1/publish/
+  body:
+    type: json
+    data: |-
+      {
+        "notification": "none"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
