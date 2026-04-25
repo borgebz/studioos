@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -9,21 +8,26 @@ from billing.serializers import (
     CoachingBillingEntrySerializer,
     FineSerializer,
     FineCreateSerializer,
-    FineUpdateSerializer
+    FineUpdateSerializer,
 )
 from core.decorators import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
+
 
 class CoachingBillingListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        responses={200: CoachingBillingEntrySerializer(many=True), **DEFAULT_ERROR_RESPONSES},
+        responses={
+            200: CoachingBillingEntrySerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
     )
     @require_perm("billing.view_coachingbillingentry")
     def get(self, request):
         bills = services.list_coaching_bills()
         return Response(CoachingBillingEntrySerializer(bills, many=True).data)
+
 
 class FineListCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -44,10 +48,13 @@ class FineListCreateView(APIView):
     def post(self, request):
         serializer = FineCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        fine = services.create_fine(created_by=request.user, **serializer.validated_data)
+        fine = services.create_fine(
+            created_by=request.user, **serializer.validated_data
+        )
         # Re-fetch for relations
         fine = services.get_fine(pk=fine.pk)
         return Response(FineSerializer(fine).data, status=status.HTTP_201_CREATED)
+
 
 class FineDetailView(APIView):
     permission_classes = [IsAuthenticated]
@@ -69,5 +76,7 @@ class FineDetailView(APIView):
         fine = services.get_fine(pk=pk)
         serializer = FineUpdateSerializer(fine, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        fine = services.update_fine(fine=fine, updated_by=request.user, **serializer.validated_data)
+        fine = services.update_fine(
+            fine=fine, updated_by=request.user, **serializer.validated_data
+        )
         return Response(FineSerializer(fine).data)

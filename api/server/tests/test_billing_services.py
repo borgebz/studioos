@@ -34,7 +34,9 @@ def scheduled_coaching(direction_user, teacher_user, modality, studio_with_modal
 
 class TestGenerateCoachingBilling:
     @pytest.mark.django_db
-    def test_generate_billing_invalid_price_raises_error(self, scheduled_coaching, direction_user):
+    def test_generate_billing_invalid_price_raises_error(
+        self, scheduled_coaching, direction_user
+    ):
         """
         Ensure that attempting to generate bills for a coaching class
         with no price or zero price raises an InvalidCoachingPrice error.
@@ -47,8 +49,7 @@ class TestGenerateCoachingBilling:
 
         with pytest.raises(ValidationError) as exc:
             generate_coaching_billing(
-                coaching_class=scheduled_coaching,
-                created_by=direction_user
+                coaching_class=scheduled_coaching, created_by=direction_user
             )
 
         assert "InvalidCoachingPrice" in str(exc.value.detail)

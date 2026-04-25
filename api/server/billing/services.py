@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Coaching Billing Services
 
+
 @transaction.atomic
 def generate_coaching_billing(*, coaching_class, created_by):
     """
@@ -20,9 +21,9 @@ def generate_coaching_billing(*, coaching_class, created_by):
 
     # Filter participants who actually attended (using the coachings app status)
     from coachings.models import CoachingParticipantStatus
+
     participants = coaching_class.participants.filter(
-        status=CoachingParticipantStatus.ATTENDED,
-        deleted_at__isnull=True
+        status=CoachingParticipantStatus.ATTENDED, deleted_at__isnull=True
     )
 
     count = participants.count()
@@ -40,13 +41,15 @@ def generate_coaching_billing(*, coaching_class, created_by):
             coaching=coaching_class,
             amount=split_price,
             status=BillingStatus.PENDING,
-            created_by=created_by
+            created_by=created_by,
         )
         entry.full_clean()
         entry.save()
         entries.append(entry)
 
-    logger.info("Generated %d billing entries for coaching %s", len(entries), coaching_class.id)
+    logger.info(
+        "Generated %d billing entries for coaching %s", len(entries), coaching_class.id
+    )
     return entries
 
 
@@ -59,9 +62,12 @@ def list_coaching_bills(*, filters=None):
 
 # Fine Services
 
+
 def get_fine(*, pk):
     try:
-        return Fine.objects.select_related("student", "coaching", "issued_by").get(pk=pk)
+        return Fine.objects.select_related("student", "coaching", "issued_by").get(
+            pk=pk
+        )
     except Fine.DoesNotExist:
         raise NotFound()
 

@@ -785,6 +785,7 @@ def complete_coaching(*, pk, user):
     generate_coaching_billing(coaching_class=coaching, created_by=user)
     return get_coaching(pk=pk)
 
+
 def eligible_scheduled_coachings_queryset(*, now=None):
     """
     Coachings still ``SCHEDULED`` whose session end is at or before ``now``.
