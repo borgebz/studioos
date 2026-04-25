@@ -22,9 +22,7 @@ def seed_periodic_tasks(apps, schema_editor):
 
 def remove_periodic_tasks(apps, schema_editor):
     PeriodicTask = apps.get_model("django_celery_beat", "PeriodicTask")
-    PeriodicTask.objects.filter(
-        name="send_waiting_confirmation_reminders"
-    ).delete()
+    PeriodicTask.objects.filter(name="send_waiting_confirmation_reminders").delete()
 
 
 class Migration(migrations.Migration):

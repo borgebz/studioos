@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pending Attendance Confirmation</title>
+  </head>
+  <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f4f4;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+      style="max-width:600px;margin:40px auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+
+      <!-- Header -->
+      <tr>
+        <td style="background-color:#1a1a2e;padding:30px 40px;text-align:center;">
+          <h1 style="color:#ffffff;margin:0;font-size:24px;">StudioOS</h1>
+          <p style="color:#cccccc;margin:8px 0 0;font-size:14px;">Dance School</p>
+        </td>
+      </tr>
+
+      <!-- Alert banner -->
+      <tr>
+        <td style="background-color:#fff8e1;padding:12px 40px;border-bottom:1px solid #ffe082;">
+          <p style="margin:0;color:#f57f17;font-size:14px;font-weight:bold;">
+            ⏳ Pending attendance confirmation
+          </p>
+        </td>
+      </tr>
+
+      <!-- Body -->
+      <tr>
+        <td style="padding:40px;">
+          <h2 style="color:#1a1a2e;margin:0 0 16px;font-size:20px;">
+            Hello {{ recipient.first_name }},
+          </h2>
+
+          <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 24px;">
+            Your attendance at the <strong>{{ modality }}</strong> class on
+            <strong>{{ coaching_date }}</strong> has not yet been confirmed.
+          </p>
+
+          <!-- Coaching details -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+            style="background-color:#f8f8f8;border-radius:6px;padding:0;margin:0 0 24px;">
+            <tr>
+              <td style="padding:20px;">
+                <p style="margin:0 0 8px;color:#666666;font-size:14px;">
+                  <strong style="color:#1a1a2e;">Modality:</strong> {{ modality }}
+                </p>
+                <p style="margin:0;color:#666666;font-size:14px;">
+                  <strong style="color:#1a1a2e;">Date and time:</strong> {{ coaching_date }}
+                </p>
+              </td>
+            </tr>
+          </table>
+
+          <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 24px;">
+            Please access the platform and confirm whether you attended the class.
+          </p>
+
+          <!-- CTA -->
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 24px;">
+            <tr>
+              <td style="border-radius:6px;background-color:#1a1a2e;">
+                <a href="{{ coaching_url }}"
+                  style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">
+                  Confirm Attendance
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          {% if is_final_reminder %}
+          <p style="color:#c62828;font-size:14px;line-height:1.5;margin:0 0 16px;padding:12px;background-color:#ffebee;border-radius:6px;">
+            ⚠️ <strong>Final reminder.</strong> If you do not confirm shortly, coordination will be notified to resolve the situation manually.
+          </p>
+          {% endif %}
+
+          <p style="color:#999999;font-size:13px;line-height:1.5;margin:0;">
+            If you have already confirmed your attendance, you can ignore this email.
+          </p>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="background-color:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #eeeeee;">
+          <p style="color:#999999;font-size:12px;margin:0;">
+            StudioOS — Dance School
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

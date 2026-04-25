@@ -23,6 +23,10 @@ _SUBJECTS = {
         "pt": "Cancelamento de Participante — StudioOS",
         "en": "Participant Cancellation — StudioOS",
     },
+    "coaching_attendance_confirmation_reminder": {
+        "pt": "Confirmação de Presença Pendente — StudioOS",
+        "en": "Pending Attendance Confirmation — StudioOS",
+    },
     "coaching_waiting_confirmation_reminder": {
         "pt": "Confirmação de Aula Pendente — StudioOS",
         "en": "Pending Class Confirmation — StudioOS",
@@ -35,7 +39,9 @@ def _language(user):
 
 
 def _subject(template_name, language):
-    return _SUBJECTS.get(template_name, {}).get(language, _SUBJECTS[template_name]["pt"])
+    return _SUBJECTS.get(template_name, {}).get(
+        language, _SUBJECTS[template_name]["pt"]
+    )
 
 
 def _coaching_context(coaching):
@@ -131,7 +137,9 @@ def send_waiting_confirmation_reminder(*, coaching, teacher, is_final_reminder=F
     )
 
 
-def send_participant_cancelled_notification(*, coaching, teacher, student, is_late_cancelled, cancellation_reason=""):
+def send_participant_cancelled_notification(
+    *, coaching, teacher, student, is_late_cancelled, cancellation_reason=""
+):
     """Notify the teacher that a participant cancelled their enrolment."""
     lang = _language(teacher)
     context = {
@@ -154,4 +162,27 @@ def send_participant_cancelled_notification(*, coaching, teacher, student, is_la
         teacher.pk,
         student.pk,
         is_late_cancelled,
+    )
+
+
+def send_attendance_confirmation_reminder(*, coaching, recipient, is_final_reminder=False):
+    """Send an attendance confirmation reminder to a participant in WAITING_CONFIRMATION."""
+    lang = _language(recipient)
+    context = {
+        **_coaching_context(coaching),
+        "recipient": recipient,
+        "is_final_reminder": is_final_reminder,
+    }
+    send_templated_email(
+        to=recipient.email,
+        subject=_subject("coaching_attendance_confirmation_reminder", lang),
+        template_name="coaching_attendance_confirmation_reminder",
+        context=context,
+        language=lang,
+    )
+    logger.info(
+        "Attendance confirmation reminder sent: coaching=%s recipient=%s final=%s",
+        coaching.pk,
+        recipient.pk,
+        is_final_reminder,
     )

@@ -614,7 +614,10 @@ def create_coaching_request(
         )
 
     from coachings.tasks import notify_new_coaching_request
-    transaction.on_commit(lambda cid=coaching.pk: notify_new_coaching_request.delay(cid))
+
+    transaction.on_commit(
+        lambda cid=coaching.pk: notify_new_coaching_request.delay(cid)
+    )
 
     return coaching
 
@@ -771,6 +774,7 @@ def approve_coaching(*, pk, studio_id, total_price, user):
     logger.info("CoachingClass %s approved by user=%s", pk, user.id)
 
     from coachings.tasks import notify_coaching_approved
+
     transaction.on_commit(lambda cid=coaching.pk: notify_coaching_approved.delay(cid))
 
     return get_coaching(pk=pk)
@@ -941,6 +945,7 @@ def cancel_coaching(*, pk, user, cancellation_reason=""):
     logger.info("CoachingClass %s cancelled by user=%s", pk, user.id)
 
     from coachings.tasks import notify_coaching_cancelled
+
     transaction.on_commit(lambda cid=coaching.pk: notify_coaching_cancelled.delay(cid))
 
     return get_coaching(pk=pk)

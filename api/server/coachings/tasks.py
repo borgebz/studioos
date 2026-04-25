@@ -1,5 +1,4 @@
 import logging
-from datetime import timedelta
 
 from celery import shared_task
 from django.utils import timezone
@@ -9,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Reminder windows in hours after coaching end_datetime.
 _REMINDER_WINDOWS = [
     (24, False),  # first reminder at 24h — (hours_since_end, is_final_reminder)
-    (42, True),   # final reminder at 42h
+    (42, True),  # final reminder at 42h
 ]
 
 
@@ -62,7 +61,8 @@ def notify_participant_cancelled(self, participant_id, coaching_id, is_late_canc
             )
         except CoachingParticipant.DoesNotExist:
             logger.warning(
-                "notify_participant_cancelled: participant %s not found.", participant_id
+                "notify_participant_cancelled: participant %s not found.",
+                participant_id,
             )
             return
 
@@ -106,13 +106,14 @@ def notify_coaching_approved(self, coaching_id):
 
         try:
             coaching = (
-                CoachingClass.objects
-                .select_related("teacher", "modality", "studio")
+                CoachingClass.objects.select_related("teacher", "modality", "studio")
                 .prefetch_related("participants__student")
                 .get(pk=coaching_id)
             )
         except CoachingClass.DoesNotExist:
-            logger.warning("notify_coaching_approved: coaching %s not found.", coaching_id)
+            logger.warning(
+                "notify_coaching_approved: coaching %s not found.", coaching_id
+            )
             return
 
         recipients = set()
@@ -124,7 +125,9 @@ def notify_coaching_approved(self, coaching_id):
             send_coaching_approved_notification(coaching=coaching, recipient=recipient)
 
         # Notify teacher separately with their own language
-        send_coaching_approved_notification(coaching=coaching, recipient=coaching.teacher)
+        send_coaching_approved_notification(
+            coaching=coaching, recipient=coaching.teacher
+        )
 
         logger.info(
             "notify_coaching_approved: notified %d recipient(s) + teacher for coaching %s.",
@@ -132,7 +135,12 @@ def notify_coaching_approved(self, coaching_id):
             coaching_id,
         )
     except Exception as exc:
-        logger.error("notify_coaching_approved failed for coaching %s: %s", coaching_id, exc, exc_info=True)
+        logger.error(
+            "notify_coaching_approved failed for coaching %s: %s",
+            coaching_id,
+            exc,
+            exc_info=True,
+        )
         raise self.retry(exc=exc)
 
 
@@ -153,13 +161,14 @@ def notify_coaching_cancelled(self, coaching_id):
 
         try:
             coaching = (
-                CoachingClass.objects
-                .select_related("teacher", "modality", "studio")
+                CoachingClass.objects.select_related("teacher", "modality", "studio")
                 .prefetch_related("participants__student")
                 .get(pk=coaching_id)
             )
         except CoachingClass.DoesNotExist:
-            logger.warning("notify_coaching_cancelled: coaching %s not found.", coaching_id)
+            logger.warning(
+                "notify_coaching_cancelled: coaching %s not found.", coaching_id
+            )
             return
 
         recipients = set()
@@ -170,7 +179,9 @@ def notify_coaching_cancelled(self, coaching_id):
         for recipient in recipients:
             send_coaching_cancelled_notification(coaching=coaching, recipient=recipient)
 
-        send_coaching_cancelled_notification(coaching=coaching, recipient=coaching.teacher)
+        send_coaching_cancelled_notification(
+            coaching=coaching, recipient=coaching.teacher
+        )
 
         logger.info(
             "notify_coaching_cancelled: notified %d recipient(s) + teacher for coaching %s.",
@@ -178,7 +189,12 @@ def notify_coaching_cancelled(self, coaching_id):
             coaching_id,
         )
     except Exception as exc:
-        logger.error("notify_coaching_cancelled failed for coaching %s: %s", coaching_id, exc, exc_info=True)
+        logger.error(
+            "notify_coaching_cancelled failed for coaching %s: %s",
+            coaching_id,
+            exc,
+            exc_info=True,
+        )
         raise self.retry(exc=exc)
 
 
@@ -192,62 +208,107 @@ def notify_new_coaching_request(self, coaching_id):
         from coachings.emails import send_new_coaching_request_notification
 
         try:
-            coaching = (
-                CoachingClass.objects
-                .select_related("teacher", "modality", "studio", "requested_by")
-                .get(pk=coaching_id)
-            )
+            coaching = CoachingClass.objects.select_related(
+                "teacher", "modality", "studio", "requested_by"
+            ).get(pk=coaching_id)
         except CoachingClass.DoesNotExist:
-            logger.warning("notify_new_coaching_request: coaching %s not found.", coaching_id)
+            logger.warning(
+                "notify_new_coaching_request: coaching %s not found.", coaching_id
+            )
             return
 
-        send_new_coaching_request_notification(coaching=coaching, teacher=coaching.teacher)
-        logger.info("notify_new_coaching_request: notified teacher for coaching %s.", coaching_id)
+        send_new_coaching_request_notification(
+            coaching=coaching, teacher=coaching.teacher
+        )
+        logger.info(
+            "notify_new_coaching_request: notified teacher for coaching %s.",
+            coaching_id,
+        )
     except Exception as exc:
-        logger.error("notify_new_coaching_request failed for coaching %s: %s", coaching_id, exc, exc_info=True)
+        logger.error(
+            "notify_new_coaching_request failed for coaching %s: %s",
+            coaching_id,
+            exc,
+            exc_info=True,
+        )
         raise self.retry(exc=exc)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_waiting_confirmation_reminders(self):
     """
-    Runs every hour. For each coaching in WAITING_CONFIRMATION with no teacher
-    confirmation, sends a reminder at the 24h and 42h marks after end_datetime.
-    Each window is 1 hour wide (hours_since_end >= target and < target + 1).
+    Runs every hour. For each coaching in WAITING_CONFIRMATION, sends reminders
+    at the 24h and 42h marks after end_datetime to whoever has not yet confirmed:
+    - Teacher, if teacher_confirmed_at is still null.
+    - Each ACTIVE participant who has not yet moved to ATTENDED or ABSENT.
     """
     try:
-        from coachings.models import CoachingClass, CoachingStatus
-        from coachings.emails import send_waiting_confirmation_reminder
-        from django.contrib.auth import get_user_model
+        from coachings.models import (
+            CoachingClass,
+            CoachingParticipantStatus,
+            CoachingStatus,
+        )
+        from coachings.emails import (
+                send_waiting_confirmation_reminder,
+                send_attendance_confirmation_reminder,
+            )
 
-        User = get_user_model()
         now = timezone.now()
         sent = 0
 
-        pending = CoachingClass.objects.filter(
-            status=CoachingStatus.WAITING_CONFIRMATION,
-            teacher_confirmed_at__isnull=True,
-        ).select_related("teacher", "modality", "studio")
+        pending = (
+            CoachingClass.objects.filter(
+                status=CoachingStatus.WAITING_CONFIRMATION,
+            )
+            .select_related("teacher", "modality", "studio")
+            .prefetch_related("participants__student")
+        )
 
         for coaching in pending:
             hours_since_end = (now - coaching.end_datetime).total_seconds() / 3600
 
-            for target_hours, is_final in _REMINDER_WINDOWS:
+            in_window = False
+            is_final = False
+            for target_hours, _is_final in _REMINDER_WINDOWS:
                 if target_hours <= hours_since_end < target_hours + 1:
-                    send_waiting_confirmation_reminder(
+                    in_window = True
+                    is_final = _is_final
+                    break
+
+            if not in_window:
+                continue
+
+            # Notify teacher if not yet confirmed.
+            if coaching.teacher_confirmed_at is None:
+                send_waiting_confirmation_reminder(
+                    coaching=coaching,
+                    teacher=coaching.teacher,
+                    is_final_reminder=is_final,
+                )
+                sent += 1
+                logger.info(
+                    "Reminder sent to teacher: coaching=%s hours_since_end=%.1f final=%s",
+                    coaching.pk,
+                    hours_since_end,
+                    is_final,
+                )
+
+            # Notify each ACTIVE participant who has not yet confirmed attendance.
+            for participant in coaching.participants.all():
+                if participant.status == CoachingParticipantStatus.ACTIVE:
+                    send_attendance_confirmation_reminder(
                         coaching=coaching,
-                        teacher=coaching.teacher,
+                        recipient=participant.student,
                         is_final_reminder=is_final,
                     )
                     sent += 1
                     logger.info(
-                        "Reminder sent: coaching=%s teacher=%s hours_since_end=%.1f final=%s",
+                        "Reminder sent to participant: coaching=%s student=%s hours_since_end=%.1f final=%s",
                         coaching.pk,
-                        coaching.teacher_id,
+                        participant.student_id,
                         hours_since_end,
                         is_final,
                     )
-                    break
 
         logger.info(
             "send_waiting_confirmation_reminders: %d reminder(s) sent at %s",
