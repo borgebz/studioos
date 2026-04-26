@@ -249,9 +249,9 @@ def send_waiting_confirmation_reminders(self):
             CoachingStatus,
         )
         from coachings.emails import (
-                send_waiting_confirmation_reminder,
-                send_attendance_confirmation_reminder,
-            )
+            send_waiting_confirmation_reminder,
+            send_attendance_confirmation_reminder,
+        )
 
         now = timezone.now()
         sent = 0

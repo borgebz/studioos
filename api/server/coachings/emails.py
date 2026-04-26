@@ -165,7 +165,9 @@ def send_participant_cancelled_notification(
     )
 
 
-def send_attendance_confirmation_reminder(*, coaching, recipient, is_final_reminder=False):
+def send_attendance_confirmation_reminder(
+    *, coaching, recipient, is_final_reminder=False
+):
     """Send an attendance confirmation reminder to a participant in WAITING_CONFIRMATION."""
     lang = _language(recipient)
     context = {
