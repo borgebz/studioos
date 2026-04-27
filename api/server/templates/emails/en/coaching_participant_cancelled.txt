@@ -1,0 +1,15 @@
+Hello {{ teacher.first_name }},
+
+A participant has cancelled their enrolment in one of your classes.
+
+Modality: {{ modality }}
+Date and time: {{ coaching_date }}
+Participant: {{ student_name }}
+Cancellation type: {% if is_late_cancelled %}Late cancellation{% else %}Cancellation{% endif %}
+{% if cancellation_reason %}Reason: {{ cancellation_reason }}{% endif %}
+
+Access the platform for more details:
+{{ coaching_url }}
+
+Best regards,
+StudioOS — Dance School

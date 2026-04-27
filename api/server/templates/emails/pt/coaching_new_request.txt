@@ -1,0 +1,13 @@
+Olá {{ teacher.first_name }},
+
+Recebeu um novo pedido de aula particular.
+
+Modalidade: {{ modality }}
+Data e hora: {{ coaching_date }}
+Solicitado por: {{ requested_by }}
+
+Aceda à plataforma para aceitar ou rejeitar o pedido:
+{{ coaching_url }}
+
+Cumprimentos,
+StudioOS — Escola de Dança

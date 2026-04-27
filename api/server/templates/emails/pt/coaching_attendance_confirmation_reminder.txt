@@ -1,0 +1,14 @@
+Olá {{ recipient.first_name }},
+
+Este é um lembrete de que a sua presença na aula de {{ modality }} realizada a {{ coaching_date }} ainda não foi confirmada.
+
+Por favor, aceda à plataforma e confirme se esteve presente na aula.
+
+{{ coaching_url }}
+
+{% if is_final_reminder %}
+Atenção: este é o último lembrete. Caso não confirme em breve, a coordenação será notificada para resolver a situação manualmente.
+{% endif %}
+
+Cumprimentos,
+StudioOS — Escola de Dança
