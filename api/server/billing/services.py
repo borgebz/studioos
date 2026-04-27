@@ -138,7 +138,6 @@ def create_billing_entries_for_coaching(*, coaching, user):
     participants = list(
         coaching.participants.filter(
             status=CoachingParticipantStatus.ATTENDED,
-            deleted_at__isnull=True,
         ).order_by("created_at", "pk")
     )
 
@@ -203,7 +202,6 @@ def create_fines_for_coaching(*, coaching, user):
     candidates = list(
         coaching.participants.filter(
             status__in=list(_FINE_REASON_FROM_PARTICIPANT_STATUS.keys()),
-            deleted_at__isnull=True,
         ).order_by("created_at", "pk")
     )
     if not candidates:
@@ -270,7 +268,7 @@ def list_billing_entries(
         "coaching_class__modality",
         "coaching_participant",
         "fine",
-    ).filter(deleted_at__isnull=True)
+    )
 
     if student_id is not None and not _staff_can_use_student_filters(
         user=requesting_user
@@ -307,7 +305,7 @@ def get_billing_entry_for_request(*, pk, requesting_user):
             "coaching_class__teacher",
             "coaching_participant",
             "fine",
-        ).get(pk=pk, deleted_at__isnull=True)
+        ).get(pk=pk)
     except BillingEntry.DoesNotExist:
         raise NotFound()
 
@@ -354,7 +352,7 @@ def list_fines(
         "coaching_class__teacher",
         "coaching_participant",
         "reviewed_by",
-    ).filter(deleted_at__isnull=True)
+    )
 
     if student_id is not None and not _staff_can_use_student_filters(
         user=requesting_user
@@ -386,7 +384,7 @@ def get_fine_for_request(*, pk, requesting_user):
             "coaching_class__teacher",
             "coaching_participant",
             "reviewed_by",
-        ).get(pk=pk, deleted_at__isnull=True)
+        ).get(pk=pk)
     except Fine.DoesNotExist:
         raise NotFound()
 

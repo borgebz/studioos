@@ -256,7 +256,6 @@ def _assert_studio_modality_compatible(*, studio, modality):
     if not StudioModality.objects.filter(
         studio=studio,
         modality=modality,
-        deleted_at__isnull=True,
     ).exists():
         raise ValidationError({"messages": ["StudioModalityIncompatible"]})
 
