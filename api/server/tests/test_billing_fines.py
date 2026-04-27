@@ -4,6 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
@@ -218,7 +219,9 @@ class TestCreateFinesForCoaching:
         billing_services.create_fines_for_coaching(
             coaching=scheduled_coaching, user=direction_user
         )
-        with pytest.raises(IntegrityError):
+        # full_clean() validates uniqueness before save() reaches the DB,
+        # so we may get a Django ValidationError instead of IntegrityError.
+        with pytest.raises((IntegrityError, DjangoValidationError)):
             billing_services.create_fines_for_coaching(
                 coaching=scheduled_coaching, user=direction_user
             )

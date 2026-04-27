@@ -1331,6 +1331,9 @@ class TestParticipants:
             status=CoachingStatus.PENDING_COMPLETION_APPROVAL
         )
         services.complete_coaching(pk=scheduled_coaching.pk, user=direction_user)
+        # After completion, every participant is in a final state (ATTENDED/ABSENT),
+        # so the participant-level terminal check trips before the coaching-level
+        # check. Either way the cancel is correctly blocked.
         with pytest.raises(ValidationError) as exc:
             services.cancel_coaching_participant(
                 coaching_class_id=scheduled_coaching.pk,
@@ -1338,7 +1341,7 @@ class TestParticipants:
                 requesting_user=direction_user,
                 may_cancel_on_behalf_of_others=True,
             )
-        assert "CoachingNotEligibleForParticipantCancellation" in str(exc.value.detail)
+        assert "ParticipantEnrollmentIsTerminal" in str(exc.value.detail)
 
     def test_cancel_participant_blocked_when_session_started(
         self, scheduled_coaching, student, direction_user

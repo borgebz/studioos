@@ -71,9 +71,12 @@ class TestCompleteCoachingGate:
             student_id=student.pk,
             requesting_user=direction_user,
         )
-        # Participant defaults to ACTIVE on a scheduled coaching → still intermediate.
-        p = pending_completion_coaching.participants.get(student_id=student.pk)
-        assert p.status == CoachingParticipantStatus.ACTIVE
+        # Coaching is already in PENDING_COMPLETION_APPROVAL, so add_participant
+        # creates the row as INVITED (which the gate excludes). Force ACTIVE
+        # to exercise the intermediate-status path.
+        pending_completion_coaching.participants.filter(student=student).update(
+            status=CoachingParticipantStatus.ACTIVE
+        )
 
         with pytest.raises(ValidationError) as exc:
             services.complete_coaching(
