@@ -6,6 +6,23 @@ info:
 http:
   method: GET
   url: http://127.0.0.1:8000/api/billing/fines/
+  params:
+    - name: student_id
+      value: "1"
+      type: query
+      disabled: true
+    - name: coaching_class_id
+      value: "16"
+      type: query
+      disabled: true
+    - name: status
+      value: pending_review
+      type: query
+      disabled: true
+    - name: reason
+      value: absence
+      type: query
+      disabled: true
   auth: inherit
 
 settings:

@@ -1,7 +1,0 @@
-info:
-  name: fines
-  type: folder
-  seq: 13
-
-request:
-  auth: inherit

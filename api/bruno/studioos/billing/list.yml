@@ -6,9 +6,32 @@ info:
 http:
   method: GET
   url: http://127.0.0.1:8000/api/billing/entries/
-  auth:
-    type: bearer
-    token: ""
+  params:
+    - name: student_id
+      value: "1"
+      type: query
+      disabled: true
+    - name: coaching_class_id
+      value: "16"
+      type: query
+      disabled: true
+    - name: status
+      value: pending
+      type: query
+      disabled: true
+    - name: source_type
+      value: coaching
+      type: query
+      disabled: true
+    - name: date_from
+      value: 2026-04-01T00:00:00Z
+      type: query
+      disabled: true
+    - name: date_to
+      value: 2026-04-30T23:59:59Z
+      type: query
+      disabled: true
+  auth: inherit
 
 settings:
   encodeUrl: true

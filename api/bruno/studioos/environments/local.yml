@@ -1,9 +1,10 @@
-name: metadat
+name: local
+color: "#2E8A54"
 variables:
   - name: login_password
     value: "123456"
   - name: login_email
-    value: direction@teste.com
+    value: student2@teste.com
   - secret: true
     name: access_token
   - secret: true
