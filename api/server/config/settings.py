@@ -189,6 +189,21 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 
 
 # -----------------------------------------------------------------------------
+# Coachings / billing
+# -----------------------------------------------------------------------------
+# Cancellations within this many hours before start_datetime are "late"
+# (LATE_CANCELLED → fine candidate at completion time).
+COACHING_LATE_CANCELLATION_HOURS = config(
+    "COACHING_LATE_CANCELLATION_HOURS", default=48, cast=int
+)
+
+# Suggested fine amount (EUR) shown to coordination at fine approval time.
+# Coordination can override before approving. Will move to an in-app settings
+# table in the future for direction-controlled configuration.
+COACHING_FINE_DEFAULT_AMOUNT = config("COACHING_FINE_DEFAULT_AMOUNT", default="25.00")
+
+
+# -----------------------------------------------------------------------------
 # Internationalisation
 # -----------------------------------------------------------------------------
 

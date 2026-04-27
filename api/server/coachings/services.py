@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
@@ -17,7 +18,10 @@ from coachings.models import (
 from modality.models import Modality
 from studios.models import Studio, StudioModality
 
-from billing.services import generate_coaching_billing
+from billing.services import (
+    create_billing_entries_for_coaching,
+    create_fines_for_coaching,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +78,12 @@ _PARTICIPANT_STATUSES_BLOCKING_CANCEL = frozenset(
     }
 )
 
-# Policy: cancellations within this window before start_datetime are "late" (fees / notices TBD).
-PARTICIPANT_CANCEL_MIN_NOTICE = timedelta(hours=48)
+
+# Policy: cancellations within this window before start_datetime are "late".
+# Hours are env-driven (COACHING_LATE_CANCELLATION_HOURS, default 48).
+def _participant_cancel_min_notice() -> timedelta:
+    return timedelta(hours=getattr(settings, "COACHING_LATE_CANCELLATION_HOURS", 48))
+
 
 # Cancelled / late-cancelled rows no longer occupy modality capacity.
 _STATUSES_NOT_OCCUPYING_CAPACITY = frozenset(
@@ -454,6 +462,9 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
     if not allow_teacher_change and "teacher_id" in updates:
         raise ValidationError({"messages": ["TeacherIdNotEditable"]})
 
+    if not allow_teacher_change and "is_billable" in updates:
+        raise ValidationError({"messages": ["IsBillableStaffOnly"]})
+
     new_start = updates.get("start_datetime", coaching.start_datetime)
     new_end = updates.get("end_datetime", coaching.end_datetime)
     _validate_datetime_range(start=new_start, end=new_end)
@@ -525,6 +536,8 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
         coaching.end_datetime = updates["end_datetime"]
     if "notes" in updates:
         coaching.notes = updates["notes"]
+    if "is_billable" in updates:
+        coaching.is_billable = updates["is_billable"]
 
     coaching.updated_by = requesting_user
     coaching.full_clean()
@@ -724,6 +737,9 @@ def approve_coaching(*, pk, studio_id, total_price, user):
     (``PENDING`` → ``ACTIVE``). ``INVITED`` rows are unchanged — confirmation uses the
     invite / accept-invite flow (and related endpoints), not this transition.
     """
+    if total_price is None:
+        raise ValidationError({"messages": ["CoachingTotalPriceRequired"]})
+
     try:
         coaching = (
             CoachingClass.objects.select_for_update()
@@ -774,15 +790,27 @@ def approve_coaching(*, pk, studio_id, total_price, user):
 def complete_coaching(*, pk, user):
     coaching = get_coaching(pk=pk)
     _validate_status_transition(coaching, CoachingStatus.COMPLETED)
+
+    # Explicit gating: every roster row that counts toward completion must be
+    # in a final state (ATTENDED or ABSENT). Intermediate statuses (ACTIVE,
+    # PENDING_COMPLETION) block the transition. INVITED/PENDING/CANCELLED/
+    # LATE_CANCELLED are excluded from the check (already handled or never
+    # in session).
+    if not _all_roster_attendance_confirmed_for_completion(coaching_class_id=pk):
+        raise ValidationError(
+            {"messages": ["CoachingHasUnresolvedParticipantStatuses"]}
+        )
+
     coaching.status = CoachingStatus.COMPLETED
     coaching.completed_at = timezone.now()
     coaching.updated_by = user
     coaching.full_clean()
     coaching.save()
-    logger.info("CoachingClass %s completed by user=%s", pk, user.id)
 
-    # Direct Billing App injection: Automatically generate billing entries
-    generate_coaching_billing(coaching_class=coaching, created_by=user)
+    create_billing_entries_for_coaching(coaching=coaching, user=user)
+    create_fines_for_coaching(coaching=coaching, user=user)
+
+    logger.info("CoachingClass %s completed by user=%s", pk, user.id)
     return get_coaching(pk=pk)
 
 
@@ -966,10 +994,12 @@ def _enqueue_participant_cancel_side_effects(
     teacher_id,
     is_late_cancelled,
 ):
-    """Runs after commit — fines, notifications, and any async work must not roll back DB."""
+    """Runs after commit — notifications and any async work must not roll back DB.
+    Fines are NOT created here — LATE_CANCELLED participants are reviewed at
+    coaching completion (see ``billing.services.create_fines_for_coaching``).
+    """
 
     def _run():
-        # TODO: Auto-generate a Fine when is_late_cancelled is True (billing / fines module).
         # TODO: Notify the teacher (teacher_id) that a participant cancelled coaching_class_id.
         # TODO: Notify coordination about the cancellation (coaching_class_id, participant_id).
         # TODO: Capacity — slot is released by persisting status cancelled / late_cancelled;
@@ -1243,7 +1273,7 @@ def cancel_coaching_participant(
         )
 
     time_until_start = coaching.start_datetime - now
-    if time_until_start > PARTICIPANT_CANCEL_MIN_NOTICE:
+    if time_until_start > _participant_cancel_min_notice():
         new_status = CoachingParticipantStatus.CANCELLED
     else:
         new_status = CoachingParticipantStatus.LATE_CANCELLED

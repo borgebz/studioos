@@ -103,6 +103,15 @@ class CoachingClass(BaseModel):
     end_datetime = models.DateTimeField()
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    is_billable = models.BooleanField(
+        default=True,
+        help_text=(
+            "If False, complete_coaching does not generate billing entries. "
+            "Placeholder to distinguish private coachings from annual classes "
+            "absorbed into this model in the future."
+        ),
+    )
+
     total_price = models.DecimalField(
         max_digits=8,
         decimal_places=2,

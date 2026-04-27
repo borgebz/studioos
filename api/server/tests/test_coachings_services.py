@@ -367,6 +367,20 @@ class TestCoachingLifecycle:
         assert coaching.status == CoachingStatus.SCHEDULED
         assert coaching.studio.pk == studio_with_modality.pk
 
+    def test_approve_coaching_total_price_none_raises(
+        self, pending_coaching, direction_user, studio_with_modality
+    ):
+        from coachings import services
+
+        with pytest.raises(ValidationError) as exc:
+            services.approve_coaching(
+                pk=pending_coaching.pk,
+                studio_id=studio_with_modality.pk,
+                total_price=None,
+                user=direction_user,
+            )
+        assert "CoachingTotalPriceRequired" in str(exc.value.detail)
+
     def test_approve_coaching_sets_pending_participants_active(
         self,
         student_user,
@@ -1299,13 +1313,20 @@ class TestParticipants:
         self, scheduled_coaching, student, direction_user
     ):
         from coachings import services
-        from coachings.models import CoachingClass, CoachingStatus
+        from coachings.models import (
+            CoachingClass,
+            CoachingParticipantStatus,
+            CoachingStatus,
+        )
 
         p = services.add_participant(
             coaching_class_id=scheduled_coaching.pk,
             student_id=student.pk,
             requesting_user=direction_user,
         )
+        # Move to a final attendance state so the new completion gate passes.
+        p.status = CoachingParticipantStatus.ATTENDED
+        p.save(update_fields=["status"])
         CoachingClass.objects.filter(pk=scheduled_coaching.pk).update(
             status=CoachingStatus.PENDING_COMPLETION_APPROVAL
         )

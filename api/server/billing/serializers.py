@@ -1,105 +1,246 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-from billing.models import CoachingBillingEntry, Fine, BillingStatus
 
-# Coaching Billing Serializers
+from accounts.serializers import UserResponseSerializer
+from billing.models import (
+    BillingEntry,
+    BillingEntrySourceType,
+    BillingEntryStatus,
+    Fine,
+    FineReason,
+    FineStatus,
+)
+from coachings.models import CoachingClass, CoachingParticipant
+from modality.serializers import ModalitySerializer
+
+# -----------------------------------------------------------------------------
+# Billing entry serializers
+# -----------------------------------------------------------------------------
 
 
-class CoachingBillingEntrySerializer(serializers.ModelSerializer):
-    """
-    Serializer for reading coaching billing records.
-    Used in list and detail views to show how much a student owes for a class.
-    """
-
-    # Enforce ChoiceField for enums as per project rules
-    status = serializers.ChoiceField(choices=BillingStatus.choices)
-
-    # Optional: You could add source="student.email" to show the email in the list
-    student_email = serializers.EmailField(source="student.email", read_only=True)
+class CoachingClassBillingSummarySerializer(serializers.ModelSerializer):
+    modality = ModalitySerializer(read_only=True)
 
     class Meta:
-        model = CoachingBillingEntry
+        model = CoachingClass
+        fields = ["id", "start_datetime", "end_datetime", "modality"]
+
+
+class CoachingParticipantBillingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CoachingParticipant
+        fields = ["id", "status"]
+
+
+class FineBillingSummarySerializer(serializers.ModelSerializer):
+    """Compact fine view embedded in BillingEntry detail/list."""
+
+    reason = serializers.ChoiceField(choices=FineReason.choices, read_only=True)
+    status = serializers.ChoiceField(choices=FineStatus.choices, read_only=True)
+
+    class Meta:
+        model = Fine
+        fields = ["id", "reason", "status", "amount"]
+
+
+class BillingEntryListSerializer(serializers.ModelSerializer):
+    source_type = serializers.ChoiceField(
+        choices=BillingEntrySourceType.choices, read_only=True
+    )
+    status = serializers.ChoiceField(choices=BillingEntryStatus.choices, read_only=True)
+    coaching_class = CoachingClassBillingSummarySerializer(
+        read_only=True,
+        allow_null=True,
+    )
+    fine = FineBillingSummarySerializer(read_only=True, allow_null=True)
+
+    class Meta:
+        model = BillingEntry
         fields = [
             "id",
-            "student",
-            "student_email",
-            "coaching",
-            "amount",
+            "source_type",
+            "student_id",
+            "amount_due",
+            "description",
             "status",
+            "coaching_class",
+            "fine",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class BillingEntryDetailSerializer(serializers.ModelSerializer):
+    source_type = serializers.ChoiceField(
+        choices=BillingEntrySourceType.choices, read_only=True
+    )
+    status = serializers.ChoiceField(choices=BillingEntryStatus.choices, read_only=True)
+    coaching_class = serializers.SerializerMethodField()
+    coaching_participant = CoachingParticipantBillingSerializer(read_only=True)
+    fine = FineBillingSummarySerializer(read_only=True, allow_null=True)
+
+    class Meta:
+        model = BillingEntry
+        fields = [
+            "id",
+            "source_type",
+            "student_id",
+            "amount_due",
+            "description",
+            "status",
+            "exported_at",
+            "cancelled_at",
+            "notes",
+            "coaching_class",
+            "coaching_participant",
+            "fine",
             "created_at",
             "updated_at",
         ]
-        # Timestamps and IDs should always be read-only
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = fields
+
+    @extend_schema_field(CoachingClassBillingSummarySerializer())
+    def get_coaching_class(self, obj):
+        cc = obj.coaching_class
+        if cc is None:
+            return None
+        inner = CoachingClassBillingSummarySerializer(
+            cc,
+            context=self.context,
+        )
+        teacher = getattr(cc, "teacher", None)
+        data = inner.data
+        data["teacher"] = (
+            UserResponseSerializer(teacher, context=self.context).data
+            if teacher
+            else None
+        )
+        return data
 
 
-# Fine Serializers
+class BillingEntryCancelSerializer(serializers.Serializer):
+    notes = serializers.CharField(
+        required=True, allow_blank=False, trim_whitespace=True
+    )
+
+    def validate_notes(self, value):
+        if not (value or "").strip():
+            raise serializers.ValidationError("CancellationNotesRequired")
+        return value.strip()
 
 
-class FineSerializer(serializers.ModelSerializer):
-    """
-    Serializer for detailed reading of Fines.
-    Provides full context including the issuer and resolution data.
-    """
+class BillingEntryListQuerySerializer(serializers.Serializer):
+    student_id = serializers.IntegerField(required=False)
+    coaching_class_id = serializers.IntegerField(required=False)
+    status = serializers.ChoiceField(choices=BillingEntryStatus.choices, required=False)
+    source_type = serializers.ChoiceField(
+        choices=BillingEntrySourceType.choices, required=False
+    )
+    date_from = serializers.DateTimeField(required=False)
+    date_to = serializers.DateTimeField(required=False)
 
-    status = serializers.ChoiceField(choices=BillingStatus.choices)
-    student_email = serializers.EmailField(source="student.email", read_only=True)
-    issued_by_email = serializers.EmailField(source="issued_by.email", read_only=True)
+
+# -----------------------------------------------------------------------------
+# Fine serializers
+# -----------------------------------------------------------------------------
+
+
+class FineListSerializer(serializers.ModelSerializer):
+    reason = serializers.ChoiceField(choices=FineReason.choices, read_only=True)
+    status = serializers.ChoiceField(choices=FineStatus.choices, read_only=True)
+    coaching_class = CoachingClassBillingSummarySerializer(read_only=True)
 
     class Meta:
         model = Fine
         fields = [
             "id",
-            "student",
-            "student_email",
-            "coaching",
             "reason",
-            "amount",
             "status",
-            "issued_by",
-            "issued_by_email",
-            "resolved_at",
+            "amount",
+            "student_id",
+            "coaching_class",
+            "reviewed_at",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class FineDetailSerializer(serializers.ModelSerializer):
+    reason = serializers.ChoiceField(choices=FineReason.choices, read_only=True)
+    status = serializers.ChoiceField(choices=FineStatus.choices, read_only=True)
+    coaching_class = serializers.SerializerMethodField()
+    coaching_participant = CoachingParticipantBillingSerializer(read_only=True)
+    reviewed_by = UserResponseSerializer(read_only=True, allow_null=True)
+    suggested_amount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Fine
+        fields = [
+            "id",
+            "reason",
+            "status",
+            "amount",
+            "suggested_amount",
+            "student_id",
+            "coaching_class",
+            "coaching_participant",
+            "reviewed_at",
+            "reviewed_by",
             "notes",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "resolved_at"]
+        read_only_fields = fields
+
+    @extend_schema_field(CoachingClassBillingSummarySerializer())
+    def get_coaching_class(self, obj):
+        cc = obj.coaching_class
+        if cc is None:
+            return None
+        inner = CoachingClassBillingSummarySerializer(cc, context=self.context)
+        teacher = getattr(cc, "teacher", None)
+        data = inner.data
+        data["teacher"] = (
+            UserResponseSerializer(teacher, context=self.context).data
+            if teacher
+            else None
+        )
+        return data
+
+    @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
+    def get_suggested_amount(self, obj):
+        # Only relevant while pending review; surfaces the env default to the UI.
+        from billing.services import get_fine_default_amount
+
+        if obj.status == FineStatus.PENDING_REVIEW:
+            return str(get_fine_default_amount())
+        return None
 
 
-class FineCreateSerializer(serializers.ModelSerializer):
-    """
-    Input serializer for creating a new fine.
-    Fields like 'status' and 'issued_by' are handled by the service layer.
-    """
-
-    class Meta:
-        model = Fine
-        fields = [
-            "student",
-            "coaching",
-            "reason",
-            "amount",
-            "notes",
-        ]
-
-    def validate_amount(self, value):
-        """Check that the fine amount is not negative."""
-        if value <= 0:
-            # PascalCase error code as per project standards
-            raise serializers.ValidationError("FineAmountMustBePositive")
-        return value
+class FineApproveSerializer(serializers.Serializer):
+    amount = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+        help_text="If omitted/null, settings.COACHING_FINE_DEFAULT_AMOUNT is used.",
+    )
+    notes = serializers.CharField(required=False, allow_blank=True)
 
 
-class FineUpdateSerializer(serializers.ModelSerializer):
-    """
-    Serializer for partial updates (PATCH) on Fines.
-    Typically used to mark a fine as PAID or CANCELLED.
-    """
+class FineWaiveSerializer(serializers.Serializer):
+    notes = serializers.CharField(
+        required=True, allow_blank=False, trim_whitespace=True
+    )
 
-    status = serializers.ChoiceField(choices=BillingStatus.choices, required=False)
+    def validate_notes(self, value):
+        if not (value or "").strip():
+            raise serializers.ValidationError("WaiveNotesRequired")
+        return value.strip()
 
-    class Meta:
-        model = Fine
-        fields = [
-            "status",
-            "notes",
-        ]
+
+class FineListQuerySerializer(serializers.Serializer):
+    student_id = serializers.IntegerField(required=False)
+    coaching_class_id = serializers.IntegerField(required=False)
+    status = serializers.ChoiceField(choices=FineStatus.choices, required=False)
+    reason = serializers.ChoiceField(choices=FineReason.choices, required=False)

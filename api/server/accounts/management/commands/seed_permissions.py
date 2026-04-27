@@ -84,16 +84,16 @@ ROLE_PERMISSIONS = {
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
         *EVENTS_PERMISSIONS_MANAGEMENT,
-        # Billing - Coaching Bills
-        "billing.view_coachingbillingentry",
-        "billing.add_coachingbillingentry",
-        "billing.change_coachingbillingentry",
-        "billing.delete_coachingbillingentry",
-        # Billing - Fines
+        "billing.view_billingentry",
+        "billing.add_billingentry",
+        "billing.change_billingentry",
+        "billing.delete_billingentry",
+        "billing.can_cancel_billingentry",
         "billing.view_fine",
         "billing.add_fine",
         "billing.change_fine",
         "billing.delete_fine",
+        "billing.can_review_fine",
     ],
     "coordination": [
         "accounts.view_user",
@@ -118,11 +118,10 @@ ROLE_PERMISSIONS = {
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
         *EVENTS_PERMISSIONS_MANAGEMENT,
-        # billing
-        "billing.view_coachingbillingentry",
+        "billing.view_billingentry",
+        "billing.can_cancel_billingentry",
         "billing.view_fine",
-        "billing.add_fine",
-        "billing.change_fine",
+        "billing.can_review_fine",
     ],
     "collaborator": [
         "accounts.view_user",
@@ -179,6 +178,8 @@ ROLE_PERMISSIONS = {
         "studios.view_studio",
         "coachings.view_coachingparticipant",
         "coachings.add_coachingparticipant",
+        "billing.view_billingentry",
+        "billing.view_fine",
     ],
 }
 
