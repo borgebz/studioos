@@ -1,25 +1,34 @@
 from django.db import transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from django.db.models import Prefetch
+from rest_framework.exceptions import NotFound
+from core.exceptions import DomainError
 
 from inventory.models import SizeSystem, Size, Category, ProductVariant
 
 
-# 🔹 GET
+# GET
 def get_size_system(*, pk):
     try:
-        return SizeSystem.objects.get(pk=pk)
+        return SizeSystem.objects.get(pk=pk, is_active=True)
     except SizeSystem.DoesNotExist:
         raise NotFound()
 
 
-# 🔹 LIST
+# LIST
 def list_size_systems():
-    return SizeSystem.objects.prefetch_related("sizes").all().order_by("name")
+    return SizeSystem.objects.filter(is_active=True).prefetch_related(
+        Prefetch("sizes", queryset=Size.objects.filter(is_active=True).order_by("sort_order", "name"))
+    ).order_by("name")
 
 
-# 🔹 CREATE
+# CREATE
 @transaction.atomic
 def create_size_system(*, name, is_active=True, sizes=None, created_by=None):
+    if SizeSystem.objects.filter(name__iexact=name.strip()).exists():
+        raise DomainError(
+            "DuplicateSizeSystemName",
+            "Já existe um SizeSystem com este nome."
+        )
     size_system = SizeSystem.objects.create(
         name=name.strip(),
         is_active=is_active,
@@ -42,38 +51,49 @@ def create_size_system(*, name, is_active=True, sizes=None, created_by=None):
     return size_system
 
 
-# 🔹 UPDATE
+# UPDATE
 def update_size_system(*, size_system, name, updated_by=None):
-    size_system.name = name.strip()
+    cleaned_name = name.strip()
+
+    if SizeSystem.objects.filter(name__iexact=cleaned_name).exclude(id=size_system.id).exists():
+        raise DomainError(
+            "DuplicateSizeSystemName",
+            "Já existe um SizeSystem com este nome."
+        )
+
+    size_system.name = cleaned_name
     size_system.save()
     return size_system
 
 
-# 🔹 DELETE (Soft + regras)
+# DELETE (Soft + regras)
 def delete_size_system(*, size_system, deleted_by=None):
-    # BLOQUEAR se houver ProductVariants associados
     has_variants = ProductVariant.objects.filter(
         product__category__size_system=size_system
     ).exists()
 
-    if has_variants:
-        raise ValidationError({"messages": ["SizeSystemHasAssociatedProducts"]})
+    has_categories = Category.objects.filter(size_system=size_system).exists()
+    has_sizes = Size.objects.filter(size_system=size_system, is_active=True).exists()
 
-    # LIMPAR categories
-    Category.objects.filter(size_system=size_system).update(size_system=None)
+    if has_variants or has_categories or has_sizes:
+        raise DomainError(
+            "SizeSystemInUse",
+            "O SizeSystem está em uso e não pode ser removido."
+        )
 
-    # ✔️ Soft delete (se tiveres BaseModel com delete override, usa)
-    size_system.delete()
+    size_system.is_active = False
+    size_system.save()
+    return size_system
 
 
-# 🔹 ACTIVATE
+# ACTIVATE
 def activate_size_system(*, size_system, updated_by=None):
     size_system.is_active = True
     size_system.save()
     return size_system
 
 
-# 🔹 DEACTIVATE
+# DEACTIVATE
 def deactivate_size_system(*, size_system, updated_by=None):
     size_system.is_active = False
     size_system.save()

@@ -32,6 +32,21 @@ from inventory.views.product_views import (
     SchoolProductDetailView,
 )
 
+from inventory.views.product_variant_views import (
+    ProductVariantListCreateView,
+    ProductVariantDetailView,
+)
+
+from django.urls import path
+
+from .views.variant_booking_views import (
+
+    BookingListCreateView,
+
+    BookingDetailView
+
+)
+
 urlpatterns = [
     path("size-systems/", SizeSystemView.as_view()),
     path("size-systems/<int:sizeSystemId>/", SizeSystemDetailView.as_view()),
@@ -58,4 +73,10 @@ urlpatterns = [
     # SCHOOL
     path("school/products/", SchoolProductListCreateView.as_view()),
     path("school/products/<int:pk>/", SchoolProductDetailView.as_view()),
+
+    path("products/<int:product_id>/variants/", ProductVariantListCreateView.as_view()),
+    path("variants/<int:variant_id>/", ProductVariantDetailView.as_view()),
+
+    path("variants/<int:variant_id>/bookings/", BookingListCreateView.as_view()),
+    path("bookings/<int:booking_id>/", BookingDetailView.as_view()),
 ]

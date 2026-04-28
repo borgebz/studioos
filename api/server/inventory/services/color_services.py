@@ -1,6 +1,7 @@
 import re
 from django.db import transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound
+from core.exceptions import DomainError
 
 from inventory.models import Color, ProductVariant
 
@@ -29,11 +30,23 @@ def create_color(*, name, hex_code, is_active=True):
 
     # validar duplicados
     if Color.objects.filter(name__iexact=normalized_name).exists():
-        raise ValidationError({"messages": ["ColorAlreadyExists"]})
+        raise DomainError(
+            "DuplicateColorName",
+            "Já existe uma cor com este nome."
+        )
+
+    if Color.objects.filter(hex_code__iexact=hex_code).exists():
+        raise DomainError(
+            "DuplicateColorHexCode",
+            "Já existe uma cor com este hex_code."
+        )
 
     # validar hex
     if not re.match(HEX_REGEX, hex_code):
-        raise ValidationError({"messages": ["InvalidHexCode"]})
+        raise DomainError(
+            "InvalidHexCode",
+            "Formato de hex_code inválido."
+        )
 
     color = Color.objects.create(
         name=name.strip(),
@@ -46,7 +59,10 @@ def create_color(*, name, hex_code, is_active=True):
 
 def delete_color(*, color):
     if ProductVariant.objects.filter(colors__id=color.id).exists():
-        raise ValidationError({"messages": ["ColorHasAssociatedVariants"]})
+        raise DomainError(
+            "ColorInUse",
+            "A cor está associada a variantes e não pode ser removida."
+        )
 
     color.delete()
     return {"messages": ["ColorDeletedSuccessfully"]}

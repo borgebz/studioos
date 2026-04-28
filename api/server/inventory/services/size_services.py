@@ -1,5 +1,6 @@
 from django.db import transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound
+from core.exceptions import DomainError
 
 from inventory.models import Size, SizeSystem, ProductVariant
 
@@ -7,16 +8,16 @@ from inventory.models import Size, SizeSystem, ProductVariant
 # GET
 def get_size(*, pk):
     try:
-        return Size.objects.get(pk=pk)
+        return Size.objects.get(pk=pk, is_active=True)
     except Size.DoesNotExist:
         raise NotFound()
 
 
 # LIST (com filtro)
 def list_sizes(*, size_system_id=None):
-    qs = Size.objects.all()
+    qs = Size.objects.filter(is_active=True)
 
-    if size_system_id:
+    if size_system_id is not None:
         qs = qs.filter(size_system_id=size_system_id)
 
     return qs.order_by("sort_order", "name")
@@ -25,7 +26,22 @@ def list_sizes(*, size_system_id=None):
 # CREATE
 @transaction.atomic
 def create_size(*, name, size_system_id, is_active=True, created_by=None):
-    size_system = SizeSystem.objects.get(pk=size_system_id)
+    if Size.objects.filter(
+        name__iexact=name.strip(),
+        size_system_id=size_system_id,
+        is_active=True,
+    ).exists():
+        raise DomainError(
+            "DuplicateSizeInSystem",
+            "Já existe um size com este nome neste sistema."
+        )
+    try:
+        size_system = SizeSystem.objects.get(pk=size_system_id)
+    except SizeSystem.DoesNotExist:
+        raise DomainError(
+            "InvalidSizeSystem",
+            "Sistema de tamanhos inválido."
+        )
 
     # infer sort_order simples
     last = Size.objects.filter(size_system=size_system).order_by("-sort_order").first()
@@ -47,11 +63,18 @@ def create_size(*, name, size_system_id, is_active=True, created_by=None):
 
 # DELETE
 def delete_size(*, size, deleted_by=None):
+    if not size.is_active:
+        return size
     # bloquear se estiver em uso
     if ProductVariant.objects.filter(size=size).exists():
-        raise ValidationError({"messages": ["SizeInUse"]})
+        raise DomainError(
+            "SizeInUse",
+            "O size está a ser utilizado por variantes."
+        )
 
-    size.delete()
+    size.is_active = False
+    size.save()
+    return size
 
 
 # ACTIVATE

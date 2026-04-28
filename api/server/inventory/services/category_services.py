@@ -1,5 +1,6 @@
 from django.db import transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound
+from core.exceptions import DomainError
 
 from inventory.models import Category, SizeSystem, Product
 
@@ -50,13 +51,22 @@ def create_category(
 ):
     parent = None
     if parent_category_id:
-        parent = Category.objects.get(pk=parent_category_id)
+        try:
+            parent = Category.objects.get(pk=parent_category_id)
+        except Category.DoesNotExist:
+            raise DomainError(
+                "InvalidParentCategory",
+                "Categoria parent inválida."
+            )
 
     # validar duplicados no mesmo nível
     if Category.objects.filter(
         name__iexact=name.strip(), parent_id=parent_category_id
     ).exists():
-        raise ValidationError({"messages": ["CategoryAlreadyExists"]})
+        raise DomainError(
+            "DuplicateCategoryNameInLevel",
+            "Já existe uma categoria com este nome neste nível."
+        )
 
     size_system = None
     if size_system_id:
@@ -64,7 +74,10 @@ def create_category(
             pk=size_system_id, is_active=True
         ).first()
         if not size_system:
-            raise ValidationError({"messages": ["InvalidSizeSystem"]})
+            raise DomainError(
+                "InvalidSizeSystem",
+                "SizeSystem inválido ou inativo."
+            )
 
     category = Category.objects.create(
         name=name.strip(),
@@ -82,7 +95,10 @@ def create_category(
             sub_name = sub["name"].strip().lower()
 
             if sub_name in names:
-                raise ValidationError({"messages": ["DuplicateSubcategory"]})
+                raise DomainError(
+                    "DuplicateCategoryNameInLevel",
+                    "Subcategorias duplicadas no mesmo nível."
+                )
 
             names.add(sub_name)
 
@@ -102,13 +118,25 @@ def update_category(*, category, **data):
     parent_id = data.get("parent_category_id")
 
     if parent_id:
-        parent = Category.objects.get(pk=parent_id)
+        try:
+            parent = Category.objects.get(pk=parent_id)
+        except Category.DoesNotExist:
+            raise DomainError(
+                "InvalidParentCategory",
+                "Categoria parent inválida."
+            )
 
         if parent.id == category.id:
-            raise ValidationError({"messages": ["InvalidParent"]})
+            raise DomainError(
+                "CategorySelfReference",
+                "Uma categoria não pode ser parent de si própria."
+            )
 
         if _is_descendant(parent, category):
-            raise ValidationError({"messages": ["CycleDetected"]})
+            raise DomainError(
+                "CategoryHierarchyCycle",
+                "A hierarquia cria um ciclo inválido."
+            )
 
         category.parent = parent
 
@@ -119,19 +147,34 @@ def update_category(*, category, **data):
         .exclude(pk=category.id)
         .exists()
     ):
-        raise ValidationError({"messages": ["CategoryAlreadyExists"]})
+        raise DomainError(
+            "DuplicateCategoryNameInLevel",
+            "Já existe uma categoria com este nome neste nível."
+        )
 
     category.name = name
 
     if "size_system_id" in data:
-        size_system = SizeSystem.objects.filter(
-            pk=data["size_system_id"], is_active=True
-        ).first()
+        new_size_system_id = data["size_system_id"]
 
-        if not size_system:
-            raise ValidationError({"messages": ["InvalidSizeSystem"]})
+        if category.size_system_id and category.size_system_id != new_size_system_id:
+            raise DomainError(
+                "ImmutableCategorySizeSystem",
+                "O SizeSystem da categoria não pode ser alterado após criação."
+            )
 
-        category.size_system = size_system
+        if new_size_system_id:
+            size_system = SizeSystem.objects.filter(
+                pk=new_size_system_id, is_active=True
+            ).first()
+
+            if not size_system:
+                raise DomainError(
+                    "InvalidSizeSystem",
+                    "SizeSystem inválido ou inativo."
+                )
+
+            category.size_system = size_system
 
     if "sort_order" in data:
         category.sort_order = data["sort_order"]
@@ -156,7 +199,10 @@ def delete_category(*, category):
     all_categories = [category] + _get_descendants(category)
 
     if Product.objects.filter(category__in=all_categories).exists():
-        raise ValidationError({"messages": ["CategoryHasAssociatedProducts"]})
+        raise DomainError(
+            "CategoryHasAssociatedProducts",
+            "A categoria tem produtos associados e não pode ser removida."
+        )
 
     category.delete()
 

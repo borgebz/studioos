@@ -9,6 +9,7 @@ from rest_framework_simplejwt.exceptions import (
 
 # When raising non-field ValidationErrors, always use "messages" as the key:
 # raise ValidationError({"messages": ["SomeErrorCode"]})
+
 EXCEPTION_CODES = {
     exceptions.NotAuthenticated: "NotAuthenticated",
     exceptions.AuthenticationFailed: "AuthenticationFailed",
@@ -18,6 +19,21 @@ EXCEPTION_CODES = {
     exceptions.Throttled: "RequestThrottled",
     exceptions.ValidationError: None,  # handled field by field below
 }
+
+
+# DomainError for business/domain errors
+class DomainError(exceptions.APIException):
+    """Erro de negócio/domínio com código padronizado."""
+    status_code = 400
+    default_code = "domain_error"
+    default_detail = "Business rule validation failed."
+
+    def __init__(self, code, detail):
+        super().__init__()
+        self.detail = {
+            "code": code,
+            "detail": detail,
+        }
 
 
 class AppNotFound(exceptions.NotFound):
@@ -85,6 +101,15 @@ def custom_exception_handler(exc, context):
 
     if response is None:
         return None
+
+    if isinstance(exc, DomainError):
+        response.data = {
+            "errors": {
+                "messages": [exc.detail.get("code")],
+                "detail": exc.detail.get("detail"),
+            }
+        }
+        return response
 
     jwt_code = _simplejwt_error_code(exc)
     if jwt_code:

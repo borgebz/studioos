@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.core.exceptions import ValidationError
+from core.exceptions import DomainError
 
 from inventory.models import Product, Category, ProductMedia, ProductVariant
 
@@ -13,7 +13,7 @@ ALLOWED_STATUS = ["active", "inactive", "archived"]
 
 def _validate_status(status):
     if status and status not in ALLOWED_STATUS:
-        raise ValidationError("Invalid status.")
+        raise DomainError("InvalidProductStatus", "Status inválido.")
 
 
 def _validate_category(category_id):
@@ -23,25 +23,35 @@ def _validate_category(category_id):
     try:
         return Category.objects.get(id=category_id, is_active=True)
     except Category.DoesNotExist:
-        raise ValidationError("Invalid or inactive category.")
+        raise DomainError("InvalidCategory", "Categoria inválida ou inativa.")
 
 
 def _check_member_permission(user):
     if not user.has_perm("inventory.add_product"):
-        raise ValidationError("Sem permissão para criar produtos.")
+        raise DomainError("PermissionDenied", "Sem permissão para criar produtos.")
 
 
 def _check_school_permission(user):
     if not user.has_perm("inventory.add_school_product"):
-        raise ValidationError("Sem permissão para gerir inventário da escola.")
+        raise DomainError("PermissionDenied", "Sem permissão para gerir inventário da escola.")
 
 
 def _check_delete_dependencies(product):
-    # TODO: substituir por lógica real de faturação
-    has_dependencies = False
+    # TODO: substituir por lógica real
+    has_billing_dependencies = False
+    has_critical_dependencies = False
 
-    if has_dependencies:
-        raise ValidationError("Produto não pode ser apagado. Use archived.")
+    if has_billing_dependencies:
+        raise DomainError(
+            "ProductHasBillingDependencies",
+            "Produto tem dependências de faturação."
+        )
+
+    if has_critical_dependencies:
+        raise DomainError(
+            "ProductHasCriticalDependencies",
+            "Produto não pode ser apagado. Use archived."
+        )
 
 
 # ===============================
@@ -69,7 +79,7 @@ def list_products(user, filters=None):
 
 def list_school_products(user, filters=None):
     if not user.has_perm("inventory.view_school_product"):
-        raise ValidationError("Sem acesso ao inventário da escola.")
+        raise DomainError("PermissionDenied", "Sem acesso ao inventário da escola.")
 
     queryset = Product.objects.filter(owner_type="school").exclude(status="archived")
 
@@ -95,22 +105,22 @@ def get_product(pk, user):
     try:
         product = Product.objects.get(id=pk)
     except Product.DoesNotExist:
-        raise ValidationError("Produto não encontrado.")
+        raise DomainError("ProductNotFound", "Produto não encontrado.")
 
     if product.owner_type == "member" and product.owner_id != user.id:
-        raise ValidationError("Sem acesso ao produto.")
+        raise DomainError("PermissionDenied", "Sem acesso ao produto.")
 
     return product
 
 
 def get_school_product(pk, user):
     if not user.has_perm("inventory.view_school_product"):
-        raise ValidationError("Sem acesso.")
+        raise DomainError("PermissionDenied", "Sem acesso.")
 
     try:
         return Product.objects.get(id=pk, owner_type="school")
     except Product.DoesNotExist:
-        raise ValidationError("Produto não encontrado.")
+        raise DomainError("ProductNotFound", "Produto não encontrado.")
 
 
 # ===============================
@@ -122,34 +132,48 @@ def get_school_product(pk, user):
 def create_product(user, **data):
     _check_member_permission(user)
 
+    if data.get("school_details"):
+        raise DomainError(
+            "InvalidSchoolDetailsForOwner",
+            "school_details só é permitido para produtos school."
+        )
+
     name = data.get("name")
     if not name:
-        raise ValidationError("Name é obrigatório.")
+        raise DomainError("InvalidProductPayload", "Name é obrigatório.")
 
     if data.get("price") is None:
-        raise ValidationError("Price é obrigatório.")
+        raise DomainError("InvalidProductPayload", "Price é obrigatório.")
 
     _validate_status(data.get("status"))
 
     category = _validate_category(data.get("category_id"))
 
-    product = Product.objects.create(
-        name=name,
-        description=data.get("description"),
-        category=category,
-        target_gender=data.get("target_gender"),
-        brand=data.get("brand"),
-        material=data.get("material"),
-        price=data.get("price"),
-        status=data.get("status", "active"),
-        owner_type="member",
-        owner_id=user.id,
-    )
+    try:
+        product = Product.objects.create(
+            name=name,
+            description=data.get("description"),
+            category=category,
+            target_gender=data.get("target_gender"),
+            brand=data.get("brand"),
+            material=data.get("material"),
+            price=data.get("price"),
+            status=data.get("status", "active"),
+            owner_type="member",
+            owner_id=user.id,
+        )
 
-    _handle_media(product, data.get("media"))
-    _handle_variants(product, data.get("variants"))
+        _handle_media(product, data.get("media"))
+        _handle_variants(product, data.get("variants"))
 
-    return product
+        return product
+    except DomainError:
+        raise
+    except Exception:
+        raise DomainError(
+            "AtomicCreateFailed",
+            "Falha ao criar produto e dependentes."
+        )
 
 
 @transaction.atomic
@@ -158,37 +182,44 @@ def create_school_product(user, **data):
 
     name = data.get("name")
     if not name:
-        raise ValidationError("Name é obrigatório.")
+        raise DomainError("InvalidProductPayload", "Name é obrigatório.")
 
     if data.get("price") is None:
-        raise ValidationError("Price é obrigatório.")
+        raise DomainError("InvalidProductPayload", "Price é obrigatório.")
 
     _validate_status(data.get("status"))
 
     category = _validate_category(data.get("category_id"))
 
-    product = Product.objects.create(
-        name=name,
-        description=data.get("description"),
-        category=category,
-        target_gender=data.get("target_gender"),
-        brand=data.get("brand"),
-        material=data.get("material"),
-        price=data.get("price"),
-        status=data.get("status", "active"),
-        owner_type="school",
-        owner_id=None,
-    )
+    try:
+        product = Product.objects.create(
+            name=name,
+            description=data.get("description"),
+            category=category,
+            target_gender=data.get("target_gender"),
+            brand=data.get("brand"),
+            material=data.get("material"),
+            price=data.get("price"),
+            status=data.get("status", "active"),
+            owner_type="school",
+            owner_id=None,
+        )
 
-    _handle_media(product, data.get("media"))
-    _handle_variants(product, data.get("variants"))
+        _handle_media(product, data.get("media"))
+        _handle_variants(product, data.get("variants"))
 
-    # school_details
-    if data.get("school_details"):
-        product.school_details = data["school_details"]
-        product.save()
+        if data.get("school_details"):
+            product.school_details = data["school_details"]
+            product.save()
 
-    return product
+        return product
+    except DomainError:
+        raise
+    except Exception:
+        raise DomainError(
+            "AtomicCreateFailed",
+            "Falha ao criar produto e dependentes."
+        )
 
 
 # ===============================
@@ -200,8 +231,20 @@ def create_school_product(user, **data):
 def update_product(pk, user, **data):
     product = get_product(pk, user)
 
+    if "owner_type" in data or "owner_id" in data:
+        raise DomainError(
+            "ImmutableProductOwner",
+            "Owner do produto não pode ser alterado."
+        )
+
+    if data.get("school_details"):
+        raise DomainError(
+            "InvalidSchoolDetailsForOwner",
+            "school_details só é permitido para produtos school."
+        )
+
     if product.owner_type != "member":
-        raise ValidationError("Produto não pertence ao utilizador.")
+        raise DomainError("PermissionDenied", "Produto não pertence ao utilizador.")
 
     _validate_status(data.get("status"))
 
@@ -230,9 +273,15 @@ def update_product(pk, user, **data):
 @transaction.atomic
 def update_school_product(pk, user, **data):
     if not user.has_perm("inventory.change_school_product"):
-        raise ValidationError("Sem permissão.")
+        raise DomainError("PermissionDenied", "Sem permissão.")
 
     product = get_school_product(pk, user)
+
+    if "owner_type" in data or "owner_id" in data:
+        raise DomainError(
+            "ImmutableProductOwner",
+            "Owner do produto não pode ser alterado."
+        )
 
     _validate_status(data.get("status"))
 
@@ -276,7 +325,7 @@ def delete_product(pk, user):
 @transaction.atomic
 def delete_school_product(pk, user):
     if not user.has_perm("inventory.delete_school_product"):
-        raise ValidationError("Sem permissão.")
+        raise DomainError("PermissionDenied", "Sem permissão.")
 
     product = get_school_product(pk, user)
 
@@ -322,7 +371,19 @@ def _handle_variants(product, variants):
     if not variants:
         return
 
+    if not isinstance(variants, list):
+        raise DomainError(
+            "InvalidNestedVariantPayload",
+            "Variants deve ser uma lista."
+        )
+
     for v in variants:
+        if not isinstance(v, dict):
+            raise DomainError(
+                "InvalidNestedVariantPayload",
+                "Cada variant deve ser um objeto."
+            )
+
         ProductVariant.objects.create(
             product=product,
             size_id=v.get("size_id"),

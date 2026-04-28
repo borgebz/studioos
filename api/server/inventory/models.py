@@ -118,6 +118,7 @@ class ProductVariant(BaseModel):
         INACTIVE = "inactive"
         SOLD = "sold"
         DONATED = "donated"
+        ARCHIVED = "archived"
 
     class AcquisitionType(models.TextChoices):
         PURCHASED = "purchased"
@@ -139,8 +140,8 @@ class ProductVariant(BaseModel):
     acquisition_type = models.CharField(max_length=20, choices=AcquisitionType.choices)
     acquired_at = models.DateTimeField(null=True, blank=True)
 
-    internal_notes = models.TextField(blank=True)
-    public_notes = models.TextField(blank=True)
+    internal_notes = models.TextField(blank=True, null=True)
+    public_notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.product.name} - {self.sku}"
@@ -189,7 +190,7 @@ class SchoolProductDetails(models.Model):
 
     inventory_code = models.CharField(max_length=100)
     storage_location = models.CharField(max_length=255)
-    notes = models.TextField(blank=True)
+    notes = models.TextField(blank=True, default="")
 
     def clean(self):
         if self.product.owner_type != Product.OwnerType.SCHOOL:
