@@ -8,6 +8,13 @@ import pytest
 from django.utils import timezone
 
 
+def _run_send_event_notification_emails_task_sync(*args, **kwargs):
+    """Execute the Celery task body synchronously (tests have no eager worker)."""
+    from events.tasks import send_event_notification_emails_task
+
+    send_event_notification_emails_task.apply(args=args, kwargs=kwargs)
+
+
 @pytest.mark.django_db
 class TestEventServices:
     def test_create_event_no_date_uses_date_tbd(self, direction_user):
@@ -118,12 +125,17 @@ class TestEventsHttp:
         assert len(data[0]["replies"]) == 1
         assert data[0]["replies"][0]["body"] == "Reply"
 
+    @patch(
+        "events.tasks.send_event_notification_emails_task.delay",
+        side_effect=_run_send_event_notification_emails_task_sync,
+    )
     @patch("events.services.transaction.on_commit", side_effect=lambda f: f())
     @patch("core.emails.send_simple_email")
     def test_publish_notification_test_emails_only_requester(
         self,
         mock_send,
         _commit,
+        _mock_delay,
         auth_client,
         direction_user,
     ):
@@ -151,12 +163,17 @@ class TestEventsHttp:
             body="<p>Hello</p>",
         )
 
+    @patch(
+        "events.tasks.send_event_notification_emails_task.delay",
+        side_effect=_run_send_event_notification_emails_task_sync,
+    )
     @patch("events.services.transaction.on_commit", side_effect=lambda f: f())
     @patch("core.emails.send_simple_email")
     def test_publish_notification_broadcasts_distinct_emails(
         self,
         mock_send,
         _commit,
+        _mock_delay,
         auth_client,
         direction_user,
         student_user,
