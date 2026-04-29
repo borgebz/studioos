@@ -275,7 +275,7 @@ class TestStatusTransitions:
 
         e = self._submitted_enrollment(open_enrollment_period, modality)
         e = services.start_review(enrollment=e, updated_by=direction_user)
-        with patch("enrollments.services.send_activation_email"):
+        with patch("accounts.tasks.send_activation_email_task.delay"):
             e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
         assert e.status == EnrollmentStatus.APPROVED
 
@@ -286,7 +286,7 @@ class TestStatusTransitions:
 
         e = self._submitted_enrollment(open_enrollment_period, modality)
         with pytest.raises(ValidationError) as exc:
-            with patch("enrollments.services.send_activation_email"):
+            with patch("accounts.tasks.send_activation_email_task.delay"):
                 services.approve_enrollment(enrollment=e, updated_by=None)
         assert "InvalidStatusTransition" in str(exc.value.detail)
 
@@ -333,7 +333,7 @@ class TestStatusTransitions:
 
         e = self._submitted_enrollment(open_enrollment_period, modality)
         e = services.start_review(enrollment=e, updated_by=direction_user)
-        with patch("enrollments.services.send_activation_email"):
+        with patch("accounts.tasks.send_activation_email_task.delay"):
             e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
         with pytest.raises(ValidationError) as exc:
             services.cancel_enrollment(enrollment=e, updated_by=direction_user)
@@ -368,9 +368,9 @@ class TestApproveEnrollment:
             **enrollment_submit_kwargs(modality_id=modality.pk),
         )
         e = services.start_review(enrollment=e, updated_by=None)
-        with patch("enrollments.services.send_activation_email") as send_mail:
+        with patch("accounts.tasks.send_activation_email_task.delay") as send_task:
             services.approve_enrollment(enrollment=e, updated_by=None)
-        assert send_mail.call_count == 2
+        assert send_task.call_count == 2
 
     def test_renewal_updates_existing_users(
         self, open_enrollment_period, modality, direction_user
@@ -410,7 +410,7 @@ class TestApproveEnrollment:
         e = services.submit_enrollment(**kwargs)
         e = services.start_review(enrollment=e, updated_by=direction_user)
 
-        with patch("enrollments.services.send_activation_email"):
+        with patch("accounts.tasks.send_activation_email_task.delay"):
             services.approve_enrollment(enrollment=e, updated_by=direction_user)
         parent.refresh_from_db()
         assert parent.phone == "911111111"
