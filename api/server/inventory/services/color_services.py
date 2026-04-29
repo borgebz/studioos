@@ -63,9 +63,10 @@ def delete_color(*, color):
             "ColorInUse",
             "A cor está associada a variantes e não pode ser removida."
         )
+    color.is_active = False
+    color.save()
 
-    color.delete()
-    return {"messages": ["ColorDeletedSuccessfully"]}
+    return color
 
 
 def activate_color(*, color):

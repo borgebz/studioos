@@ -204,7 +204,10 @@ def delete_category(*, category):
             "A categoria tem produtos associados e não pode ser removida."
         )
 
-    category.delete()
+    for item in all_categories:
+        item.is_active = False
+        item.save()
+    return category
 
 
 # ACTIVATE

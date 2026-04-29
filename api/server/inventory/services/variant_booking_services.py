@@ -5,7 +5,7 @@ from inventory.models import VariantBooking, ProductVariant
 
 
 VALID_BOOKING_TYPES = [
-    "reservation", "loan", "rent",
+    "reservation", "loan", "rent", "rental",
     "school_use", "maintenance", "blocked"
 ]
 
@@ -41,10 +41,10 @@ def _get_variant(variant_id, user):
 
 def _validate_dates(start_at, end_at):
     if not start_at or not end_at:
-        raise DomainError("InvalidBookingDateRange", "Datas obrigatórias.")
+        raise DomainError("InvalidBookingDates", "Datas obrigatórias.")
 
     if start_at >= end_at:
-        raise DomainError("InvalidBookingDateRange", "start_at deve ser anterior a end_at.")
+        raise DomainError("InvalidBookingDates", "start_at deve ser anterior a end_at.")
 
 
 def _check_overlap(variant, start_at, end_at, exclude_id=None):
@@ -92,7 +92,7 @@ def create_booking(variant_id, user, **data):
         end_at=end_at,
         actual_start_at=data.get("actual_start_at"),
         actual_end_at=data.get("actual_end_at"),
-        title=data.get("title"),
+        title=data.get("title") or "Booking",
         notes=data.get("notes", ""),
         created_by_user=user
     )

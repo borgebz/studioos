@@ -25,7 +25,7 @@ def list_sizes(*, size_system_id=None):
 
 # CREATE
 @transaction.atomic
-def create_size(*, name, size_system_id, is_active=True, created_by=None):
+def create_size(*, name, size_system_id, is_active=True):
     if Size.objects.filter(
         name__iexact=name.strip(),
         size_system_id=size_system_id,
@@ -52,7 +52,6 @@ def create_size(*, name, size_system_id, is_active=True, created_by=None):
         size_system=size_system,
         sort_order=next_order,
         is_active=is_active,
-        created_by=created_by,
     )
 
     size.full_clean()

@@ -258,6 +258,7 @@ def update_product(pk, user, **data):
         "target_gender",
         "brand",
         "material",
+        "price",
         "status",
     ]:
         if field in data:
@@ -291,6 +292,7 @@ def update_school_product(pk, user, **data):
         "target_gender",
         "brand",
         "material",
+        "price",
         "status",
     ]:
         if field in data:
