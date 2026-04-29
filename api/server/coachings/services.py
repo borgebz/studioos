@@ -1,6 +1,7 @@
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
@@ -16,6 +17,11 @@ from coachings.models import (
 )
 from modality.models import Modality
 from studios.models import Studio, StudioModality
+
+from billing.services import (
+    create_billing_entries_for_coaching,
+    create_fines_for_coaching,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -72,8 +78,12 @@ _PARTICIPANT_STATUSES_BLOCKING_CANCEL = frozenset(
     }
 )
 
-# Policy: cancellations within this window before start_datetime are "late" (fees / notices TBD).
-PARTICIPANT_CANCEL_MIN_NOTICE = timedelta(hours=48)
+
+# Policy: cancellations within this window before start_datetime are "late".
+# Hours are env-driven (COACHING_LATE_CANCELLATION_HOURS, default 48).
+def _participant_cancel_min_notice() -> timedelta:
+    return timedelta(hours=getattr(settings, "COACHING_LATE_CANCELLATION_HOURS", 48))
+
 
 # Cancelled / late-cancelled rows no longer occupy modality capacity.
 _STATUSES_NOT_OCCUPYING_CAPACITY = frozenset(
@@ -246,7 +256,6 @@ def _assert_studio_modality_compatible(*, studio, modality):
     if not StudioModality.objects.filter(
         studio=studio,
         modality=modality,
-        deleted_at__isnull=True,
     ).exists():
         raise ValidationError({"messages": ["StudioModalityIncompatible"]})
 
@@ -439,7 +448,7 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
 
     try:
         coaching = (
-            CoachingClass.objects.select_for_update()
+            CoachingClass.objects.select_for_update(of=("self",))
             .select_related("modality", "studio", "teacher", "requested_by")
             .get(pk=pk)
         )
@@ -451,6 +460,9 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
 
     if not allow_teacher_change and "teacher_id" in updates:
         raise ValidationError({"messages": ["TeacherIdNotEditable"]})
+
+    if not allow_teacher_change and "is_billable" in updates:
+        raise ValidationError({"messages": ["IsBillableStaffOnly"]})
 
     new_start = updates.get("start_datetime", coaching.start_datetime)
     new_end = updates.get("end_datetime", coaching.end_datetime)
@@ -523,6 +535,8 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
         coaching.end_datetime = updates["end_datetime"]
     if "notes" in updates:
         coaching.notes = updates["notes"]
+    if "is_billable" in updates:
+        coaching.is_billable = updates["is_billable"]
 
     coaching.updated_by = requesting_user
     coaching.full_clean()
@@ -612,6 +626,13 @@ def create_coaching_request(
             student_id=requesting_user.pk,
             requesting_user=requesting_user,
         )
+
+    from coachings.tasks import notify_new_coaching_request
+
+    transaction.on_commit(
+        lambda cid=coaching.pk: notify_new_coaching_request.delay(cid)
+    )
+
     return coaching
 
 
@@ -722,9 +743,12 @@ def approve_coaching(*, pk, studio_id, total_price, user):
     (``PENDING`` → ``ACTIVE``). ``INVITED`` rows are unchanged — confirmation uses the
     invite / accept-invite flow (and related endpoints), not this transition.
     """
+    if total_price is None:
+        raise ValidationError({"messages": ["CoachingTotalPriceRequired"]})
+
     try:
         coaching = (
-            CoachingClass.objects.select_for_update()
+            CoachingClass.objects.select_for_update(of=("self",))
             .select_related("teacher", "modality", "studio", "requested_by")
             .get(pk=pk)
         )
@@ -765,18 +789,52 @@ def approve_coaching(*, pk, studio_id, total_price, user):
         participant.save()
 
     logger.info("CoachingClass %s approved by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_approved
+
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_approved.delay(cid))
+
     return get_coaching(pk=pk)
 
 
 @transaction.atomic
 def complete_coaching(*, pk, user):
-    coaching = get_coaching(pk=pk)
+    try:
+        coaching = (
+            CoachingClass.objects.select_for_update(of=("self",))
+            .select_related(
+                "teacher",
+                "modality",
+                "studio",
+                "requested_by",
+                "teacher_confirmed_by",
+            )
+            .prefetch_related("participants__student")
+            .get(pk=pk)
+        )
+    except CoachingClass.DoesNotExist:
+        raise NotFound()
     _validate_status_transition(coaching, CoachingStatus.COMPLETED)
+
+    # Explicit gating: every roster row that counts toward completion must be
+    # in a final state (ATTENDED or ABSENT). Intermediate statuses (ACTIVE,
+    # PENDING_COMPLETION) block the transition. INVITED/PENDING/CANCELLED/
+    # LATE_CANCELLED are excluded from the check (already handled or never
+    # in session).
+    if not _all_roster_attendance_confirmed_for_completion(coaching_class_id=pk):
+        raise ValidationError(
+            {"messages": ["CoachingHasUnresolvedParticipantStatuses"]}
+        )
+
     coaching.status = CoachingStatus.COMPLETED
     coaching.completed_at = timezone.now()
     coaching.updated_by = user
     coaching.full_clean()
     coaching.save()
+
+    create_billing_entries_for_coaching(coaching=coaching, user=user)
+    create_fines_for_coaching(coaching=coaching, user=user)
+
     logger.info("CoachingClass %s completed by user=%s", pk, user.id)
     return get_coaching(pk=pk)
 
@@ -797,7 +855,6 @@ def advance_scheduled_to_waiting_confirmation_batch(*, now=None, updated_by=None
     """
     For each eligible coaching, transition ``SCHEDULED`` → ``WAITING_CONFIRMATION``.
     One DB transaction per coaching so a single failure does not roll back the whole batch.
-    Intended for a management command and for a future scheduled job (same eligibility rules).
 
     Returns the number of coachings transitioned.
     """
@@ -931,6 +988,11 @@ def cancel_coaching(*, pk, user, cancellation_reason=""):
     coaching.updated_by = user
     coaching.save()
     logger.info("CoachingClass %s cancelled by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_cancelled
+
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_cancelled.delay(cid))
+
     return get_coaching(pk=pk)
 
 
@@ -961,22 +1023,21 @@ def _enqueue_participant_cancel_side_effects(
     teacher_id,
     is_late_cancelled,
 ):
-    """Runs after commit — fines, notifications, and any async work must not roll back DB."""
+    """Runs after commit — notifications and any async work must not roll back DB.
+    Fines are NOT created here — LATE_CANCELLED participants are reviewed at
+    coaching completion (see ``billing.services.create_fines_for_coaching``).
+    """
 
     def _run():
-        # TODO: Auto-generate a Fine when is_late_cancelled is True (billing / fines module).
-        # TODO: Notify the teacher (teacher_id) that a participant cancelled coaching_class_id.
-        # TODO: Notify coordination about the cancellation (coaching_class_id, participant_id).
-        # TODO: Capacity — slot is released by persisting status cancelled / late_cancelled;
-        #       confirm reporting and any waitlist promotion when that exists.
-        logger.info(
-            "Participant cancel side-effects queued (TODO): participant=%s coaching=%s "
-            "teacher=%s late=%s",
+        from coachings.tasks import notify_participant_cancelled
+
+        notify_participant_cancelled.delay(
             participant_id,
             coaching_class_id,
-            teacher_id,
             is_late_cancelled,
         )
+        # TODO: Auto-generate a Fine when is_late_cancelled is True (billing/fines module).
+        # TODO: Notify coordination about the cancellation (coaching_class_id, participant_id).
 
     transaction.on_commit(_run)
 
@@ -1238,7 +1299,7 @@ def cancel_coaching_participant(
         )
 
     time_until_start = coaching.start_datetime - now
-    if time_until_start > PARTICIPANT_CANCEL_MIN_NOTICE:
+    if time_until_start > _participant_cancel_min_notice():
         new_status = CoachingParticipantStatus.CANCELLED
     else:
         new_status = CoachingParticipantStatus.LATE_CANCELLED

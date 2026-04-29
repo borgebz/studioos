@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/coachings/11/participants/16/cancel/
+  url: http://127.0.0.1:8000/api/coachings/17/participants/34/cancel/
   body:
     type: json
     data: |-

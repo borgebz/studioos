@@ -89,6 +89,7 @@ class CoachingUpdateSerializer(serializers.Serializer):
     total_price = serializers.DecimalField(
         max_digits=8, decimal_places=2, required=False, allow_null=True
     )
+    is_billable = serializers.BooleanField(required=False)
     start_datetime = serializers.DateTimeField(required=False)
     end_datetime = serializers.DateTimeField(required=False)
     notes = serializers.CharField(required=False, allow_blank=True)
@@ -166,6 +167,7 @@ class CoachingClassSerializer(serializers.ModelSerializer):
             "start_datetime",
             "end_datetime",
             "completed_at",
+            "is_billable",
             "total_price",
             "requested_by",
             "notes",

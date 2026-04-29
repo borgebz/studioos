@@ -1,0 +1,14 @@
+Hello {{ recipient.first_name }},
+
+Your {{ modality }} class has been confirmed and scheduled.
+
+Modality: {{ modality }}
+Date and time: {{ coaching_date }}
+{% if studio %}Studio: {{ studio }}{% endif %}
+{% if total_price %}Price: {{ total_price }}€{% endif %}
+
+Access the platform for more details:
+{{ coaching_url }}
+
+Best regards,
+StudioOS — Dance School

@@ -5,12 +5,12 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/coachings/16/participants/
+  url: http://127.0.0.1:8000/api/coachings/17/participants/
   body:
     type: json
     data: |-
       {
-        "student_id": 14
+        "student_id": 17
       }
   auth: inherit
 

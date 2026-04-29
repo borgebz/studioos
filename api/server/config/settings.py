@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
+    "django_celery_beat",
     # Local
     "accounts",
     "core",
@@ -68,6 +69,7 @@ INSTALLED_APPS = [
     "enrollments",
     "coachings",
     "events",
+    "billing",
 ]
 
 # API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.
@@ -188,6 +190,21 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 
 
 # -----------------------------------------------------------------------------
+# Coachings / billing
+# -----------------------------------------------------------------------------
+# Cancellations within this many hours before start_datetime are "late"
+# (LATE_CANCELLED → fine candidate at completion time).
+COACHING_LATE_CANCELLATION_HOURS = config(
+    "COACHING_LATE_CANCELLATION_HOURS", default=48, cast=int
+)
+
+# Suggested fine amount (EUR) shown to coordination at fine approval time.
+# Coordination can override before approving. Will move to an in-app settings
+# table in the future for direction-controlled configuration.
+COACHING_FINE_DEFAULT_AMOUNT = config("COACHING_FINE_DEFAULT_AMOUNT", default="25.00")
+
+
+# -----------------------------------------------------------------------------
 # Internationalisation
 # -----------------------------------------------------------------------------
 
@@ -204,6 +221,19 @@ USE_TZ = True
 STATIC_URL = "static/"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+
+# -----------------------------------------------------------------------------
+# Celery
+# -----------------------------------------------------------------------------
+
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://redis:6379/0")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://redis:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 
 # -----------------------------------------------------------------------------

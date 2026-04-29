@@ -1,0 +1,10 @@
+Olá {{ recipient.first_name }},
+
+A sua aula de {{ modality }} agendada para {{ coaching_date }} foi cancelada.
+
+{% if cancellation_reason %}Motivo: {{ cancellation_reason }}{% endif %}
+
+Se tiver dúvidas, contacte a coordenação.
+
+Cumprimentos,
+StudioOS — Escola de Dança

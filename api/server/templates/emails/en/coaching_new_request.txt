@@ -1,0 +1,13 @@
+Hello {{ teacher.first_name }},
+
+You have received a new private class request.
+
+Modality: {{ modality }}
+Date and time: {{ coaching_date }}
+Requested by: {{ requested_by }}
+
+Access the platform to accept or reject the request:
+{{ coaching_url }}
+
+Best regards,
+StudioOS — Dance School

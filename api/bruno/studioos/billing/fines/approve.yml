@@ -1,0 +1,22 @@
+info:
+  name: approve
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/billing/fines/1/approve/
+  body:
+    type: json
+    data: |-
+      {
+        "amount": "10.00",
+        "notes": "Approved via Bruno."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

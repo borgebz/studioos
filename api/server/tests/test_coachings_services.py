@@ -367,6 +367,20 @@ class TestCoachingLifecycle:
         assert coaching.status == CoachingStatus.SCHEDULED
         assert coaching.studio.pk == studio_with_modality.pk
 
+    def test_approve_coaching_total_price_none_raises(
+        self, pending_coaching, direction_user, studio_with_modality
+    ):
+        from coachings import services
+
+        with pytest.raises(ValidationError) as exc:
+            services.approve_coaching(
+                pk=pending_coaching.pk,
+                studio_id=studio_with_modality.pk,
+                total_price=None,
+                user=direction_user,
+            )
+        assert "CoachingTotalPriceRequired" in str(exc.value.detail)
+
     def test_approve_coaching_sets_pending_participants_active(
         self,
         student_user,
@@ -1299,17 +1313,27 @@ class TestParticipants:
         self, scheduled_coaching, student, direction_user
     ):
         from coachings import services
-        from coachings.models import CoachingClass, CoachingStatus
+        from coachings.models import (
+            CoachingClass,
+            CoachingParticipantStatus,
+            CoachingStatus,
+        )
 
         p = services.add_participant(
             coaching_class_id=scheduled_coaching.pk,
             student_id=student.pk,
             requesting_user=direction_user,
         )
+        # Move to a final attendance state so the new completion gate passes.
+        p.status = CoachingParticipantStatus.ATTENDED
+        p.save(update_fields=["status"])
         CoachingClass.objects.filter(pk=scheduled_coaching.pk).update(
             status=CoachingStatus.PENDING_COMPLETION_APPROVAL
         )
         services.complete_coaching(pk=scheduled_coaching.pk, user=direction_user)
+        # After completion, every participant is in a final state (ATTENDED/ABSENT),
+        # so the participant-level terminal check trips before the coaching-level
+        # check. Either way the cancel is correctly blocked.
         with pytest.raises(ValidationError) as exc:
             services.cancel_coaching_participant(
                 coaching_class_id=scheduled_coaching.pk,
@@ -1317,7 +1341,7 @@ class TestParticipants:
                 requesting_user=direction_user,
                 may_cancel_on_behalf_of_others=True,
             )
-        assert "CoachingNotEligibleForParticipantCancellation" in str(exc.value.detail)
+        assert "ParticipantEnrollmentIsTerminal" in str(exc.value.detail)
 
     def test_cancel_participant_blocked_when_session_started(
         self, scheduled_coaching, student, direction_user

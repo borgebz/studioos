@@ -5,12 +5,12 @@ info:
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/coachings/16/teacher-confirm/
+  url: http://127.0.0.1:8000/api/coachings/17/teacher-confirm/
   body:
     type: json
     data: |-
       {
-        "teacher_notes": "aluno x faltou"
+        "teacher_notes": "Correu tudo OK."
       }
   auth: inherit
 

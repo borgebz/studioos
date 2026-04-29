@@ -36,11 +36,14 @@ class Command(BaseCommand):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
+            # Explicit: dev bootstrap accounts must be login-ready. (API-created users use
+            # accounts.services.create_user with is_active=False until email activation.)
             user = User.objects.create_user(
                 email=email,
                 password=options["password"],
                 first_name=options["first_name"],
                 last_name=options["last_name"],
+                is_active=True,
             )
             created = True
         else:
