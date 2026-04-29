@@ -5,13 +5,13 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/coachings/16/approve/
+  url: http://127.0.0.1:8000/api/coachings/17/approve/
   body:
     type: json
     data: |-
       {
         "studio_id": 1,
-        "total_price": "45.00"
+        "total_price": "100.00"
       }
   auth: inherit
 

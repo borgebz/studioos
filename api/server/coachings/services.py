@@ -448,7 +448,7 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
 
     try:
         coaching = (
-            CoachingClass.objects.select_for_update()
+            CoachingClass.objects.select_for_update(of=("self",))
             .select_related("modality", "studio", "teacher", "requested_by")
             .get(pk=pk)
         )
@@ -748,7 +748,7 @@ def approve_coaching(*, pk, studio_id, total_price, user):
 
     try:
         coaching = (
-            CoachingClass.objects.select_for_update()
+            CoachingClass.objects.select_for_update(of=("self",))
             .select_related("teacher", "modality", "studio", "requested_by")
             .get(pk=pk)
         )
@@ -799,7 +799,21 @@ def approve_coaching(*, pk, studio_id, total_price, user):
 
 @transaction.atomic
 def complete_coaching(*, pk, user):
-    coaching = get_coaching(pk=pk)
+    try:
+        coaching = (
+            CoachingClass.objects.select_for_update(of=("self",))
+            .select_related(
+                "teacher",
+                "modality",
+                "studio",
+                "requested_by",
+                "teacher_confirmed_by",
+            )
+            .prefetch_related("participants__student")
+            .get(pk=pk)
+        )
+    except CoachingClass.DoesNotExist:
+        raise NotFound()
     _validate_status_transition(coaching, CoachingStatus.COMPLETED)
 
     # Explicit gating: every roster row that counts toward completion must be
@@ -841,7 +855,6 @@ def advance_scheduled_to_waiting_confirmation_batch(*, now=None, updated_by=None
     """
     For each eligible coaching, transition ``SCHEDULED`` → ``WAITING_CONFIRMATION``.
     One DB transaction per coaching so a single failure does not roll back the whole batch.
-    Intended for a management command and for a future scheduled job (same eligibility rules).
 
     Returns the number of coachings transitioned.
     """

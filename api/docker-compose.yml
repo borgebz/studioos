@@ -43,6 +43,9 @@ services:
         condition: service_started
     volumes:
       - ./server:/app
+      # Isolated from host .venv and from other services: concurrent `uv run`
+      # on a shared bind-mounted .venv causes "Directory not empty" / exit 2.
+      - api_venv:/app/.venv
 
   # ── Celery Worker ───────────────────────────────────────────────────────────
   worker:
@@ -58,6 +61,7 @@ services:
         condition: service_healthy
     volumes:
       - ./server:/app
+      - worker_venv:/app/.venv
 
   # ── Celery Beat (scheduler) ─────────────────────────────────────────────────
   beat:
@@ -73,6 +77,7 @@ services:
         condition: service_healthy
     volumes:
       - ./server:/app
+      - beat_venv:/app/.venv
 
   # ── Mail ────────────────────────────────────────────────────────────────────
   mailpit:
@@ -115,3 +120,6 @@ services:
 volumes:
   postgres_data:
   portainer_data:
+  api_venv:
+  worker_venv:
+  beat_venv:
