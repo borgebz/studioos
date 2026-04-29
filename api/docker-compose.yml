@@ -51,7 +51,7 @@ services:
   worker:
     build:
       context: ./server
-    command: uv run celery -A config worker --loglevel=info
+    command: uv run celery -A config worker --loglevel=info --events
     env_file:
       - ./server/.env
     depends_on:
@@ -92,15 +92,22 @@ services:
 
   # ── Monitoring ──────────────────────────────────────────────────────────────
   flower:
-    image: mher/flower
+    build:
+      context: ./server
+    command: uv run celery -A config flower --broker=redis://redis:6379/0 --port=5555 --persistent=True --db=/data/flower
+    env_file:
+      - ./server/.env
     ports:
       - "5555:5555"
-    environment:
-      CELERY_BROKER_URL: redis://redis:6379/0
-      FLOWER_PORT: 5555
     depends_on:
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./server:/app
+      - flower_venv:/app/.venv
+      - flower_data:/data
 
   redisinsight:
     image: redis/redisinsight
@@ -123,3 +130,5 @@ volumes:
   api_venv:
   worker_venv:
   beat_venv:
+  flower_venv:
+  flower_data:

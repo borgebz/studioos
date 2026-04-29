@@ -147,17 +147,14 @@ def notify_coaching_approved(self, coaching_id):
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def notify_coaching_cancelled(self, coaching_id):
     """
-    Notify all non-cancelled participants and the teacher
-    that the coaching has been cancelled.
+    Notify all participants and the teacher that the coaching has been cancelled.
+    Participants will already be in CANCELLED status (cascaded by cancel_coaching),
+    so we notify all of them regardless of status — excluding only LATE_CANCELLED rows
+    which had already exited before the coaching was cancelled.
     """
     try:
         from coachings.models import CoachingClass, CoachingParticipantStatus
         from coachings.emails import send_coaching_cancelled_notification
-
-        _EXCLUDED_STATUSES = {
-            CoachingParticipantStatus.CANCELLED,
-            CoachingParticipantStatus.LATE_CANCELLED,
-        }
 
         try:
             coaching = (
@@ -173,7 +170,7 @@ def notify_coaching_cancelled(self, coaching_id):
 
         recipients = set()
         for p in coaching.participants.all():
-            if p.status not in _EXCLUDED_STATUSES:
+            if p.status != CoachingParticipantStatus.LATE_CANCELLED:
                 recipients.add(p.student)
 
         for recipient in recipients:
@@ -191,6 +188,60 @@ def notify_coaching_cancelled(self, coaching_id):
     except Exception as exc:
         logger.error(
             "notify_coaching_cancelled failed for coaching %s: %s",
+            coaching_id,
+            exc,
+            exc_info=True,
+        )
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_coaching_completed(self, coaching_id):
+    """
+    Notify attended and absent participants, and the teacher, that the session
+    has been completed and billing entries / fine candidates have been generated.
+    """
+    try:
+        from coachings.models import CoachingClass, CoachingParticipantStatus
+        from coachings.emails import send_coaching_completed_notification
+
+        _NOTIFY_STATUSES = {
+            CoachingParticipantStatus.ATTENDED,
+            CoachingParticipantStatus.ABSENT,
+        }
+
+        try:
+            coaching = (
+                CoachingClass.objects.select_related("teacher", "modality", "studio")
+                .prefetch_related("participants__student")
+                .get(pk=coaching_id)
+            )
+        except CoachingClass.DoesNotExist:
+            logger.warning(
+                "notify_coaching_completed: coaching %s not found.", coaching_id
+            )
+            return
+
+        recipients = set()
+        for p in coaching.participants.all():
+            if p.status in _NOTIFY_STATUSES:
+                recipients.add(p.student)
+
+        for recipient in recipients:
+            send_coaching_completed_notification(coaching=coaching, recipient=recipient)
+
+        send_coaching_completed_notification(
+            coaching=coaching, recipient=coaching.teacher
+        )
+
+        logger.info(
+            "notify_coaching_completed: notified %d recipient(s) + teacher for coaching %s.",
+            len(recipients),
+            coaching_id,
+        )
+    except Exception as exc:
+        logger.error(
+            "notify_coaching_completed failed for coaching %s: %s",
             coaching_id,
             exc,
             exc_info=True,

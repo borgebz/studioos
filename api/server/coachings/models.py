@@ -8,7 +8,6 @@ from studios.models import Studio
 
 class CoachingStatus(models.TextChoices):
     REQUESTED = "requested", "Requested"
-    PENDING_TEACHER_APPROVAL = "pending_teacher_approval", "Peding Teacher Approval"
     PENDING_APPROVAL = "pending_approval", "Pending Approval"
     SCHEDULED = "scheduled", "Scheduled"
     WAITING_CONFIRMATION = "waiting_confirmation", "Waiting Confirmation"

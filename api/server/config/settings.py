@@ -234,6 +234,10 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_SEND_EVENTS = True
+CELERY_SEND_TASK_SENT_EVENT = True
+CELERY_EVENT_QUEUE_EXPIRES = 60
+CELERY_EVENT_QUEUE_TTL = 5
 
 
 # -----------------------------------------------------------------------------

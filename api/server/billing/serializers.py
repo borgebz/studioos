@@ -26,6 +26,17 @@ class CoachingClassBillingSummarySerializer(serializers.ModelSerializer):
         fields = ["id", "start_datetime", "end_datetime", "modality"]
 
 
+class CoachingClassBillingDetailSerializer(serializers.ModelSerializer):
+    """Extended coaching summary that includes the teacher — used in detail responses."""
+
+    modality = ModalitySerializer(read_only=True)
+    teacher = UserResponseSerializer(read_only=True, allow_null=True)
+
+    class Meta:
+        model = CoachingClass
+        fields = ["id", "start_datetime", "end_datetime", "modality", "teacher"]
+
+
 class CoachingParticipantBillingSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoachingParticipant
@@ -75,7 +86,7 @@ class BillingEntryDetailSerializer(serializers.ModelSerializer):
         choices=BillingEntrySourceType.choices, read_only=True
     )
     status = serializers.ChoiceField(choices=BillingEntryStatus.choices, read_only=True)
-    coaching_class = serializers.SerializerMethodField()
+    coaching_class = CoachingClassBillingDetailSerializer(read_only=True, allow_null=True)
     coaching_participant = CoachingParticipantBillingSerializer(read_only=True)
     fine = FineBillingSummarySerializer(read_only=True, allow_null=True)
 
@@ -98,24 +109,6 @@ class BillingEntryDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
-
-    @extend_schema_field(CoachingClassBillingSummarySerializer())
-    def get_coaching_class(self, obj):
-        cc = obj.coaching_class
-        if cc is None:
-            return None
-        inner = CoachingClassBillingSummarySerializer(
-            cc,
-            context=self.context,
-        )
-        teacher = getattr(cc, "teacher", None)
-        data = inner.data
-        data["teacher"] = (
-            UserResponseSerializer(teacher, context=self.context).data
-            if teacher
-            else None
-        )
-        return data
 
 
 class BillingEntryCancelSerializer(serializers.Serializer):
@@ -168,7 +161,7 @@ class FineListSerializer(serializers.ModelSerializer):
 class FineDetailSerializer(serializers.ModelSerializer):
     reason = serializers.ChoiceField(choices=FineReason.choices, read_only=True)
     status = serializers.ChoiceField(choices=FineStatus.choices, read_only=True)
-    coaching_class = serializers.SerializerMethodField()
+    coaching_class = CoachingClassBillingDetailSerializer(read_only=True, allow_null=True)
     coaching_participant = CoachingParticipantBillingSerializer(read_only=True)
     reviewed_by = UserResponseSerializer(read_only=True, allow_null=True)
     suggested_amount = serializers.SerializerMethodField()
@@ -191,21 +184,6 @@ class FineDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
-
-    @extend_schema_field(CoachingClassBillingSummarySerializer())
-    def get_coaching_class(self, obj):
-        cc = obj.coaching_class
-        if cc is None:
-            return None
-        inner = CoachingClassBillingSummarySerializer(cc, context=self.context)
-        teacher = getattr(cc, "teacher", None)
-        data = inner.data
-        data["teacher"] = (
-            UserResponseSerializer(teacher, context=self.context).data
-            if teacher
-            else None
-        )
-        return data
 
     @extend_schema_field(serializers.DecimalField(max_digits=10, decimal_places=2))
     def get_suggested_amount(self, obj):

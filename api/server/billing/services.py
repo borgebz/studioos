@@ -2,6 +2,7 @@ import logging
 from decimal import ROUND_DOWN, Decimal, InvalidOperation
 
 from django.conf import settings
+from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
 
@@ -315,6 +316,7 @@ def get_billing_entry_for_request(*, pk, requesting_user):
     return entry
 
 
+@transaction.atomic
 def cancel_billing_entry(*, entry, notes, updated_by):
     notes_clean = (notes or "").strip()
     if not notes_clean:
@@ -407,6 +409,7 @@ def _resolve_fine_amount(amount):
     return amount
 
 
+@transaction.atomic
 def approve_fine(*, fine, amount, reviewed_by, notes=""):
     """
     Approve a fine (status=APPROVED) and generate the matching BillingEntry.
@@ -451,6 +454,7 @@ def approve_fine(*, fine, amount, reviewed_by, notes=""):
     return fine
 
 
+@transaction.atomic
 def waive_fine(*, fine, reviewed_by, notes):
     """
     Waive a pending fine — no charge generated. `notes` required for audit trail.

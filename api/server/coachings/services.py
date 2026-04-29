@@ -716,7 +716,9 @@ def teacher_reject_coaching(*, user, rejection_reason="", pk=None, coaching=None
         raise ValidationError({"messages": ["InvalidStatusTransition"]})
     coaching.status = CoachingStatus.REJECTED
     coaching.rejection_reason = rejection_reason
+    coaching.rejected_at = timezone.now()
     coaching.updated_by = user
+    coaching.full_clean()
     coaching.save()
     logger.info("CoachingClass %s rejected by teacher=%s", coaching.pk, user.id)
     return coaching
@@ -728,7 +730,9 @@ def reject_coaching_coordination(*, user, rejection_reason="", pk=None, coaching
     _validate_status_transition(coaching, CoachingStatus.REJECTED)
     coaching.status = CoachingStatus.REJECTED
     coaching.rejection_reason = rejection_reason
+    coaching.rejected_at = timezone.now()
     coaching.updated_by = user
+    coaching.full_clean()
     coaching.save()
     logger.info(
         "CoachingClass %s rejected by coordination user=%s", coaching.pk, user.id
@@ -763,12 +767,11 @@ def approve_coaching(*, pk, studio_id, total_price, user):
         raise NotFound()
 
     _assert_studio_modality_compatible(studio=studio, modality=coaching.modality)
-    _assert_no_scheduled_conflict(
+    _ensure_scheduled_slot_free(
         teacher_id=coaching.teacher_id,
         studio_id=studio_id,
         start_datetime=coaching.start_datetime,
         end_datetime=coaching.end_datetime,
-        exclude_pk=pk,
     )
 
     coaching.studio = studio
@@ -836,6 +839,11 @@ def complete_coaching(*, pk, user):
     create_fines_for_coaching(coaching=coaching, user=user)
 
     logger.info("CoachingClass %s completed by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_completed
+
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_completed.delay(cid))
+
     return get_coaching(pk=pk)
 
 
@@ -979,14 +987,36 @@ def confirm_participant_attendance(
     return CoachingParticipant.objects.select_related("student").get(pk=participant.pk)
 
 
+_PARTICIPANT_STATUSES_CANCELLABLE_BY_COACHING = frozenset(
+    {
+        CoachingParticipantStatus.ACTIVE,
+        CoachingParticipantStatus.PENDING,
+        CoachingParticipantStatus.INVITED,
+        CoachingParticipantStatus.PENDING_COMPLETION,
+    }
+)
+
+
 @transaction.atomic
 def cancel_coaching(*, pk, user, cancellation_reason=""):
     coaching = get_coaching(pk=pk)
     _validate_status_transition(coaching, CoachingStatus.CANCELLED)
     coaching.status = CoachingStatus.CANCELLED
     coaching.cancellation_reason = cancellation_reason
+    coaching.cancelled_at = timezone.now()
     coaching.updated_by = user
+    coaching.full_clean()
     coaching.save()
+
+    now = timezone.now()
+    for participant in coaching.participants.filter(
+        status__in=list(_PARTICIPANT_STATUSES_CANCELLABLE_BY_COACHING)
+    ):
+        participant.status = CoachingParticipantStatus.CANCELLED
+        participant.cancelled_at = now
+        participant.updated_by = user
+        participant.save()
+
     logger.info("CoachingClass %s cancelled by user=%s", pk, user.id)
 
     from coachings.tasks import notify_coaching_cancelled

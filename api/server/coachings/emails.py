@@ -15,6 +15,10 @@ _SUBJECTS = {
         "pt": "Aula Cancelada — StudioOS",
         "en": "Class Cancelled — StudioOS",
     },
+    "coaching_completed": {
+        "pt": "Aula Concluída — StudioOS",
+        "en": "Class Completed — StudioOS",
+    },
     "coaching_new_request": {
         "pt": "Novo Pedido de Aula Particular — StudioOS",
         "en": "New Private Class Request — StudioOS",
@@ -111,6 +115,24 @@ def send_new_coaching_request_notification(*, coaching, teacher):
         "New coaching request notification sent: coaching=%s teacher=%s",
         coaching.pk,
         teacher.pk,
+    )
+
+
+def send_coaching_completed_notification(*, coaching, recipient):
+    """Notify a single recipient (participant or teacher) that the coaching was completed."""
+    lang = _language(recipient)
+    context = {**_coaching_context(coaching), "recipient": recipient}
+    send_templated_email(
+        to=recipient.email,
+        subject=_subject("coaching_completed", lang),
+        template_name="coaching_completed",
+        context=context,
+        language=lang,
+    )
+    logger.info(
+        "Coaching completed notification sent: coaching=%s recipient=%s",
+        coaching.pk,
+        recipient.pk,
     )
 
 
