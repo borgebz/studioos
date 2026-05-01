@@ -299,6 +299,18 @@ def _ensure_scheduled_slot_free(
     end_datetime,
     exclude_pk=None,
 ):
+    # Lock the teacher and studio rows first so concurrent requests for the same
+    # teacher/studio are serialized even when no conflicting coachings exist yet.
+    # Without this, SELECT FOR UPDATE on an empty result set locks nothing (TOCTOU).
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    User.objects.select_for_update().filter(pk=teacher_id).first()
+    if studio_id is not None:
+        from studios.models import Studio as _Studio
+
+        _Studio.objects.select_for_update().filter(pk=studio_id).first()
+
     conflict_lock_qs = (
         CoachingClass.objects.select_for_update()
         .filter(

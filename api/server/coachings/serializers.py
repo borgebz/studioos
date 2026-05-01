@@ -55,7 +55,7 @@ class CoachingDirectScheduleSerializer(serializers.Serializer):
     teacher_id = serializers.IntegerField()
     modality_id = serializers.IntegerField()
     studio_id = serializers.IntegerField()
-    total_price = serializers.DecimalField(max_digits=8, decimal_places=2)
+    total_price = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
     start_datetime = serializers.DateTimeField()
     end_datetime = serializers.DateTimeField()
     notes = serializers.CharField(required=False, allow_blank=True)
@@ -63,7 +63,7 @@ class CoachingDirectScheduleSerializer(serializers.Serializer):
 
 class CoachingApproveSerializer(serializers.Serializer):
     studio_id = serializers.IntegerField()
-    total_price = serializers.DecimalField(max_digits=8, decimal_places=2)
+    total_price = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
 
 
 class CoachingRejectSerializer(serializers.Serializer):
