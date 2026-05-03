@@ -201,6 +201,64 @@ class TestSubmitEnrollmentGuards:
             )
         assert "StudentAndParentEmailMustBeDifferent" in str(exc.value.detail)
 
+    def test_submit_student_age_below_modality_minimum(
+        self, open_enrollment_period, modality
+    ):
+        from datetime import datetime, timezone as tz
+
+        from enrollments import services
+
+        modality.min_age_months = 120
+        modality.max_age_months = None
+        modality.save(update_fields=["min_age_months", "max_age_months"])
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+        kwargs["enrollment_data"]["student_date_of_birth"] = date(2017, 6, 1)
+
+        fixed = datetime(2026, 6, 1, 12, 0, 0, tzinfo=tz.utc)
+        with patch("enrollments.services.timezone.now", return_value=fixed):
+            with pytest.raises(ValidationError) as exc:
+                services.submit_enrollment(**kwargs)
+        assert "StudentAgeBelowModalityMinimum" in str(exc.value.detail)
+
+    def test_submit_student_age_above_modality_maximum(
+        self, open_enrollment_period, modality
+    ):
+        from datetime import datetime, timezone as tz
+
+        from enrollments import services
+
+        modality.min_age_months = None
+        modality.max_age_months = 120
+        modality.save(update_fields=["min_age_months", "max_age_months"])
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+        kwargs["enrollment_data"]["student_date_of_birth"] = date(2014, 1, 1)
+
+        fixed = datetime(2026, 6, 1, 12, 0, 0, tzinfo=tz.utc)
+        with patch("enrollments.services.timezone.now", return_value=fixed):
+            with pytest.raises(ValidationError) as exc:
+                services.submit_enrollment(**kwargs)
+        assert "StudentAgeAboveModalityMaximum" in str(exc.value.detail)
+
+    def test_submit_student_age_within_modality_bounds(
+        self, open_enrollment_period, modality
+    ):
+        from datetime import datetime, timezone as tz
+
+        from enrollments import services
+
+        modality.min_age_months = 60
+        modality.max_age_months = 200
+        modality.save(update_fields=["min_age_months", "max_age_months"])
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+
+        fixed = datetime(2026, 6, 1, 12, 0, 0, tzinfo=tz.utc)
+        with patch("enrollments.services.timezone.now", return_value=fixed):
+            enrollment = services.submit_enrollment(**kwargs)
+        assert enrollment.pk is not None
+
     def test_submit_duplicate_enrollment(self, open_enrollment_period, modality):
         from enrollments import services
 

@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
@@ -24,6 +26,14 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 _REQUIRED_CONSENT_TYPES = (ConsentType.RGPD, ConsentType.INTERNAL_REGULATION)
+
+
+def _age_in_months(*, birth_date: date, on_date: date) -> int:
+    """Whole calendar months from birth_date to on_date (same notion as typical age rules)."""
+    months = (on_date.year - birth_date.year) * 12 + (on_date.month - birth_date.month)
+    if on_date.day < birth_date.day:
+        months -= 1
+    return months
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +175,23 @@ def submit_enrollment(
     found_count = Modality.objects.filter(pk__in=modality_ids).count()
     if found_count != len(unique_modality_ids):
         raise ValidationError({"messages": ["OneOrMoreModalitiesNotFound"]})
+
+    student_dob = enrollment_data.get("student_date_of_birth")
+    if student_dob is not None:
+        reference_date = timezone.now().date()
+        age_months = _age_in_months(birth_date=student_dob, on_date=reference_date)
+        modalities = Modality.objects.filter(pk__in=modality_ids).order_by("pk")
+        for modality in modalities:
+            if (
+                modality.min_age_months is not None
+                and age_months < modality.min_age_months
+            ):
+                raise ValidationError({"messages": ["StudentAgeBelowModalityMinimum"]})
+            if (
+                modality.max_age_months is not None
+                and age_months > modality.max_age_months
+            ):
+                raise ValidationError({"messages": ["StudentAgeAboveModalityMaximum"]})
 
     for consent_type in _REQUIRED_CONSENT_TYPES:
         if not any(
