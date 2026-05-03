@@ -8,7 +8,9 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 from tests.conftest import enrollment_submit_kwargs
 
@@ -18,8 +20,9 @@ class TestPeriods:
     def test_get_period_not_found(self):
         from enrollments import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.get_period(pk=9_999_999)
+        assert "EnrollmentPeriodNotFound" in str(exc.value.detail)
 
     def test_open_close_period(self, direction_user):
         from enrollments import services
@@ -492,12 +495,13 @@ class TestPayments:
             payment_type=PaymentType.ENROLLMENT_FEE,
             amount=Decimal("50.00"),
         )
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.confirm_payment_for_enrollment(
                 enrollment_pk=e.pk,
                 payment_pk=p.pk + 9999,
                 confirmed_by=None,
             )
+        assert "EnrollmentPaymentNotFound" in str(exc.value.detail)
 
     def test_confirm_payment(self, open_enrollment_period, modality, direction_user):
         from enrollments import services

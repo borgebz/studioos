@@ -1,5 +1,7 @@
 import pytest
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 
 @pytest.mark.django_db
@@ -46,8 +48,9 @@ class TestStudio:
     def test_get_studio_not_found(self):
         from studios import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.get_studio(pk=999_999)
+        assert "StudioNotFound" in str(exc.value.detail)
 
     def test_create_studio_with_modality_ids(self, direction_user, modality):
         from studios import services

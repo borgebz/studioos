@@ -10,7 +10,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, Q
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
 from accounts.emails import account_activation_token
 from accounts.invite_store import (
@@ -30,15 +30,13 @@ def get_user_by_pk(*, pk, app_not_found_code=None):
     """
     Return a user by primary key.
 
-    If the user does not exist: raises ``NotFound()`` by default, or
+    If the user does not exist: raises ``AppNotFound("UserNotFound")`` by default, or
     ``AppNotFound(app_not_found_code)`` when ``app_not_found_code`` is set (PascalCase i18n key).
     """
     try:
         return User.objects.get(pk=pk)
     except User.DoesNotExist:
-        if app_not_found_code is not None:
-            raise AppNotFound(app_not_found_code)
-        raise NotFound()
+        raise AppNotFound(app_not_found_code or "UserNotFound")
 
 
 def list_users():
@@ -74,7 +72,7 @@ def get_user_with_roles_prefetched(*, pk):
             .get(pk=pk)
         )
     except User.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("UserNotFound")
 
 
 @lru_cache(maxsize=1)
@@ -179,7 +177,7 @@ def get_profile_for_user(*, user):
     try:
         return Profile.objects.get(user=user)
     except Profile.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ProfileNotFound")
 
 
 def create_profile_for_user(*, user, created_by=None, **fields):

@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
 
+from core.exceptions import AppNotFound
 from events.models import (
     Event,
     EventClassTarget,
@@ -75,28 +76,28 @@ def get_event(*, pk):
     try:
         return Event.objects.get(pk=pk)
     except Event.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EventNotFound")
 
 
 def get_event_post(*, event, post_id):
     try:
         return EventPost.objects.select_related("event").get(event=event, pk=post_id)
     except EventPost.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EventPostNotFound")
 
 
 def get_event_comment(*, event, comment_id):
     try:
         return EventComment.objects.get(event=event, pk=comment_id)
     except EventComment.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EventCommentNotFound")
 
 
 def get_event_file(*, event, file_id):
     try:
         return EventFile.objects.get(event=event, pk=file_id)
     except EventFile.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EventFileNotFound")
 
 
 def _validate_event_class_targets_for_publish(*, event):
@@ -282,7 +283,7 @@ def delete_my_interest(*, event, user):
     try:
         interest = EventInterest.objects.get(event=event, user=user)
     except EventInterest.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("InterestNotFound")
 
     interest.delete(deleted_by=user)
 

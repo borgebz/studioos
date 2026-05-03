@@ -1,9 +1,10 @@
 import logging
 
 from django.db import IntegrityError, transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
 from accounts.services import get_user_by_pk
+from core.exceptions import AppNotFound
 from modality.models import Modality, UserModality
 from studios.models import Studio
 
@@ -18,7 +19,7 @@ def get_modality(*, pk: int) -> Modality:
     try:
         return Modality.objects.prefetch_related("studios").get(pk=pk)
     except Modality.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ModalityNotFound")
 
 
 @transaction.atomic
@@ -157,7 +158,7 @@ def remove_user_modality(*, user_id: int, pk: int, requesting_user):
     try:
         link = UserModality.objects.get(pk=pk, user_id=user_id)
     except UserModality.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("UserModalityNotFound")
 
     link.delete(deleted_by=requesting_user)
     logger.info("UserModality %s deleted by %s", pk, requesting_user.id)

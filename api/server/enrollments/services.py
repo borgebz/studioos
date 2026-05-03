@@ -3,8 +3,10 @@ from datetime import date
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
 from accounts.models import Role
+from core.exceptions import AppNotFound
 from enrollments.models import (
     ConsentType,
     Enrollment,
@@ -75,7 +77,7 @@ def get_period(*, pk):
     try:
         return EnrollmentPeriod.objects.get(pk=pk)
     except EnrollmentPeriod.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EnrollmentPeriodNotFound")
 
 
 def list_periods(*, filters=None):
@@ -273,7 +275,7 @@ def get_enrollment(*, pk):
             .get(pk=pk)
         )
     except Enrollment.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EnrollmentNotFound")
 
 
 # ---------------------------------------------------------------------------
@@ -538,7 +540,7 @@ def confirm_payment_for_enrollment(
             enrollment_id=enrollment_pk,
         )
     except EnrollmentPayment.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EnrollmentPaymentNotFound")
     if payment.status == PaymentStatus.CONFIRMED:
         raise ValidationError({"messages": ["PaymentAlreadyConfirmed"]})
     payment.status = PaymentStatus.CONFIRMED

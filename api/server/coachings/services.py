@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
 from accounts.services import get_teacher_user_by_pk, get_user_by_pk
 from core.exceptions import AppNotFound
@@ -467,7 +467,7 @@ def create_teacher_availability(*, teacher_id, requesting_user, **data):
         try:
             modality = Modality.objects.get(pk=modality_id)
         except Modality.DoesNotExist:
-            raise NotFound()
+            raise AppNotFound("ModalityNotFound")
 
     notes = data.get("notes", "")
     _check_availability_overlap(
@@ -498,7 +498,7 @@ def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
     try:
         block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
     except TeacherAvailability.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("TeacherAvailabilityNotFound")
 
     modality_id = data.pop("modality_id", "__unset__")
     if modality_id != "__unset__":
@@ -506,7 +506,7 @@ def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
             try:
                 block.modality = Modality.objects.get(pk=modality_id)
             except Modality.DoesNotExist:
-                raise NotFound()
+                raise AppNotFound("ModalityNotFound")
         else:
             block.modality = None
 
@@ -539,7 +539,7 @@ def delete_teacher_availability(*, teacher_id, pk, requesting_user):
     try:
         block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
     except TeacherAvailability.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("TeacherAvailabilityNotFound")
     block.delete(deleted_by=requesting_user)
     logger.info("TeacherAvailability %s deleted by user=%s", pk, requesting_user.id)
 
@@ -548,7 +548,7 @@ def get_coaching(*, pk):
     try:
         return _coaching_detail_queryset().get(pk=pk)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
 
 def _resolve_coaching_from_pk_or_instance(*, pk, coaching):
@@ -574,7 +574,7 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.status not in _EDITABLE_COACHING_STATUSES:
         raise ValidationError({"messages": ["CoachingNotEditable"]})
@@ -597,7 +597,7 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
         try:
             effective_modality = Modality.objects.get(pk=updates["modality_id"])
         except Modality.DoesNotExist:
-            raise NotFound()
+            raise AppNotFound("ModalityNotFound")
 
     if "studio_id" in updates:
         new_studio_id = updates["studio_id"]
@@ -936,14 +936,14 @@ def approve_coaching(*, pk, studio_id, total_price, user):
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     _validate_status_transition(coaching, CoachingStatus.SCHEDULED)
 
     try:
         studio = Studio.objects.get(pk=studio_id)
     except Studio.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("StudioNotFound")
 
     _assert_studio_modality_compatible(studio=studio, modality=coaching.modality)
     _ensure_scheduled_slot_free(
@@ -995,7 +995,7 @@ def complete_coaching(*, pk, user):
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
     _validate_status_transition(coaching, CoachingStatus.COMPLETED)
 
     # Explicit gating: every roster row that counts toward completion must be
@@ -1081,7 +1081,7 @@ def teacher_confirm_coaching(*, pk, user, teacher_notes="", now=None):
     try:
         coaching = CoachingClass.objects.select_for_update().get(pk=pk)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.teacher_id != user.id:
         raise ValidationError({"messages": ["NotTheAssignedTeacher"]})
@@ -1365,7 +1365,7 @@ def student_accept_coaching_invitation(*, coaching_class_id, user):
             .get(pk=coaching_class_id)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.status in (
         CoachingStatus.COMPLETED,
@@ -1448,7 +1448,7 @@ def list_participants(*, coaching_class_id):
     try:
         CoachingClass.objects.get(pk=coaching_class_id)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
     return CoachingParticipant.objects.filter(
         coaching_class_id=coaching_class_id
     ).select_related("student")
@@ -1474,7 +1474,7 @@ def cancel_coaching_participant(
             .get(pk=coaching_class_id)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     try:
         participant = CoachingParticipant.objects.select_for_update().get(

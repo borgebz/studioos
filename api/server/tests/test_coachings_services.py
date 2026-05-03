@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AppNotFound
 
@@ -1133,11 +1133,12 @@ class TestParticipants:
     ):
         from coachings import services
 
-        with pytest.raises(AppNotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.student_accept_coaching_invitation(
                 coaching_class_id=scheduled_coaching.pk,
                 user=student,
             )
+        assert "ParticipantNotFound" in str(exc.value.detail)
 
     def test_add_participant_requires_student_capability(
         self, scheduled_coaching, teacher_user, direction_user
@@ -1531,13 +1532,14 @@ class TestUpdateCoaching:
     def test_update_modality_id_not_found(self, requested_coaching, direction_user):
         from coachings import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.update_coaching(
                 pk=requested_coaching.pk,
                 requesting_user=direction_user,
                 allow_teacher_change=True,
                 updates={"modality_id": 999_999_999},
             )
+        assert "ModalityNotFound" in str(exc.value.detail)
 
     def test_update_not_editable_when_completed(
         self, direction_user, teacher_user, modality, studio_with_modality
@@ -1771,12 +1773,13 @@ class TestUserModality:
     def test_add_user_modality_invalid_user(self, direction_user, modality):
         from modality import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.add_user_modality(
                 user_id=999_999,
                 modality_id=modality.pk,
                 requesting_user=direction_user,
             )
+        assert "UserNotFound" in str(exc.value.detail)
 
 
 @pytest.mark.django_db
@@ -2181,7 +2184,7 @@ class TestDirectCoordinationCoachingWithClasse:
     ):
         from coachings import services
 
-        with pytest.raises(AppNotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.create_direct_coordination_coaching(
                 teacher_id=teacher_user.pk,
                 modality_id=modality.pk,
@@ -2192,6 +2195,7 @@ class TestDirectCoordinationCoachingWithClasse:
                 requesting_user=direction_user,
                 classe_id=999999,
             )
+        assert "ClasseNotFound" in str(exc.value.detail)
 
     def test_empty_classe_raises(
         self,

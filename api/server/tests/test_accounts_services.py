@@ -5,7 +5,9 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 
 @pytest.mark.django_db
@@ -80,12 +82,13 @@ class TestUpdateUserCoreFields:
     def test_not_found(self, direction_user):
         from accounts import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.update_user_core_fields(
                 pk=999_999,
                 updated_by=direction_user,
                 first_name="X",
             )
+        assert "UserNotFound" in str(exc.value.detail)
 
     def test_updates_address_postal_parent(
         self, direction_user, student_user, teacher_user
@@ -353,7 +356,6 @@ def test_assert_user_can_teach_raises(student_user):
 @pytest.mark.django_db
 def test_get_teacher_user_by_pk(teacher_user, student_user):
     from accounts import services
-    from core.exceptions import AppNotFound
 
     assert services.get_teacher_user_by_pk(pk=teacher_user.pk).pk == teacher_user.pk
     with pytest.raises(ValidationError) as exc:
@@ -367,5 +369,6 @@ def test_get_teacher_user_by_pk(teacher_user, student_user):
 def test_get_profile_for_user_not_found(direction_user):
     from accounts import services
 
-    with pytest.raises(NotFound):
+    with pytest.raises(AppNotFound) as exc:
         services.get_profile_for_user(user=direction_user)
+    assert "ProfileNotFound" in str(exc.value.detail)
