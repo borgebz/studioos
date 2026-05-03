@@ -233,6 +233,111 @@ class TestEventServices:
 
 
 @pytest.mark.django_db
+class TestUpdateEventCoverPhotoDedup:
+    """SHA-256 deduplication for ``update_event`` (``cover_photo`` field)."""
+
+    @staticmethod
+    def _png_bytes(rgb):
+        from io import BytesIO
+
+        from PIL import Image
+
+        buf = BytesIO()
+        Image.new("RGB", (1, 1), color=rgb).save(buf, format="PNG")
+        return buf.getvalue()
+
+    def test_same_file_keeps_stored_path(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from events import services
+
+        payload = self._png_bytes((40, 41, 42))
+        e = services.create_event(
+            created_by=direction_user,
+            title="T",
+            description="D",
+            cover_photo=SimpleUploadedFile(
+                "cover1.png", payload, content_type="image/png"
+            ),
+        )
+        path_before = e.cover_photo.name
+
+        services.update_event(
+            event=e,
+            updated_by=direction_user,
+            title="T",
+            description="D",
+            body="",
+            location="",
+            contact_info="",
+            notification_target="all",
+            cover_photo=SimpleUploadedFile(
+                "cover2.png", payload, content_type="image/png"
+            ),
+        )
+        e.refresh_from_db()
+        assert e.cover_photo.name == path_before
+
+    def test_different_file_updates_path(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from events import services
+
+        a = self._png_bytes((1, 2, 3))
+        b = self._png_bytes((4, 5, 6))
+        e = services.create_event(
+            created_by=direction_user,
+            title="T",
+            description="D",
+            cover_photo=SimpleUploadedFile("c.png", a, content_type="image/png"),
+        )
+        path_before = e.cover_photo.name
+
+        services.update_event(
+            event=e,
+            updated_by=direction_user,
+            title="T",
+            description="D",
+            body="",
+            location="",
+            contact_info="",
+            notification_target="all",
+            cover_photo=SimpleUploadedFile("d.png", b, content_type="image/png"),
+        )
+        e.refresh_from_db()
+        assert e.cover_photo.name != path_before
+
+    def test_no_existing_file_always_saves(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from events import services
+
+        payload = self._png_bytes((9, 9, 9))
+        e = services.create_event(
+            created_by=direction_user,
+            title="T",
+            description="D",
+        )
+        assert not e.cover_photo
+
+        services.update_event(
+            event=e,
+            updated_by=direction_user,
+            title="T",
+            description="D",
+            body="",
+            location="",
+            contact_info="",
+            notification_target="all",
+            cover_photo=SimpleUploadedFile(
+                "only.png", payload, content_type="image/png"
+            ),
+        )
+        e.refresh_from_db()
+        assert e.cover_photo.name
+
+
+@pytest.mark.django_db
 class TestEventsHttp:
     def test_student_cannot_create_event(self, student_auth_client):
         resp = student_auth_client.post(

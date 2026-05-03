@@ -21,6 +21,7 @@ from accounts.invite_store import (
 )
 from accounts.models import Profile, Role, User
 from core.exceptions import AppNotFound
+from utils.files import django_field_file_sha256, file_content_hash
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +199,11 @@ def create_profile_for_user(*, user, created_by=None, **fields):
 
 
 def update_profile_for_user(*, profile, updated_by=None, **fields):
+    new_photo = fields.get("photo")
+    if new_photo is not None and profile.photo:
+        if file_content_hash(new_photo) == django_field_file_sha256(profile.photo):
+            fields = {k: v for k, v in fields.items() if k != "photo"}
+
     for key, value in fields.items():
         setattr(profile, key, value)
     profile.updated_by = updated_by

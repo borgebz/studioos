@@ -18,6 +18,7 @@ from events.models import (
     NotificationDelivery,
     NotificationTarget,
 )
+from utils.files import django_field_file_sha256, file_content_hash
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +133,11 @@ def list_events(*, user):
 
 
 def update_event(*, event, updated_by=None, **data):
+    new_cover = data.get("cover_photo")
+    if new_cover is not None and event.cover_photo:
+        if file_content_hash(new_cover) == django_field_file_sha256(event.cover_photo):
+            data = {k: v for k, v in data.items() if k != "cover_photo"}
+
     terminal_states = frozenset(
         {
             EventState.CANCELLED,

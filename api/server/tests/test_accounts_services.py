@@ -154,6 +154,89 @@ class TestProfile:
 
 
 @pytest.mark.django_db
+class TestUpdateProfilePhotoDedup:
+    """SHA-256 deduplication for ``update_profile_for_user`` (``photo`` field)."""
+
+    @staticmethod
+    def _png_bytes(rgb):
+        from io import BytesIO
+
+        from PIL import Image
+
+        buf = BytesIO()
+        Image.new("RGB", (1, 1), color=rgb).save(buf, format="PNG")
+        return buf.getvalue()
+
+    def test_same_file_keeps_stored_path(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from accounts import services
+
+        payload = self._png_bytes((200, 10, 30))
+        profile = services.create_profile_for_user(
+            user=direction_user,
+            created_by=direction_user,
+            display_name="HasPhoto",
+            photo=SimpleUploadedFile("first.png", payload, content_type="image/png"),
+        )
+        path_before = profile.photo.name
+
+        services.update_profile_for_user(
+            profile=profile,
+            updated_by=direction_user,
+            photo=SimpleUploadedFile(
+                "other_name.png", payload, content_type="image/png"
+            ),
+        )
+        profile.refresh_from_db()
+        assert profile.photo.name == path_before
+
+    def test_different_file_updates_path(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from accounts import services
+
+        red = self._png_bytes((255, 0, 0))
+        blue = self._png_bytes((0, 0, 255))
+        profile = services.create_profile_for_user(
+            user=direction_user,
+            created_by=direction_user,
+            display_name="HasPhoto",
+            photo=SimpleUploadedFile("a.png", red, content_type="image/png"),
+        )
+        path_before = profile.photo.name
+
+        services.update_profile_for_user(
+            profile=profile,
+            updated_by=direction_user,
+            photo=SimpleUploadedFile("b.png", blue, content_type="image/png"),
+        )
+        profile.refresh_from_db()
+        assert profile.photo.name != path_before
+
+    def test_no_existing_file_always_saves(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from accounts import services
+
+        payload = self._png_bytes((10, 200, 50))
+        profile = services.create_profile_for_user(
+            user=direction_user,
+            created_by=direction_user,
+            display_name="NoPhotoYet",
+        )
+        assert not profile.photo
+
+        services.update_profile_for_user(
+            profile=profile,
+            updated_by=direction_user,
+            photo=SimpleUploadedFile("new.png", payload, content_type="image/png"),
+        )
+        profile.refresh_from_db()
+        assert profile.photo.name
+
+
+@pytest.mark.django_db
 class TestActivateAccount:
     def test_invalid_uid(self):
         from accounts import services
