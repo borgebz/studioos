@@ -6,11 +6,13 @@ from rest_framework import serializers
 
 from events.models import (
     Event,
+    EventClassTarget,
     EventComment,
     EventFile,
     EventInterest,
     EventPost,
     NotificationDelivery,
+    NotificationTarget,
 )
 
 MAX_EVENT_FILE_SIZE = 10 * 1024 * 1024
@@ -51,6 +53,11 @@ class EventListSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     cover_photo_url = serializers.SerializerMethodField()
+    notification_target = serializers.ChoiceField(
+        choices=NotificationTarget.choices,
+        read_only=True,
+    )
+    class_target_classe_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -65,6 +72,8 @@ class EventSerializer(serializers.ModelSerializer):
             "event_state",
             "visibility_state",
             "contact_info",
+            "notification_target",
+            "class_target_classe_ids",
             "publication_scheduled_at",
             "published_at",
             "created_at",
@@ -74,6 +83,16 @@ class EventSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.URLField(allow_blank=True))
     def get_cover_photo_url(self, obj):
         return event_cover_photo_absolute_url(serializer=self, obj=obj)
+
+    @extend_schema_field(
+        serializers.ListField(child=serializers.IntegerField())
+    )
+    def get_class_target_classe_ids(self, obj):
+        return list(
+            EventClassTarget.objects.filter(event=obj)
+            .order_by("classe_id")
+            .values_list("classe_id", flat=True)
+        )
 
 
 def _validate_cover_image(value):
@@ -86,6 +105,16 @@ def _validate_cover_image(value):
 
 
 class EventCreateSerializer(serializers.ModelSerializer):
+    notification_target = serializers.ChoiceField(
+        choices=NotificationTarget.choices,
+        required=False,
+        default=NotificationTarget.ALL,
+    )
+    class_target_classe_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+    )
+
     class Meta:
         model = Event
         fields = [
@@ -96,6 +125,8 @@ class EventCreateSerializer(serializers.ModelSerializer):
             "location",
             "event_date",
             "contact_info",
+            "notification_target",
+            "class_target_classe_ids",
         ]
         extra_kwargs = {
             "cover_photo": {"required": False, "write_only": True},
@@ -108,6 +139,15 @@ class EventCreateSerializer(serializers.ModelSerializer):
 
 
 class EventUpdateSerializer(serializers.ModelSerializer):
+    notification_target = serializers.ChoiceField(
+        choices=NotificationTarget.choices,
+        required=False,
+    )
+    class_target_classe_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+    )
+
     class Meta:
         model = Event
         fields = [
@@ -118,6 +158,8 @@ class EventUpdateSerializer(serializers.ModelSerializer):
             "location",
             "event_date",
             "contact_info",
+            "notification_target",
+            "class_target_classe_ids",
         ]
         extra_kwargs = {
             "cover_photo": {"required": False, "write_only": True},

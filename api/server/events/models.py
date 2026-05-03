@@ -36,6 +36,11 @@ class NotificationDelivery(models.TextChoices):
     NOTIFICATION = "notification", "Notification"
 
 
+class NotificationTarget(models.TextChoices):
+    ALL = "all", "All"
+    CLASSES = "classes", "Classes"
+
+
 class Event(BaseModel):
     title = models.CharField(max_length=255)
     description = models.TextField()
@@ -62,6 +67,12 @@ class Event(BaseModel):
     publication_scheduled_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
 
+    notification_target = models.CharField(
+        max_length=20,
+        choices=NotificationTarget.choices,
+        default=NotificationTarget.ALL,
+    )
+
     class Meta:
         permissions = [
             ("can_view_unpublished_event", "Can view unpublished event"),
@@ -74,6 +85,31 @@ class Event(BaseModel):
 
     def __str__(self):
         return self.title
+
+
+class EventClassTarget(BaseModel):
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name="class_targets",
+    )
+    classe = models.ForeignKey(
+        "classes.Classe",
+        on_delete=models.PROTECT,
+        related_name="event_targets",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "classe"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="unique_active_event_class_target",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Event {self.event_id} → classe {self.classe_id}"
 
 
 class EventFile(BaseModel):

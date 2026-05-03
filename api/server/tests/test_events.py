@@ -16,6 +16,183 @@ def _run_send_event_notification_emails_task_sync(*args, **kwargs):
 
 
 @pytest.mark.django_db
+class TestEventClassTargeting:
+    """Tests for notification_target=classes and EventClassTarget management."""
+
+    def _make_classe(self, direction_user):
+        import uuid
+        from classes.models import Classe
+
+        return Classe.objects.create(
+            name=f"Classe_{uuid.uuid4().hex[:8]}",
+            created_by=direction_user,
+        )
+
+    def _add_member(self, classe, student, direction_user):
+        from classes.models import ClasseMember
+
+        return ClasseMember.objects.create(
+            classe=classe,
+            student=student,
+            created_by=direction_user,
+        )
+
+    def test_create_event_with_class_targets_returns_ids(
+        self, auth_client, direction_user
+    ):
+        c = self._make_classe(direction_user)
+        resp = auth_client.post(
+            "/api/events/",
+            {
+                "title": "T",
+                "description": "D",
+                "notification_target": "classes",
+                "class_target_classe_ids": [c.pk],
+            },
+            format="json",
+        )
+        assert resp.status_code == 201, resp.content
+        data = resp.json()
+        assert data["notification_target"] == "classes"
+        assert data["class_target_classe_ids"] == [c.pk]
+
+    def test_publish_classes_target_with_no_targets_is_blocked(
+        self, auth_client, direction_user
+    ):
+        from events import services
+
+        e = services.create_event(
+            created_by=direction_user,
+            title="T",
+            description="D",
+            notification_target="classes",
+        )
+        resp = auth_client.post(f"/api/events/{e.pk}/publish/", {}, format="json")
+        assert resp.status_code == 400
+        assert "EventClassTargetRequiredWhenTargetIsClasses" in str(resp.content)
+
+    def test_update_event_replaces_class_targets(
+        self, auth_client, direction_user
+    ):
+        c1 = self._make_classe(direction_user)
+        c2 = self._make_classe(direction_user)
+        resp = auth_client.post(
+            "/api/events/",
+            {
+                "title": "T",
+                "description": "D",
+                "notification_target": "classes",
+                "class_target_classe_ids": [c1.pk, c2.pk],
+            },
+            format="json",
+        )
+        pk = resp.json()["id"]
+
+        resp = auth_client.put(
+            f"/api/events/{pk}/",
+            {
+                "title": "T",
+                "description": "D",
+                "notification_target": "classes",
+                "class_target_classe_ids": [c1.pk],
+            },
+            format="json",
+        )
+        assert resp.status_code == 200, resp.content
+        assert resp.json()["class_target_classe_ids"] == [c1.pk]
+
+    def test_cannot_clear_class_targets_on_published_event(
+        self, auth_client, direction_user
+    ):
+        from events import services
+
+        c = self._make_classe(direction_user)
+        e = services.create_event(
+            created_by=direction_user,
+            title="T",
+            description="D",
+            notification_target="classes",
+        )
+        services.replace_event_class_targets(
+            event=e, classe_ids=[c.pk], created_by=direction_user
+        )
+        services.publish_event(event=e, updated_by=direction_user)
+
+        resp = auth_client.put(
+            f"/api/events/{e.pk}/",
+            {
+                "title": "T",
+                "description": "D",
+                "notification_target": "classes",
+                "class_target_classe_ids": [],
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "CannotClearClassTargetsOnPublishedEvent" in str(resp.content)
+
+    def test_invalid_classe_id_raises_error(self, auth_client):
+        resp = auth_client.post(
+            "/api/events/",
+            {
+                "title": "T",
+                "description": "D",
+                "notification_target": "classes",
+                "class_target_classe_ids": [999999],
+            },
+            format="json",
+        )
+        assert resp.status_code == 400
+        assert "InvalidClassTargetIds" in str(resp.content)
+
+    @patch(
+        "events.tasks.send_event_notification_emails_task.delay",
+        side_effect=_run_send_event_notification_emails_task_sync,
+    )
+    @patch("events.services.transaction.on_commit", side_effect=lambda f: f())
+    @patch("core.emails.send_simple_email")
+    def test_notification_classes_only_emails_class_members(
+        self,
+        mock_send,
+        _commit,
+        _mock_delay,
+        auth_client,
+        direction_user,
+        student_user,
+        teacher_user,
+    ):
+        c = self._make_classe(direction_user)
+        self._add_member(c, student_user, direction_user)
+        # teacher_user and direction_user are NOT members
+
+        resp = auth_client.post(
+            "/api/events/",
+            {
+                "title": "Targeted",
+                "description": "D",
+                "body": "Body",
+                "notification_target": "classes",
+                "class_target_classe_ids": [c.pk],
+            },
+            format="json",
+        )
+        pk = resp.json()["id"]
+
+        resp = auth_client.post(
+            f"/api/events/{pk}/publish/",
+            {"notification": "notification"},
+            format="json",
+        )
+        assert resp.status_code == 200
+
+        emailed = {call.kwargs["to"] for call in mock_send.call_args_list}
+        assert student_user.email in emailed
+        assert teacher_user.email not in emailed
+        assert direction_user.email not in emailed
+        assert mock_send.call_count == 1
+
+
+@pytest.mark.django_db
 class TestEventServices:
     def test_create_event_no_date_uses_date_tbd(self, direction_user):
         from events import services

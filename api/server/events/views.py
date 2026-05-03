@@ -1,5 +1,6 @@
 import json
 
+from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
@@ -76,10 +77,21 @@ class EventListCreateView(APIView):
         serializer = EventCreateSerializer(data=_event_writable_payload(request))
         serializer.is_valid(raise_exception=True)
 
-        event = services.create_event(
-            **serializer.validated_data,
-            created_by=request.user,
-        )
+        validated = dict(serializer.validated_data)
+        classe_ids = validated.pop("class_target_classe_ids", None)
+
+        with transaction.atomic():
+            event = services.create_event(
+                created_by=request.user,
+                **validated,
+            )
+            if classe_ids is not None:
+                services.replace_event_class_targets(
+                    event=event,
+                    classe_ids=classe_ids,
+                    created_by=request.user,
+                )
+
         return Response(
             EventSerializer(event, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -123,11 +135,22 @@ class EventDetailView(APIView):
         serializer = EventUpdateSerializer(data=_event_writable_payload(request))
         serializer.is_valid(raise_exception=True)
 
-        event = services.update_event(
-            event=event,
-            updated_by=request.user,
-            **serializer.validated_data,
-        )
+        validated = dict(serializer.validated_data)
+        classe_ids = validated.pop("class_target_classe_ids", None)
+
+        with transaction.atomic():
+            event = services.update_event(
+                event=event,
+                updated_by=request.user,
+                **validated,
+            )
+            if classe_ids is not None:
+                services.replace_event_class_targets(
+                    event=event,
+                    classe_ids=classe_ids,
+                    updated_by=request.user,
+                )
+
         return Response(
             EventSerializer(event, context={"request": request}).data,
             status=status.HTTP_200_OK,

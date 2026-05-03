@@ -29,20 +29,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/auth/login/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "auth",
-                "login",
-                ""
-              ]
+              "path": ["api", "accounts", "auth", "login", ""]
             }
           },
           "response": []
@@ -75,20 +64,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/auth/logout/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "auth",
-                "logout",
-                ""
-              ]
+              "path": ["api", "accounts", "auth", "logout", ""]
             }
           },
           "response": []
@@ -121,20 +99,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/auth/refresh/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "auth",
-                "refresh",
-                ""
-              ]
+              "path": ["api", "accounts", "auth", "refresh", ""]
             }
           },
           "response": []
@@ -158,19 +125,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/me/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "me",
-                ""
-              ]
+              "path": ["api", "accounts", "me", ""]
             }
           },
           "response": []
@@ -209,20 +166,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/profile/me/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "profile",
-                "me",
-                ""
-              ]
+              "path": ["api", "accounts", "profile", "me", ""]
             }
           },
           "response": []
@@ -273,20 +219,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/profile/me/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "profile",
-                "me",
-                ""
-              ]
+              "path": ["api", "accounts", "profile", "me", ""]
             }
           },
           "response": []
@@ -310,20 +245,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/profile/me/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "profile",
-                "me",
-                ""
-              ]
+              "path": ["api", "accounts", "profile", "me", ""]
             }
           },
           "response": []
@@ -365,19 +289,9 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/users/",
               "protocol": "http",
-              "host": [
-                "127",
-                "0",
-                "0",
-                "1"
-              ],
+              "host": ["127", "0", "0", "1"],
               "port": "8000",
-              "path": [
-                "api",
-                "accounts",
-                "users",
-                ""
-              ]
+              "path": ["api", "accounts", "users", ""]
             }
           },
           "response": []
@@ -536,7 +450,14 @@
                   "protocol": "http",
                   "host": ["127", "0", "0", "1"],
                   "port": "8000",
-                  "path": ["api", "coachings", "16", "participants", "accept", ""]
+                  "path": [
+                    "api",
+                    "coachings",
+                    "16",
+                    "participants",
+                    "accept",
+                    ""
+                  ]
                 }
               },
               "response": []
@@ -623,7 +544,15 @@
                   "protocol": "http",
                   "host": ["127", "0", "0", "1"],
                   "port": "8000",
-                  "path": ["api", "coachings", "16", "participants", "30", "approve", ""]
+                  "path": [
+                    "api",
+                    "coachings",
+                    "16",
+                    "participants",
+                    "30",
+                    "approve",
+                    ""
+                  ]
                 }
               },
               "response": []
@@ -658,7 +587,15 @@
                   "protocol": "http",
                   "host": ["127", "0", "0", "1"],
                   "port": "8000",
-                  "path": ["api", "coachings", "16", "participants", "30", "cancel", ""]
+                  "path": [
+                    "api",
+                    "coachings",
+                    "16",
+                    "participants",
+                    "30",
+                    "cancel",
+                    ""
+                  ]
                 }
               },
               "response": []
@@ -693,7 +630,15 @@
                   "protocol": "http",
                   "host": ["127", "0", "0", "1"],
                   "port": "8000",
-                  "path": ["api", "coachings", "16", "participants", "31", "confirm-attendance", ""]
+                  "path": [
+                    "api",
+                    "coachings",
+                    "16",
+                    "participants",
+                    "31",
+                    "confirm-attendance",
+                    ""
+                  ]
                 }
               },
               "response": []

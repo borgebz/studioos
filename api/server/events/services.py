@@ -2,12 +2,13 @@ import json
 import logging
 from collections import defaultdict
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
 
 from events.models import (
     Event,
+    EventClassTarget,
     EventComment,
     EventFile,
     EventInterest,
@@ -15,6 +16,7 @@ from events.models import (
     EventState,
     EventVisibilityState,
     NotificationDelivery,
+    NotificationTarget,
 )
 
 logger = logging.getLogger(__name__)
@@ -96,6 +98,15 @@ def get_event_file(*, event, file_id):
         raise NotFound()
 
 
+def _validate_event_class_targets_for_publish(*, event):
+    if event.notification_target != NotificationTarget.CLASSES:
+        return
+    if not EventClassTarget.objects.filter(event=event).exists():
+        raise ValidationError(
+            {"messages": ["EventClassTargetRequiredWhenTargetIsClasses"]}
+        )
+
+
 def create_event(*, created_by=None, **data):
     event_date = data.get("event_date")
 
@@ -154,6 +165,8 @@ def publish_event(
     updated_by=None,
     notification=NotificationDelivery.NONE,
 ):
+    _validate_event_class_targets_for_publish(event=event)
+
     # Cancel any pending scheduled publication Beat entry.
     _cancel_beat_publication(task_name=_beat_task_name_for_event(event.pk))
 
@@ -185,6 +198,8 @@ def schedule_event_publication(
     updated_by=None,
     notification=NotificationDelivery.NONE,
 ):
+    _validate_event_class_targets_for_publish(event=event)
+
     if publication_scheduled_at <= timezone.now():
         raise ValidationError(
             {"publication_scheduled_at": ["PublicationDateMustBeInFuture"]}
@@ -451,3 +466,63 @@ def create_event_file(*, event, file, file_name=None, created_by=None):
 
 def delete_event_file(*, event_file, deleted_by=None):
     event_file.delete(deleted_by=deleted_by)
+
+
+@transaction.atomic
+def replace_event_class_targets(
+    *,
+    event,
+    classe_ids,
+    created_by=None,
+    updated_by=None,
+):
+    """
+    Sync active EventClassTarget rows to exactly match ``classe_ids`` (order ignored).
+    """
+    from classes.models import Classe
+
+    unique_ids = list(dict.fromkeys(classe_ids))
+    desired = set(unique_ids)
+
+    if (
+        not desired
+        and event.visibility_state == EventVisibilityState.PUBLISHED
+        and event.notification_target == NotificationTarget.CLASSES
+    ):
+        raise ValidationError(
+            {"messages": ["CannotClearClassTargetsOnPublishedEvent"]}
+        )
+
+    if desired:
+        found = set(
+            Classe.objects.filter(pk__in=desired).values_list("pk", flat=True)
+        )
+        if found != desired:
+            raise ValidationError(
+                {"class_target_classe_ids": ["InvalidClassTargetIds"]}
+            )
+
+    current = set(
+        EventClassTarget.objects.filter(event=event).values_list(
+            "classe_id", flat=True
+        )
+    )
+
+    actor = updated_by if updated_by is not None else created_by
+
+    for cid in current - desired:
+        ect = EventClassTarget.objects.get(event=event, classe_id=cid)
+        ect.delete(deleted_by=actor)
+
+    for cid in desired - current:
+        classe = Classe.objects.get(pk=cid)
+        ect = EventClassTarget(
+            event=event,
+            classe=classe,
+            created_by=created_by or updated_by,
+        )
+        ect.full_clean()
+        try:
+            ect.save()
+        except IntegrityError:
+            raise ValidationError({"messages": ["ClassTargetAlreadyExists"]})
