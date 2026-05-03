@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "events",
     "billing",
     "classes",
+    "roles",
 ]
 
 # API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.

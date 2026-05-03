@@ -29,9 +29,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/auth/login/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "auth", "login", ""]
+              "path": [
+                "api",
+                "accounts",
+                "auth",
+                "login",
+                ""
+              ]
             }
           },
           "response": []
@@ -64,9 +75,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/auth/logout/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "auth", "logout", ""]
+              "path": [
+                "api",
+                "accounts",
+                "auth",
+                "logout",
+                ""
+              ]
             }
           },
           "response": []
@@ -99,9 +121,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/auth/refresh/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "auth", "refresh", ""]
+              "path": [
+                "api",
+                "accounts",
+                "auth",
+                "refresh",
+                ""
+              ]
             }
           },
           "response": []
@@ -125,9 +158,19 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/me/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "me", ""]
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                ""
+              ]
             }
           },
           "response": []
@@ -166,9 +209,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/profile/me/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "profile", "me", ""]
+              "path": [
+                "api",
+                "accounts",
+                "profile",
+                "me",
+                ""
+              ]
             }
           },
           "response": []
@@ -219,9 +273,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/profile/me/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "profile", "me", ""]
+              "path": [
+                "api",
+                "accounts",
+                "profile",
+                "me",
+                ""
+              ]
             }
           },
           "response": []
@@ -245,9 +310,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/profile/me/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "profile", "me", ""]
+              "path": [
+                "api",
+                "accounts",
+                "profile",
+                "me",
+                ""
+              ]
             }
           },
           "response": []
@@ -289,9 +365,19 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/users/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "users", ""]
+              "path": [
+                "api",
+                "accounts",
+                "users",
+                ""
+              ]
             }
           },
           "response": []
@@ -315,9 +401,19 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/users/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "users", ""]
+              "path": [
+                "api",
+                "accounts",
+                "users",
+                ""
+              ]
             }
           },
           "response": []
@@ -341,9 +437,19 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/teachers/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "teachers", ""]
+              "path": [
+                "api",
+                "accounts",
+                "teachers",
+                ""
+              ]
             }
           },
           "response": []
@@ -376,9 +482,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/accounts/users/9/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "accounts", "users", "9", ""]
+              "path": [
+                "api",
+                "accounts",
+                "users",
+                "9",
+                ""
+              ]
             }
           },
           "response": []
@@ -418,9 +535,20 @@
             "url": {
               "raw": "http://127.0.0.1:8000/api/coachings/16/teacher-confirm/",
               "protocol": "http",
-              "host": ["127", "0", "0", "1"],
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
               "port": "8000",
-              "path": ["api", "coachings", "16", "teacher-confirm", ""]
+              "path": [
+                "api",
+                "coachings",
+                "16",
+                "teacher-confirm",
+                ""
+              ]
             }
           },
           "response": []
@@ -448,7 +576,12 @@
                 "url": {
                   "raw": "http://127.0.0.1:8000/api/coachings/16/participants/accept/",
                   "protocol": "http",
-                  "host": ["127", "0", "0", "1"],
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
                   "port": "8000",
                   "path": [
                     "api",
@@ -481,9 +614,20 @@
                 "url": {
                   "raw": "http://127.0.0.1:8000/api/coachings/16/participants/",
                   "protocol": "http",
-                  "host": ["127", "0", "0", "1"],
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
                   "port": "8000",
-                  "path": ["api", "coachings", "16", "participants", ""]
+                  "path": [
+                    "api",
+                    "coachings",
+                    "16",
+                    "participants",
+                    ""
+                  ]
                 }
               },
               "response": []
@@ -516,9 +660,20 @@
                 "url": {
                   "raw": "http://127.0.0.1:8000/api/coachings/16/participants/",
                   "protocol": "http",
-                  "host": ["127", "0", "0", "1"],
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
                   "port": "8000",
-                  "path": ["api", "coachings", "16", "participants", ""]
+                  "path": [
+                    "api",
+                    "coachings",
+                    "16",
+                    "participants",
+                    ""
+                  ]
                 }
               },
               "response": []
@@ -542,7 +697,12 @@
                 "url": {
                   "raw": "http://127.0.0.1:8000/api/coachings/16/participants/30/approve/",
                   "protocol": "http",
-                  "host": ["127", "0", "0", "1"],
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
                   "port": "8000",
                   "path": [
                     "api",
@@ -585,7 +745,12 @@
                 "url": {
                   "raw": "http://127.0.0.1:8000/api/coachings/16/participants/30/cancel/",
                   "protocol": "http",
-                  "host": ["127", "0", "0", "1"],
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
                   "port": "8000",
                   "path": [
                     "api",
@@ -628,7 +793,12 @@
                 "url": {
                   "raw": "http://127.0.0.1:8000/api/coachings/16/participants/31/confirm-attendance/",
                   "protocol": "http",
-                  "host": ["127", "0", "0", "1"],
+                  "host": [
+                    "127",
+                    "0",
+                    "0",
+                    "1"
+                  ],
                   "port": "8000",
                   "path": [
                     "api",
@@ -644,6 +814,291 @@
               "response": []
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "roles",
+      "id": "cf9f8106-2f02-40b9-b9af-fd3e892e5d93",
+      "item": [
+        {
+          "name": "available-permissions",
+          "id": "6636710d-ef2a-4542-8c5b-c247d885b74a",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/roles/permissions/available/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "roles",
+                "permissions",
+                "available",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "list-roles",
+          "id": "39c499d5-ebbe-4eb2-b4a6-a693e3265fd6",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/roles/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "roles",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "create-role",
+          "id": "e7c189bb-7e88-4eb6-a95c-00dedc782a6e",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/roles/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "roles",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"api-test-role\",\n    \"name\": \"Api Test Role\",\n    \"description\": \"Temporary role for API testing\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "get-role",
+          "id": "65412027-eae3-4033-be11-eb225ae59726",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/roles/coordination/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "roles",
+                "coordination",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update-role",
+          "id": "87b6c445-0b49-4719-ab5c-a21fbdf35be2",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/roles/coordination/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "roles",
+                "coordination",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"description\": \"Coordination (updated via Postman)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "delete-role",
+          "id": "e0f53c92-f86f-409f-bc18-e4d9f258a8be",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/roles/api-test-role/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "roles",
+                "api-test-role",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "set-role-permissions",
+          "id": "939eb304-fa1d-4ed3-9ef7-ae840b4a7683",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0MzE5NTEzLCJpYXQiOjE3NzQzMTg2MTMsImp0aSI6IjM1ZGQxZWRmNTRkZjRkOWZhNjgzZjk2OWIzZWMyNmE5IiwidXNlcl9pZCI6IjEifQ.Cm9SZ3ljwpnWJxWvHMWinEe_ZqbcBa7OP1dE6BPu-FM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://127.0.0.1:8000/api/roles/coordination/permissions/",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "roles",
+                "coordination",
+                "permissions",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"permission_ids\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     }
