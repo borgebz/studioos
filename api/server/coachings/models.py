@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import models
 
 from core.models import BaseModel
@@ -29,6 +30,13 @@ class CoachingParticipantStatus(models.TextChoices):
     ABSENT = "absent", "Absent"
     CANCELLED = "cancelled", "Cancelled"
     LATE_CANCELLED = "late_cancelled", "Late Cancelled"
+
+
+class RecurrenceType(models.TextChoices):
+    DAILY = "daily", "Daily"
+    WEEKLY = "weekly", "Weekly"
+    BIWEEKLY = "biweekly", "Biweekly"
+    MONTHLY = "monthly", "Monthly"
 
 
 class TeacherAvailability(BaseModel):
@@ -106,8 +114,8 @@ class CoachingClass(BaseModel):
         default=True,
         help_text=(
             "If False, complete_coaching does not generate billing entries. "
-            "Placeholder to distinguish private coachings from annual classes "
-            "absorbed into this model in the future."
+            "Only set or changed for coordination-scheduled coachings (no requester); "
+            "student-requested coachings keep billing defaults from workflow."
         ),
     )
 
@@ -145,6 +153,25 @@ class CoachingClass(BaseModel):
 
     notes = models.TextField(blank=True, default="")
 
+    classe = models.ForeignKey(
+        "classes.Classe",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="coaching_classes",
+    )
+
+    recurring_coaching = models.OneToOneField(
+        "coachings.RecurringCoaching",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="anchored_coaching_class",
+        help_text=(
+            "When set, this session anchors a recurrence pattern (same row implies recurring)."
+        ),
+    )
+
     class Meta:
         db_table = "coaching_classes"
         ordering = ["start_datetime"]
@@ -156,6 +183,10 @@ class CoachingClass(BaseModel):
             (
                 "can_reject_coaching_as_teacher",
                 "Can reject coaching requests as the assigned teacher",
+            ),
+            (
+                "can_schedule_coaching",
+                "Can create coachings via coordination scheduling (direct schedule)",
             ),
         ]
 
@@ -222,3 +253,41 @@ class CoachingParticipant(BaseModel):
 
     def __str__(self):
         return f"{self.student_id} in coaching {self.coaching_class_id}"
+
+
+class RecurringCoaching(BaseModel):
+    """
+    Recurrence pattern. The first session’s time window lives on
+    :class:`CoachingClass` that references this row via ``recurring_coaching``.
+    """
+
+    recurrence_type = models.CharField(
+        max_length=20,
+        choices=RecurrenceType.choices,
+    )
+    recurrence_interval = models.PositiveIntegerField(
+        default=1,
+        help_text="Repeat every N periods (e.g. 2 = every other week when type is weekly).",
+    )
+
+    days_of_week = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        help_text='For weekly patterns: comma-separated weekday codes, e.g. "MO,WE".',
+    )
+    end_date = models.DateField(null=True, blank=True)
+    occurrences_count = models.PositiveIntegerField(null=True, blank=True)
+
+    notes = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "recurring_coachings"
+        ordering = ["id"]
+
+    def clean(self):
+        super().clean()
+        if self.end_date and self.occurrences_count:
+            raise DjangoValidationError(
+                {"occurrences_count": ["RecurringEndDateAndOccurrencesExclusive"]}
+            )

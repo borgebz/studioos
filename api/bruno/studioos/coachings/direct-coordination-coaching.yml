@@ -1,0 +1,29 @@
+info:
+  name: direct-coordination-coaching
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/api/coachings/
+  body:
+    type: json
+    data: |-
+      {
+        "teacher_id": 1,
+        "modality_id": 1,
+        "studio_id": 1,
+        "total_price": "50.00",
+        "start_datetime": "2026-04-20T10:00:00Z",
+        "end_datetime": "2026-04-20T11:30:00Z",
+        "schedule": true,
+        "notes": "",
+        "classe_id": null
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

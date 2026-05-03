@@ -2,6 +2,9 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
@@ -13,6 +16,7 @@ from coachings.models import (
     CoachingParticipant,
     CoachingParticipantStatus,
     CoachingStatus,
+    RecurringCoaching,
     TeacherAvailability,
 )
 from modality.models import Modality
@@ -122,6 +126,109 @@ def _initial_participant_status(*, coaching, student_id):
     return CoachingParticipantStatus.PENDING
 
 
+def _student_ids_for_modality_roster(*, modality_id):
+    """
+    Students with approved enrollment for ``modality_id`` and coaching participation permission.
+    """
+    from django.contrib.auth import get_user_model
+    from enrollments.models import Enrollment, EnrollmentStatus
+
+    User = get_user_model()
+    ct = ContentType.objects.get_for_model(User)
+    perm = Permission.objects.filter(
+        codename="can_participate_in_coaching",
+        content_type=ct,
+    ).first()
+    raw_ids = (
+        Enrollment.objects.filter(
+            status=EnrollmentStatus.APPROVED,
+            student_id__isnull=False,
+            enrollment_modalities__modality_id=modality_id,
+        )
+        .values_list("student_id", flat=True)
+        .distinct()
+    )
+    if not raw_ids:
+        return []
+    qs = User.objects.filter(pk__in=list(raw_ids)).distinct()
+    if perm is not None:
+        qs = qs.filter(
+            models.Q(user_permissions=perm)
+            | models.Q(groups__permissions=perm)
+        ).distinct()
+    return list(qs.values_list("pk", flat=True))
+
+
+def _bulk_roster_direct_coordination(*, coaching, schedule_flag, created_by, classe_id=None):
+    """
+    Fill roster from approved enrollments for the coaching modality.
+
+    Validates every row before inserting any (no partial roster). All inserts run in the
+    caller’s transaction — :func:`create_direct_coordination_coaching` is ``atomic``; any
+    failure rolls back the coaching, recurrence row, and participants.
+    """
+    if classe_id is not None:
+        from classes.services import get_student_ids_for_classe
+
+        student_ids = get_student_ids_for_classe(classe_id=classe_id)
+        if not student_ids:
+            raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+    else:
+        student_ids = _student_ids_for_modality_roster(modality_id=coaching.modality_id)
+    max_cap = coaching.modality.max_capacity
+    if max_cap is not None and len(student_ids) > max_cap:
+        raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
+
+    if schedule_flag:
+        row_status = CoachingParticipantStatus.ACTIVE
+        invited_by_staff = False
+    else:
+        row_status = CoachingParticipantStatus.INVITED
+        invited_by_staff = True
+
+    pending = []
+    for student_id in student_ids:
+        participant = CoachingParticipant(
+            coaching_class=coaching,
+            student_id=student_id,
+            status=row_status,
+            invited_by_staff=invited_by_staff,
+            created_by=created_by,
+        )
+        try:
+            participant.full_clean()
+        except DjangoValidationError as exc:
+            logger.warning(
+                "Bulk roster model validation failed coaching=%s student_id=%s detail=%s",
+                coaching.pk,
+                student_id,
+                getattr(exc, "error_dict", None) or exc,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["BulkRosterParticipantInvalid"],
+                    "student_id": ["BulkRosterParticipantInvalid"],
+                }
+            ) from exc
+        pending.append(participant)
+
+    for participant in pending:
+        try:
+            participant.save()
+        except IntegrityError as exc:
+            logger.warning(
+                "Bulk roster integrity failure coaching=%s student_id=%s",
+                coaching.pk,
+                participant.student_id,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["ParticipantAlreadyEnrolled"],
+                    "student_id": ["ParticipantAlreadyEnrolled"],
+                }
+            ) from exc
+
+
 def _participant_row_for_add_participant(*, coaching, student_id, requesting_user):
     """
     Initial ``status`` and ``invited_by_staff`` for :func:`add_participant` (also used when
@@ -179,6 +286,8 @@ def _coaching_detail_queryset():
         "studio",
         "requested_by",
         "teacher_confirmed_by",
+        "recurring_coaching",
+        "classe",
     ).prefetch_related("participants__student")
 
 
@@ -473,8 +582,11 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
     if not allow_teacher_change and "teacher_id" in updates:
         raise ValidationError({"messages": ["TeacherIdNotEditable"]})
 
-    if not allow_teacher_change and "is_billable" in updates:
-        raise ValidationError({"messages": ["IsBillableStaffOnly"]})
+    if "is_billable" in updates:
+        if coaching.requested_by_id is not None:
+            raise ValidationError({"messages": ["IsBillableCoordinationCoachingOnly"]})
+        if not allow_teacher_change:
+            raise ValidationError({"messages": ["IsBillableStaffOnly"]})
 
     new_start = updates.get("start_datetime", coaching.start_datetime)
     new_end = updates.get("end_datetime", coaching.end_datetime)
@@ -649,7 +761,7 @@ def create_coaching_request(
 
 
 @transaction.atomic
-def create_scheduled_coaching(
+def create_direct_coordination_coaching(
     *,
     teacher_id,
     modality_id,
@@ -659,7 +771,18 @@ def create_scheduled_coaching(
     end_datetime,
     requesting_user,
     notes="",
+    schedule=True,
+    recurring_data=None,
+    classe_id=None,
+    is_billable=True,
 ):
+    """
+    Create a coordination-scheduled coaching and roster in one transaction.
+
+    Slot checks, recurrence row, coaching row, and bulk roster inserts succeed together or
+    all roll back. Bulk roster errors use ``BulkRosterParticipantInvalid`` or
+    ``ParticipantAlreadyEnrolled`` (with optional ``student_id`` field codes).
+    """
     _validate_datetime_range(start=start_datetime, end=end_datetime)
     _get_teacher_user(teacher_id=teacher_id)
     try:
@@ -671,6 +794,22 @@ def create_scheduled_coaching(
     except Studio.DoesNotExist:
         raise AppNotFound("StudioNotFound")
 
+    if recurring_data:
+        rd0 = recurring_data
+        if rd0.get("end_date") and rd0.get("occurrences_count"):
+            raise ValidationError(
+                {"messages": ["RecurringEndDateAndOccurrencesExclusive"]}
+            )
+
+    classe_row = None
+    if classe_id is not None:
+        from classes.models import Classe
+
+        try:
+            classe_row = Classe.objects.get(pk=classe_id)
+        except Classe.DoesNotExist:
+            raise AppNotFound("ClasseNotFound")
+
     _assert_studio_modality_compatible(studio=studio, modality=modality)
 
     _ensure_scheduled_slot_free(
@@ -679,6 +818,21 @@ def create_scheduled_coaching(
         start_datetime=start_datetime,
         end_datetime=end_datetime,
     )
+
+    recurring_row = None
+    if recurring_data:
+        rd = recurring_data
+        recurring_row = RecurringCoaching(
+            recurrence_type=rd["recurrence_type"],
+            recurrence_interval=rd.get("recurrence_interval", 1),
+            days_of_week=rd.get("days_of_week", ""),
+            end_date=rd.get("end_date"),
+            occurrences_count=rd.get("occurrences_count"),
+            notes=rd.get("notes", ""),
+            created_by=requesting_user,
+        )
+        recurring_row.full_clean()
+        recurring_row.save()
 
     coaching = CoachingClass(
         teacher_id=teacher_id,
@@ -690,13 +844,26 @@ def create_scheduled_coaching(
         notes=notes,
         status=CoachingStatus.SCHEDULED,
         created_by=requesting_user,
+        recurring_coaching=recurring_row,
+        classe=classe_row,
+        is_billable=is_billable,
     )
     coaching.full_clean()
     coaching.save()
+
+    _bulk_roster_direct_coordination(
+        coaching=coaching,
+        schedule_flag=schedule,
+        created_by=requesting_user,
+        classe_id=classe_id,
+    )
+
     logger.info(
-        "CoachingClass scheduled directly by user=%s teacher=%s",
+        "CoachingClass direct coordination create user=%s teacher=%s schedule=%s recurring=%s",
         requesting_user.id,
         teacher_id,
+        schedule,
+        bool(recurring_row),
     )
     return coaching
 

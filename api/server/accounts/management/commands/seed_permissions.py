@@ -53,6 +53,18 @@ COACHINGS_PERMISSIONS = [
     "coachings.change_coachingparticipant",
 ]
 
+CLASSES_PERMISSIONS = [
+    "classes.view_classe",
+    "classes.add_classe",
+    "classes.change_classe",
+    "classes.delete_classe",
+    "classes.can_manage_classes",
+    "classes.view_classemember",
+    "classes.add_classemember",
+    "classes.change_classemember",
+    "classes.delete_classemember",
+]
+
 ROLE_PERMISSIONS = {
     "direction": [
         # accounts
@@ -84,6 +96,7 @@ ROLE_PERMISSIONS = {
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
         *EVENTS_PERMISSIONS_MANAGEMENT,
+        *CLASSES_PERMISSIONS,
         "billing.view_billingentry",
         "billing.add_billingentry",
         "billing.change_billingentry",
@@ -117,7 +130,9 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
+        "coachings.can_schedule_coaching",
         *EVENTS_PERMISSIONS_MANAGEMENT,
+        *CLASSES_PERMISSIONS,
         "billing.view_billingentry",
         "billing.can_cancel_billingentry",
         "billing.view_fine",
@@ -129,6 +144,8 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "coachings.view_coachingclass",
         "coachings.view_coachingparticipant",
+        "classes.view_classe",
+        "classes.view_classemember",
     ],
     "teacher": [
         "accounts.can_teach",
@@ -145,6 +162,8 @@ ROLE_PERMISSIONS = {
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
         "coachings.view_coachingparticipant",
+        "classes.view_classe",
+        "classes.view_classemember",
     ],
     "teacher_external": [
         "accounts.can_teach",
@@ -161,6 +180,8 @@ ROLE_PERMISSIONS = {
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
         "coachings.view_coachingparticipant",
+        "classes.view_classe",
+        "classes.view_classemember",
     ],
     "parent": [
         "accounts.view_user",

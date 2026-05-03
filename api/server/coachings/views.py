@@ -12,7 +12,7 @@ from coachings.serializers import (
     CoachingApproveSerializer,
     CoachingCancelSerializer,
     CoachingClassSerializer,
-    CoachingDirectScheduleSerializer,
+    DirectCoordinationCoachingCreateSerializer,
     ConfirmParticipantAttendanceSerializer,
     CoachingListQuerySerializer,
     CoachingParticipantSerializer,
@@ -114,28 +114,13 @@ class TeacherAvailabilityDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CoachingScheduledCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+class CoachingCollectionView(APIView):
+    """
+    ``GET /api/coachings/`` — list coachings.
 
-    @extend_schema(
-        request=CoachingDirectScheduleSerializer,
-        responses={201: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
-    )
-    @require_perm("coachings.add_coachingclass")
-    def post(self, request):
-        serializer = CoachingDirectScheduleSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        coaching = services.create_scheduled_coaching(
-            requesting_user=request.user,
-            **serializer.validated_data,
-        )
-        coaching = services.get_coaching(pk=coaching.pk)
-        return Response(
-            CoachingClassSerializer(coaching).data, status=status.HTTP_201_CREATED
-        )
+    ``POST /api/coachings/`` — direct coordination scheduling (timetable / scheduled coaching).
+    """
 
-
-class CoachingListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -148,6 +133,34 @@ class CoachingListCreateView(APIView):
         q.is_valid(raise_exception=True)
         coachings = services.list_coachings(**q.validated_data)
         return Response(CoachingClassSerializer(coachings, many=True).data)
+
+    @extend_schema(
+        request=DirectCoordinationCoachingCreateSerializer,
+        responses={201: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("coachings.can_schedule_coaching")
+    def post(self, request):
+        serializer = DirectCoordinationCoachingCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        recurring_data = data.pop("recurring_coaching", None)
+        coaching = services.create_direct_coordination_coaching(
+            requesting_user=request.user,
+            recurring_data=recurring_data,
+            **data,
+        )
+        coaching = services.get_coaching(pk=coaching.pk)
+        return Response(
+            CoachingClassSerializer(coaching).data, status=status.HTTP_201_CREATED
+        )
+
+
+class CoachingRequestCreateView(APIView):
+    """
+    ``POST /api/coachings/request/`` — student/parent (and similar) coaching requests.
+    """
+
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=CoachingRequestSerializer,

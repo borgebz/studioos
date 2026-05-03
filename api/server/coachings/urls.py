@@ -7,12 +7,6 @@ from django.urls import path
 from coachings import views
 
 urlpatterns = [
-    # --- Scheduled coaching ---
-    path(
-        "scheduled/",
-        views.CoachingScheduledCreateView.as_view(),
-        name="coaching-scheduled-create",
-    ),
     # --- Teacher availability (per teacher user) ---
     path(
         "teachers/<int:user_id>/availability/<int:pk>/",
@@ -88,8 +82,13 @@ urlpatterns = [
         name="coaching-detail",
     ),
     path(
+        "request/",
+        views.CoachingRequestCreateView.as_view(),
+        name="coaching-request-create",
+    ),
+    path(
         "",
-        views.CoachingListCreateView.as_view(),
-        name="coaching-list-create",
+        views.CoachingCollectionView.as_view(),
+        name="coaching-collection",
     ),
 ]

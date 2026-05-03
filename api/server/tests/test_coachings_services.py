@@ -1,5 +1,5 @@
 import uuid
-from datetime import timedelta
+from datetime import date, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -238,7 +238,7 @@ class TestCoachingRequest:
     ):
         from coachings import services
 
-        services.create_scheduled_coaching(
+        services.create_direct_coordination_coaching(
             teacher_id=teacher_user.pk,
             modality_id=modality.pk,
             studio_id=studio_with_modality.pk,
@@ -581,7 +581,7 @@ class TestCreateScheduledCoaching:
         from coachings import services
         from coachings.models import CoachingStatus
 
-        coaching = services.create_scheduled_coaching(
+        coaching = services.create_direct_coordination_coaching(
             teacher_id=teacher_user.pk,
             modality_id=modality.pk,
             studio_id=studio_with_modality.pk,
@@ -598,7 +598,7 @@ class TestCreateScheduledCoaching:
     ):
         from coachings import services
 
-        services.create_scheduled_coaching(
+        services.create_direct_coordination_coaching(
             teacher_id=teacher_user.pk,
             modality_id=modality.pk,
             studio_id=studio_with_modality.pk,
@@ -608,7 +608,7 @@ class TestCreateScheduledCoaching:
             requesting_user=direction_user,
         )
         with pytest.raises(ValidationError) as exc:
-            services.create_scheduled_coaching(
+            services.create_direct_coordination_coaching(
                 teacher_id=teacher_user.pk,
                 modality_id=modality.pk,
                 studio_id=studio_with_modality.pk,
@@ -631,7 +631,7 @@ class TestCreateScheduledCoaching:
             max_capacity=8,
         )
         with pytest.raises(ValidationError) as exc:
-            services.create_scheduled_coaching(
+            services.create_direct_coordination_coaching(
                 teacher_id=teacher_user.pk,
                 modality_id=modality.pk,
                 studio_id=bare_studio.pk,
@@ -641,6 +641,71 @@ class TestCreateScheduledCoaching:
                 requesting_user=direction_user,
             )
         assert "StudioModalityIncompatible" in str(exc.value.detail)
+
+    def test_recurring_creates_definition(
+        self, direction_user, teacher_user, modality, studio_with_modality
+    ):
+        from coachings import services
+        from coachings.models import RecurrenceType, RecurringCoaching
+
+        coaching = services.create_direct_coordination_coaching(
+            teacher_id=teacher_user.pk,
+            modality_id=modality.pk,
+            studio_id=studio_with_modality.pk,
+            total_price="60.00",
+            start_datetime=_dt(1),
+            end_datetime=_dt(2),
+            requesting_user=direction_user,
+            schedule=True,
+            recurring_data={
+                "recurrence_type": RecurrenceType.WEEKLY,
+                "recurrence_interval": 1,
+                "days_of_week": "MO",
+            },
+        )
+        assert coaching.recurring_coaching_id is not None
+        rec = RecurringCoaching.objects.get(pk=coaching.recurring_coaching_id)
+        assert rec.recurrence_type == RecurrenceType.WEEKLY
+
+    def test_no_recurring_payload_means_no_recurring_row(
+        self, direction_user, teacher_user, modality, studio_with_modality
+    ):
+        from coachings import services
+
+        coaching = services.create_direct_coordination_coaching(
+            teacher_id=teacher_user.pk,
+            modality_id=modality.pk,
+            studio_id=studio_with_modality.pk,
+            total_price="60.00",
+            start_datetime=_dt(1),
+            end_datetime=_dt(2),
+            requesting_user=direction_user,
+            recurring_data=None,
+        )
+        assert coaching.recurring_coaching_id is None
+
+    def test_recurring_end_date_and_occurrences_rejected(
+        self, direction_user, teacher_user, modality, studio_with_modality
+    ):
+        from coachings import services
+        from coachings.models import RecurrenceType
+
+        with pytest.raises(ValidationError) as exc:
+            services.create_direct_coordination_coaching(
+                teacher_id=teacher_user.pk,
+                modality_id=modality.pk,
+                studio_id=studio_with_modality.pk,
+                total_price="60.00",
+                start_datetime=_dt(1),
+                end_datetime=_dt(2),
+                requesting_user=direction_user,
+                recurring_data={
+                    "recurrence_type": RecurrenceType.WEEKLY,
+                    "end_date": date(2026, 12, 1),
+                    "occurrences_count": 3,
+                },
+            )
+        assert "RecurringEndDateAndOccurrencesExclusive" in str(exc.value.detail)
 
 
 @pytest.mark.django_db
@@ -1593,7 +1658,7 @@ class TestUpdateCoaching:
     ):
         from coachings import services
 
-        services.create_scheduled_coaching(
+        services.create_direct_coordination_coaching(
             teacher_id=teacher_user.pk,
             modality_id=modality.pk,
             studio_id=studio_with_modality.pk,
@@ -1602,7 +1667,7 @@ class TestUpdateCoaching:
             end_datetime=_dt(3),
             requesting_user=direction_user,
         )
-        b = services.create_scheduled_coaching(
+        b = services.create_direct_coordination_coaching(
             teacher_id=teacher_user.pk,
             modality_id=modality.pk,
             studio_id=studio_with_modality.pk,
@@ -1630,7 +1695,7 @@ class TestUpdateCoaching:
     ):
         from coachings import services
 
-        b = services.create_scheduled_coaching(
+        b = services.create_direct_coordination_coaching(
             teacher_id=teacher_user.pk,
             modality_id=modality.pk,
             studio_id=studio_with_modality.pk,
@@ -1639,7 +1704,7 @@ class TestUpdateCoaching:
             end_datetime=_dt(11),
             requesting_user=direction_user,
         )
-        services.create_scheduled_coaching(
+        services.create_direct_coordination_coaching(
             teacher_id=teacher_user.pk,
             modality_id=modality.pk,
             studio_id=studio_with_modality.pk,
@@ -2041,3 +2106,136 @@ class TestParticipantConfirmAttendanceHTTP:
             "CannotConfirmAttendanceForThisParticipant"
             in resp.json()["errors"]["messages"]
         )
+
+
+@pytest.mark.django_db
+class TestDirectCoordinationCoachingWithClasse:
+    @pytest.fixture
+    def classe_with_students(self, direction_user, student_user):
+        from classes import services as classe_services
+
+        classe = classe_services.create_classe(
+            name="Test Classe for Coaching",
+            created_by=direction_user,
+        )
+        classe_services.add_classe_member(
+            classe_id=classe.pk,
+            student_id=student_user.pk,
+            created_by=direction_user,
+        )
+        return classe
+
+    def test_roster_populated_from_classe(
+        self,
+        direction_user,
+        teacher_user,
+        modality,
+        studio_with_modality,
+        classe_with_students,
+        student_user,
+    ):
+        from coachings import services
+
+        coaching = services.create_direct_coordination_coaching(
+            teacher_id=teacher_user.pk,
+            modality_id=modality.pk,
+            studio_id=studio_with_modality.pk,
+            total_price="50.00",
+            start_datetime=_dt(1),
+            end_datetime=_dt(2),
+            requesting_user=direction_user,
+            classe_id=classe_with_students.pk,
+        )
+        coaching = services.get_coaching(pk=coaching.pk)
+        participant_ids = [p.student_id for p in coaching.participants.all()]
+        assert student_user.pk in participant_ids
+
+    def test_classe_id_saved_on_coaching(
+        self,
+        direction_user,
+        teacher_user,
+        modality,
+        studio_with_modality,
+        classe_with_students,
+    ):
+        from coachings import services
+
+        coaching = services.create_direct_coordination_coaching(
+            teacher_id=teacher_user.pk,
+            modality_id=modality.pk,
+            studio_id=studio_with_modality.pk,
+            total_price="50.00",
+            start_datetime=_dt(1),
+            end_datetime=_dt(2),
+            requesting_user=direction_user,
+            classe_id=classe_with_students.pk,
+        )
+        assert coaching.classe_id == classe_with_students.pk
+
+    def test_nonexistent_classe_raises(
+        self,
+        direction_user,
+        teacher_user,
+        modality,
+        studio_with_modality,
+    ):
+        from coachings import services
+
+        with pytest.raises(AppNotFound):
+            services.create_direct_coordination_coaching(
+                teacher_id=teacher_user.pk,
+                modality_id=modality.pk,
+                studio_id=studio_with_modality.pk,
+                total_price="50.00",
+                start_datetime=_dt(1),
+                end_datetime=_dt(2),
+                requesting_user=direction_user,
+                classe_id=999999,
+            )
+
+    def test_empty_classe_raises(
+        self,
+        direction_user,
+        teacher_user,
+        modality,
+        studio_with_modality,
+    ):
+        from classes import services as classe_services
+        from coachings import services
+
+        empty_classe = classe_services.create_classe(
+            name="Empty Classe",
+            created_by=direction_user,
+        )
+        with pytest.raises(ValidationError) as exc:
+            services.create_direct_coordination_coaching(
+                teacher_id=teacher_user.pk,
+                modality_id=modality.pk,
+                studio_id=studio_with_modality.pk,
+                total_price="50.00",
+                start_datetime=_dt(1),
+                end_datetime=_dt(2),
+                requesting_user=direction_user,
+                classe_id=empty_classe.pk,
+            )
+        assert "ClasseHasNoMembers" in str(exc.value.detail)
+
+    def test_no_classe_uses_enrollment_roster(
+        self,
+        direction_user,
+        teacher_user,
+        modality,
+        studio_with_modality,
+    ):
+        from coachings import services
+
+        coaching = services.create_direct_coordination_coaching(
+            teacher_id=teacher_user.pk,
+            modality_id=modality.pk,
+            studio_id=studio_with_modality.pk,
+            total_price="50.00",
+            start_datetime=_dt(10),
+            end_datetime=_dt(11),
+            requesting_user=direction_user,
+        )
+        assert coaching.classe_id is None

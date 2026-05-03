@@ -1,11 +1,11 @@
 info:
-  name: scheduled-coaching
+  name: coaching-request
   type: http
-  seq: 10
+  seq: 11
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/coachings/scheduled/
+  url: http://127.0.0.1:8000/api/coachings/request/
   body:
     type: json
     data: |-
@@ -13,7 +13,6 @@ http:
         "teacher_id": 1,
         "modality_id": 1,
         "studio_id": 1,
-        "total_price": "50.00",
         "start_datetime": "2026-04-20T10:00:00Z",
         "end_datetime": "2026-04-20T11:30:00Z",
         "notes": ""
