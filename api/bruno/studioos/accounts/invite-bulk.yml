@@ -1,0 +1,22 @@
+info:
+  name: invite-bulk
+  type: http
+  seq: 8
+
+http:
+  method: post
+  url: http://127.0.0.1:8000/api/accounts/invites/bulk/
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value:
+          - ./files/bulk-invite-sample.xlsx
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

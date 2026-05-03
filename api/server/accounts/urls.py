@@ -2,11 +2,15 @@ from django.urls import path
 
 from .views import (
     ActivateAccountView,
+    BulkInviteCreateView,
+    InviteCreateView,
     LoginView,
     LogoutView,
     MeView,
     MyProfileView,
+    OnboardingTokenView,
     RefreshView,
+    ResendInviteView,
     TeacherListView,
     UserDetailView,
     UserListView,
@@ -15,6 +19,19 @@ from .views import (
 app_name = "accounts"
 
 urlpatterns = [
+    path(
+        "users/<int:pk>/resend-invite/",
+        ResendInviteView.as_view(),
+        name="user-resend-invite",
+    ),
+    # Invites & onboarding (bulk route before single ``invites/`` if we add slug later)
+    path("invites/bulk/", BulkInviteCreateView.as_view(), name="invite-bulk"),
+    path("invites/", InviteCreateView.as_view(), name="invite-create"),
+    path(
+        "onboard/<uuid:token>/",
+        OnboardingTokenView.as_view(),
+        name="onboarding-token",
+    ),
     # Auth
     path("auth/login/", LoginView.as_view(), name="auth-login"),
     path("auth/refresh/", RefreshView.as_view(), name="auth-refresh"),

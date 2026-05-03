@@ -71,6 +71,7 @@ ROLE_PERMISSIONS = {
         "accounts.change_user",
         "accounts.view_user",
         "accounts.can_list_users",
+        "accounts.can_invite_user",
         "accounts.delete_user",
         "accounts.add_role",
         "accounts.change_role",
@@ -111,6 +112,7 @@ ROLE_PERMISSIONS = {
     "coordination": [
         "accounts.view_user",
         "accounts.can_list_users",
+        "accounts.can_invite_user",
         # enrollments
         "enrollments.can_review_enrollment",
         "enrollments.can_approve_enrollment",

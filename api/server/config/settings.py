@@ -240,6 +240,9 @@ CELERY_SEND_TASK_SENT_EVENT = True
 CELERY_EVENT_QUEUE_EXPIRES = 60
 CELERY_EVENT_QUEUE_TTL = 5
 
+# Invite onboarding tokens (Redis). Uses DB 1 by default to separate keys from Celery (DB 0).
+INVITE_REDIS_URL = config("INVITE_REDIS_URL", default="redis://redis:6379/1")
+
 
 # -----------------------------------------------------------------------------
 # Logging

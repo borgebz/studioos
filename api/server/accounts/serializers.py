@@ -207,3 +207,73 @@ class ActivateAccountSerializer(serializers.Serializer):
     uid = serializers.CharField()
     token = serializers.CharField()
     password = serializers.CharField(min_length=8)
+
+
+class InviteSingleSerializer(serializers.Serializer):
+    """Single invite: email + role code (see ``accounts.Role`` / seed_roles)."""
+
+    email = serializers.EmailField()
+    role = serializers.CharField(max_length=50)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class CompleteOnboardingSerializer(serializers.Serializer):
+    """Public onboarding completion after invite."""
+
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    password = serializers.CharField(min_length=8)
+    phone = serializers.CharField(max_length=20)
+    phone_country_code = serializers.CharField(max_length=5)
+    date_of_birth = serializers.DateField()
+
+
+OnboardingPreviewInner = inline_serializer(
+    name="OnboardingPreviewInner",
+    fields={
+        "email": serializers.EmailField(),
+        "role": serializers.CharField(),
+    },
+)
+
+
+OnboardingPreviewResponse = inline_serializer(
+    name="OnboardingPreviewWrapper",
+    fields={
+        "data": OnboardingPreviewInner,
+    },
+)
+
+
+OnboardingTokensInner = inline_serializer(
+    name="OnboardingTokensInner",
+    fields={
+        "access": serializers.CharField(),
+        "refresh": serializers.CharField(),
+    },
+)
+
+
+OnboardingCompleteResponse = inline_serializer(
+    name="OnboardingCompleteWrapper",
+    fields={
+        "data": OnboardingTokensInner,
+    },
+)
+
+
+class BulkInviteFileSerializer(serializers.Serializer):
+    """Multipart upload for bulk invite spreadsheet."""
+
+    file = serializers.FileField()
+
+    def validate_file(self, value):
+        ext = Path(value.name).suffix.lower()
+        if ext != ".xlsx":
+            raise serializers.ValidationError("BulkInviteFileInvalid")
+        max_size = 10 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("BulkInviteFileInvalid")
+        return value

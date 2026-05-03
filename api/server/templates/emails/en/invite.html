@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StudioOS invitation</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #f4f4f4;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellspacing="0"
+      cellpadding="0"
+      style="
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+      "
+    >
+      <tr>
+        <td
+          style="
+            background-color: #1a1a2e;
+            padding: 30px 40px;
+            text-align: center;
+          "
+        >
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px">StudioOS</h1>
+          <p style="color: #cccccc; margin: 8px 0 0; font-size: 14px">
+            Dance School
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 32px 40px 40px">
+          <p style="margin: 0 0 16px; font-size: 16px; color: #333333">
+            You've been invited to register on the platform.
+          </p>
+          <p style="margin: 0 0 8px; font-size: 14px; color: #555555">
+            <strong>Role:</strong> {{ role_display }}
+          </p>
+          <p style="margin: 0 0 24px; font-size: 14px; color: #555555">
+            <strong>Email:</strong> {{ invitee_email }}
+          </p>
+          <p style="margin: 0 0 16px; font-size: 14px; color: #555555">
+            This link expires in <strong>{{ expires_days }} days</strong> and can only be
+            used once to complete registration.
+          </p>
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 24px 0">
+            <tr>
+              <td style="border-radius: 6px; background-color: #7c3aed">
+                <a
+                  href="{{ onboarding_url }}"
+                  style="
+                    display: inline-block;
+                    padding: 14px 28px;
+                    font-size: 16px;
+                    color: #ffffff;
+                    text-decoration: none;
+                    font-weight: bold;
+                  "
+                  >Complete registration</a
+                >
+              </td>
+            </tr>
+          </table>
+          <p style="margin: 24px 0 0; font-size: 13px; color: #777777">
+            If you weren't expecting this invitation, you can ignore this email.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

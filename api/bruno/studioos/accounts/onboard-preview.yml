@@ -1,0 +1,15 @@
+info:
+  name: onboard-preview
+  type: http
+  seq: 9
+
+http:
+  method: get
+  url: http://127.0.0.1:8000/api/accounts/onboard/{{invite_token}}/
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
