@@ -366,6 +366,37 @@ def test_get_teacher_user_by_pk(teacher_user, student_user):
 
 
 @pytest.mark.django_db
+def test_user_can_participate_in_coaching(student_user, teacher_user):
+    from accounts import services
+
+    assert services.user_can_participate_in_coaching(user=student_user) is True
+    assert services.user_can_participate_in_coaching(user=teacher_user) is False
+
+
+@pytest.mark.django_db
+def test_assert_user_can_participate_in_coaching_raises(teacher_user):
+    from accounts import services
+
+    with pytest.raises(ValidationError) as exc:
+        services.assert_user_can_participate_in_coaching(user=teacher_user)
+    assert "UserCannotParticipateInCoaching" in exc.value.detail["messages"]
+
+
+@pytest.mark.django_db
+def test_assert_user_ids_can_participate_in_coaching(student_user, teacher_user):
+    from accounts import services
+
+    services.assert_user_ids_can_participate_in_coaching(
+        user_ids=[student_user.pk],
+    )
+    with pytest.raises(ValidationError) as exc:
+        services.assert_user_ids_can_participate_in_coaching(
+            user_ids=[student_user.pk, teacher_user.pk],
+        )
+    assert "UserCannotParticipateInCoaching" in exc.value.detail["messages"]
+
+
+@pytest.mark.django_db
 def test_get_profile_for_user_not_found(direction_user):
     from accounts import services
 

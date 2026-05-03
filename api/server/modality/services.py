@@ -3,7 +3,7 @@ import logging
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import ValidationError
 
-from accounts.services import get_user_by_pk
+from accounts.services import get_teacher_user_by_pk
 from core.exceptions import AppNotFound
 from modality.models import Modality, UserModality
 from studios.models import Studio
@@ -119,10 +119,7 @@ def get_user_modalities(*, user_id: int):
 
 @transaction.atomic
 def add_user_modality(*, user_id: int, modality_id: int, requesting_user):
-    target_user = get_user_by_pk(pk=user_id)
-
-    if not target_user.has_perm("accounts.can_teach"):
-        raise ValidationError({"messages": ["UserCannotTeach"]})
+    get_teacher_user_by_pk(pk=user_id)
 
     modality = get_modality(pk=modality_id)
 

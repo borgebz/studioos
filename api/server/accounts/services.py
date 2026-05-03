@@ -133,6 +133,57 @@ def assert_user_can_teach(*, user):
         raise ValidationError({"messages": ["UserCannotTeach"]})
 
 
+@lru_cache(maxsize=1)
+def _can_participate_in_coaching_permission():
+    return Permission.objects.get(
+        content_type__app_label="accounts",
+        codename="can_participate_in_coaching",
+    )
+
+
+def _coaching_participant_users_queryset():
+    perm = _can_participate_in_coaching_permission()
+    return User.objects.filter(
+        Q(groups__permissions=perm) | Q(user_permissions=perm)
+    ).distinct()
+
+
+def user_can_participate_in_coaching(*, user) -> bool:
+    """
+    True if ``user`` has ``accounts.can_participate_in_coaching`` (via group or direct).
+    Same membership rule as roster eligibility checks in coachings / classes.
+    """
+    return _coaching_participant_users_queryset().filter(pk=user.pk).exists()
+
+
+def assert_user_can_participate_in_coaching(*, user):
+    """Raise ``ValidationError`` with ``UserCannotParticipateInCoaching`` if not eligible."""
+    if not user_can_participate_in_coaching(user=user):
+        raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
+
+
+def assert_user_ids_can_participate_in_coaching(*, user_ids):
+    """
+    Raise ``ValidationError`` with ``UserCannotParticipateInCoaching`` if any listed user
+    lacks ``accounts.can_participate_in_coaching`` or does not exist.
+
+    Used when bulk-assigning coaching participants so roster inserts cannot bypass
+    permission checks (e.g. classe members created before enforcement).
+    """
+    unique_ids = list(dict.fromkeys(user_ids))
+    if not unique_ids:
+        return
+    perm = _can_participate_in_coaching_permission()
+    allowed = set(
+        User.objects.filter(pk__in=unique_ids)
+        .filter(Q(groups__permissions=perm) | Q(user_permissions=perm))
+        .distinct()
+        .values_list("pk", flat=True)
+    )
+    if len(allowed) != len(set(unique_ids)):
+        raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
+
+
 @transaction.atomic
 def create_user(
     *,

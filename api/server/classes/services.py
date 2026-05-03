@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from rest_framework.exceptions import ValidationError
 
-from accounts.services import get_user_by_pk
+from accounts.services import assert_user_can_participate_in_coaching, get_user_by_pk
 from core.exceptions import AppNotFound
 from classes.models import Classe, ClasseMember
 
@@ -96,8 +96,7 @@ def add_classe_member(*, classe_id, student_id, created_by):
         raise AppNotFound("ClasseNotFound")
 
     student = get_user_by_pk(pk=student_id)
-    if not student.has_perm("accounts.can_participate_in_coaching"):
-        raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
+    assert_user_can_participate_in_coaching(user=student)
 
     member = ClasseMember(
         classe=classe,

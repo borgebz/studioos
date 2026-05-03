@@ -9,7 +9,12 @@ from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from accounts.services import get_teacher_user_by_pk, get_user_by_pk
+from accounts.services import (
+    assert_user_can_participate_in_coaching,
+    assert_user_ids_can_participate_in_coaching,
+    get_teacher_user_by_pk,
+    get_user_by_pk,
+)
 from core.exceptions import AppNotFound
 from coachings.models import (
     CoachingClass,
@@ -178,6 +183,8 @@ def _bulk_roster_direct_coordination(*, coaching, schedule_flag, created_by, cla
     max_cap = coaching.modality.max_capacity
     if max_cap is not None and len(student_ids) > max_cap:
         raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
+
+    assert_user_ids_can_participate_in_coaching(user_ids=student_ids)
 
     if schedule_flag:
         row_status = CoachingParticipantStatus.ACTIVE
@@ -1270,8 +1277,7 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
         raise ValidationError({"messages": ["CoachingNotOpenForParticipants"]})
 
     student = get_user_by_pk(pk=student_id)
-    if not student.has_perm("accounts.can_participate_in_coaching"):
-        raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
+    assert_user_can_participate_in_coaching(user=student)
 
     existing = (
         CoachingParticipant.objects.select_for_update()
