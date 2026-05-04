@@ -1,83 +1,51 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StudioOS invitation</title>
-  </head>
-  <body
-    style="
-      margin: 0;
-      padding: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #f4f4f4;
-    "
-  >
-    <table
-      role="presentation"
-      width="100%"
-      cellspacing="0"
-      cellpadding="0"
-      style="
-        max-width: 600px;
-        margin: 40px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        overflow: hidden;
-      "
-    >
-      <tr>
-        <td
-          style="
-            background-color: #1a1a2e;
-            padding: 30px 40px;
-            text-align: center;
-          "
-        >
-          <h1 style="color: #ffffff; margin: 0; font-size: 24px">StudioOS</h1>
-          <p style="color: #cccccc; margin: 8px 0 0; font-size: 14px">
-            Dance School
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding: 32px 40px 40px">
-          <p style="margin: 0 0 16px; font-size: 16px; color: #333333">
-            You've been invited to register on the platform.
-          </p>
-          <p style="margin: 0 0 8px; font-size: 14px; color: #555555">
-            <strong>Role:</strong> {{ role_display }}
-          </p>
-          <p style="margin: 0 0 24px; font-size: 14px; color: #555555">
-            <strong>Email:</strong> {{ invitee_email }}
-          </p>
-          <p style="margin: 0 0 16px; font-size: 14px; color: #555555">
-            This link expires in <strong>{{ expires_days }} days</strong> and can only be
-            used once to complete registration.
-          </p>
-          <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 24px 0">
-            <tr>
-              <td style="border-radius: 6px; background-color: #7c3aed">
-                <a
-                  href="{{ onboarding_url }}"
-                  style="
-                    display: inline-block;
-                    padding: 14px 28px;
-                    font-size: 16px;
-                    color: #ffffff;
-                    text-decoration: none;
-                    font-weight: bold;
-                  "
-                  >Complete registration</a
-                >
-              </td>
-            </tr>
-          </table>
-          <p style="margin: 24px 0 0; font-size: 13px; color: #777777">
-            If you weren't expecting this invitation, you can ignore this email.
-          </p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
+{% extends "emails/base.html" %}
+{% block title %}Invitation — StudioOS{% endblock %}
+{% block preheader %}You have been invited to join the StudioOS platform.{% endblock %}
+
+{% block content %}
+  <h1 style="margin:0 0 16px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:1.3; color:#1a8280;" class="ea-h1">
+    Welcome to StudioOS
+  </h1>
+  <p style="margin:0 0 20px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; color:#2a2a3a;">
+    You have been invited to register on the StudioOS platform. Complete your registration by clicking the button below.
+  </p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f6f6fa; border:1px solid #e6e6ee; border-radius:6px; margin:0 0 24px 0;">
+    <tr>
+      <td style="padding:16px 20px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td width="90" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Email</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ invitee_email }}</td>
+          </tr>
+          <tr>
+            <td width="90" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Role</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ role_display }}</td>
+          </tr>
+          <tr>
+            <td width="90" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Expires in</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ expires_days }} days</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+    <tr>
+      <td class="ea-btn-cell" style="background-color:#1a8280; border-radius:6px;">
+        <a href="{{ onboarding_url }}" target="_blank" class="ea-btn" style="display:inline-block; padding:14px 28px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:600; letter-spacing:0.02em; color:#ffffff; text-decoration:none; border-radius:6px;">
+          Complete Registration
+        </a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.5; color:#9a9aa8;">
+    If you were not expecting this invitation, you can ignore this email.
+  </p>
+{% endblock %}
+
+{% block footer_extra %}
+  You received this email because you have an account on the StudioOS platform.
+{% endblock %}

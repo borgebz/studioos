@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:'pt-pt' }}" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
+  <title>{% block title %}StudioOS{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    a { text-decoration: none; }
+
+    .ea-btn:hover { background-color: #146664 !important; }
+    .ea-link:hover { color: #146664 !important; }
+
+    @media only screen and (max-width: 480px) {
+      .ea-card     { width: 100% !important; border-radius: 0 !important; }
+      .ea-pad      { padding-left: 20px !important; padding-right: 20px !important; }
+      .ea-pad-top  { padding-top: 28px !important; }
+      .ea-pad-btm  { padding-bottom: 24px !important; }
+      .ea-h1       { font-size: 20px !important; line-height: 1.3 !important; }
+      .ea-wordmark { font-size: 28px !important; }
+      .ea-btn-cell { padding-left: 20px !important; padding-right: 20px !important; }
+    }
+  </style>
+  <!--[if mso]>
+  <style type="text/css">
+    body, table, td, a, p, h1, h2 { font-family: Arial, Helvetica, sans-serif !important; }
+    .ea-wordmark { font-family: 'Gill Sans MT', Calibri, Arial, sans-serif !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin:0; padding:0; width:100%; background-color:#f0f0f5; color:#2a2a3a; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+  <div style="display:none; visibility:hidden; opacity:0; color:transparent; height:0; width:0; max-height:0; max-width:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px;">
+    {% block preheader %}StudioOS — Escola de Dança{% endblock %}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f5;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <table role="presentation" class="ea-card" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background-color:#ffffff; border-radius:8px; box-shadow:0 2px 8px rgba(26, 130, 128, 0.08); overflow:hidden;">
+
+          <tr>
+            <td align="center" class="ea-pad ea-pad-top" style="padding:36px 32px 30px 32px; background-color:#ffffff; border-bottom:1px solid #e6eeed;">
+              <div class="ea-wordmark" style="font-family:'Raleway','Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif; font-size:34px; font-weight:400; letter-spacing:-0.01em; color:#1a8280; line-height:1; margin:0;">
+                studioos
+              </div>
+              <div style="font-family:'Raleway','Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif; font-size:11px; font-weight:300; letter-spacing:0.18em; color:#1a8280; margin-top:8px; line-height:1;">
+                escola de dança
+              </div>
+            </td>
+          </tr>
+
+          {% block banner %}{% endblock %}
+
+          <tr>
+            <td class="ea-pad" style="padding:32px;">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+
+          <tr>
+            <td class="ea-pad" style="padding:28px 32px 30px 32px; border-top:1px solid #e6e6ee; background-color:#ffffff;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.5; color:#9a9aa8;">
+                    <div style="font-family:'Raleway','Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif; font-size:22px; font-weight:400; letter-spacing:-0.01em; color:#1a8280; line-height:1; margin-bottom:6px;">
+                      studioos
+                    </div>
+                    <div style="font-family:'Raleway','Gill Sans','Gill Sans MT',Calibri,'Trebuchet MS',sans-serif; font-size:10px; font-weight:300; letter-spacing:0.18em; color:#1a8280; line-height:1; margin-bottom:14px;">
+                      escola de dança
+                    </div>
+                    <div style="font-size:13px;">
+                      {% block footer_extra %}
+                        Recebeu este email porque tem uma conta na plataforma StudioOS.
+                      {% endblock %}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+          <tr>
+            <td style="height:24px; line-height:24px; font-size:0;">&nbsp;</td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

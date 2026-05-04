@@ -1,126 +1,29 @@
-<!doctype html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ative a sua conta</title>
-  </head>
-  <body
-    style="
-      margin: 0;
-      padding: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background-color: #f4f4f4;
-    "
-  >
-    <table
-      role="presentation"
-      width="100%"
-      cellspacing="0"
-      cellpadding="0"
-      style="
-        max-width: 600px;
-        margin: 40px auto;
-        background-color: #ffffff;
-        border-radius: 8px;
-        overflow: hidden;
-      "
-    >
-      <!-- Header -->
-      <tr>
-        <td
-          style="
-            background-color: #1a1a2e;
-            padding: 30px 40px;
-            text-align: center;
-          "
-        >
-          <h1 style="color: #ffffff; margin: 0; font-size: 24px">StudioOS</h1>
-          <p style="color: #cccccc; margin: 8px 0 0; font-size: 14px">
-            Escola de Dança
-          </p>
-        </td>
-      </tr>
+{% extends "emails/base.html" %}
+{% block title %}Ative a sua conta — StudioOS{% endblock %}
+{% block preheader %}Confirme o seu email para ativar a sua conta na plataforma StudioOS.{% endblock %}
 
-      <!-- Body -->
-      <tr>
-        <td style="padding: 40px">
-          <h2 style="color: #1a1a2e; margin: 0 0 16px; font-size: 20px">
-            Olá {{ user.first_name }},
-          </h2>
-          <p
-            style="
-              color: #333333;
-              font-size: 16px;
-              line-height: 1.6;
-              margin: 0 0 24px;
-            "
-          >
-            Bem-vindo(a) à StudioOS! A sua conta foi criada com sucesso. Para a
-            ativar e definir a sua palavra-passe, clique no botão abaixo:
-          </p>
+{% block content %}
+  <h1 style="margin:0 0 16px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:1.3; color:#1a8280;" class="ea-h1">
+    Bem-vindo(a) à StudioOS
+  </h1>
+  <p style="margin:0 0 20px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; color:#2a2a3a;">
+    A sua conta foi criada. Para começar a usar a plataforma, ative-a através do botão abaixo.
+  </p>
 
-          <!-- CTA Button -->
-          <table
-            role="presentation"
-            cellspacing="0"
-            cellpadding="0"
-            style="margin: 0 auto 24px"
-          >
-            <tr>
-              <td style="border-radius: 6px; background-color: #1a1a2e">
-                <a
-                  href="{{ activation_url }}"
-                  style="
-                    display: inline-block;
-                    padding: 14px 32px;
-                    color: #ffffff;
-                    text-decoration: none;
-                    font-size: 16px;
-                    font-weight: bold;
-                  "
-                >
-                  Ativar Conta
-                </a>
-              </td>
-            </tr>
-          </table>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px 0;">
+    <tr>
+      <td class="ea-btn-cell" style="background-color:#1a8280; border-radius:6px;">
+        <a href="{{ activation_url }}" target="_blank" class="ea-btn" style="display:inline-block; padding:14px 28px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:600; letter-spacing:0.02em; color:#ffffff; text-decoration:none; border-radius:6px;">
+          Ativar Conta
+        </a>
+      </td>
+    </tr>
+  </table>
 
-          <p
-            style="
-              color: #666666;
-              font-size: 14px;
-              line-height: 1.5;
-              margin: 0 0 16px;
-            "
-          >
-            Este link é válido por <strong>3 dias</strong>. Após esse período,
-            terá de solicitar um novo.
-          </p>
-
-          <p
-            style="color: #999999; font-size: 13px; line-height: 1.5; margin: 0"
-          >
-            Se não solicitou esta conta, pode ignorar este email.
-          </p>
-        </td>
-      </tr>
-
-      <!-- Footer -->
-      <tr>
-        <td
-          style="
-            background-color: #f8f8f8;
-            padding: 20px 40px;
-            text-align: center;
-            border-top: 1px solid #eeeeee;
-          "
-        >
-          <p style="color: #999999; font-size: 12px; margin: 0">
-            StudioOS — Escola de Dança
-          </p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
+  <p style="margin:0 0 8px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.5; color:#5b5b6b;">
+    Se o botão não funcionar, copie e cole este link no seu navegador:
+  </p>
+  <p style="margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.5; color:#1a8280; word-break:break-all;">
+    <a href="{{ activation_url }}" class="ea-link" style="color:#1a8280; text-decoration:underline;">{{ activation_url }}</a>
+  </p>
+{% endblock %}
