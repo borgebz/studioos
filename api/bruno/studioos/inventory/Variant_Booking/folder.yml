@@ -1,0 +1,7 @@
+info:
+  name: Variant_Booking
+  type: folder
+  seq: 7
+
+request:
+  auth: inherit

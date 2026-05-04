@@ -1,0 +1,31 @@
+info:
+  name: Create Booking
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/inventory/variants/1/bookings/
+  body:
+    type: json
+    data: |-
+      {
+
+        "booking_type": "reservation",
+
+        "start_at": "2026-05-20T10:00:00Z",
+
+        "end_at": "2026-05-20T12:00:00Z",
+
+        "title": "Aula de Hip-Hop"
+
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc3MzcwMTMyLCJpYXQiOjE3NzczNjkyMzIsImp0aSI6IjgxYzE0NDk3OThhMDRmMzM5NmU2OGQzYzVkNTE1OTgzIiwidXNlcl9pZCI6IjEifQ.4aOO0fQUgNWU64da6ggRyJsqTyUQkGyVXSAozOX9VTg
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
