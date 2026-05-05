@@ -1,0 +1,14 @@
+Olá {{ recipient.first_name }},
+
+A sua aula de {{ modality }} foi confirmada e agendada.
+
+Modalidade: {{ modality }}
+Data e hora: {{ coaching_date }}
+{% if studio %}Estúdio: {{ studio }}{% endif %}
+{% if total_price %}Valor: {{ total_price }}€{% endif %}
+
+Aceda à plataforma para mais detalhes:
+{{ coaching_url }}
+
+Cumprimentos,
+StudioOS — Escola de Dança

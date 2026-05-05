@@ -1,3 +1,6 @@
+from datetime import date
+from decimal import Decimal
+
 from rest_framework import serializers
 
 from enrollments.models import (
@@ -47,6 +50,13 @@ class EnrollmentPeriodSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate(self, attrs):
+        start = attrs.get("start_date")
+        end = attrs.get("end_date")
+        if start is not None and end is not None and end < start:
+            raise serializers.ValidationError({"end_date": ["PeriodEndBeforeStart"]})
+        return attrs
 
 
 # ---------------------------------------------------------------------------
@@ -172,6 +182,9 @@ class EnrollmentSubmitSerializer(serializers.Serializer):
     The service layer handles all the creation logic.
     """
 
+    # optional: submit to a specific open period instead of auto-detecting
+    period_id = serializers.IntegerField(required=False, allow_null=True)
+
     # enrollment data
     enrollment_type = serializers.ChoiceField(
         choices=EnrollmentType.choices,
@@ -180,6 +193,11 @@ class EnrollmentSubmitSerializer(serializers.Serializer):
     student_email = serializers.EmailField()
     student_name = serializers.CharField(max_length=255)
     student_date_of_birth = serializers.DateField()
+
+    def validate_student_date_of_birth(self, value):
+        if value >= date.today():
+            raise serializers.ValidationError("DateOfBirthMustBeInPast")
+        return value
     student_nif = serializers.CharField(max_length=20, required=False, default="")
     student_nationality = serializers.CharField(
         max_length=100, required=False, default=""
@@ -237,6 +255,7 @@ class EnrollmentSubmitSerializer(serializers.Serializer):
         data = self.validated_data.copy()
         data.pop("modality_ids", None)
         data.pop("consents", None)
+        data.pop("period_id", None)
         return data
 
 
@@ -298,6 +317,10 @@ class EnrollmentUpdateSerializer(serializers.ModelSerializer):
 
 
 class EnrollmentPaymentCreateSerializer(serializers.ModelSerializer):
+    amount = serializers.DecimalField(
+        max_digits=10, decimal_places=2, min_value=Decimal("0.01")
+    )
+
     class Meta:
         model = EnrollmentPayment
         fields = [

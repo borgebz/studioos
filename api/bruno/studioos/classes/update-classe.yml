@@ -1,0 +1,22 @@
+info:
+  name: update-classe
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{base_url}}/api/classes/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Ballet B",
+        "description": "Updated description"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

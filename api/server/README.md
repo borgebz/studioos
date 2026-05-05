@@ -1,16 +1,44 @@
-## Quick reference (fresh clone)
+## Running without Docker
 
 ```bash
 cd server
 uv sync
-cp .env.example .env                        # optional; edit for prod
-uv run python manage.py migrate             # migrate/create database
-uv run python manage.py seed_roles          #feed database with pre defined info
+cp .env.example .env                        # fill in values
+uv run python manage.py migrate
 uv run python manage.py seed_permissions
+uv run python manage.py seed_roles
 uv run python manage.py seed_modalities
-uv run python manage.py bootstrap_user --email dev@local.test --password 'your-dev-password' --role direction     # optional; normal user + role
+uv run python manage.py bootstrap_user --email dev@test.com --password '123456' --role direction
 uv run python manage.py runserver
 ```
+
+## Running with Docker
+
+Requires Docker Desktop running.
+
+```bash
+# from repo root
+docker compose up --build
+```
+
+First time only — in a separate terminal:
+
+```bash
+docker compose exec api uv run python manage.py migrate
+docker compose exec api uv run python manage.py seed_permissions
+docker compose exec api uv run python manage.py seed_roles
+docker compose exec api uv run python manage.py seed_modalities
+docker compose exec api uv run python manage.py bootstrap_user --email dev@test.com --password '123456' --role direction
+```
+
+Services:
+
+- API: http://localhost:8000
+- Mailpit UI: http://localhost:8025
+- Postgres: localhost:5433
+- Flower (Celery monitor): http://localhost:5555
+- RedisInsight: http://localhost:5540
+- Portainer (container monitor): http://localhost:9000
 
 ## Tests
 
@@ -24,7 +52,7 @@ uv run pytest -s
 uv add <package-name>
 ```
 
-## After changes and before committing
+## Before committing
 
 After every change run the following commands; they format and lint code:
 
@@ -33,18 +61,11 @@ uv run black .
 uv run ruff check --fix .
 ```
 
-### Before commit / push — guideline review
+## PR review
 
-Repository root:
-
-```bash
-git log -5 --oneline
-git diff origin/development...HEAD -- server/
-```
-
-Default base is **`origin/development`**. Use another ref when your work branches from elsewhere (e.g. `git diff origin/other-branch...HEAD`). Paste the command output and the diff, then add:
+Paste the following prompt to review your changes:
 
 ```
 Review against .github/studioos-backend-rules-full.md (repository root). Violations only; by severity (blocker, should-fix, nit); cite files and lines where useful. No code rewrites.
-Optional focus — commit(s): [align architecture with StudioOS guidelines]
+Optional focus — commit(s): [...]
 ```

@@ -12,6 +12,8 @@ from coachings.models import (
     CoachingClass,
     CoachingParticipant,
     CoachingStatus,
+    RecurrenceType,
+    RecurringCoaching,
     TeacherAvailability,
 )
 from modality.serializers import ModalitySerializer
@@ -49,21 +51,54 @@ class CoachingRequestSerializer(serializers.Serializer):
     start_datetime = serializers.DateTimeField()
     end_datetime = serializers.DateTimeField()
     notes = serializers.CharField(required=False, allow_blank=True)
+    classe_id = serializers.IntegerField(required=False, allow_null=True)
 
 
-class CoachingDirectScheduleSerializer(serializers.Serializer):
+class RecurringCoachingSubmitSerializer(serializers.Serializer):
+    recurrence_type = serializers.ChoiceField(choices=RecurrenceType.choices)
+    recurrence_interval = serializers.IntegerField(required=False, min_value=1, default=1)
+    days_of_week = serializers.CharField(required=False, allow_blank=True, default="")
+    end_date = serializers.DateField(required=False, allow_null=True)
+    occurrences_count = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        if attrs.get("end_date") and attrs.get("occurrences_count"):
+            raise serializers.ValidationError(
+                {"messages": ["RecurringEndDateAndOccurrencesExclusive"]}
+            )
+        return attrs
+
+
+class DirectCoordinationCoachingCreateSerializer(serializers.Serializer):
+    """Body for POST ``/api/coachings/`` — coordination-created timetable coaching."""
+
     teacher_id = serializers.IntegerField()
     modality_id = serializers.IntegerField()
     studio_id = serializers.IntegerField()
-    total_price = serializers.DecimalField(max_digits=8, decimal_places=2)
+    total_price = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
     start_datetime = serializers.DateTimeField()
     end_datetime = serializers.DateTimeField()
+    is_billable = serializers.BooleanField(
+        required=False,
+        default=True,
+        help_text="Coordination-only; ignored on student-request flows.",
+    )
     notes = serializers.CharField(required=False, allow_blank=True)
+    schedule = serializers.BooleanField(
+        default=True,
+        help_text="Roster fill: true = ACTIVE from enrollments; false = staff-invite (INVITED).",
+    )
+    classe_id = serializers.IntegerField(required=False, allow_null=True)
+    recurring_coaching = RecurringCoachingSubmitSerializer(
+        required=False,
+        allow_null=True,
+    )
 
 
 class CoachingApproveSerializer(serializers.Serializer):
     studio_id = serializers.IntegerField()
-    total_price = serializers.DecimalField(max_digits=8, decimal_places=2)
+    total_price = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0)
 
 
 class CoachingRejectSerializer(serializers.Serializer):
@@ -74,12 +109,24 @@ class CoachingCancelSerializer(serializers.Serializer):
     cancellation_reason = serializers.CharField(required=False, allow_blank=True)
 
 
+class TeacherConfirmCoachingSerializer(serializers.Serializer):
+    teacher_notes = serializers.CharField(required=False, allow_blank=True)
+
+
+class ConfirmParticipantAttendanceSerializer(serializers.Serializer):
+    attended = serializers.BooleanField()
+
+
 class CoachingUpdateSerializer(serializers.Serializer):
     teacher_id = serializers.IntegerField(required=False)
     modality_id = serializers.IntegerField(required=False)
     studio_id = serializers.IntegerField(required=False, allow_null=True)
     total_price = serializers.DecimalField(
         max_digits=8, decimal_places=2, required=False, allow_null=True
+    )
+    is_billable = serializers.BooleanField(
+        required=False,
+        help_text="Only for coordination-scheduled coachings (no requester).",
     )
     start_datetime = serializers.DateTimeField(required=False)
     end_datetime = serializers.DateTimeField(required=False)
@@ -133,8 +180,23 @@ class CoachingParticipantSerializer(serializers.ModelSerializer):
             "id",
             "student",
             "status",
+            "invited_by_staff",
             "cancelled_at",
             "cancellation_reason",
+        ]
+
+
+class RecurringCoachingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurringCoaching
+        fields = [
+            "id",
+            "recurrence_type",
+            "recurrence_interval",
+            "days_of_week",
+            "end_date",
+            "occurrences_count",
+            "notes",
         ]
 
 
@@ -143,7 +205,16 @@ class CoachingClassSerializer(serializers.ModelSerializer):
     studio = StudioSerializer(read_only=True)
     teacher = UserResponseSerializer(read_only=True)
     requested_by = UserResponseSerializer(read_only=True)
+    teacher_confirmed_by = UserResponseSerializer(read_only=True)
     participants = CoachingParticipantSerializer(many=True, read_only=True)
+    recurring_id = serializers.IntegerField(
+        source="recurring_coaching_id",
+        read_only=True,
+        allow_null=True,
+    )
+    recurring_coaching = RecurringCoachingSerializer(
+        read_only=True,
+    )
 
     class Meta:
         model = CoachingClass
@@ -156,9 +227,16 @@ class CoachingClassSerializer(serializers.ModelSerializer):
             "start_datetime",
             "end_datetime",
             "completed_at",
+            "is_billable",
             "total_price",
             "requested_by",
+            "recurring_id",
+            "recurring_coaching",
+            "classe_id",
             "notes",
+            "teacher_notes",
+            "teacher_confirmed_at",
+            "teacher_confirmed_by",
             "rejection_reason",
             "cancellation_reason",
             "participants",

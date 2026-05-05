@@ -12,7 +12,8 @@ from coachings.serializers import (
     CoachingApproveSerializer,
     CoachingCancelSerializer,
     CoachingClassSerializer,
-    CoachingDirectScheduleSerializer,
+    DirectCoordinationCoachingCreateSerializer,
+    ConfirmParticipantAttendanceSerializer,
     CoachingListQuerySerializer,
     CoachingParticipantSerializer,
     ParticipantCancelSerializer,
@@ -23,6 +24,7 @@ from coachings.serializers import (
     TeacherAvailabilitySerializer,
     TeacherAvailabilitySubmitSerializer,
     TeacherAvailabilityUpdateSerializer,
+    TeacherConfirmCoachingSerializer,
 )
 from core.decorators import require_any_perm, require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
@@ -112,28 +114,13 @@ class TeacherAvailabilityDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CoachingScheduledCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+class CoachingCollectionView(APIView):
+    """
+    ``GET /api/coachings/`` — list coachings.
 
-    @extend_schema(
-        request=CoachingDirectScheduleSerializer,
-        responses={201: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
-    )
-    @require_perm("coachings.add_coachingclass")
-    def post(self, request):
-        serializer = CoachingDirectScheduleSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        coaching = services.create_scheduled_coaching(
-            requesting_user=request.user,
-            **serializer.validated_data,
-        )
-        coaching = services.get_coaching(pk=coaching.pk)
-        return Response(
-            CoachingClassSerializer(coaching).data, status=status.HTTP_201_CREATED
-        )
+    ``POST /api/coachings/`` — direct coordination scheduling (timetable / scheduled coaching).
+    """
 
-
-class CoachingListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -146,6 +133,34 @@ class CoachingListCreateView(APIView):
         q.is_valid(raise_exception=True)
         coachings = services.list_coachings(**q.validated_data)
         return Response(CoachingClassSerializer(coachings, many=True).data)
+
+    @extend_schema(
+        request=DirectCoordinationCoachingCreateSerializer,
+        responses={201: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("coachings.can_schedule_coaching")
+    def post(self, request):
+        serializer = DirectCoordinationCoachingCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        recurring_data = data.pop("recurring_coaching", None)
+        coaching = services.create_direct_coordination_coaching(
+            requesting_user=request.user,
+            recurring_data=recurring_data,
+            **data,
+        )
+        coaching = services.get_coaching(pk=coaching.pk)
+        return Response(
+            CoachingClassSerializer(coaching).data, status=status.HTTP_201_CREATED
+        )
+
+
+class CoachingRequestCreateView(APIView):
+    """
+    ``POST /api/coachings/request/`` — student/parent (and similar) coaching requests.
+    """
+
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(
         request=CoachingRequestSerializer,
@@ -202,6 +217,8 @@ class CoachingDetailView(APIView):
 
 
 class CoachingAcceptView(APIView):
+    """POST — teacher accepts the request (coaching status only; participants unchanged)."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -210,6 +227,27 @@ class CoachingAcceptView(APIView):
     @require_perm("coachings.can_accept_coaching_as_teacher")
     def post(self, request, pk):
         coaching = services.teacher_accept_coaching(pk=pk, user=request.user)
+        return Response(CoachingClassSerializer(coaching).data)
+
+
+class CoachingTeacherConfirmView(APIView):
+    """POST — assigned teacher confirms the session took place (waiting_confirmation)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=TeacherConfirmCoachingSerializer,
+        responses={200: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("coachings.can_accept_coaching_as_teacher")
+    def post(self, request, pk):
+        serializer = TeacherConfirmCoachingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        coaching = services.teacher_confirm_coaching(
+            pk=pk,
+            user=request.user,
+            teacher_notes=serializer.validated_data.get("teacher_notes", ""),
+        )
         return Response(CoachingClassSerializer(coaching).data)
 
 
@@ -262,6 +300,8 @@ class CoachingRejectView(APIView):
 
 
 class CoachingApproveView(APIView):
+    """POST — coordination schedules the coaching; activates ``pending`` roster rows only."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -313,6 +353,48 @@ class CoachingCancelView(APIView):
         return Response(CoachingClassSerializer(coaching).data)
 
 
+class ParticipantAcceptInviteView(APIView):
+    """POST — invited student confirms attendance (staff invite → active; legacy invite → pending)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("accounts.can_participate_in_coaching")
+    def post(self, request, coaching_id):
+        participant = services.student_accept_coaching_invitation(
+            coaching_class_id=coaching_id,
+            user=request.user,
+        )
+        return Response(CoachingParticipantSerializer(participant).data)
+
+
+class ParticipantConfirmAttendanceView(APIView):
+    """POST — student or parent confirms ATTENDED / ABSENT after session end."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=ConfirmParticipantAttendanceSerializer,
+        responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_any_perm(
+        "accounts.can_participate_in_coaching",
+        "coachings.can_confirm_dependent_coaching_attendance",
+    )
+    def post(self, request, coaching_id, pk):
+        serializer = ConfirmParticipantAttendanceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        participant = services.confirm_participant_attendance(
+            coaching_class_id=coaching_id,
+            participant_pk=pk,
+            user=request.user,
+            attended=serializer.validated_data["attended"],
+        )
+        return Response(CoachingParticipantSerializer(participant).data)
+
+
 class ParticipantListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -344,6 +426,24 @@ class ParticipantListCreateView(APIView):
             CoachingParticipantSerializer(participant).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class ParticipantStaffApproveView(APIView):
+    """POST — coordination approves a peer-invited pending participant (scheduled coachings)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("coachings.change_coachingparticipant")
+    def post(self, request, coaching_id, pk):
+        participant = services.staff_approve_pending_participant(
+            coaching_class_id=coaching_id,
+            participant_pk=pk,
+            approving_user=request.user,
+        )
+        return Response(CoachingParticipantSerializer(participant).data)
 
 
 class ParticipantCancelView(APIView):

@@ -1,0 +1,28 @@
+info:
+  name: update-event
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/events/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Workshop de dança (atualizado)",
+        "description": "Descrição atualizada.",
+        "body": "Corpo atualizado.",
+        "location": "Estúdio principal",
+        "event_date": "2026-05-16T18:00:00Z",
+        "contact_info": "contacto@example.com",
+        "notification_target": "classes",
+        "class_target_classe_ids": [1, 2]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

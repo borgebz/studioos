@@ -5,12 +5,13 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/accounts/auth/login/
+  url: "{{base_url}}/api/accounts/auth/login/"
   body:
     type: json
     data: |-
       {
-
+          "email": "student@teste.com",
+          "password": "123456"
       }
 
 settings:

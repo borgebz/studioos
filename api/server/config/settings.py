@@ -51,6 +51,7 @@ CORS_ALLOW_CREDENTIALS = True
 # -----------------------------------------------------------------------------
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
@@ -60,6 +61,8 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
+    "django_celery_beat",
+    "channels",
     # Local
     "accounts",
     "core",
@@ -68,6 +71,11 @@ INSTALLED_APPS = [
     "enrollments",
     "coachings",
     "inventory",
+    "events",
+    "billing",
+    "classes",
+    "roles",
+    "messaging",
 ]
 
 # API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.
@@ -82,6 +90,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 AUTH_USER_MODEL = "accounts.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -144,6 +153,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
 }
 
@@ -188,6 +198,21 @@ FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 
 
 # -----------------------------------------------------------------------------
+# Coachings / billing
+# -----------------------------------------------------------------------------
+# Cancellations within this many hours before start_datetime are "late"
+# (LATE_CANCELLED → fine candidate at completion time).
+COACHING_LATE_CANCELLATION_HOURS = config(
+    "COACHING_LATE_CANCELLATION_HOURS", default=48, cast=int
+)
+
+# Suggested fine amount (EUR) shown to coordination at fine approval time.
+# Coordination can override before approving. Will move to an in-app settings
+# table in the future for direction-controlled configuration.
+COACHING_FINE_DEFAULT_AMOUNT = config("COACHING_FINE_DEFAULT_AMOUNT", default="25.00")
+
+
+# -----------------------------------------------------------------------------
 # Internationalisation
 # -----------------------------------------------------------------------------
 
@@ -204,6 +229,36 @@ USE_TZ = True
 STATIC_URL = "static/"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+
+# -----------------------------------------------------------------------------
+# Celery
+# -----------------------------------------------------------------------------
+
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://redis:6379/0")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://redis:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_SEND_EVENTS = True
+CELERY_SEND_TASK_SENT_EVENT = True
+CELERY_EVENT_QUEUE_EXPIRES = 60
+CELERY_EVENT_QUEUE_TTL = 5
+
+# Invite onboarding tokens (Redis). Uses DB 1 by default to separate keys from Celery (DB 0).
+INVITE_REDIS_URL = config("INVITE_REDIS_URL", default="redis://redis:6379/1")
+
+# Django Channels — uses DB 2 to keep keys separate from Celery (DB 0) and invite tokens (DB 1).
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [config("CHANNEL_LAYERS_REDIS_URL", default="redis://redis:6379/2")],
+        },
+    },
+}
 
 
 # -----------------------------------------------------------------------------

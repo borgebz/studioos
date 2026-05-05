@@ -1,21 +1,36 @@
 import logging
 from datetime import timedelta
 
+from django.conf import settings
+from django.contrib.auth.models import Permission
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
-from accounts.services import get_teacher_user_by_pk, get_user_by_pk
+from accounts.services import (
+    assert_user_can_participate_in_coaching,
+    assert_user_ids_can_participate_in_coaching,
+    get_teacher_user_by_pk,
+    get_user_by_pk,
+)
 from core.exceptions import AppNotFound
 from coachings.models import (
     CoachingClass,
     CoachingParticipant,
     CoachingParticipantStatus,
     CoachingStatus,
+    RecurringCoaching,
     TeacherAvailability,
 )
 from modality.models import Modality
 from studios.models import Studio, StudioModality
+
+from billing.services import (
+    create_billing_entries_for_coaching,
+    create_fines_for_coaching,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +46,14 @@ _VALID_TRANSITIONS = {
         CoachingStatus.CANCELLED,
     ],
     CoachingStatus.SCHEDULED: [
+        CoachingStatus.WAITING_CONFIRMATION,
+        CoachingStatus.CANCELLED,
+    ],
+    CoachingStatus.WAITING_CONFIRMATION: [
+        CoachingStatus.PENDING_COMPLETION_APPROVAL,
+        CoachingStatus.CANCELLED,
+    ],
+    CoachingStatus.PENDING_COMPLETION_APPROVAL: [
         CoachingStatus.COMPLETED,
         CoachingStatus.CANCELLED,
     ],
@@ -64,8 +87,12 @@ _PARTICIPANT_STATUSES_BLOCKING_CANCEL = frozenset(
     }
 )
 
-# Policy: cancellations within this window before start_datetime are "late" (fees / notices TBD).
-PARTICIPANT_CANCEL_MIN_NOTICE = timedelta(hours=48)
+
+# Policy: cancellations within this window before start_datetime are "late".
+# Hours are env-driven (COACHING_LATE_CANCELLATION_HOURS, default 48).
+def _participant_cancel_min_notice() -> timedelta:
+    return timedelta(hours=getattr(settings, "COACHING_LATE_CANCELLATION_HOURS", 48))
+
 
 # Cancelled / late-cancelled rows no longer occupy modality capacity.
 _STATUSES_NOT_OCCUPYING_CAPACITY = frozenset(
@@ -74,6 +101,20 @@ _STATUSES_NOT_OCCUPYING_CAPACITY = frozenset(
         CoachingParticipantStatus.LATE_CANCELLED,
     }
 )
+
+# Roster rows that no longer participate; add_participant revives the same row instead of inserting.
+_PARTICIPANT_DEATH_STATUSES = frozenset(
+    {
+        CoachingParticipantStatus.CANCELLED,
+        CoachingParticipantStatus.LATE_CANCELLED,
+        CoachingParticipantStatus.ATTENDED,
+        CoachingParticipantStatus.ABSENT,
+    }
+)
+
+
+def _participant_status_counts_toward_capacity(status):
+    return status not in _STATUSES_NOT_OCCUPYING_CAPACITY
 
 
 def _initial_participant_status(*, coaching, student_id):
@@ -90,6 +131,220 @@ def _initial_participant_status(*, coaching, student_id):
     return CoachingParticipantStatus.PENDING
 
 
+def _student_ids_for_modality_roster(*, modality_id):
+    """
+    Students with approved enrollment for ``modality_id`` and coaching participation permission.
+    """
+    from django.contrib.auth import get_user_model
+    from enrollments.models import Enrollment, EnrollmentStatus
+
+    User = get_user_model()
+    ct = ContentType.objects.get_for_model(User)
+    perm = Permission.objects.filter(
+        codename="can_participate_in_coaching",
+        content_type=ct,
+    ).first()
+    raw_ids = (
+        Enrollment.objects.filter(
+            status=EnrollmentStatus.APPROVED,
+            student_id__isnull=False,
+            enrollment_modalities__modality_id=modality_id,
+        )
+        .values_list("student_id", flat=True)
+        .distinct()
+    )
+    if not raw_ids:
+        return []
+    qs = User.objects.filter(pk__in=list(raw_ids)).distinct()
+    if perm is not None:
+        qs = qs.filter(
+            models.Q(user_permissions=perm)
+            | models.Q(groups__permissions=perm)
+        ).distinct()
+    return list(qs.values_list("pk", flat=True))
+
+
+def _bulk_roster_direct_coordination(*, coaching, schedule_flag, created_by, classe_id=None):
+    """
+    Fill roster from approved enrollments for the coaching modality.
+
+    Validates every row before inserting any (no partial roster). All inserts run in the
+    caller’s transaction — :func:`create_direct_coordination_coaching` is ``atomic``; any
+    failure rolls back the coaching, recurrence row, and participants.
+    """
+    if classe_id is not None:
+        from classes.services import get_student_ids_for_classe
+
+        student_ids = get_student_ids_for_classe(classe_id=classe_id)
+        if not student_ids:
+            raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+    else:
+        student_ids = _student_ids_for_modality_roster(modality_id=coaching.modality_id)
+    max_cap = coaching.modality.max_capacity
+    if max_cap is not None and len(student_ids) > max_cap:
+        raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
+
+    assert_user_ids_can_participate_in_coaching(user_ids=student_ids)
+
+    if schedule_flag:
+        row_status = CoachingParticipantStatus.ACTIVE
+        invited_by_staff = False
+    else:
+        row_status = CoachingParticipantStatus.INVITED
+        invited_by_staff = True
+
+    pending = []
+    for student_id in student_ids:
+        participant = CoachingParticipant(
+            coaching_class=coaching,
+            student_id=student_id,
+            status=row_status,
+            invited_by_staff=invited_by_staff,
+            created_by=created_by,
+        )
+        try:
+            participant.full_clean()
+        except DjangoValidationError as exc:
+            logger.warning(
+                "Bulk roster model validation failed coaching=%s student_id=%s detail=%s",
+                coaching.pk,
+                student_id,
+                getattr(exc, "error_dict", None) or exc,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["BulkRosterParticipantInvalid"],
+                    "student_id": ["BulkRosterParticipantInvalid"],
+                }
+            ) from exc
+        pending.append(participant)
+
+    for participant in pending:
+        try:
+            participant.save()
+        except IntegrityError as exc:
+            logger.warning(
+                "Bulk roster integrity failure coaching=%s student_id=%s",
+                coaching.pk,
+                participant.student_id,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["ParticipantAlreadyEnrolled"],
+                    "student_id": ["ParticipantAlreadyEnrolled"],
+                }
+            ) from exc
+
+
+def _bulk_roster_coaching_request(*, coaching, requesting_user, classe_id):
+    """
+    Fill roster for a student-requested coaching from a classe's members.
+
+    The requesting user is intentionally skipped here — they are added separately
+    by :func:`create_coaching_request` via :func:`add_participant` (which gives them
+    ``PENDING`` status). All remaining class members are added as ``INVITED`` with
+    ``invited_by_staff=False`` so that each invited student must individually accept.
+
+    Runs inside the caller's ``atomic`` block; any failure rolls back the whole request.
+    """
+    from classes.services import get_student_ids_for_classe
+
+    student_ids = get_student_ids_for_classe(classe_id=classe_id)
+    if not student_ids:
+        raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+
+    max_cap = coaching.modality.max_capacity
+    if max_cap is not None and len(student_ids) > max_cap:
+        raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
+
+    assert_user_ids_can_participate_in_coaching(user_ids=student_ids)
+
+    pending = []
+    for student_id in student_ids:
+        # The requesting user will be added as PENDING by the caller — skip here to avoid
+        # a duplicate row and let the existing add_participant call handle their status.
+        if student_id == requesting_user.pk:
+            continue
+        participant = CoachingParticipant(
+            coaching_class=coaching,
+            student_id=student_id,
+            status=CoachingParticipantStatus.INVITED,
+            invited_by_staff=False,
+            created_by=requesting_user,
+        )
+        try:
+            participant.full_clean()
+        except DjangoValidationError as exc:
+            logger.warning(
+                "Bulk request roster model validation failed coaching=%s student_id=%s detail=%s",
+                coaching.pk,
+                student_id,
+                getattr(exc, "error_dict", None) or exc,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["BulkRosterParticipantInvalid"],
+                    "student_id": ["BulkRosterParticipantInvalid"],
+                }
+            ) from exc
+        pending.append(participant)
+
+    for participant in pending:
+        try:
+            participant.save()
+        except IntegrityError as exc:
+            logger.warning(
+                "Bulk request roster integrity failure coaching=%s student_id=%s",
+                coaching.pk,
+                participant.student_id,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["ParticipantAlreadyEnrolled"],
+                    "student_id": ["ParticipantAlreadyEnrolled"],
+                }
+            ) from exc
+
+
+def _participant_row_for_add_participant(*, coaching, student_id, requesting_user):
+    """
+    Initial ``status`` and ``invited_by_staff`` for :func:`add_participant` (also used when
+    :func:`create_coaching_request` rosters the requester).
+
+    **Requester adding themselves** (``student_id == coaching.requested_by_id`` and
+    ``requesting_user`` is that same user): always ``PENDING`` and ``invited_by_staff=False`` —
+    they requested the session, not an invitee flow.
+
+    Staff vs everyone else is determined by ``coachings.change_coachingparticipant``.
+
+    **Scheduled coaching** (after those rules)
+    - Staff: ``ACTIVE`` and ``invited_by_staff=True``.
+    - Other: ``INVITED`` and ``invited_by_staff=False`.
+
+    **Any other coaching status** (not ``SCHEDULED``)
+    - Staff: ``INVITED`` and ``invited_by_staff=True``.
+    - Other: ``INVITED`` and ``invited_by_staff=False``.
+
+    The ``invited_by_staff`` flag drives downstream behaviour (e.g. accept-invite → active vs
+    pending, and whether teacher-accept bumps an invite to pending).
+    """
+    if (
+        coaching.requested_by_id is not None
+        and student_id == coaching.requested_by_id
+        and requesting_user.pk == student_id
+    ):
+        return CoachingParticipantStatus.PENDING, False
+
+    invited_by_staff = requesting_user.has_perm("coachings.change_coachingparticipant")
+    if coaching.status == CoachingStatus.SCHEDULED:
+        if invited_by_staff:
+            return CoachingParticipantStatus.ACTIVE, True
+        return CoachingParticipantStatus.INVITED, False
+    if invited_by_staff:
+        return CoachingParticipantStatus.INVITED, True
+    return CoachingParticipantStatus.INVITED, False
+
+
 def _validate_datetime_range(*, start, end):
     if start is None or end is None:
         raise ValidationError({"messages": ["InvalidDateRange"]})
@@ -103,8 +358,64 @@ def _get_teacher_user(*, teacher_id):
 
 def _coaching_detail_queryset():
     return CoachingClass.objects.select_related(
-        "teacher", "modality", "studio", "requested_by"
+        "teacher",
+        "modality",
+        "studio",
+        "requested_by",
+        "teacher_confirmed_by",
+        "recurring_coaching",
+        "classe",
     ).prefetch_related("participants__student")
+
+
+# Participants who are not yet "in session" for attendance completion / roster gate.
+_STATUSES_EXCLUDED_FROM_ATTENDANCE_COMPLETION_GATE = frozenset(
+    {
+        CoachingParticipantStatus.CANCELLED,
+        CoachingParticipantStatus.LATE_CANCELLED,
+        CoachingParticipantStatus.INVITED,
+        CoachingParticipantStatus.PENDING,
+    }
+)
+
+
+def _all_roster_attendance_confirmed_for_completion(*, coaching_class_id):
+    """Every roster row that counts toward completion must be ATTENDED or ABSENT."""
+    return (
+        not CoachingParticipant.objects.filter(coaching_class_id=coaching_class_id)
+        .exclude(status__in=_STATUSES_EXCLUDED_FROM_ATTENDANCE_COMPLETION_GATE)
+        .exclude(
+            status__in=[
+                CoachingParticipantStatus.ATTENDED,
+                CoachingParticipantStatus.ABSENT,
+            ]
+        )
+        .exists()
+    )
+
+
+def _maybe_advance_to_pending_completion_approval(*, coaching, updated_by):
+    """
+    When teacher confirmation and all roster attendance rows are filled, move the
+    coaching to ``PENDING_COMPLETION_APPROVAL`` for coordination to complete.
+    """
+    if coaching.status != CoachingStatus.WAITING_CONFIRMATION:
+        return
+    if coaching.teacher_confirmed_at is None:
+        return
+    if not _all_roster_attendance_confirmed_for_completion(
+        coaching_class_id=coaching.pk
+    ):
+        return
+    _validate_status_transition(coaching, CoachingStatus.PENDING_COMPLETION_APPROVAL)
+    coaching.status = CoachingStatus.PENDING_COMPLETION_APPROVAL
+    coaching.updated_by = updated_by
+    coaching.full_clean()
+    coaching.save()
+    logger.info(
+        "CoachingClass %s advanced waiting_confirmation → pending_completion_approval",
+        coaching.pk,
+    )
 
 
 def _validate_status_transition(coaching, target_status):
@@ -131,7 +442,6 @@ def _assert_studio_modality_compatible(*, studio, modality):
     if not StudioModality.objects.filter(
         studio=studio,
         modality=modality,
-        deleted_at__isnull=True,
     ).exists():
         raise ValidationError({"messages": ["StudioModalityIncompatible"]})
 
@@ -175,6 +485,18 @@ def _ensure_scheduled_slot_free(
     end_datetime,
     exclude_pk=None,
 ):
+    # Lock the teacher and studio rows first so concurrent requests for the same
+    # teacher/studio are serialized even when no conflicting coachings exist yet.
+    # Without this, SELECT FOR UPDATE on an empty result set locks nothing (TOCTOU).
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    User.objects.select_for_update().filter(pk=teacher_id).first()
+    if studio_id is not None:
+        from studios.models import Studio as _Studio
+
+        _Studio.objects.select_for_update().filter(pk=studio_id).first()
+
     conflict_lock_qs = (
         CoachingClass.objects.select_for_update()
         .filter(
@@ -222,7 +544,7 @@ def create_teacher_availability(*, teacher_id, requesting_user, **data):
         try:
             modality = Modality.objects.get(pk=modality_id)
         except Modality.DoesNotExist:
-            raise NotFound()
+            raise AppNotFound("ModalityNotFound")
 
     notes = data.get("notes", "")
     _check_availability_overlap(
@@ -253,7 +575,7 @@ def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
     try:
         block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
     except TeacherAvailability.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("TeacherAvailabilityNotFound")
 
     modality_id = data.pop("modality_id", "__unset__")
     if modality_id != "__unset__":
@@ -261,7 +583,7 @@ def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
             try:
                 block.modality = Modality.objects.get(pk=modality_id)
             except Modality.DoesNotExist:
-                raise NotFound()
+                raise AppNotFound("ModalityNotFound")
         else:
             block.modality = None
 
@@ -294,7 +616,7 @@ def delete_teacher_availability(*, teacher_id, pk, requesting_user):
     try:
         block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
     except TeacherAvailability.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("TeacherAvailabilityNotFound")
     block.delete(deleted_by=requesting_user)
     logger.info("TeacherAvailability %s deleted by user=%s", pk, requesting_user.id)
 
@@ -303,7 +625,7 @@ def get_coaching(*, pk):
     try:
         return _coaching_detail_queryset().get(pk=pk)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
 
 def _resolve_coaching_from_pk_or_instance(*, pk, coaching):
@@ -324,18 +646,24 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
 
     try:
         coaching = (
-            CoachingClass.objects.select_for_update()
+            CoachingClass.objects.select_for_update(of=("self",))
             .select_related("modality", "studio", "teacher", "requested_by")
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.status not in _EDITABLE_COACHING_STATUSES:
         raise ValidationError({"messages": ["CoachingNotEditable"]})
 
     if not allow_teacher_change and "teacher_id" in updates:
         raise ValidationError({"messages": ["TeacherIdNotEditable"]})
+
+    if "is_billable" in updates:
+        if coaching.requested_by_id is not None:
+            raise ValidationError({"messages": ["IsBillableCoordinationCoachingOnly"]})
+        if not allow_teacher_change:
+            raise ValidationError({"messages": ["IsBillableStaffOnly"]})
 
     new_start = updates.get("start_datetime", coaching.start_datetime)
     new_end = updates.get("end_datetime", coaching.end_datetime)
@@ -346,7 +674,7 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
         try:
             effective_modality = Modality.objects.get(pk=updates["modality_id"])
         except Modality.DoesNotExist:
-            raise NotFound()
+            raise AppNotFound("ModalityNotFound")
 
     if "studio_id" in updates:
         new_studio_id = updates["studio_id"]
@@ -408,6 +736,8 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
         coaching.end_datetime = updates["end_datetime"]
     if "notes" in updates:
         coaching.notes = updates["notes"]
+    if "is_billable" in updates:
+        coaching.is_billable = updates["is_billable"]
 
     coaching.updated_by = requesting_user
     coaching.full_clean()
@@ -451,6 +781,7 @@ def create_coaching_request(
     requesting_user,
     notes="",
     studio_id=None,
+    classe_id=None,
 ):
     _validate_datetime_range(start=start_datetime, end=end_datetime)
     _get_teacher_user(teacher_id=teacher_id)
@@ -473,6 +804,15 @@ def create_coaching_request(
             end_datetime=end_datetime,
         )
 
+    classe_row = None
+    if classe_id is not None:
+        from classes.models import Classe
+
+        try:
+            classe_row = Classe.objects.get(pk=classe_id)
+        except Classe.DoesNotExist:
+            raise AppNotFound("ClasseNotFound")
+
     coaching = CoachingClass(
         teacher_id=teacher_id,
         modality=modality,
@@ -483,19 +823,44 @@ def create_coaching_request(
         status=CoachingStatus.REQUESTED,
         requested_by=requesting_user,
         created_by=requesting_user,
+        classe=classe_row,
     )
     coaching.full_clean()
     coaching.save()
     logger.info(
-        "CoachingClass requested by user=%s teacher=%s",
+        "CoachingClass requested by user=%s teacher=%s classe=%s",
         requesting_user.id,
         teacher_id,
+        classe_id,
     )
+
+    # Add the requesting user as PENDING participant (existing behaviour).
+    if requesting_user.has_perm("accounts.can_participate_in_coaching"):
+        add_participant(
+            coaching_class_id=coaching.pk,
+            student_id=requesting_user.pk,
+            requesting_user=requesting_user,
+        )
+
+    # When a classe is provided, bulk-add the remaining class members as INVITED.
+    if classe_id is not None:
+        _bulk_roster_coaching_request(
+            coaching=coaching,
+            requesting_user=requesting_user,
+            classe_id=classe_id,
+        )
+
+    from coachings.tasks import notify_new_coaching_request
+
+    transaction.on_commit(
+        lambda cid=coaching.pk: notify_new_coaching_request.delay(cid)
+    )
+
     return coaching
 
 
 @transaction.atomic
-def create_scheduled_coaching(
+def create_direct_coordination_coaching(
     *,
     teacher_id,
     modality_id,
@@ -505,7 +870,18 @@ def create_scheduled_coaching(
     end_datetime,
     requesting_user,
     notes="",
+    schedule=True,
+    recurring_data=None,
+    classe_id=None,
+    is_billable=True,
 ):
+    """
+    Create a coordination-scheduled coaching and roster in one transaction.
+
+    Slot checks, recurrence row, coaching row, and bulk roster inserts succeed together or
+    all roll back. Bulk roster errors use ``BulkRosterParticipantInvalid`` or
+    ``ParticipantAlreadyEnrolled`` (with optional ``student_id`` field codes).
+    """
     _validate_datetime_range(start=start_datetime, end=end_datetime)
     _get_teacher_user(teacher_id=teacher_id)
     try:
@@ -517,6 +893,22 @@ def create_scheduled_coaching(
     except Studio.DoesNotExist:
         raise AppNotFound("StudioNotFound")
 
+    if recurring_data:
+        rd0 = recurring_data
+        if rd0.get("end_date") and rd0.get("occurrences_count"):
+            raise ValidationError(
+                {"messages": ["RecurringEndDateAndOccurrencesExclusive"]}
+            )
+
+    classe_row = None
+    if classe_id is not None:
+        from classes.models import Classe
+
+        try:
+            classe_row = Classe.objects.get(pk=classe_id)
+        except Classe.DoesNotExist:
+            raise AppNotFound("ClasseNotFound")
+
     _assert_studio_modality_compatible(studio=studio, modality=modality)
 
     _ensure_scheduled_slot_free(
@@ -525,6 +917,21 @@ def create_scheduled_coaching(
         start_datetime=start_datetime,
         end_datetime=end_datetime,
     )
+
+    recurring_row = None
+    if recurring_data:
+        rd = recurring_data
+        recurring_row = RecurringCoaching(
+            recurrence_type=rd["recurrence_type"],
+            recurrence_interval=rd.get("recurrence_interval", 1),
+            days_of_week=rd.get("days_of_week", ""),
+            end_date=rd.get("end_date"),
+            occurrences_count=rd.get("occurrences_count"),
+            notes=rd.get("notes", ""),
+            created_by=requesting_user,
+        )
+        recurring_row.full_clean()
+        recurring_row.save()
 
     coaching = CoachingClass(
         teacher_id=teacher_id,
@@ -536,19 +943,36 @@ def create_scheduled_coaching(
         notes=notes,
         status=CoachingStatus.SCHEDULED,
         created_by=requesting_user,
+        recurring_coaching=recurring_row,
+        classe=classe_row,
+        is_billable=is_billable,
     )
     coaching.full_clean()
     coaching.save()
+
+    _bulk_roster_direct_coordination(
+        coaching=coaching,
+        schedule_flag=schedule,
+        created_by=requesting_user,
+        classe_id=classe_id,
+    )
+
     logger.info(
-        "CoachingClass scheduled directly by user=%s teacher=%s",
+        "CoachingClass direct coordination create user=%s teacher=%s schedule=%s recurring=%s",
         requesting_user.id,
         teacher_id,
+        schedule,
+        bool(recurring_row),
     )
     return coaching
 
 
 @transaction.atomic
 def teacher_accept_coaching(*, pk, user):
+    """
+    Teacher accepts the coaching request — updates coaching status only.
+    Participant rows are unchanged (roster updates happen on coordination approve).
+    """
     coaching = get_coaching(pk=pk)
     if coaching.teacher_id != user.id:
         raise ValidationError({"messages": ["NotTheAssignedTeacher"]})
@@ -556,6 +980,7 @@ def teacher_accept_coaching(*, pk, user):
     coaching.status = CoachingStatus.PENDING_APPROVAL
     coaching.updated_by = user
     coaching.save()
+
     logger.info("CoachingClass %s accepted by teacher=%s", pk, user.id)
     return get_coaching(pk=pk)
 
@@ -569,7 +994,9 @@ def teacher_reject_coaching(*, user, rejection_reason="", pk=None, coaching=None
         raise ValidationError({"messages": ["InvalidStatusTransition"]})
     coaching.status = CoachingStatus.REJECTED
     coaching.rejection_reason = rejection_reason
+    coaching.rejected_at = timezone.now()
     coaching.updated_by = user
+    coaching.full_clean()
     coaching.save()
     logger.info("CoachingClass %s rejected by teacher=%s", coaching.pk, user.id)
     return coaching
@@ -581,7 +1008,9 @@ def reject_coaching_coordination(*, user, rejection_reason="", pk=None, coaching
     _validate_status_transition(coaching, CoachingStatus.REJECTED)
     coaching.status = CoachingStatus.REJECTED
     coaching.rejection_reason = rejection_reason
+    coaching.rejected_at = timezone.now()
     coaching.updated_by = user
+    coaching.full_clean()
     coaching.save()
     logger.info(
         "CoachingClass %s rejected by coordination user=%s", coaching.pk, user.id
@@ -591,29 +1020,36 @@ def reject_coaching_coordination(*, user, rejection_reason="", pk=None, coaching
 
 @transaction.atomic
 def approve_coaching(*, pk, studio_id, total_price, user):
+    """
+    Coordination schedules the session and activates ``PENDING`` participants only
+    (``PENDING`` → ``ACTIVE``). ``INVITED`` rows are unchanged — confirmation uses the
+    invite / accept-invite flow (and related endpoints), not this transition.
+    """
+    if total_price is None:
+        raise ValidationError({"messages": ["CoachingTotalPriceRequired"]})
+
     try:
         coaching = (
-            CoachingClass.objects.select_for_update()
+            CoachingClass.objects.select_for_update(of=("self",))
             .select_related("teacher", "modality", "studio", "requested_by")
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     _validate_status_transition(coaching, CoachingStatus.SCHEDULED)
 
     try:
         studio = Studio.objects.get(pk=studio_id)
     except Studio.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("StudioNotFound")
 
     _assert_studio_modality_compatible(studio=studio, modality=coaching.modality)
-    _assert_no_scheduled_conflict(
+    _ensure_scheduled_slot_free(
         teacher_id=coaching.teacher_id,
         studio_id=studio_id,
         start_datetime=coaching.start_datetime,
         end_datetime=coaching.end_datetime,
-        exclude_pk=pk,
     )
 
     coaching.studio = studio
@@ -622,20 +1058,221 @@ def approve_coaching(*, pk, studio_id, total_price, user):
     coaching.updated_by = user
     coaching.full_clean()
     coaching.save()
+
+    pending_participants = CoachingParticipant.objects.filter(
+        coaching_class=coaching,
+        status=CoachingParticipantStatus.PENDING,
+    )
+    for participant in pending_participants:
+        participant.status = CoachingParticipantStatus.ACTIVE
+        participant.updated_by = user
+        participant.full_clean()
+        participant.save()
+
     logger.info("CoachingClass %s approved by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_approved
+
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_approved.delay(cid))
+
     return get_coaching(pk=pk)
 
 
 @transaction.atomic
 def complete_coaching(*, pk, user):
-    coaching = get_coaching(pk=pk)
+    try:
+        coaching = (
+            CoachingClass.objects.select_for_update(of=("self",))
+            .select_related(
+                "teacher",
+                "modality",
+                "studio",
+                "requested_by",
+                "teacher_confirmed_by",
+            )
+            .prefetch_related("participants__student")
+            .get(pk=pk)
+        )
+    except CoachingClass.DoesNotExist:
+        raise AppNotFound("CoachingNotFound")
     _validate_status_transition(coaching, CoachingStatus.COMPLETED)
+
+    # Explicit gating: every roster row that counts toward completion must be
+    # in a final state (ATTENDED or ABSENT). Intermediate statuses (ACTIVE,
+    # PENDING_COMPLETION) block the transition. INVITED/PENDING/CANCELLED/
+    # LATE_CANCELLED are excluded from the check (already handled or never
+    # in session).
+    if not _all_roster_attendance_confirmed_for_completion(coaching_class_id=pk):
+        raise ValidationError(
+            {"messages": ["CoachingHasUnresolvedParticipantStatuses"]}
+        )
+
     coaching.status = CoachingStatus.COMPLETED
     coaching.completed_at = timezone.now()
     coaching.updated_by = user
+    coaching.full_clean()
     coaching.save()
+
+    create_billing_entries_for_coaching(coaching=coaching, user=user)
+    create_fines_for_coaching(coaching=coaching, user=user)
+
     logger.info("CoachingClass %s completed by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_completed
+
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_completed.delay(cid))
+
     return get_coaching(pk=pk)
+
+
+def eligible_scheduled_coachings_queryset(*, now=None):
+    """
+    Coachings still ``SCHEDULED`` whose session end is at or before ``now``.
+    Used by :func:`advance_scheduled_to_waiting_confirmation_batch` and by a future cron job.
+    """
+    at = timezone.now() if now is None else now
+    return CoachingClass.objects.filter(
+        status=CoachingStatus.SCHEDULED,
+        end_datetime__lte=at,
+    ).order_by("pk")
+
+
+def advance_scheduled_to_waiting_confirmation_batch(*, now=None, updated_by=None):
+    """
+    For each eligible coaching, transition ``SCHEDULED`` → ``WAITING_CONFIRMATION``.
+    One DB transaction per coaching so a single failure does not roll back the whole batch.
+
+    Returns the number of coachings transitioned.
+    """
+    at = timezone.now() if now is None else now
+    transitioned = 0
+    for pk in eligible_scheduled_coachings_queryset(now=at).values_list(
+        "pk", flat=True
+    ):
+        with transaction.atomic():
+            coaching = CoachingClass.objects.select_for_update().filter(pk=pk).first()
+            if coaching is None:
+                continue
+            if coaching.status != CoachingStatus.SCHEDULED:
+                continue
+            if coaching.end_datetime > at:
+                continue
+            _validate_status_transition(coaching, CoachingStatus.WAITING_CONFIRMATION)
+            coaching.status = CoachingStatus.WAITING_CONFIRMATION
+            coaching.updated_by = updated_by
+            coaching.full_clean()
+            coaching.save()
+            transitioned += 1
+            logger.info(
+                "CoachingClass %s advanced SCHEDULED → waiting_confirmation (batch/cron)",
+                pk,
+            )
+    return transitioned
+
+
+@transaction.atomic
+def teacher_confirm_coaching(*, pk, user, teacher_notes="", now=None):
+    """
+    Assigned teacher confirms the session took place (``WAITING_CONFIRMATION`` only).
+    Idempotent denied: a second confirmation raises validation error.
+    """
+    at = timezone.now() if now is None else now
+    try:
+        coaching = CoachingClass.objects.select_for_update().get(pk=pk)
+    except CoachingClass.DoesNotExist:
+        raise AppNotFound("CoachingNotFound")
+
+    if coaching.teacher_id != user.id:
+        raise ValidationError({"messages": ["NotTheAssignedTeacher"]})
+    if coaching.status != CoachingStatus.WAITING_CONFIRMATION:
+        raise ValidationError({"messages": ["CoachingNotWaitingConfirmation"]})
+    if at < coaching.end_datetime:
+        raise ValidationError({"messages": ["CoachingSessionNotEndedYet"]})
+    if coaching.teacher_confirmed_at is not None:
+        raise ValidationError({"messages": ["TeacherAlreadyConfirmedCoaching"]})
+
+    coaching.teacher_notes = teacher_notes
+    coaching.teacher_confirmed_at = at
+    coaching.teacher_confirmed_by = user
+    coaching.updated_by = user
+    coaching.full_clean()
+    coaching.save()
+
+    _maybe_advance_to_pending_completion_approval(coaching=coaching, updated_by=user)
+    logger.info("CoachingClass %s teacher-confirmed by user=%s", pk, user.id)
+    return get_coaching(pk=pk)
+
+
+@transaction.atomic
+def confirm_participant_attendance(
+    *, coaching_class_id, participant_pk, user, attended, now=None
+):
+    """
+    Student or their parent marks ATTENDED / ABSENT while the coaching is in
+    ``WAITING_CONFIRMATION`` (after session end).
+    """
+    at = timezone.now() if now is None else now
+    try:
+        coaching = CoachingClass.objects.select_for_update().get(pk=coaching_class_id)
+    except CoachingClass.DoesNotExist:
+        raise AppNotFound("CoachingNotFound")
+
+    if coaching.status != CoachingStatus.WAITING_CONFIRMATION:
+        raise ValidationError({"messages": ["CoachingNotWaitingConfirmation"]})
+    if at < coaching.end_datetime:
+        raise ValidationError({"messages": ["CoachingSessionNotEndedYet"]})
+
+    try:
+        participant = (
+            CoachingParticipant.objects.select_for_update()
+            .select_related("student")
+            .get(pk=participant_pk, coaching_class_id=coaching_class_id)
+        )
+    except CoachingParticipant.DoesNotExist:
+        raise AppNotFound("ParticipantNotFound")
+
+    if participant.status != CoachingParticipantStatus.ACTIVE:
+        raise ValidationError(
+            {"messages": ["ParticipantNotEligibleForAttendanceConfirmation"]}
+        )
+
+    student = participant.student
+    actor_ok = user.id == student.id or (
+        student.parent_id is not None and user.id == student.parent_id
+    )
+    if not actor_ok:
+        raise ValidationError(
+            {"messages": ["CannotConfirmAttendanceForThisParticipant"]}
+        )
+
+    participant.status = (
+        CoachingParticipantStatus.ATTENDED
+        if attended
+        else CoachingParticipantStatus.ABSENT
+    )
+    participant.updated_by = user
+    participant.full_clean()
+    participant.save()
+
+    _maybe_advance_to_pending_completion_approval(coaching=coaching, updated_by=user)
+    logger.info(
+        "Participant %s attendance confirmed attended=%s coaching=%s user=%s",
+        participant_pk,
+        attended,
+        coaching_class_id,
+        user.id,
+    )
+    return CoachingParticipant.objects.select_related("student").get(pk=participant.pk)
+
+
+_PARTICIPANT_STATUSES_CANCELLABLE_BY_COACHING = frozenset(
+    {
+        CoachingParticipantStatus.ACTIVE,
+        CoachingParticipantStatus.PENDING,
+        CoachingParticipantStatus.INVITED,
+        CoachingParticipantStatus.PENDING_COMPLETION,
+    }
+)
 
 
 @transaction.atomic
@@ -644,9 +1281,26 @@ def cancel_coaching(*, pk, user, cancellation_reason=""):
     _validate_status_transition(coaching, CoachingStatus.CANCELLED)
     coaching.status = CoachingStatus.CANCELLED
     coaching.cancellation_reason = cancellation_reason
+    coaching.cancelled_at = timezone.now()
     coaching.updated_by = user
+    coaching.full_clean()
     coaching.save()
+
+    now = timezone.now()
+    for participant in coaching.participants.filter(
+        status__in=list(_PARTICIPANT_STATUSES_CANCELLABLE_BY_COACHING)
+    ):
+        participant.status = CoachingParticipantStatus.CANCELLED
+        participant.cancelled_at = now
+        participant.updated_by = user
+        participant.save()
+
     logger.info("CoachingClass %s cancelled by user=%s", pk, user.id)
+
+    from coachings.tasks import notify_coaching_cancelled
+
+    transaction.on_commit(lambda cid=coaching.pk: notify_coaching_cancelled.delay(cid))
+
     return get_coaching(pk=pk)
 
 
@@ -677,22 +1331,21 @@ def _enqueue_participant_cancel_side_effects(
     teacher_id,
     is_late_cancelled,
 ):
-    """Runs after commit — fines, notifications, and any async work must not roll back DB."""
+    """Runs after commit — notifications and any async work must not roll back DB.
+    Fines are NOT created here — LATE_CANCELLED participants are reviewed at
+    coaching completion (see ``billing.services.create_fines_for_coaching``).
+    """
 
     def _run():
-        # TODO: Auto-generate a Fine when is_late_cancelled is True (billing / fines module).
-        # TODO: Notify the teacher (teacher_id) that a participant cancelled coaching_class_id.
-        # TODO: Notify coordination about the cancellation (coaching_class_id, participant_id).
-        # TODO: Capacity — slot is released by persisting status cancelled / late_cancelled;
-        #       confirm reporting and any waitlist promotion when that exists.
-        logger.info(
-            "Participant cancel side-effects queued (TODO): participant=%s coaching=%s "
-            "teacher=%s late=%s",
+        from coachings.tasks import notify_participant_cancelled
+
+        notify_participant_cancelled.delay(
             participant_id,
             coaching_class_id,
-            teacher_id,
             is_late_cancelled,
         )
+        # TODO: Auto-generate a Fine when is_late_cancelled is True (billing/fines module).
+        # TODO: Notify coordination about the cancellation (coaching_class_id, participant_id).
 
     transaction.on_commit(_run)
 
@@ -700,11 +1353,13 @@ def _enqueue_participant_cancel_side_effects(
 @transaction.atomic
 def add_participant(*, coaching_class_id, student_id, requesting_user):
     try:
-        coaching = CoachingClass.objects.select_related("modality").get(
-            pk=coaching_class_id
+        coaching = (
+            CoachingClass.objects.select_for_update()
+            .select_related("modality")
+            .get(pk=coaching_class_id)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.status in (
         CoachingStatus.COMPLETED,
@@ -714,8 +1369,50 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
         raise ValidationError({"messages": ["CoachingNotOpenForParticipants"]})
 
     student = get_user_by_pk(pk=student_id)
-    if not student.has_perm("accounts.can_participate_in_coaching"):
-        raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
+    assert_user_can_participate_in_coaching(user=student)
+
+    existing = (
+        CoachingParticipant.objects.select_for_update()
+        .filter(coaching_class_id=coaching_class_id, student_id=student_id)
+        .first()
+    )
+    if existing:
+        if existing.status not in _PARTICIPANT_DEATH_STATUSES:
+            raise ValidationError({"messages": ["ParticipantAlreadyEnrolled"]})
+        new_status, invited_by_staff = _participant_row_for_add_participant(
+            coaching=coaching,
+            student_id=student_id,
+            requesting_user=requesting_user,
+        )
+        max_cap = coaching.modality.max_capacity
+        if max_cap is not None:
+            active = _active_participant_count(coaching_class=coaching)
+            old_contrib = (
+                1 if _participant_status_counts_toward_capacity(existing.status) else 0
+            )
+            new_contrib = (
+                1 if _participant_status_counts_toward_capacity(new_status) else 0
+            )
+            projected = active - old_contrib + new_contrib
+            if projected > max_cap:
+                raise ValidationError(
+                    {"messages": ["CoachingParticipantCapacityReached"]}
+                )
+
+        existing.status = new_status
+        existing.invited_by_staff = invited_by_staff
+        existing.cancelled_at = None
+        existing.cancellation_reason = ""
+        existing.updated_by = requesting_user
+        existing.full_clean()
+        existing.save()
+        logger.info(
+            "CoachingParticipant student=%s revived on coaching=%s by user=%s",
+            student_id,
+            coaching_class_id,
+            requesting_user.id,
+        )
+        return CoachingParticipant.objects.select_related("student").get(pk=existing.pk)
 
     max_cap = coaching.modality.max_capacity
     if max_cap is not None:
@@ -725,10 +1422,16 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
     if _student_has_active_enrollment(coaching_class=coaching, student_id=student_id):
         raise ValidationError({"messages": ["ParticipantAlreadyEnrolled"]})
 
+    row_status, invited_by_staff = _participant_row_for_add_participant(
+        coaching=coaching,
+        student_id=student_id,
+        requesting_user=requesting_user,
+    )
     participant = CoachingParticipant(
         coaching_class=coaching,
         student_id=student_id,
-        status=_initial_participant_status(coaching=coaching, student_id=student_id),
+        status=row_status,
+        invited_by_staff=invited_by_staff,
         created_by=requesting_user,
     )
     participant.full_clean()
@@ -746,11 +1449,104 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
     return CoachingParticipant.objects.select_related("student").get(pk=participant.pk)
 
 
+@transaction.atomic
+def student_accept_coaching_invitation(*, coaching_class_id, user):
+    """
+    Invited participant confirms attendance.
+
+    Staff-invited rows: INVITED → ACTIVE. Legacy / peer invites: INVITED → PENDING.
+    """
+    try:
+        coaching = (
+            CoachingClass.objects.select_for_update()
+            .select_related("modality")
+            .get(pk=coaching_class_id)
+        )
+    except CoachingClass.DoesNotExist:
+        raise AppNotFound("CoachingNotFound")
+
+    if coaching.status in (
+        CoachingStatus.COMPLETED,
+        CoachingStatus.CANCELLED,
+        CoachingStatus.REJECTED,
+    ):
+        raise ValidationError({"messages": ["CoachingNotOpenForParticipants"]})
+
+    try:
+        participant = CoachingParticipant.objects.select_for_update().get(
+            coaching_class_id=coaching_class_id,
+            student_id=user.id,
+        )
+    except CoachingParticipant.DoesNotExist:
+        raise AppNotFound("ParticipantNotFound")
+
+    if participant.status != CoachingParticipantStatus.INVITED:
+        raise ValidationError({"messages": ["ParticipantNotInvited"]})
+
+    if participant.invited_by_staff:
+        participant.status = CoachingParticipantStatus.ACTIVE
+    else:
+        participant.status = CoachingParticipantStatus.PENDING
+    participant.updated_by = user
+    participant.full_clean()
+    participant.save()
+
+    logger.info(
+        "Coaching invite accepted student=%s coaching=%s",
+        user.id,
+        coaching_class_id,
+    )
+    return CoachingParticipant.objects.select_related("student").get(pk=participant.pk)
+
+
+@transaction.atomic
+def staff_approve_pending_participant(
+    *, coaching_class_id, participant_pk, approving_user
+):
+    """
+    Coordination/direction approves a peer-invited participant on an already-scheduled
+    coaching (pending → active).
+    """
+    try:
+        coaching = CoachingClass.objects.select_for_update().get(pk=coaching_class_id)
+    except CoachingClass.DoesNotExist:
+        raise AppNotFound("CoachingNotFound")
+
+    if coaching.status != CoachingStatus.SCHEDULED:
+        raise ValidationError(
+            {"messages": ["CoachingNotEligibleForParticipantApproval"]}
+        )
+
+    try:
+        participant = CoachingParticipant.objects.select_for_update().get(
+            pk=participant_pk,
+            coaching_class_id=coaching_class_id,
+        )
+    except CoachingParticipant.DoesNotExist:
+        raise AppNotFound("ParticipantNotFound")
+
+    if participant.status != CoachingParticipantStatus.PENDING:
+        raise ValidationError({"messages": ["ParticipantNotPendingApproval"]})
+
+    participant.status = CoachingParticipantStatus.ACTIVE
+    participant.updated_by = approving_user
+    participant.full_clean()
+    participant.save()
+
+    logger.info(
+        "CoachingParticipant staff-approved pending participant=%s coaching=%s user=%s",
+        participant_pk,
+        coaching_class_id,
+        approving_user.id,
+    )
+    return CoachingParticipant.objects.select_related("student").get(pk=participant.pk)
+
+
 def list_participants(*, coaching_class_id):
     try:
         CoachingClass.objects.get(pk=coaching_class_id)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
     return CoachingParticipant.objects.filter(
         coaching_class_id=coaching_class_id
     ).select_related("student")
@@ -776,7 +1572,7 @@ def cancel_coaching_participant(
             .get(pk=coaching_class_id)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     try:
         participant = CoachingParticipant.objects.select_for_update().get(
@@ -810,7 +1606,7 @@ def cancel_coaching_participant(
         )
 
     time_until_start = coaching.start_datetime - now
-    if time_until_start > PARTICIPANT_CANCEL_MIN_NOTICE:
+    if time_until_start > _participant_cancel_min_notice():
         new_status = CoachingParticipantStatus.CANCELLED
     else:
         new_status = CoachingParticipantStatus.LATE_CANCELLED

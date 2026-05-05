@@ -1,0 +1,21 @@
+info:
+  name: waive
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{base_url}}/api/billing/fines/1/waive/"
+  body:
+    type: json
+    data: |-
+      {
+        "notes": "Waived — first offence."
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

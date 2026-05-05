@@ -1,0 +1,21 @@
+info:
+  name: cancel-participant
+  type: http
+  seq: 14
+
+http:
+  method: POST
+  url: "{{base_url}}/api/coachings/17/participants/36/cancel/"
+  body:
+    type: json
+    data: |-
+      {
+        "cancellation_reason": "test"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

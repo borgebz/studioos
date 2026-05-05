@@ -1,16 +1,11 @@
 info:
-  name: edit
+  name: patch-enrollment
   type: http
   seq: 4
 
 http:
   method: patch
-  url: http://127.0.0.1:8000/api/enrollments//
-  headers:
-    - name: Content-Type
-      value: application/json
-    - name: Authorization
-      value: Bearer XXX
+  url: "{{base_url}}/api/enrollments/1/"
   body:
     type: json
     data: |-

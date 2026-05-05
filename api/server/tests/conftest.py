@@ -25,6 +25,27 @@ def api_client():
 
 
 @pytest.fixture
+def coordination_user(db):
+    """User with the ``coordination`` role (includes bulk/list enrollment permissions)."""
+    from django.contrib.auth import get_user_model
+
+    from accounts.models import Role
+
+    User = get_user_model()
+    user = User.objects.create_user(
+        email=f"coord_{uuid.uuid4().hex[:10]}@test.local",
+        password="test-pass-123",
+        first_name="Coordination",
+        last_name="User",
+        is_active=True,
+    )
+    role = Role.objects.get(code="coordination")
+    user.groups.add(role.group)
+    user.refresh_from_db()
+    return user
+
+
+@pytest.fixture
 def direction_user(db):
     """User with the `direction` role and all enrollment/account permissions."""
     from django.contrib.auth import get_user_model

@@ -1,0 +1,10 @@
+Hello {{ recipient.first_name }},
+
+Your {{ modality }} class scheduled for {{ coaching_date }} has been cancelled.
+
+{% if cancellation_reason %}Reason: {{ cancellation_reason }}{% endif %}
+
+If you have any questions, please contact coordination.
+
+Best regards,
+StudioOS — Dance School

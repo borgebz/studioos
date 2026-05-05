@@ -1,9 +1,12 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
-from accounts.emails import send_activation_email
+from rest_framework.exceptions import ValidationError
+
 from accounts.models import Role
+from core.exceptions import AppNotFound
 from enrollments.models import (
     ConsentType,
     Enrollment,
@@ -25,6 +28,14 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 _REQUIRED_CONSENT_TYPES = (ConsentType.RGPD, ConsentType.INTERNAL_REGULATION)
+
+
+def _age_in_months(*, birth_date: date, on_date: date) -> int:
+    """Whole calendar months from birth_date to on_date (same notion as typical age rules)."""
+    months = (on_date.year - birth_date.year) * 12 + (on_date.month - birth_date.month)
+    if on_date.day < birth_date.day:
+        months -= 1
+    return months
 
 
 # ---------------------------------------------------------------------------
@@ -66,7 +77,7 @@ def get_period(*, pk):
     try:
         return EnrollmentPeriod.objects.get(pk=pk)
     except EnrollmentPeriod.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EnrollmentPeriodNotFound")
 
 
 def list_periods(*, filters=None):
@@ -114,10 +125,12 @@ def submit_enrollment(
     consents,
     files=None,
     created_by=None,
+    period_id=None,
 ):
     """
     Create a full enrollment submission in a single transaction.
-    Automatically finds the matching open period.
+    If period_id is supplied, uses that specific period (must be open and match the
+    enrollment_type). Otherwise auto-detects the current open period.
 
     Args:
         enrollment_data: dict of Enrollment field values (must include enrollment_type)
@@ -125,6 +138,7 @@ def submit_enrollment(
         consents: list of dicts with consent_type, accepted, ip_address, user_agent
         files: list of dicts with file, original_filename, mime_type (optional)
         created_by: the user performing the action (optional)
+        period_id: optional explicit period PK; validated against enrollment_type
     """
     if not modality_ids:
         raise ValidationError({"messages": ["AtLeastOneModalityRequired"]})
@@ -133,7 +147,22 @@ def submit_enrollment(
 
     # --- Validate open period ---
     enrollment_type = enrollment_data.get("enrollment_type", EnrollmentType.NEW)
-    period = _get_open_period(enrollment_type=enrollment_type)
+    if period_id is not None:
+        try:
+            period = EnrollmentPeriod.objects.get(pk=period_id)
+        except EnrollmentPeriod.DoesNotExist:
+            raise ValidationError({"messages": ["EnrollmentPeriodNotFound"]})
+        if not period.is_open:
+            raise ValidationError({"messages": ["EnrollmentPeriodNotOpen"]})
+        matching_types = [PeriodType.BOTH]
+        if enrollment_type == EnrollmentType.NEW:
+            matching_types.append(PeriodType.NEW)
+        elif enrollment_type == EnrollmentType.RENEWAL:
+            matching_types.append(PeriodType.RENEWAL)
+        if period.period_type not in matching_types:
+            raise ValidationError({"messages": ["EnrollmentPeriodTypeIncompatible"]})
+    else:
+        period = _get_open_period(enrollment_type=enrollment_type)
     enrollment_data["period"] = period
 
     student_email = enrollment_data.get("student_email")
@@ -148,6 +177,23 @@ def submit_enrollment(
     found_count = Modality.objects.filter(pk__in=modality_ids).count()
     if found_count != len(unique_modality_ids):
         raise ValidationError({"messages": ["OneOrMoreModalitiesNotFound"]})
+
+    student_dob = enrollment_data.get("student_date_of_birth")
+    if student_dob is not None:
+        reference_date = timezone.now().date()
+        age_months = _age_in_months(birth_date=student_dob, on_date=reference_date)
+        modalities = Modality.objects.filter(pk__in=modality_ids).order_by("pk")
+        for modality in modalities:
+            if (
+                modality.min_age_months is not None
+                and age_months < modality.min_age_months
+            ):
+                raise ValidationError({"messages": ["StudentAgeBelowModalityMinimum"]})
+            if (
+                modality.max_age_months is not None
+                and age_months > modality.max_age_months
+            ):
+                raise ValidationError({"messages": ["StudentAgeAboveModalityMaximum"]})
 
     for consent_type in _REQUIRED_CONSENT_TYPES:
         if not any(
@@ -229,7 +275,7 @@ def get_enrollment(*, pk):
             .get(pk=pk)
         )
     except Enrollment.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("EnrollmentNotFound")
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +321,7 @@ def _validate_transition(enrollment, target_status):
 @transaction.atomic
 def start_review(*, enrollment, updated_by=None):
     """Move an enrollment from SUBMITTED to UNDER_REVIEW."""
+    enrollment = Enrollment.objects.select_for_update().get(pk=enrollment.pk)
     _validate_transition(enrollment, EnrollmentStatus.UNDER_REVIEW)
     enrollment.status = EnrollmentStatus.UNDER_REVIEW
     enrollment.updated_by = updated_by
@@ -341,6 +388,7 @@ def approve_enrollment(*, enrollment, updated_by=None):
     - Link both to the enrollment
     - Send activation emails (after transaction commits)
     """
+    enrollment = Enrollment.objects.select_for_update().get(pk=enrollment.pk)
     _validate_transition(enrollment, EnrollmentStatus.APPROVED)
 
     is_renewal = enrollment.enrollment_type == EnrollmentType.RENEWAL
@@ -412,10 +460,16 @@ def approve_enrollment(*, enrollment, updated_by=None):
     enrollment.save()
 
     # --- Send activation emails after transaction commits ---
+    from accounts.tasks import send_activation_email_task
+
     if parent_created:
-        transaction.on_commit(lambda: send_activation_email(parent_user))
+        transaction.on_commit(
+            lambda uid=parent_user.pk: send_activation_email_task.delay(uid)
+        )
     if student_created:
-        transaction.on_commit(lambda: send_activation_email(student_user))
+        transaction.on_commit(
+            lambda uid=student_user.pk: send_activation_email_task.delay(uid)
+        )
 
     return enrollment
 
@@ -423,6 +477,7 @@ def approve_enrollment(*, enrollment, updated_by=None):
 @transaction.atomic
 def reject_enrollment(*, enrollment, updated_by=None):
     """Reject an enrollment. No user creation."""
+    enrollment = Enrollment.objects.select_for_update().get(pk=enrollment.pk)
     _validate_transition(enrollment, EnrollmentStatus.REJECTED)
 
     enrollment.status = EnrollmentStatus.REJECTED
@@ -435,6 +490,7 @@ def reject_enrollment(*, enrollment, updated_by=None):
 @transaction.atomic
 def cancel_enrollment(*, enrollment, updated_by=None):
     """Cancel an enrollment. No user creation."""
+    enrollment = Enrollment.objects.select_for_update().get(pk=enrollment.pk)
     _validate_transition(enrollment, EnrollmentStatus.CANCELLED)
 
     enrollment.status = EnrollmentStatus.CANCELLED
@@ -457,8 +513,12 @@ def create_payment(*, enrollment, created_by=None, **data):
     return payment
 
 
+@transaction.atomic
 def confirm_payment(*, payment, confirmed_by=None):
     """Direction confirms a payment was received."""
+    payment = EnrollmentPayment.objects.select_for_update().get(pk=payment.pk)
+    if payment.status == PaymentStatus.CONFIRMED:
+        raise ValidationError({"messages": ["PaymentAlreadyConfirmed"]})
     payment.status = PaymentStatus.CONFIRMED
     payment.confirmed_by = confirmed_by
     payment.updated_by = confirmed_by
@@ -466,6 +526,7 @@ def confirm_payment(*, payment, confirmed_by=None):
     return payment
 
 
+@transaction.atomic
 def confirm_payment_for_enrollment(
     *,
     enrollment_pk,
@@ -474,13 +535,19 @@ def confirm_payment_for_enrollment(
 ):
     """Load payment by id scoped to enrollment, then confirm."""
     try:
-        payment = EnrollmentPayment.objects.get(
+        payment = EnrollmentPayment.objects.select_for_update().get(
             pk=payment_pk,
             enrollment_id=enrollment_pk,
         )
     except EnrollmentPayment.DoesNotExist:
-        raise NotFound()
-    return confirm_payment(payment=payment, confirmed_by=confirmed_by)
+        raise AppNotFound("EnrollmentPaymentNotFound")
+    if payment.status == PaymentStatus.CONFIRMED:
+        raise ValidationError({"messages": ["PaymentAlreadyConfirmed"]})
+    payment.status = PaymentStatus.CONFIRMED
+    payment.confirmed_by = confirmed_by
+    payment.updated_by = confirmed_by
+    payment.save()
+    return payment
 
 
 def list_payments(*, enrollment):

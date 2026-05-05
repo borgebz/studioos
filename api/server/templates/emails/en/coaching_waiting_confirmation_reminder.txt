@@ -1,0 +1,14 @@
+Hello {{ teacher.first_name }},
+
+This is a reminder that the {{ modality }} class scheduled for {{ coaching_date }} is still awaiting your confirmation.
+
+Please access the platform and confirm whether the class took place, and mark attendance for each participant.
+
+{{ coaching_url }}
+
+{% if is_final_reminder %}
+Note: this is the final reminder. If you do not confirm shortly, coordination will be notified to resolve the situation manually.
+{% endif %}
+
+Best regards,
+StudioOS — Dance School

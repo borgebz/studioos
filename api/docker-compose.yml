@@ -1,0 +1,134 @@
+services:
+
+  # ── Database ────────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - ./server/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studioos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Broker ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── API ─────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./server
+    env_file:
+      - ./server/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    volumes:
+      - ./server:/app
+      # Isolated from host .venv and from other services: concurrent `uv run`
+      # on a shared bind-mounted .venv causes "Directory not empty" / exit 2.
+      - api_venv:/app/.venv
+
+  # ── Celery Worker ───────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: ./server
+    command: uv run celery -A config worker --loglevel=info --events
+    env_file:
+      - ./server/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - worker_venv:/app/.venv
+
+  # ── Celery Beat (scheduler) ─────────────────────────────────────────────────
+  beat:
+    build:
+      context: ./server
+    command: uv run celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - ./server/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - beat_venv:/app/.venv
+
+  # ── Mail ────────────────────────────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  # ── Monitoring ──────────────────────────────────────────────────────────────
+  flower:
+    build:
+      context: ./server
+    command: uv run celery -A config flower --broker=redis://redis:6379/0 --port=5555 --persistent=True --db=/data/flower
+    env_file:
+      - ./server/.env
+    ports:
+      - "5555:5555"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - flower_venv:/app/.venv
+      - flower_data:/data
+
+  redisinsight:
+    image: redis/redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+
+  portainer:
+    image: portainer/portainer-ce
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+volumes:
+  postgres_data:
+  portainer_data:
+  api_venv:
+  worker_venv:
+  beat_venv:
+  flower_venv:
+  flower_data:

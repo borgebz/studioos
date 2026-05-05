@@ -242,6 +242,7 @@ class EnrollmentSubmitView(APIView):
             consents=consents,
             files=uploaded_files,
             created_by=request.user if request.user.is_authenticated else None,
+            period_id=serializer.validated_data.get("period_id"),
         )
 
         # Re-fetch with prefetch to avoid N+1 queries in serializer

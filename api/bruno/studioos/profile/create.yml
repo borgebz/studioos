@@ -1,27 +1,27 @@
 info:
-  name: create
+  name: create-profile
   type: http
   seq: 2
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/accounts/profile/me/
-  headers:
-    - name: Authorization
-      value: Bearer XXX
+  url: "{{base_url}}/api/accounts/profile/me/"
   body:
     type: multipart-form
     data:
       - name: photo
         type: file
         value:
-          - ./profile/files/profile-photo.png
+          - ./files/profile-photo.jpeg
       - name: display_name
         type: text
         value: Jorge
       - name: bio
         type: text
-        value: cozinheiro
+        value: Bio text
+      - name: is_public
+        type: text
+        value: "true"
   auth: inherit
 
 settings:

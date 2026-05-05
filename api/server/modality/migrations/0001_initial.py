@@ -25,9 +25,6 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("studios", "0001_initial"),
-        # Ensure enrollments.0001 (FK to studios.modality) applies before studios.0002
-        # removes Modality from the studios migration graph.
-        ("enrollments", "0001_initial"),
     ]
 
     operations = [

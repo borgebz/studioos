@@ -3,6 +3,44 @@ from django.core.management.base import BaseCommand
 
 from accounts.models import Role
 
+EVENTS_PERMISSIONS_MANAGEMENT = [
+    "events.view_event",
+    "events.add_event",
+    "events.change_event",
+    "events.delete_event",
+    "events.can_view_unpublished_event",
+    "events.can_publish_event",
+    "events.can_schedule_event_publication",
+    "events.can_archive_event",
+    "events.can_cancel_event",
+    "events.can_complete_event",
+    "events.view_eventfile",
+    "events.add_eventfile",
+    "events.change_eventfile",
+    "events.delete_eventfile",
+    "events.view_eventpost",
+    "events.add_eventpost",
+    "events.change_eventpost",
+    "events.delete_eventpost",
+    "events.can_view_unpublished_eventpost",
+    "events.can_publish_eventpost",
+    "events.can_schedule_eventpost_publication",
+    "events.view_eventcomment",
+    "events.add_eventcomment",
+    "events.change_eventcomment",
+    "events.delete_eventcomment",
+    "events.can_moderate_eventcomment",
+    "events.view_eventinterest",
+    "events.add_eventinterest",
+    "events.change_eventinterest",
+    "events.delete_eventinterest",
+]
+
+MESSAGING_PERMISSIONS = [
+    "messaging.can_send_message",
+    "messaging.can_list_conversations",
+]
+
 COACHINGS_PERMISSIONS = [
     "coachings.view_teacheravailability",
     "coachings.add_teacheravailability",
@@ -20,13 +58,27 @@ COACHINGS_PERMISSIONS = [
     "coachings.change_coachingparticipant",
 ]
 
+CLASSES_PERMISSIONS = [
+    "classes.view_classe",
+    "classes.add_classe",
+    "classes.change_classe",
+    "classes.delete_classe",
+    "classes.can_manage_classes",
+    "classes.view_classemember",
+    "classes.add_classemember",
+    "classes.change_classemember",
+    "classes.delete_classemember",
+]
+
 ROLE_PERMISSIONS = {
     "direction": [
         # accounts
         "accounts.change_user",
         "accounts.view_user",
         "accounts.can_list_users",
+        "accounts.can_invite_user",
         "accounts.delete_user",
+        "accounts.view_role",
         "accounts.add_role",
         "accounts.change_role",
         "accounts.delete_role",
@@ -50,10 +102,25 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
+        *EVENTS_PERMISSIONS_MANAGEMENT,
+        *CLASSES_PERMISSIONS,
+        "billing.view_billingentry",
+        "billing.add_billingentry",
+        "billing.change_billingentry",
+        "billing.delete_billingentry",
+        "billing.can_cancel_billingentry",
+        "billing.view_fine",
+        "billing.add_fine",
+        "billing.change_fine",
+        "billing.delete_fine",
+        "billing.can_review_fine",
+        *MESSAGING_PERMISSIONS,
     ],
     "coordination": [
         "accounts.view_user",
+        "accounts.view_role",
         "accounts.can_list_users",
+        "accounts.can_invite_user",
         # enrollments
         "enrollments.can_review_enrollment",
         "enrollments.can_approve_enrollment",
@@ -73,12 +140,24 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         *COACHINGS_PERMISSIONS,
+        "coachings.can_schedule_coaching",
+        *EVENTS_PERMISSIONS_MANAGEMENT,
+        *CLASSES_PERMISSIONS,
+        "billing.view_billingentry",
+        "billing.can_cancel_billingentry",
+        "billing.view_fine",
+        "billing.can_review_fine",
+        *MESSAGING_PERMISSIONS,
     ],
     "collaborator": [
         "accounts.view_user",
         "studios.view_studio",
         "modality.view_modality",
         "coachings.view_coachingclass",
+        "coachings.view_coachingparticipant",
+        "classes.view_classe",
+        "classes.view_classemember",
+        *MESSAGING_PERMISSIONS,
     ],
     "teacher": [
         "accounts.can_teach",
@@ -94,6 +173,10 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
+        "coachings.view_coachingparticipant",
+        "classes.view_classe",
+        "classes.view_classemember",
+        *MESSAGING_PERMISSIONS,
     ],
     "teacher_external": [
         "accounts.can_teach",
@@ -109,12 +192,19 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
+        "coachings.view_coachingparticipant",
+        "classes.view_classe",
+        "classes.view_classemember",
+        *MESSAGING_PERMISSIONS,
     ],
     "parent": [
         "accounts.view_user",
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
         "studios.view_studio",
+        "coachings.view_coachingparticipant",
+        "coachings.can_confirm_dependent_coaching_attendance",
+        *MESSAGING_PERMISSIONS,
     ],
     "student": [
         "accounts.view_user",
@@ -122,6 +212,11 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
         "studios.view_studio",
+        "coachings.view_coachingparticipant",
+        "coachings.add_coachingparticipant",
+        "billing.view_billingentry",
+        "billing.view_fine",
+        *MESSAGING_PERMISSIONS,
     ],
 }
 

@@ -1,8 +1,9 @@
 import logging
 
 from django.db import IntegrityError, transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
+from core.exceptions import AppNotFound
 from modality.models import Modality
 from studios.models import Studio, StudioModality
 
@@ -17,7 +18,7 @@ def get_studio(*, pk: int) -> Studio:
     try:
         return Studio.objects.prefetch_related("modalities").get(pk=pk)
     except Studio.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("StudioNotFound")
 
 
 @transaction.atomic

@@ -8,7 +8,9 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 from tests.conftest import enrollment_submit_kwargs
 
@@ -18,8 +20,9 @@ class TestPeriods:
     def test_get_period_not_found(self):
         from enrollments import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.get_period(pk=9_999_999)
+        assert "EnrollmentPeriodNotFound" in str(exc.value.detail)
 
     def test_open_close_period(self, direction_user):
         from enrollments import services
@@ -201,6 +204,64 @@ class TestSubmitEnrollmentGuards:
             )
         assert "StudentAndParentEmailMustBeDifferent" in str(exc.value.detail)
 
+    def test_submit_student_age_below_modality_minimum(
+        self, open_enrollment_period, modality
+    ):
+        from datetime import datetime, timezone as tz
+
+        from enrollments import services
+
+        modality.min_age_months = 120
+        modality.max_age_months = None
+        modality.save(update_fields=["min_age_months", "max_age_months"])
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+        kwargs["enrollment_data"]["student_date_of_birth"] = date(2017, 6, 1)
+
+        fixed = datetime(2026, 6, 1, 12, 0, 0, tzinfo=tz.utc)
+        with patch("enrollments.services.timezone.now", return_value=fixed):
+            with pytest.raises(ValidationError) as exc:
+                services.submit_enrollment(**kwargs)
+        assert "StudentAgeBelowModalityMinimum" in str(exc.value.detail)
+
+    def test_submit_student_age_above_modality_maximum(
+        self, open_enrollment_period, modality
+    ):
+        from datetime import datetime, timezone as tz
+
+        from enrollments import services
+
+        modality.min_age_months = None
+        modality.max_age_months = 120
+        modality.save(update_fields=["min_age_months", "max_age_months"])
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+        kwargs["enrollment_data"]["student_date_of_birth"] = date(2014, 1, 1)
+
+        fixed = datetime(2026, 6, 1, 12, 0, 0, tzinfo=tz.utc)
+        with patch("enrollments.services.timezone.now", return_value=fixed):
+            with pytest.raises(ValidationError) as exc:
+                services.submit_enrollment(**kwargs)
+        assert "StudentAgeAboveModalityMaximum" in str(exc.value.detail)
+
+    def test_submit_student_age_within_modality_bounds(
+        self, open_enrollment_period, modality
+    ):
+        from datetime import datetime, timezone as tz
+
+        from enrollments import services
+
+        modality.min_age_months = 60
+        modality.max_age_months = 200
+        modality.save(update_fields=["min_age_months", "max_age_months"])
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality.pk)
+
+        fixed = datetime(2026, 6, 1, 12, 0, 0, tzinfo=tz.utc)
+        with patch("enrollments.services.timezone.now", return_value=fixed):
+            enrollment = services.submit_enrollment(**kwargs)
+        assert enrollment.pk is not None
+
     def test_submit_duplicate_enrollment(self, open_enrollment_period, modality):
         from enrollments import services
 
@@ -275,7 +336,7 @@ class TestStatusTransitions:
 
         e = self._submitted_enrollment(open_enrollment_period, modality)
         e = services.start_review(enrollment=e, updated_by=direction_user)
-        with patch("enrollments.services.send_activation_email"):
+        with patch("accounts.tasks.send_activation_email_task.delay"):
             e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
         assert e.status == EnrollmentStatus.APPROVED
 
@@ -286,7 +347,7 @@ class TestStatusTransitions:
 
         e = self._submitted_enrollment(open_enrollment_period, modality)
         with pytest.raises(ValidationError) as exc:
-            with patch("enrollments.services.send_activation_email"):
+            with patch("accounts.tasks.send_activation_email_task.delay"):
                 services.approve_enrollment(enrollment=e, updated_by=None)
         assert "InvalidStatusTransition" in str(exc.value.detail)
 
@@ -333,7 +394,7 @@ class TestStatusTransitions:
 
         e = self._submitted_enrollment(open_enrollment_period, modality)
         e = services.start_review(enrollment=e, updated_by=direction_user)
-        with patch("enrollments.services.send_activation_email"):
+        with patch("accounts.tasks.send_activation_email_task.delay"):
             e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
         with pytest.raises(ValidationError) as exc:
             services.cancel_enrollment(enrollment=e, updated_by=direction_user)
@@ -368,9 +429,9 @@ class TestApproveEnrollment:
             **enrollment_submit_kwargs(modality_id=modality.pk),
         )
         e = services.start_review(enrollment=e, updated_by=None)
-        with patch("enrollments.services.send_activation_email") as send_mail:
+        with patch("accounts.tasks.send_activation_email_task.delay") as send_task:
             services.approve_enrollment(enrollment=e, updated_by=None)
-        assert send_mail.call_count == 2
+        assert send_task.call_count == 2
 
     def test_renewal_updates_existing_users(
         self, open_enrollment_period, modality, direction_user
@@ -410,7 +471,7 @@ class TestApproveEnrollment:
         e = services.submit_enrollment(**kwargs)
         e = services.start_review(enrollment=e, updated_by=direction_user)
 
-        with patch("enrollments.services.send_activation_email"):
+        with patch("accounts.tasks.send_activation_email_task.delay"):
             services.approve_enrollment(enrollment=e, updated_by=direction_user)
         parent.refresh_from_db()
         assert parent.phone == "911111111"
@@ -434,12 +495,13 @@ class TestPayments:
             payment_type=PaymentType.ENROLLMENT_FEE,
             amount=Decimal("50.00"),
         )
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.confirm_payment_for_enrollment(
                 enrollment_pk=e.pk,
                 payment_pk=p.pk + 9999,
                 confirmed_by=None,
             )
+        assert "EnrollmentPaymentNotFound" in str(exc.value.detail)
 
     def test_confirm_payment(self, open_enrollment_period, modality, direction_user):
         from enrollments import services

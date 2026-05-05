@@ -16,6 +16,53 @@ variables:
   pythonVersion: "3.13"
   DJANGO_SETTINGS_MODULE: "config.settings"
   PYTHONUNBUFFERED: "1"
+  UV_CACHE_DIR: "$(Agent.HomeDirectory)/.cache/uv"
+  # Database — matches service container below
+  DB_ENGINE: "django.db.backends.postgresql"
+  DB_NAME: "studioos"
+  DB_USER: "studioos"
+  DB_PASSWORD: "studioos"
+  DB_HOST: "localhost"
+  DB_PORT: "5432"
+  # Redis — matches service container below
+  CELERY_BROKER_URL: "redis://localhost:6379/0"
+  CELERY_RESULT_BACKEND: "redis://localhost:6379/0"
+  # Email — console backend in CI, no real emails
+  EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+  EMAIL_HOST: "localhost"
+  EMAIL_PORT: "1025"
+  EMAIL_USE_TLS: "False"
+  EMAIL_HOST_USER: ""
+  EMAIL_HOST_PASSWORD: ""
+  DEFAULT_FROM_EMAIL: "noreply@studioos.dev"
+  # Django
+  SECRET_KEY: "ci-secret-key-not-used-in-production"
+  DEBUG: "False"
+  ALLOWED_HOSTS: "localhost,127.0.0.1"
+  CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+  FRONTEND_URL: "http://localhost:3000"
+  # JWT
+  JWT_ACCESS_TOKEN_LIFETIME_MINUTES: "60"
+  JWT_REFRESH_TOKEN_LIFETIME_DAYS: "7"
+  # Postgres service container vars (used by the postgres container itself)
+  POSTGRES_DB: "studioos"
+  POSTGRES_USER: "studioos"
+  POSTGRES_PASSWORD: "studioos"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    env:
+      POSTGRES_DB: $(POSTGRES_DB)
+      POSTGRES_USER: $(POSTGRES_USER)
+      POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
 
 steps:
 - task: UsePythonVersion@0
@@ -23,7 +70,6 @@ steps:
     versionSpec: $(pythonVersion)
   displayName: "Use Python $(pythonVersion)"
 
-# Install uv (fast Python package manager)
 - bash: |
     set -euxo pipefail
     curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -32,16 +78,14 @@ steps:
     uv --version
   displayName: "Install uv"
 
-# Cache uv downloads for faster CI
 - task: Cache@2
   inputs:
     key: 'uv | "$(Agent.OS)" | server/uv.lock'
     restoreKeys: |
       uv | "$(Agent.OS)"
-    path: ~/.cache/uv
+    path: "$(Agent.HomeDirectory)/.cache/uv"
   displayName: "Cache uv"
 
-# Install deps from lockfile (server/ has pyproject.toml and uv.lock)
 - bash: |
     set -euxo pipefail
     export PATH="$HOME/.cargo/bin:$PATH"
@@ -49,7 +93,6 @@ steps:
     uv sync --frozen
   displayName: "Install dependencies (uv sync --frozen)"
 
-# Format check
 - bash: |
     set -euxo pipefail
     export PATH="$HOME/.cargo/bin:$PATH"
@@ -57,7 +100,6 @@ steps:
     uv run black --check .
   displayName: "Format check (black)"
 
-# Lint
 - bash: |
     set -euxo pipefail
     export PATH="$HOME/.cargo/bin:$PATH"
@@ -65,26 +107,60 @@ steps:
     uv run ruff check .
   displayName: "Lint (ruff)"
 
-# Django "safe build" checks (ensures project imports & settings are valid)
 - bash: |
     set -euxo pipefail
     export PATH="$HOME/.cargo/bin:$PATH"
     cd server
     uv run python manage.py check
   displayName: "Django system check"
+  env:
+    DB_ENGINE: $(DB_ENGINE)
+    DB_NAME: $(DB_NAME)
+    DB_USER: $(DB_USER)
+    DB_PASSWORD: $(DB_PASSWORD)
+    DB_HOST: $(DB_HOST)
+    DB_PORT: $(DB_PORT)
 
-# Ensure no missing migrations (helps avoid broken deploys)
+- bash: |
+    set -euxo pipefail
+    export PATH="$HOME/.cargo/bin:$PATH"
+    cd server
+    uv run python manage.py migrate --noinput
+  displayName: "Run migrations"
+  env:
+    DB_ENGINE: $(DB_ENGINE)
+    DB_NAME: $(DB_NAME)
+    DB_USER: $(DB_USER)
+    DB_PASSWORD: $(DB_PASSWORD)
+    DB_HOST: $(DB_HOST)
+    DB_PORT: $(DB_PORT)
+
 - bash: |
     set -euxo pipefail
     export PATH="$HOME/.cargo/bin:$PATH"
     cd server
     uv run python manage.py makemigrations --check --dry-run
   displayName: "Check migrations are committed"
+  env:
+    DB_ENGINE: $(DB_ENGINE)
+    DB_NAME: $(DB_NAME)
+    DB_USER: $(DB_USER)
+    DB_PASSWORD: $(DB_PASSWORD)
+    DB_HOST: $(DB_HOST)
+    DB_PORT: $(DB_PORT)
 
-# Run tests
 - bash: |
     set -euxo pipefail
     export PATH="$HOME/.cargo/bin:$PATH"
     cd server
     uv run pytest -q
   displayName: "Run tests (pytest)"
+  env:
+    DB_ENGINE: $(DB_ENGINE)
+    DB_NAME: $(DB_NAME)
+    DB_USER: $(DB_USER)
+    DB_PASSWORD: $(DB_PASSWORD)
+    DB_HOST: $(DB_HOST)
+    DB_PORT: $(DB_PORT)
+    CELERY_BROKER_URL: $(CELERY_BROKER_URL)
+    CELERY_RESULT_BACKEND: $(CELERY_RESULT_BACKEND)

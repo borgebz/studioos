@@ -1,0 +1,48 @@
+{% extends "emails/base.html" %}
+{% block title %}Convite — StudioOS{% endblock %}
+{% block preheader %}Foi convidado(a) para se registar na plataforma StudioOS.{% endblock %}
+
+{% block content %}
+  <h1 style="margin:0 0 16px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:1.3; color:#1a8280;" class="ea-h1">
+    Bem-vindo(a) à StudioOS
+  </h1>
+  <p style="margin:0 0 20px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; color:#2a2a3a;">
+    Foi convidado(a) para se registar na plataforma StudioOS. Complete o seu registo através do botão abaixo.
+  </p>
+
+  {# Invite details card #}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f6f6fa; border:1px solid #e6e6ee; border-radius:6px; margin:0 0 24px 0;">
+    <tr>
+      <td style="padding:16px 20px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td width="90" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Email</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ invitee_email }}</td>
+          </tr>
+          <tr>
+            <td width="90" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Papel</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ role_display }}</td>
+          </tr>
+          <tr>
+            <td width="90" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Validade</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ expires_days }} dias</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+    <tr>
+      <td class="ea-btn-cell" style="background-color:#1a8280; border-radius:6px;">
+        <a href="{{ onboarding_url }}" target="_blank" class="ea-btn" style="display:inline-block; padding:14px 28px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:600; letter-spacing:0.02em; color:#ffffff; text-decoration:none; border-radius:6px;">
+          Completar Registo
+        </a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.5; color:#9a9aa8;">
+    Se não esperava este convite, pode ignorar este email.
+  </p>
+{% endblock %}

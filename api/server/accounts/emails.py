@@ -11,6 +11,29 @@ from core.emails import send_templated_email
 account_activation_token = PasswordResetTokenGenerator()
 
 
+def send_invite_email(*, user, token):
+    """
+    Invite email with onboarding link (Redis UUID token, 7-day TTL managed by the caller/store).
+    """
+    onboarding_url = f"{settings.FRONTEND_URL}/onboard/{token}/"
+
+    group = user.groups.select_related("role").first()
+    role_display = group.name if group is not None else ""
+
+    send_templated_email(
+        to=user.email,
+        subject="StudioOS",
+        template_name="invite",
+        language=user.language,
+        context={
+            "invitee_email": user.email,
+            "role_display": role_display,
+            "onboarding_url": onboarding_url,
+            "expires_days": 7,
+        },
+    )
+
+
 def send_activation_email(user):
     """
     Send an account activation email to a newly created user.

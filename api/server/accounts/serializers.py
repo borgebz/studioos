@@ -3,7 +3,7 @@ from pathlib import Path
 from drf_spectacular.utils import extend_schema_field, inline_serializer
 from rest_framework import serializers
 
-from accounts.models import Profile, User
+from accounts.models import Language, Profile, User
 
 UserResponseRoleOutput = inline_serializer(
     name="UserResponseRoleOutput",
@@ -23,6 +23,40 @@ MeEndpointProfileOutput = inline_serializer(
         "photo_url": serializers.CharField(allow_null=True, required=False),
     },
 )
+
+
+class UserCoreUpdateSerializer(serializers.Serializer):
+    """Partial update of principal user fields (direction / ``accounts.change_user``)."""
+
+    first_name = serializers.CharField(max_length=150, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+    email = serializers.EmailField(required=False)
+    phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    phone_country_code = serializers.CharField(
+        max_length=5, required=False, allow_blank=True
+    )
+    language = serializers.ChoiceField(choices=Language.choices, required=False)
+    parent_id = serializers.IntegerField(required=False, allow_null=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    postal_code = serializers.CharField(max_length=20, required=False, allow_blank=True)
+
+    def validate_parent_id(self, value):
+        if value is None:
+            return None
+        user_pk = self.context.get("user_pk")
+        if user_pk is not None and value == user_pk:
+            raise serializers.ValidationError("ParentCannotBeSelf")
+        if not User.objects.filter(pk=value).exists():
+            raise serializers.ValidationError("ParentNotFound")
+        return value
+
+    def validate_email(self, value):
+        pk = self.context.get("user_pk")
+        if pk is None:
+            raise serializers.ValidationError("MissingUserContext")
+        if User.all_objects.filter(email=value.lower()).exclude(pk=pk).exists():
+            raise serializers.ValidationError("EmailAlreadyExists")
+        return value.lower()
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -173,3 +207,73 @@ class ActivateAccountSerializer(serializers.Serializer):
     uid = serializers.CharField()
     token = serializers.CharField()
     password = serializers.CharField(min_length=8)
+
+
+class InviteSingleSerializer(serializers.Serializer):
+    """Single invite: email + role code (see ``accounts.Role`` / seed_roles)."""
+
+    email = serializers.EmailField()
+    role = serializers.CharField(max_length=50)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class CompleteOnboardingSerializer(serializers.Serializer):
+    """Public onboarding completion after invite."""
+
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    password = serializers.CharField(min_length=8)
+    phone = serializers.CharField(max_length=20)
+    phone_country_code = serializers.CharField(max_length=5)
+    date_of_birth = serializers.DateField()
+
+
+OnboardingPreviewInner = inline_serializer(
+    name="OnboardingPreviewInner",
+    fields={
+        "email": serializers.EmailField(),
+        "role": serializers.CharField(),
+    },
+)
+
+
+OnboardingPreviewResponse = inline_serializer(
+    name="OnboardingPreviewWrapper",
+    fields={
+        "data": OnboardingPreviewInner,
+    },
+)
+
+
+OnboardingTokensInner = inline_serializer(
+    name="OnboardingTokensInner",
+    fields={
+        "access": serializers.CharField(),
+        "refresh": serializers.CharField(),
+    },
+)
+
+
+OnboardingCompleteResponse = inline_serializer(
+    name="OnboardingCompleteWrapper",
+    fields={
+        "data": OnboardingTokensInner,
+    },
+)
+
+
+class BulkInviteFileSerializer(serializers.Serializer):
+    """Multipart upload for bulk invite spreadsheet."""
+
+    file = serializers.FileField()
+
+    def validate_file(self, value):
+        ext = Path(value.name).suffix.lower()
+        if ext != ".xlsx":
+            raise serializers.ValidationError("BulkInviteFileInvalid")
+        max_size = 10 * 1024 * 1024
+        if value.size > max_size:
+            raise serializers.ValidationError("BulkInviteFileInvalid")
+        return value
