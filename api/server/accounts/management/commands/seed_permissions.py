@@ -36,6 +36,11 @@ EVENTS_PERMISSIONS_MANAGEMENT = [
     "events.delete_eventinterest",
 ]
 
+MESSAGING_PERMISSIONS = [
+    "messaging.can_send_message",
+    "messaging.can_list_conversations",
+]
+
 COACHINGS_PERMISSIONS = [
     "coachings.view_teacheravailability",
     "coachings.add_teacheravailability",
@@ -109,6 +114,7 @@ ROLE_PERMISSIONS = {
         "billing.change_fine",
         "billing.delete_fine",
         "billing.can_review_fine",
+        *MESSAGING_PERMISSIONS,
     ],
     "coordination": [
         "accounts.view_user",
@@ -141,6 +147,7 @@ ROLE_PERMISSIONS = {
         "billing.can_cancel_billingentry",
         "billing.view_fine",
         "billing.can_review_fine",
+        *MESSAGING_PERMISSIONS,
     ],
     "collaborator": [
         "accounts.view_user",
@@ -150,6 +157,7 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingparticipant",
         "classes.view_classe",
         "classes.view_classemember",
+        *MESSAGING_PERMISSIONS,
     ],
     "teacher": [
         "accounts.can_teach",
@@ -168,6 +176,7 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingparticipant",
         "classes.view_classe",
         "classes.view_classemember",
+        *MESSAGING_PERMISSIONS,
     ],
     "teacher_external": [
         "accounts.can_teach",
@@ -186,6 +195,7 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingparticipant",
         "classes.view_classe",
         "classes.view_classemember",
+        *MESSAGING_PERMISSIONS,
     ],
     "parent": [
         "accounts.view_user",
@@ -194,6 +204,7 @@ ROLE_PERMISSIONS = {
         "studios.view_studio",
         "coachings.view_coachingparticipant",
         "coachings.can_confirm_dependent_coaching_attendance",
+        *MESSAGING_PERMISSIONS,
     ],
     "student": [
         "accounts.view_user",
@@ -205,6 +216,7 @@ ROLE_PERMISSIONS = {
         "coachings.add_coachingparticipant",
         "billing.view_billingentry",
         "billing.view_fine",
+        *MESSAGING_PERMISSIONS,
     ],
 }
 

@@ -64,7 +64,6 @@ class User(AuditMixin, SoftDeleteMixin, AbstractUser):
                 "can_participate_in_coaching",
                 "Can be enrolled as a participant in coaching classes",
             ),
-            ("view_role", "Can view roles"),
         ]
 
     @property

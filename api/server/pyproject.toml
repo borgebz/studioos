@@ -23,6 +23,9 @@ dependencies = [
     "flower>=2.0.1",
     "openpyxl>=3.1.5",
     "fakeredis>=2.35.1",
+    "channels>=4.2.0",
+    "channels-redis>=4.2.0",
+    "daphne>=4.1.2",
 ]
 
 [tool.pytest.ini_options]
