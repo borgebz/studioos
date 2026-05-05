@@ -1,0 +1,15 @@
+info:
+  name: onboard-preview
+  type: http
+  seq: 9
+
+http:
+  method: get
+  url: "{{base_url}}/api/accounts/onboard/00000000-0000-0000-0000-000000000001/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

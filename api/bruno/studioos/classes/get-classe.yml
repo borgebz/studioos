@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/api/classes/1/
+  url: "{{base_url}}/api/classes/1/"
   auth: inherit
 
 settings:

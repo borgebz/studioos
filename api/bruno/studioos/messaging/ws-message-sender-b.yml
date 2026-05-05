@@ -1,0 +1,17 @@
+info:
+  name: ws-message-sender-b
+  type: websocket
+  seq: 6
+
+websocket:
+  url: ws://{{base_host}}/ws/conversations/1/?token={{access_token}}
+  message:
+    type: json
+    data: |-
+      {
+          "body": "como estas"
+      }
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0

@@ -5,10 +5,7 @@ info:
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/accounts/activate/
-  headers:
-    - name: Content-Type
-      value: application/json
+  url: "{{base_url}}/api/accounts/activate/"
   body:
     type: json
     data: |-

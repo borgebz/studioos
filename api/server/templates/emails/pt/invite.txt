@@ -1,0 +1,16 @@
+Olá,
+
+Foi convidado(a) para a StudioOS com o papel: {{ role_display }}.
+
+Email da conta: {{ invitee_email }}
+
+Conclua o registo através do link abaixo (válido por {{ expires_days }} dias, uso único):
+
+{{ onboarding_url }}
+
+Após {{ expires_days }} dias o link deixa de funcionar; peça um novo convite à direção ou coordenação.
+
+Se não esperava este convite, pode ignorar este email.
+
+Cumprimentos,
+StudioOS — Escola de Dança

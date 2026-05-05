@@ -25,6 +25,9 @@ request:
         if (path.includes("/auth/login")) {
           return;
         }
+        if (path.includes("/onboard/")) {
+          return;
+        }
 
         const baseUrl =
           bru.getEnvVar("base_url") ||

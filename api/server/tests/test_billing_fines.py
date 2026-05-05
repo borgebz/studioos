@@ -7,7 +7,9 @@ import pytest
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 
 def _dt(hours=1):
@@ -441,5 +443,6 @@ class TestListAndGetFineScoping:
 
         fine, _ = self._seed_fine(scheduled_coaching, direction_user, "scope_c")
         intruder = _make_student("scope_intruder")
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             billing_services.get_fine_for_request(pk=fine.pk, requesting_user=intruder)
+        assert "FineNotFound" in str(exc.value.detail)

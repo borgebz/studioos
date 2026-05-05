@@ -7,9 +7,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
-from accounts.services import get_teacher_user_by_pk, get_user_by_pk
+from accounts.services import (
+    assert_user_can_participate_in_coaching,
+    assert_user_ids_can_participate_in_coaching,
+    get_teacher_user_by_pk,
+    get_user_by_pk,
+)
 from core.exceptions import AppNotFound
 from coachings.models import (
     CoachingClass,
@@ -179,6 +184,8 @@ def _bulk_roster_direct_coordination(*, coaching, schedule_flag, created_by, cla
     if max_cap is not None and len(student_ids) > max_cap:
         raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
 
+    assert_user_ids_can_participate_in_coaching(user_ids=student_ids)
+
     if schedule_flag:
         row_status = CoachingParticipantStatus.ACTIVE
         invited_by_staff = False
@@ -218,6 +225,76 @@ def _bulk_roster_direct_coordination(*, coaching, schedule_flag, created_by, cla
         except IntegrityError as exc:
             logger.warning(
                 "Bulk roster integrity failure coaching=%s student_id=%s",
+                coaching.pk,
+                participant.student_id,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["ParticipantAlreadyEnrolled"],
+                    "student_id": ["ParticipantAlreadyEnrolled"],
+                }
+            ) from exc
+
+
+def _bulk_roster_coaching_request(*, coaching, requesting_user, classe_id):
+    """
+    Fill roster for a student-requested coaching from a classe's members.
+
+    The requesting user is intentionally skipped here — they are added separately
+    by :func:`create_coaching_request` via :func:`add_participant` (which gives them
+    ``PENDING`` status). All remaining class members are added as ``INVITED`` with
+    ``invited_by_staff=False`` so that each invited student must individually accept.
+
+    Runs inside the caller's ``atomic`` block; any failure rolls back the whole request.
+    """
+    from classes.services import get_student_ids_for_classe
+
+    student_ids = get_student_ids_for_classe(classe_id=classe_id)
+    if not student_ids:
+        raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+
+    max_cap = coaching.modality.max_capacity
+    if max_cap is not None and len(student_ids) > max_cap:
+        raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
+
+    assert_user_ids_can_participate_in_coaching(user_ids=student_ids)
+
+    pending = []
+    for student_id in student_ids:
+        # The requesting user will be added as PENDING by the caller — skip here to avoid
+        # a duplicate row and let the existing add_participant call handle their status.
+        if student_id == requesting_user.pk:
+            continue
+        participant = CoachingParticipant(
+            coaching_class=coaching,
+            student_id=student_id,
+            status=CoachingParticipantStatus.INVITED,
+            invited_by_staff=False,
+            created_by=requesting_user,
+        )
+        try:
+            participant.full_clean()
+        except DjangoValidationError as exc:
+            logger.warning(
+                "Bulk request roster model validation failed coaching=%s student_id=%s detail=%s",
+                coaching.pk,
+                student_id,
+                getattr(exc, "error_dict", None) or exc,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["BulkRosterParticipantInvalid"],
+                    "student_id": ["BulkRosterParticipantInvalid"],
+                }
+            ) from exc
+        pending.append(participant)
+
+    for participant in pending:
+        try:
+            participant.save()
+        except IntegrityError as exc:
+            logger.warning(
+                "Bulk request roster integrity failure coaching=%s student_id=%s",
                 coaching.pk,
                 participant.student_id,
             )
@@ -467,7 +544,7 @@ def create_teacher_availability(*, teacher_id, requesting_user, **data):
         try:
             modality = Modality.objects.get(pk=modality_id)
         except Modality.DoesNotExist:
-            raise NotFound()
+            raise AppNotFound("ModalityNotFound")
 
     notes = data.get("notes", "")
     _check_availability_overlap(
@@ -498,7 +575,7 @@ def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
     try:
         block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
     except TeacherAvailability.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("TeacherAvailabilityNotFound")
 
     modality_id = data.pop("modality_id", "__unset__")
     if modality_id != "__unset__":
@@ -506,7 +583,7 @@ def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
             try:
                 block.modality = Modality.objects.get(pk=modality_id)
             except Modality.DoesNotExist:
-                raise NotFound()
+                raise AppNotFound("ModalityNotFound")
         else:
             block.modality = None
 
@@ -539,7 +616,7 @@ def delete_teacher_availability(*, teacher_id, pk, requesting_user):
     try:
         block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
     except TeacherAvailability.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("TeacherAvailabilityNotFound")
     block.delete(deleted_by=requesting_user)
     logger.info("TeacherAvailability %s deleted by user=%s", pk, requesting_user.id)
 
@@ -548,7 +625,7 @@ def get_coaching(*, pk):
     try:
         return _coaching_detail_queryset().get(pk=pk)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
 
 def _resolve_coaching_from_pk_or_instance(*, pk, coaching):
@@ -574,7 +651,7 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.status not in _EDITABLE_COACHING_STATUSES:
         raise ValidationError({"messages": ["CoachingNotEditable"]})
@@ -597,7 +674,7 @@ def update_coaching(*, pk, requesting_user, allow_teacher_change, updates):
         try:
             effective_modality = Modality.objects.get(pk=updates["modality_id"])
         except Modality.DoesNotExist:
-            raise NotFound()
+            raise AppNotFound("ModalityNotFound")
 
     if "studio_id" in updates:
         new_studio_id = updates["studio_id"]
@@ -704,6 +781,7 @@ def create_coaching_request(
     requesting_user,
     notes="",
     studio_id=None,
+    classe_id=None,
 ):
     _validate_datetime_range(start=start_datetime, end=end_datetime)
     _get_teacher_user(teacher_id=teacher_id)
@@ -726,6 +804,15 @@ def create_coaching_request(
             end_datetime=end_datetime,
         )
 
+    classe_row = None
+    if classe_id is not None:
+        from classes.models import Classe
+
+        try:
+            classe_row = Classe.objects.get(pk=classe_id)
+        except Classe.DoesNotExist:
+            raise AppNotFound("ClasseNotFound")
+
     coaching = CoachingClass(
         teacher_id=teacher_id,
         modality=modality,
@@ -736,19 +823,31 @@ def create_coaching_request(
         status=CoachingStatus.REQUESTED,
         requested_by=requesting_user,
         created_by=requesting_user,
+        classe=classe_row,
     )
     coaching.full_clean()
     coaching.save()
     logger.info(
-        "CoachingClass requested by user=%s teacher=%s",
+        "CoachingClass requested by user=%s teacher=%s classe=%s",
         requesting_user.id,
         teacher_id,
+        classe_id,
     )
+
+    # Add the requesting user as PENDING participant (existing behaviour).
     if requesting_user.has_perm("accounts.can_participate_in_coaching"):
         add_participant(
             coaching_class_id=coaching.pk,
             student_id=requesting_user.pk,
             requesting_user=requesting_user,
+        )
+
+    # When a classe is provided, bulk-add the remaining class members as INVITED.
+    if classe_id is not None:
+        _bulk_roster_coaching_request(
+            coaching=coaching,
+            requesting_user=requesting_user,
+            classe_id=classe_id,
         )
 
     from coachings.tasks import notify_new_coaching_request
@@ -936,14 +1035,14 @@ def approve_coaching(*, pk, studio_id, total_price, user):
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     _validate_status_transition(coaching, CoachingStatus.SCHEDULED)
 
     try:
         studio = Studio.objects.get(pk=studio_id)
     except Studio.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("StudioNotFound")
 
     _assert_studio_modality_compatible(studio=studio, modality=coaching.modality)
     _ensure_scheduled_slot_free(
@@ -995,7 +1094,7 @@ def complete_coaching(*, pk, user):
             .get(pk=pk)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
     _validate_status_transition(coaching, CoachingStatus.COMPLETED)
 
     # Explicit gating: every roster row that counts toward completion must be
@@ -1081,7 +1180,7 @@ def teacher_confirm_coaching(*, pk, user, teacher_notes="", now=None):
     try:
         coaching = CoachingClass.objects.select_for_update().get(pk=pk)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.teacher_id != user.id:
         raise ValidationError({"messages": ["NotTheAssignedTeacher"]})
@@ -1270,8 +1369,7 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
         raise ValidationError({"messages": ["CoachingNotOpenForParticipants"]})
 
     student = get_user_by_pk(pk=student_id)
-    if not student.has_perm("accounts.can_participate_in_coaching"):
-        raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
+    assert_user_can_participate_in_coaching(user=student)
 
     existing = (
         CoachingParticipant.objects.select_for_update()
@@ -1365,7 +1463,7 @@ def student_accept_coaching_invitation(*, coaching_class_id, user):
             .get(pk=coaching_class_id)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     if coaching.status in (
         CoachingStatus.COMPLETED,
@@ -1448,7 +1546,7 @@ def list_participants(*, coaching_class_id):
     try:
         CoachingClass.objects.get(pk=coaching_class_id)
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
     return CoachingParticipant.objects.filter(
         coaching_class_id=coaching_class_id
     ).select_related("student")
@@ -1474,7 +1572,7 @@ def cancel_coaching_participant(
             .get(pk=coaching_class_id)
         )
     except CoachingClass.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("CoachingNotFound")
 
     try:
         participant = CoachingParticipant.objects.select_for_update().get(

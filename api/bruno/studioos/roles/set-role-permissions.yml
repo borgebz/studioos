@@ -1,0 +1,21 @@
+info:
+  name: set-role-permissions
+  type: http
+  seq: 7
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/roles/coordination/permissions/"
+  body:
+    type: json
+    data: |-
+      {
+        "permission_ids": []
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

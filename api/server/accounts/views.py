@@ -1,28 +1,38 @@
 import logging
 from rest_framework import status, serializers
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from core.decorators import require_perm
 from .serializers import (
+    ActivateAccountSerializer,
+    BulkInviteFileSerializer,
+    CompleteOnboardingSerializer,
     CreateUserSerializer,
+    InviteSingleSerializer,
+    LoginSerializer,
+    MeSerializer,
+    OnboardingCompleteResponse,
+    OnboardingPreviewResponse,
+    ProfileSerializer,
     TeacherSummarySerializer,
+    TokenPairSerializer,
     UserCoreUpdateSerializer,
     UserResponseSerializer,
-    MeSerializer,
-    ProfileSerializer,
-    LoginSerializer,
-    TokenPairSerializer,
-    ActivateAccountSerializer,
 )
 from .services import (
     activate_account,
+    bulk_invite_users,
+    complete_onboarding,
     create_profile_for_user,
     create_user,
+    get_onboarding_preview,
     get_profile_for_user,
+    invite_user,
     list_teachers,
     list_users,
+    resend_invite,
     update_profile_for_user,
     update_user_core_fields,
 )
@@ -298,3 +308,129 @@ class ActivateAccountView(APIView):
 
         activate_account(**serializer.validated_data)
         return Response({"message": "AccountActivated"})
+
+
+BulkInviteUsersListSchema = inline_serializer(
+    name="BulkInviteUsersListPayload",
+    fields={
+        "users": UserResponseSerializer(many=True),
+        "count": serializers.IntegerField(),
+    },
+)
+
+
+BulkInviteUsersWrapperSchema = inline_serializer(
+    name="BulkInviteUsersWrapper",
+    fields={
+        "data": BulkInviteUsersListSchema,
+    },
+)
+
+
+class InviteCreateView(APIView):
+    """
+    POST /api/accounts/invites/ — invite a single user (inactive until onboarding).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=InviteSingleSerializer,
+        responses={
+            201: UserResponseSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.can_invite_user")
+    def post(self, request):
+        serializer = InviteSingleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = invite_user(
+            email=serializer.validated_data["email"],
+            role_code=serializer.validated_data["role"],
+            created_by=request.user,
+        )
+        return Response(
+            UserResponseSerializer(user).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class BulkInviteCreateView(APIView):
+    """
+    POST /api/accounts/invites/bulk/ — bulk invite from an Excel file.
+    """
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    @extend_schema(
+        request=BulkInviteFileSerializer,
+        responses={
+            201: BulkInviteUsersWrapperSchema,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.can_invite_user")
+    def post(self, request):
+        serializer = BulkInviteFileSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        users = bulk_invite_users(
+            inviter=request.user,
+            uploaded_file=serializer.validated_data["file"],
+        )
+        payload = UserResponseSerializer(users, many=True).data
+        return Response(
+            {"data": {"users": payload, "count": len(users)}},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class OnboardingTokenView(APIView):
+    """
+    GET / POST /api/accounts/onboard/{token}/ — validate token / complete onboarding (public).
+    """
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        responses={
+            200: OnboardingPreviewResponse,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def get(self, request, token):
+        preview = get_onboarding_preview(token=str(token))
+        return Response({"data": preview})
+
+    @extend_schema(
+        request=CompleteOnboardingSerializer,
+        responses={
+            200: OnboardingCompleteResponse,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def post(self, request, token):
+        serializer = CompleteOnboardingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        tokens = complete_onboarding(token=str(token), **serializer.validated_data)
+        return Response({"data": tokens})
+
+
+class ResendInviteView(APIView):
+    """
+    POST /api/accounts/users/{pk}/resend-invite/
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: None,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.can_invite_user")
+    def post(self, request, pk):
+        resend_invite(user_pk=int(pk), requesting_user=request.user)
+        return Response(status=status.HTTP_200_OK)

@@ -1,11 +1,11 @@
 info:
-  name: edit-coaching
+  name: patch-coaching
   type: http
   seq: 4
 
 http:
-  method: PATCH
-  url: http://127.0.0.1:8000/api/coachings/17/
+  method: patch
+  url: "{{base_url}}/api/coachings/17/"
   body:
     type: json
     data: |-
@@ -13,7 +13,7 @@ http:
         "teacher_id": 6,
         "studio_id": 1,
         "total_price": "100.00",
-        "start_datetime": "2026-04-27T22:00:00:00Z",
+        "start_datetime": "2026-04-27T22:00:00Z",
         "end_datetime": "2026-04-27T22:50:00Z",
         "notes": "patched coaching",
         "modality_id": 1

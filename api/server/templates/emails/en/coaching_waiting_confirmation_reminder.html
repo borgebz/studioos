@@ -1,100 +1,77 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pending Class Confirmation</title>
-  </head>
-  <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f4f4;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
-      style="max-width:600px;margin:40px auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+{% extends "emails/base.html" %}
+{% block title %}Pending class confirmation — StudioOS{% endblock %}
+{% block preheader %}Your {{ modality }} class on {{ coaching_date }} is awaiting confirmation.{% endblock %}
 
-      <!-- Header -->
-      <tr>
-        <td style="background-color:#1a1a2e;padding:30px 40px;text-align:center;">
-          <h1 style="color:#ffffff;margin:0;font-size:24px;">StudioOS</h1>
-          <p style="color:#cccccc;margin:8px 0 0;font-size:14px;">Dance School</p>
-        </td>
-      </tr>
+{% block banner %}
+  <tr>
+    <td style="padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fff6e0;">
+        <tr>
+          <td class="ea-pad" style="padding:18px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="28" style="width:28px; height:28px; background-color:#9a6b00; border-radius:50%; text-align:center; vertical-align:middle; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#ffffff; line-height:28px; mso-line-height-rule:exactly;">!</td>
+                <td style="width:12px; line-height:1px; font-size:0;">&nbsp;</td>
+                <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; font-weight:600; line-height:1.4; color:#6e4d00;">
+                  {% if is_final_reminder %}Final reminder — confirm your class{% else %}Class confirmation pending{% endif %}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+{% endblock %}
 
-      <!-- Alert banner -->
-      <tr>
-        <td style="background-color:#fff8e1;padding:12px 40px;border-bottom:1px solid #ffe082;">
-          <p style="margin:0;color:#f57f17;font-size:14px;font-weight:bold;">
-            ⏳ Pending class confirmation
-          </p>
-        </td>
-      </tr>
+{% block content %}
+  <h1 style="margin:0 0 12px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:1.3; color:#1a8280;" class="ea-h1">
+    Hello, {{ teacher.first_name }}
+  </h1>
+  <p style="margin:0 0 20px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; color:#2a2a3a;">
+    Your <strong style="color:#1a8280;">{{ modality }}</strong> class scheduled for <strong style="color:#1a8280;">{{ coaching_date }}</strong> has not yet been confirmed. Please log in and confirm whether the class took place, and mark participant attendance.
+  </p>
 
-      <!-- Body -->
-      <tr>
-        <td style="padding:40px;">
-          <h2 style="color:#1a1a2e;margin:0 0 16px;font-size:20px;">
-            Hello {{ teacher.first_name }},
-          </h2>
-
-          <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 24px;">
-            Your <strong>{{ modality }}</strong> class scheduled for
-            <strong>{{ coaching_date }}</strong> has not been confirmed yet.
-          </p>
-
-          <!-- Coaching details -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
-            style="background-color:#f8f8f8;border-radius:6px;padding:0;margin:0 0 24px;">
-            <tr>
-              <td style="padding:20px;">
-                <p style="margin:0 0 8px;color:#666666;font-size:14px;">
-                  <strong style="color:#1a1a2e;">Modality:</strong> {{ modality }}
-                </p>
-                <p style="margin:0 0 8px;color:#666666;font-size:14px;">
-                  <strong style="color:#1a1a2e;">Date and time:</strong> {{ coaching_date }}
-                </p>
-                {% if studio %}
-                <p style="margin:0;color:#666666;font-size:14px;">
-                  <strong style="color:#1a1a2e;">Studio:</strong> {{ studio }}
-                </p>
-                {% endif %}
-              </td>
-            </tr>
-          </table>
-
-          <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 24px;">
-            Please access the platform and confirm whether the class took place,
-            and mark attendance for each participant.
-          </p>
-
-          <!-- CTA -->
-          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto 24px;">
-            <tr>
-              <td style="border-radius:6px;background-color:#1a1a2e;">
-                <a href="{{ coaching_url }}"
-                  style="display:inline-block;padding:14px 32px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;">
-                  Confirm Class
-                </a>
-              </td>
-            </tr>
-          </table>
-
-          {% if is_final_reminder %}
-          <p style="color:#c62828;font-size:14px;line-height:1.5;margin:0 0 16px;padding:12px;background-color:#ffebee;border-radius:6px;">
-            ⚠️ <strong>Final reminder.</strong> If you do not confirm shortly, coordination will be notified to resolve the situation manually.
-          </p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f6f6fa; border:1px solid #e6e6ee; border-radius:6px; margin:0 0 24px 0;">
+    <tr>
+      <td style="padding:16px 20px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td width="110" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Modality</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ modality }}</td>
+          </tr>
+          <tr>
+            <td width="110" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Date &amp; time</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ coaching_date }}</td>
+          </tr>
+          {% if studio %}
+          <tr>
+            <td width="110" style="padding:6px 0; font-size:13px; color:#5b5b6b; vertical-align:top;">Studio</td>
+            <td style="padding:6px 0; font-size:14px; color:#2a2a3a; font-weight:500;">{{ studio }}</td>
+          </tr>
           {% endif %}
+        </table>
+      </td>
+    </tr>
+  </table>
 
-          <p style="color:#999999;font-size:13px;line-height:1.5;margin:0;">
-            If you have already confirmed the class, you can ignore this email.
-          </p>
-        </td>
-      </tr>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+    <tr>
+      <td class="ea-btn-cell" style="background-color:#1a8280; border-radius:6px;">
+        <a href="{{ coaching_url }}" target="_blank" class="ea-btn" style="display:inline-block; padding:14px 28px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:600; letter-spacing:0.02em; color:#ffffff; text-decoration:none; border-radius:6px;">
+          Confirm class
+        </a>
+      </td>
+    </tr>
+  </table>
 
-      <!-- Footer -->
-      <tr>
-        <td style="background-color:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #eeeeee;">
-          <p style="color:#999999;font-size:12px;margin:0;">
-            StudioOS — Dance School
-          </p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
+  {% if is_final_reminder %}
+  <p style="margin:16px 0 0 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.5; color:#6e4d00;">
+    If you do not confirm soon, the coordination team will be notified to resolve this manually.
+  </p>
+  {% endif %}
+{% endblock %}
+
+{% block footer_extra %}
+  You received this email because you have an account on the StudioOS platform.
+{% endblock %}

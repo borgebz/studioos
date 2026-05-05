@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/api/billing/fines/
+  url: "{{base_url}}/api/billing/fines/"
   params:
     - name: student_id
       value: "1"

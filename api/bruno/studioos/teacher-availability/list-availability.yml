@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/api/coachings/teachers/6/availability/?date_from=2026-04-01T00:00:00Z&date_to=2026-04-10T23:59:59Z
+  url: "{{base_url}}/api/coachings/teachers/6/availability/?date_from=2026-04-01T00:00:00Z&date_to=2026-04-10T23:59:59Z"
   params:
     - name: date_from
       value: 2026-04-01T00:00:00Z

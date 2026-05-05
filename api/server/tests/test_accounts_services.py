@@ -5,7 +5,9 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 
 @pytest.mark.django_db
@@ -80,12 +82,13 @@ class TestUpdateUserCoreFields:
     def test_not_found(self, direction_user):
         from accounts import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.update_user_core_fields(
                 pk=999_999,
                 updated_by=direction_user,
                 first_name="X",
             )
+        assert "UserNotFound" in str(exc.value.detail)
 
     def test_updates_address_postal_parent(
         self, direction_user, student_user, teacher_user
@@ -151,6 +154,89 @@ class TestProfile:
             bio="Dancer",
         )
         assert profile.bio == "Dancer"
+
+
+@pytest.mark.django_db
+class TestUpdateProfilePhotoDedup:
+    """SHA-256 deduplication for ``update_profile_for_user`` (``photo`` field)."""
+
+    @staticmethod
+    def _png_bytes(rgb):
+        from io import BytesIO
+
+        from PIL import Image
+
+        buf = BytesIO()
+        Image.new("RGB", (1, 1), color=rgb).save(buf, format="PNG")
+        return buf.getvalue()
+
+    def test_same_file_keeps_stored_path(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from accounts import services
+
+        payload = self._png_bytes((200, 10, 30))
+        profile = services.create_profile_for_user(
+            user=direction_user,
+            created_by=direction_user,
+            display_name="HasPhoto",
+            photo=SimpleUploadedFile("first.png", payload, content_type="image/png"),
+        )
+        path_before = profile.photo.name
+
+        services.update_profile_for_user(
+            profile=profile,
+            updated_by=direction_user,
+            photo=SimpleUploadedFile(
+                "other_name.png", payload, content_type="image/png"
+            ),
+        )
+        profile.refresh_from_db()
+        assert profile.photo.name == path_before
+
+    def test_different_file_updates_path(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from accounts import services
+
+        red = self._png_bytes((255, 0, 0))
+        blue = self._png_bytes((0, 0, 255))
+        profile = services.create_profile_for_user(
+            user=direction_user,
+            created_by=direction_user,
+            display_name="HasPhoto",
+            photo=SimpleUploadedFile("a.png", red, content_type="image/png"),
+        )
+        path_before = profile.photo.name
+
+        services.update_profile_for_user(
+            profile=profile,
+            updated_by=direction_user,
+            photo=SimpleUploadedFile("b.png", blue, content_type="image/png"),
+        )
+        profile.refresh_from_db()
+        assert profile.photo.name != path_before
+
+    def test_no_existing_file_always_saves(self, direction_user):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        from accounts import services
+
+        payload = self._png_bytes((10, 200, 50))
+        profile = services.create_profile_for_user(
+            user=direction_user,
+            created_by=direction_user,
+            display_name="NoPhotoYet",
+        )
+        assert not profile.photo
+
+        services.update_profile_for_user(
+            profile=profile,
+            updated_by=direction_user,
+            photo=SimpleUploadedFile("new.png", payload, content_type="image/png"),
+        )
+        profile.refresh_from_db()
+        assert profile.photo.name
 
 
 @pytest.mark.django_db
@@ -270,7 +356,6 @@ def test_assert_user_can_teach_raises(student_user):
 @pytest.mark.django_db
 def test_get_teacher_user_by_pk(teacher_user, student_user):
     from accounts import services
-    from core.exceptions import AppNotFound
 
     assert services.get_teacher_user_by_pk(pk=teacher_user.pk).pk == teacher_user.pk
     with pytest.raises(ValidationError) as exc:
@@ -281,8 +366,40 @@ def test_get_teacher_user_by_pk(teacher_user, student_user):
 
 
 @pytest.mark.django_db
+def test_user_can_participate_in_coaching(student_user, teacher_user):
+    from accounts import services
+
+    assert services.user_can_participate_in_coaching(user=student_user) is True
+    assert services.user_can_participate_in_coaching(user=teacher_user) is False
+
+
+@pytest.mark.django_db
+def test_assert_user_can_participate_in_coaching_raises(teacher_user):
+    from accounts import services
+
+    with pytest.raises(ValidationError) as exc:
+        services.assert_user_can_participate_in_coaching(user=teacher_user)
+    assert "UserCannotParticipateInCoaching" in exc.value.detail["messages"]
+
+
+@pytest.mark.django_db
+def test_assert_user_ids_can_participate_in_coaching(student_user, teacher_user):
+    from accounts import services
+
+    services.assert_user_ids_can_participate_in_coaching(
+        user_ids=[student_user.pk],
+    )
+    with pytest.raises(ValidationError) as exc:
+        services.assert_user_ids_can_participate_in_coaching(
+            user_ids=[student_user.pk, teacher_user.pk],
+        )
+    assert "UserCannotParticipateInCoaching" in exc.value.detail["messages"]
+
+
+@pytest.mark.django_db
 def test_get_profile_for_user_not_found(direction_user):
     from accounts import services
 
-    with pytest.raises(NotFound):
+    with pytest.raises(AppNotFound) as exc:
         services.get_profile_for_user(user=direction_user)
+    assert "ProfileNotFound" in str(exc.value.detail)

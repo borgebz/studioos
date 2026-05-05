@@ -51,6 +51,7 @@ class CoachingRequestSerializer(serializers.Serializer):
     start_datetime = serializers.DateTimeField()
     end_datetime = serializers.DateTimeField()
     notes = serializers.CharField(required=False, allow_blank=True)
+    classe_id = serializers.IntegerField(required=False, allow_null=True)
 
 
 class RecurringCoachingSubmitSerializer(serializers.Serializer):

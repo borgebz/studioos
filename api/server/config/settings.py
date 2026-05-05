@@ -51,6 +51,7 @@ CORS_ALLOW_CREDENTIALS = True
 # -----------------------------------------------------------------------------
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
@@ -61,6 +62,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_spectacular",
     "django_celery_beat",
+    "channels",
     # Local
     "accounts",
     "core",
@@ -71,6 +73,8 @@ INSTALLED_APPS = [
     "events",
     "billing",
     "classes",
+    "roles",
+    "messaging",
 ]
 
 # API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.
@@ -85,6 +89,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 AUTH_USER_MODEL = "accounts.User"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -147,6 +152,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
 }
 
@@ -239,6 +245,19 @@ CELERY_SEND_EVENTS = True
 CELERY_SEND_TASK_SENT_EVENT = True
 CELERY_EVENT_QUEUE_EXPIRES = 60
 CELERY_EVENT_QUEUE_TTL = 5
+
+# Invite onboarding tokens (Redis). Uses DB 1 by default to separate keys from Celery (DB 0).
+INVITE_REDIS_URL = config("INVITE_REDIS_URL", default="redis://redis:6379/1")
+
+# Django Channels — uses DB 2 to keep keys separate from Celery (DB 0) and invite tokens (DB 1).
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [config("CHANNEL_LAYERS_REDIS_URL", default="redis://redis:6379/2")],
+        },
+    },
+}
 
 
 # -----------------------------------------------------------------------------
