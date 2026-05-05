@@ -236,6 +236,76 @@ def _bulk_roster_direct_coordination(*, coaching, schedule_flag, created_by, cla
             ) from exc
 
 
+def _bulk_roster_coaching_request(*, coaching, requesting_user, classe_id):
+    """
+    Fill roster for a student-requested coaching from a classe's members.
+
+    The requesting user is intentionally skipped here — they are added separately
+    by :func:`create_coaching_request` via :func:`add_participant` (which gives them
+    ``PENDING`` status). All remaining class members are added as ``INVITED`` with
+    ``invited_by_staff=False`` so that each invited student must individually accept.
+
+    Runs inside the caller's ``atomic`` block; any failure rolls back the whole request.
+    """
+    from classes.services import get_student_ids_for_classe
+
+    student_ids = get_student_ids_for_classe(classe_id=classe_id)
+    if not student_ids:
+        raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+
+    max_cap = coaching.modality.max_capacity
+    if max_cap is not None and len(student_ids) > max_cap:
+        raise ValidationError({"messages": ["CoachingParticipantCapacityReached"]})
+
+    assert_user_ids_can_participate_in_coaching(user_ids=student_ids)
+
+    pending = []
+    for student_id in student_ids:
+        # The requesting user will be added as PENDING by the caller — skip here to avoid
+        # a duplicate row and let the existing add_participant call handle their status.
+        if student_id == requesting_user.pk:
+            continue
+        participant = CoachingParticipant(
+            coaching_class=coaching,
+            student_id=student_id,
+            status=CoachingParticipantStatus.INVITED,
+            invited_by_staff=False,
+            created_by=requesting_user,
+        )
+        try:
+            participant.full_clean()
+        except DjangoValidationError as exc:
+            logger.warning(
+                "Bulk request roster model validation failed coaching=%s student_id=%s detail=%s",
+                coaching.pk,
+                student_id,
+                getattr(exc, "error_dict", None) or exc,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["BulkRosterParticipantInvalid"],
+                    "student_id": ["BulkRosterParticipantInvalid"],
+                }
+            ) from exc
+        pending.append(participant)
+
+    for participant in pending:
+        try:
+            participant.save()
+        except IntegrityError as exc:
+            logger.warning(
+                "Bulk request roster integrity failure coaching=%s student_id=%s",
+                coaching.pk,
+                participant.student_id,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["ParticipantAlreadyEnrolled"],
+                    "student_id": ["ParticipantAlreadyEnrolled"],
+                }
+            ) from exc
+
+
 def _participant_row_for_add_participant(*, coaching, student_id, requesting_user):
     """
     Initial ``status`` and ``invited_by_staff`` for :func:`add_participant` (also used when
@@ -711,6 +781,7 @@ def create_coaching_request(
     requesting_user,
     notes="",
     studio_id=None,
+    classe_id=None,
 ):
     _validate_datetime_range(start=start_datetime, end=end_datetime)
     _get_teacher_user(teacher_id=teacher_id)
@@ -733,6 +804,15 @@ def create_coaching_request(
             end_datetime=end_datetime,
         )
 
+    classe_row = None
+    if classe_id is not None:
+        from classes.models import Classe
+
+        try:
+            classe_row = Classe.objects.get(pk=classe_id)
+        except Classe.DoesNotExist:
+            raise AppNotFound("ClasseNotFound")
+
     coaching = CoachingClass(
         teacher_id=teacher_id,
         modality=modality,
@@ -743,19 +823,31 @@ def create_coaching_request(
         status=CoachingStatus.REQUESTED,
         requested_by=requesting_user,
         created_by=requesting_user,
+        classe=classe_row,
     )
     coaching.full_clean()
     coaching.save()
     logger.info(
-        "CoachingClass requested by user=%s teacher=%s",
+        "CoachingClass requested by user=%s teacher=%s classe=%s",
         requesting_user.id,
         teacher_id,
+        classe_id,
     )
+
+    # Add the requesting user as PENDING participant (existing behaviour).
     if requesting_user.has_perm("accounts.can_participate_in_coaching"):
         add_participant(
             coaching_class_id=coaching.pk,
             student_id=requesting_user.pk,
             requesting_user=requesting_user,
+        )
+
+    # When a classe is provided, bulk-add the remaining class members as INVITED.
+    if classe_id is not None:
+        _bulk_roster_coaching_request(
+            coaching=coaching,
+            requesting_user=requesting_user,
+            classe_id=classe_id,
         )
 
     from coachings.tasks import notify_new_coaching_request
