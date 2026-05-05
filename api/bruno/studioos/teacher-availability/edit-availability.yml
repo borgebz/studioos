@@ -5,7 +5,7 @@ info:
 
 http:
   method: PATCH
-  url: http://127.0.0.1:8000/api/coachings/teachers/6/availability/1/
+  url: "{{base_url}}/api/coachings/teachers/6/availability/1/"
   body:
     type: json
     data: |-

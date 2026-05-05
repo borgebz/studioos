@@ -5,7 +5,7 @@ info:
 
 http:
   method: DELETE
-  url: http://127.0.0.1:8000/api/roles/api-test-role/
+  url: "{{base_url}}/api/roles/api-test-role/"
   auth: inherit
 
 settings:

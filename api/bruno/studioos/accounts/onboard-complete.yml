@@ -5,10 +5,7 @@ info:
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/accounts/onboard/{{invite_token}}/
-  headers:
-    - name: Content-Type
-      value: application/json
+  url: "{{base_url}}/api/accounts/onboard/00000000-0000-0000-0000-000000000001/"
   body:
     type: json
     data: |-

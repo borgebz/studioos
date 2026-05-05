@@ -5,17 +5,12 @@ info:
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/accounts/auth/logout/
-  headers:
-    - name: Content-Type
-      value: application/json
-    - name: Authorization
-      value: Bearer XXX
+  url: "{{base_url}}/api/accounts/auth/logout/"
   body:
     type: json
     data: |-
       {
-        "refresh": "XXX"
+        "refresh": "{{refresh_token}}"
       }
   auth: inherit
 

@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/api/coachings/
+  url: "{{base_url}}/api/coachings/"
   params:
     - name: teacher_id
       value: "10"
@@ -14,7 +14,6 @@ http:
     - name: status
       value: pending_approval
       type: query
-      disabled: true
     - name: studio_id
       value: "2"
       type: query

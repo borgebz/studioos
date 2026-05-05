@@ -4,21 +4,23 @@ info:
   seq: 10
 
 http:
-  method: POST
-  url: http://127.0.0.1:8000/api/coachings/
+  method: post
+  url: "{{base_url}}/api/coachings/"
   body:
     type: json
     data: |-
       {
-        "teacher_id": 1,
+        "teacher_id": 6,
         "modality_id": 1,
         "studio_id": 1,
         "total_price": "50.00",
         "start_datetime": "2026-04-20T10:00:00Z",
         "end_datetime": "2026-04-20T11:30:00Z",
+        "is_billable": true,
         "schedule": true,
         "notes": "",
-        "classe_id": null
+        "classe_id": null,
+        "recurring_coaching": null
       }
   auth: inherit
 

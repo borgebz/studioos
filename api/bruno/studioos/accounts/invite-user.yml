@@ -1,11 +1,11 @@
 info:
-  name: invite-user
+  name: invite-single-user
   type: http
   seq: 7
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/accounts/invites/
+  url: "{{base_url}}/api/accounts/invites/"
   body:
     type: json
     data: |-

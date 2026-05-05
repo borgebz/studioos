@@ -5,7 +5,7 @@ info:
 
 http:
   method: get
-  url: http://127.0.0.1:8000/api/accounts/onboard/{{invite_token}}/
+  url: "{{base_url}}/api/accounts/onboard/00000000-0000-0000-0000-000000000001/"
   auth: inherit
 
 settings:

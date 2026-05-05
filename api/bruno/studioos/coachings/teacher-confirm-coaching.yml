@@ -5,7 +5,7 @@ info:
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/coachings/17/teacher-confirm/
+  url: "{{base_url}}/api/coachings/17/teacher-confirm/"
   body:
     type: json
     data: |-

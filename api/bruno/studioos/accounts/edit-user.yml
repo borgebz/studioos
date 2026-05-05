@@ -5,10 +5,7 @@ info:
 
 http:
   method: PATCH
-  url: http://127.0.0.1:8000/api/accounts/users/9/
-  headers:
-    - name: Content-Type
-      value: application/json
+  url: "{{base_url}}/api/accounts/users/9/"
   body:
     type: json
     data: |-

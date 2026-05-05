@@ -5,7 +5,7 @@ info:
 
 http:
   method: get
-  url: http://127.0.0.1:8000/api/enrollments/periods/
+  url: "{{base_url}}/api/enrollments/periods/"
   auth: inherit
 
 settings:

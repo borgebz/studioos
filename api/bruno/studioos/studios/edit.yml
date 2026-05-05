@@ -5,7 +5,7 @@ info:
 
 http:
   method: PATCH
-  url: http://127.0.0.1:8000/api/studios/1/
+  url: "{{base_url}}/api/studios/1/"
   body:
     type: json
     data: |-

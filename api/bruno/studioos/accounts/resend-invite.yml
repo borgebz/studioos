@@ -5,7 +5,7 @@ info:
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/accounts/users/{{resend_user_id}}/resend-invite/
+  url: "{{base_url}}/api/accounts/users/1/resend-invite/"
   auth: inherit
 
 settings:

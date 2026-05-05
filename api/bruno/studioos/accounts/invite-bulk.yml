@@ -1,11 +1,11 @@
 info:
-  name: invite-bulk
+  name: invite-bulk-users
   type: http
   seq: 8
 
 http:
   method: post
-  url: http://127.0.0.1:8000/api/accounts/invites/bulk/
+  url: "{{base_url}}/api/accounts/invites/bulk/"
   body:
     type: multipart-form
     data:

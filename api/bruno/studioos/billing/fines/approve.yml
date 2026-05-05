@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/billing/fines/1/approve/
+  url: "{{base_url}}/api/billing/fines/1/approve/"
   body:
     type: json
     data: |-
