@@ -139,7 +139,7 @@ class TestOnboardingFlow:
         assert preview["email"] == email
         assert preview["role"] == "parent"
 
-        tokens = complete_onboarding(
+        activated = complete_onboarding(
             token=token,
             first_name="Ana",
             last_name="Silva",
@@ -148,7 +148,8 @@ class TestOnboardingFlow:
             phone_country_code="+351",
             date_of_birth=date(1990, 5, 15),
         )
-        assert "access" in tokens and "refresh" in tokens
+        assert activated.pk == invited.pk
+        assert activated.is_active is True
 
         invited.refresh_from_db()
         assert invited.is_active is True
@@ -281,7 +282,10 @@ class TestInviteAPI:
             format="json",
         )
         assert pr.status_code == 200
-        assert "access" in pr.json()["data"]
+        body = pr.json()
+        assert body.get("detail") == "Onboarding complete"
+        assert "studioos_access" in pr.cookies
+        assert "studioos_refresh" in pr.cookies
 
     def test_bulk_invite_201(self, api_client, direction_user):
         e1 = f"xb_{uuid.uuid4().hex[:6]}@test.local"

@@ -13,14 +13,14 @@ from .serializers import (
     InviteSingleSerializer,
     LoginSerializer,
     MeSerializer,
-    OnboardingCompleteResponse,
     OnboardingPreviewResponse,
     ProfileSerializer,
+    RefreshTokenSourceSerializer,
     TeacherSummarySerializer,
-    TokenPairSerializer,
     UserCoreUpdateSerializer,
     UserResponseSerializer,
 )
+from .jwt_session import blacklist_refresh_token, refresh_session_tokens
 from .services import (
     activate_account,
     bulk_invite_users,
@@ -38,84 +38,145 @@ from .services import (
 )
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema, inline_serializer
-from rest_framework_simplejwt.views import (
-    TokenBlacklistView,
-    TokenObtainPairView,
-    TokenRefreshView,
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from accounts.auth_cookies import (
+    set_auth_cookies,
+    clear_auth_cookies,
 )
+from rest_framework.throttling import AnonRateThrottle
 
 logger = logging.getLogger(__name__)
 
 
-class LoginView(TokenObtainPairView):
+class LoginView(APIView):
     """
     POST /api/accounts/auth/login/
-    Accepts email + password, returns access and refresh tokens.
+    Accepts email + password and stores JWT in httpOnly cookies.
     """
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(
         request=LoginSerializer,
         responses={
-            200: TokenPairSerializer,
+            200: inline_serializer(
+                name="LoginSuccess",
+                fields={
+                    "detail": serializers.CharField(),
+                },
+            ),
             **DEFAULT_ERROR_RESPONSES,
         },
     )
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        logger.info("User logged in: %s", request.data.get("email"))
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        user = authenticate(
+            request,
+            email=email,
+            password=password,
+        )
+
+        if not user:
+            return Response(
+                {"detail": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        response = Response(
+            {"detail": "Login successful"},
+            status=status.HTTP_200_OK,
+        )
+
+        set_auth_cookies(
+            response=response,
+            access_token=str(access),
+            refresh_token=str(refresh),
+        )
+
+        logger.info("User logged in: %s", email)
+
         return response
 
 
-class RefreshView(TokenRefreshView):
+class RefreshView(APIView):
     """
     POST /api/accounts/auth/refresh/
-    Accepts refresh token, returns new access and rotated refresh tokens.
+    Accepts refresh token in JSON body and/or ``studioos_refresh`` cookie;
+    new tokens are set as httpOnly cookies (same as login).
     """
 
     permission_classes = [AllowAny]
 
     @extend_schema(
-        request=inline_serializer(
-            name="RefreshParam",
-            fields={
-                "refresh": serializers.CharField(),
-            },
-        ),
+        request=RefreshTokenSourceSerializer,
         responses={
-            200: TokenPairSerializer,
+            200: inline_serializer(
+                name="RefreshSuccess",
+                fields={
+                    "detail": serializers.CharField(),
+                },
+            ),
             **DEFAULT_ERROR_RESPONSES,
         },
     )
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        serializer = RefreshTokenSourceSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        refresh_in = serializer.validated_data["refresh"]
+        tokens = refresh_session_tokens(refresh_token_str=refresh_in)
+        access = tokens["access"]
+        refresh_out = tokens.get("refresh", refresh_in)
+
+        response = Response(
+            {"detail": "Refresh successful"},
+            status=status.HTTP_200_OK,
+        )
+        set_auth_cookies(
+            response=response,
+            access_token=access,
+            refresh_token=refresh_out,
+        )
+        return response
 
 
-class LogoutView(TokenBlacklistView):
+class LogoutView(APIView):
     """
     POST /api/accounts/auth/logout/
-    Blacklists the provided refresh token. Token is invalid after this call.
+    Blacklists the refresh token (JSON body and/or ``studioos_refresh`` cookie)
+    and clears auth cookies.
     """
 
     permission_classes = [AllowAny]
 
     @extend_schema(
-        request=inline_serializer(
-            name="LogoutParam",
-            fields={
-                "refresh": serializers.CharField(),
-            },
-        ),
+        request=RefreshTokenSourceSerializer,
         responses={
-            204: None,  # No content on successful logout
+            204: None,
             **DEFAULT_ERROR_RESPONSES,
         },
     )
     def post(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
+        serializer = RefreshTokenSourceSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        blacklist_refresh_token(refresh_token_str=serializer.validated_data["refresh"])
+
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        clear_auth_cookies(response)
         logger.info("User logged out")
-        return Response(status=204)
+        return response
 
 
 class UserListView(APIView):
@@ -406,15 +467,32 @@ class OnboardingTokenView(APIView):
     @extend_schema(
         request=CompleteOnboardingSerializer,
         responses={
-            200: OnboardingCompleteResponse,
+            200: inline_serializer(
+                name="OnboardingCompleteSuccess",
+                fields={
+                    "detail": serializers.CharField(),
+                },
+            ),
             **DEFAULT_ERROR_RESPONSES,
         },
     )
     def post(self, request, token):
         serializer = CompleteOnboardingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        tokens = complete_onboarding(token=str(token), **serializer.validated_data)
-        return Response({"data": tokens})
+        user = complete_onboarding(token=str(token), **serializer.validated_data)
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        response = Response(
+            {"detail": "Onboarding complete"},
+            status=status.HTTP_200_OK,
+        )
+        set_auth_cookies(
+            response=response,
+            access_token=str(access),
+            refresh_token=str(refresh),
+        )
+        return response
 
 
 class ResendInviteView(APIView):

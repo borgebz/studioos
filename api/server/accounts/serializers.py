@@ -3,6 +3,7 @@ from pathlib import Path
 from drf_spectacular.utils import extend_schema_field, inline_serializer
 from rest_framework import serializers
 
+from accounts.auth_cookies import REFRESH_COOKIE_NAME
 from accounts.models import Language, Profile, User
 
 UserResponseRoleOutput = inline_serializer(
@@ -201,6 +202,26 @@ class TokenPairSerializer(serializers.Serializer):
     refresh = serializers.CharField(help_text="Long-lived refresh token.")
 
 
+class RefreshTokenSourceSerializer(serializers.Serializer):
+    """
+    Resolve refresh token from JSON ``refresh`` or httpOnly cookie ``studioos_refresh``.
+    """
+
+    refresh = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        refresh = attrs.get("refresh")
+        if refresh is not None:
+            refresh = str(refresh).strip()
+        if not refresh and request is not None:
+            refresh = request.COOKIES.get(REFRESH_COOKIE_NAME)
+        if not refresh:
+            raise serializers.ValidationError({"messages": ["RefreshTokenMissing"]})
+        attrs["refresh"] = refresh
+        return attrs
+
+
 class ActivateAccountSerializer(serializers.Serializer):
     """Input for account activation — uid + token + new password."""
 
@@ -243,23 +264,6 @@ OnboardingPreviewResponse = inline_serializer(
     name="OnboardingPreviewWrapper",
     fields={
         "data": OnboardingPreviewInner,
-    },
-)
-
-
-OnboardingTokensInner = inline_serializer(
-    name="OnboardingTokensInner",
-    fields={
-        "access": serializers.CharField(),
-        "refresh": serializers.CharField(),
-    },
-)
-
-
-OnboardingCompleteResponse = inline_serializer(
-    name="OnboardingCompleteWrapper",
-    fields={
-        "data": OnboardingTokensInner,
     },
 )
 

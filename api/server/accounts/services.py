@@ -681,13 +681,7 @@ def complete_onboarding(
 
     logger.info("Onboarding completed: user_id=%s email=%s", user.pk, user.email)
 
-    from rest_framework_simplejwt.tokens import RefreshToken
-
-    refresh = RefreshToken.for_user(user)
-    return {
-        "access": str(refresh.access_token),
-        "refresh": str(refresh),
-    }
+    return user
 
 
 def resend_invite(*, user_pk, requesting_user):
