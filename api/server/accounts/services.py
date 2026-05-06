@@ -710,23 +710,3 @@ def resend_invite(*, user_pk, requesting_user):
         user.pk,
         getattr(requesting_user, "email", requesting_user),
     )
-
-
-def refresh_session_tokens(*, refresh_token_str):
-    """
-    Rotate refresh (when configured) and return new access / refresh strings.
-    Delegates to SimpleJWT ``TokenRefreshSerializer``.
-    """
-    from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-
-    serializer = TokenRefreshSerializer(data={"refresh": refresh_token_str})
-    serializer.is_valid(raise_exception=True)
-    return serializer.validated_data
-
-
-def blacklist_refresh_token(*, refresh_token_str):
-    """Blacklist a refresh token (logout). Uses SimpleJWT ``TokenBlacklistSerializer``."""
-    from rest_framework_simplejwt.serializers import TokenBlacklistSerializer
-
-    serializer = TokenBlacklistSerializer(data={"refresh": refresh_token_str})
-    serializer.is_valid(raise_exception=True)

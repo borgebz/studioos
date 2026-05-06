@@ -1,6 +1,5 @@
 from django.conf import settings
 
-
 ACCESS_COOKIE_NAME = "studioos_access"
 REFRESH_COOKIE_NAME = "studioos_refresh"
 

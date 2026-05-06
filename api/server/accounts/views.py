@@ -20,6 +20,7 @@ from .serializers import (
     UserCoreUpdateSerializer,
     UserResponseSerializer,
 )
+from .jwt_session import blacklist_refresh_token, refresh_session_tokens
 from .services import (
     activate_account,
     bulk_invite_users,
@@ -31,8 +32,6 @@ from .services import (
     invite_user,
     list_teachers,
     list_users,
-    blacklist_refresh_token,
-    refresh_session_tokens,
     resend_invite,
     update_profile_for_user,
     update_user_core_fields,
