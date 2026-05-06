@@ -1,0 +1,23 @@
+info:
+  name: activate-account
+  type: http
+  seq: 99
+
+http:
+  method: post
+  url: "{{base_url}}/api/accounts/activate/"
+  body:
+    type: json
+    data: |-
+      {
+        "uid": "REPLACE_UID_FROM_EMAIL",
+        "token": "REPLACE_TOKEN_FROM_EMAIL",
+        "password": "newpass123"
+      }
+  auth: none
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

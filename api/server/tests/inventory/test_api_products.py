@@ -40,7 +40,11 @@ def test_authenticated_user_can_get_products():
         email="api1@test.com",
         password="1234"
     )
-    permission = Permission.objects.get(codename="view_product")
+    permission = Permission.objects.get(
+        codename="view_product",
+        content_type__app_label="inventory",
+        content_type__model="product",
+    )
 
     user.user_permissions.add(permission)
     client = APIClient()
@@ -60,7 +64,11 @@ def test_authenticated_user_can_create_product():
         password="1234"
     )
 
-    permission = Permission.objects.get(codename="add_product")
+    permission = Permission.objects.get(
+        codename="add_product",
+        content_type__app_label="inventory",
+        content_type__model="product",
+    )
 
     user.user_permissions.add(permission)
     client = APIClient()
@@ -70,7 +78,6 @@ def test_authenticated_user_can_create_product():
         "name": "Produto API",
         "description": "Criado por teste",
         "category_id": category.id,
-        "price": 20
     }
 
     response = client.post(
@@ -100,7 +107,6 @@ def test_user_without_school_permission_cannot_create_school_product():
         "name": "Produto School",
         "description": "Teste",
         "category_id": category.id,
-        "price": 30
     }
 
     response = client.post(
@@ -121,8 +127,16 @@ def test_authenticated_user_can_get_product_detail():
         password="1234"
     )
 
-    view_permission = Permission.objects.get(codename="view_product")
-    add_permission = Permission.objects.get(codename="add_product")
+    view_permission = Permission.objects.get(
+        codename="view_product",
+        content_type__app_label="inventory",
+        content_type__model="product",
+    )
+    add_permission = Permission.objects.get(
+        codename="add_product",
+        content_type__app_label="inventory",
+        content_type__model="product",
+    )
 
     user.user_permissions.add(view_permission, add_permission)
 
@@ -137,7 +151,6 @@ def test_authenticated_user_can_get_product_detail():
             "name": "Produto Detail",
             "description": "Teste",
             "category_id": category.id,
-            "price": 10
         },
         format="json"
     )

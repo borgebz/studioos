@@ -1,0 +1,15 @@
+info:
+  name: list-school-products
+  type: http
+  seq: 15
+
+http:
+  method: get
+  url: "{{base_url}}/inventory/school/products/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

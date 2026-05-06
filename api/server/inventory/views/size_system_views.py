@@ -16,7 +16,6 @@ from inventory.serializers.size_system_serializers import (
 )
 
 
-# SizeSystem View (Create + List)
 class SizeSystemView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -47,7 +46,6 @@ class SizeSystemView(APIView):
         return Response(SizeSystemSerializer(size_systems, many=True).data)
 
 
-# SizeSystem Detail (Update + Delete)
 class SizeSystemDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -56,16 +54,17 @@ class SizeSystemDetailView(APIView):
         responses={200: SizeSystemSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_sizesystem")
-    def put(self, request, sizeSystemId):
-        serializer = UpdateSizeSystemSerializer(data=request.data)
+    def patch(self, request, size_system_id):
+        size_system = services.get_size_system(pk=size_system_id)
+        serializer = UpdateSizeSystemSerializer(
+            data=request.data, partial=True, size_system=size_system
+        )
         serializer.is_valid(raise_exception=True)
-
-        size_system = services.get_size_system(pk=sizeSystemId)
 
         size_system = services.update_size_system(
             size_system=size_system,
             **serializer.validated_data,
-            updated_by=request.user
+            updated_by=request.user,
         )
 
         return Response(SizeSystemSerializer(size_system).data)
@@ -74,15 +73,14 @@ class SizeSystemDetailView(APIView):
         responses={204: None, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.delete_sizesystem")
-    def delete(self, request, sizeSystemId):
-        size_system = services.get_size_system(pk=sizeSystemId)
+    def delete(self, request, size_system_id):
+        size_system = services.get_size_system(pk=size_system_id)
 
         services.delete_size_system(size_system=size_system, deleted_by=request.user)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# Activate SizeSystem
 class SizeSystemActivateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -90,8 +88,8 @@ class SizeSystemActivateView(APIView):
         responses={200: SizeSystemSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_sizesystem")
-    def post(self, request, sizeSystemId):
-        size_system = services.get_size_system(pk=sizeSystemId)
+    def post(self, request, size_system_id):
+        size_system = services.get_size_system(pk=size_system_id)
 
         size_system = services.activate_size_system(
             size_system=size_system, updated_by=request.user
@@ -100,7 +98,6 @@ class SizeSystemActivateView(APIView):
         return Response(SizeSystemSerializer(size_system).data)
 
 
-# Deactivate SizeSystem
 class SizeSystemDeactivateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -108,8 +105,8 @@ class SizeSystemDeactivateView(APIView):
         responses={200: SizeSystemSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_sizesystem")
-    def post(self, request, sizeSystemId):
-        size_system = services.get_size_system(pk=sizeSystemId)
+    def post(self, request, size_system_id):
+        size_system = services.get_size_system(pk=size_system_id)
 
         size_system = services.deactivate_size_system(
             size_system=size_system, updated_by=request.user

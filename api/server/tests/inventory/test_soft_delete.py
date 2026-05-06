@@ -1,36 +1,37 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from core.exceptions import DomainError
-
+from inventory.models import Category, Color, Product, Size
 from inventory.services.category_services import (
     create_category,
     delete_category,
-)
-
-from inventory.services.size_system_services import create_size_system
-from inventory.services.size_services import (
-    create_size,
-    delete_size,
-)
-
-from inventory.services.product_services import (
-    create_product,
-    delete_product,
 )
 from inventory.services.color_services import (
     create_color,
     delete_color,
 )
+from inventory.services.product_services import (
+    create_product,
+    delete_product,
+)
+from inventory.services.product_variant_services import create_variant
+from inventory.services.size_services import (
+    create_size,
+    delete_size,
+)
+from inventory.services.size_system_services import create_size_system
 
 
 @pytest.mark.django_db
 def test_delete_category_without_products():
     category = create_category(name="Roupa")
+    pk = category.pk
     delete_category(category=category)
-    category.refresh_from_db()
-    assert category.is_active is False
+
+    assert not Category.objects.filter(pk=pk).exists()
+    assert Category.all_objects.filter(pk=pk, deleted_at__isnull=False).exists()
 
 
 @pytest.mark.django_db
@@ -39,7 +40,7 @@ def test_delete_category_with_products_fails():
 
     user = User.objects.create_user(
         email="soft1@test.com",
-        password="1234"
+        password="1234",
     )
 
     permission = Permission.objects.get(codename="add_product")
@@ -52,11 +53,12 @@ def test_delete_category_with_products_fails():
         name="Produto Teste",
         description="Teste",
         category_id=category.id,
-        price=20
     )
 
-    with pytest.raises(DomainError):
+    with pytest.raises(ValidationError) as exc:
         delete_category(category=category)
+
+    assert exc.value.detail["messages"] == ["CategoryHasAssociatedProducts"]
 
 
 @pytest.mark.django_db
@@ -65,12 +67,14 @@ def test_delete_size_without_variants():
 
     size = create_size(
         name="M",
-        size_system_id=size_system.id
+        size_system_id=size_system.id,
     )
+    pk = size.pk
 
-    deleted = delete_size(size=size)
+    delete_size(size=size)
 
-    assert deleted.is_active is False
+    assert not Size.objects.filter(pk=pk).exists()
+    assert Size.all_objects.filter(pk=pk, deleted_at__isnull=False).exists()
 
 
 @pytest.mark.django_db
@@ -79,7 +83,7 @@ def test_delete_size_with_variants_fails():
 
     user = User.objects.create_user(
         email="soft2@test.com",
-        password="1234"
+        password="1234",
     )
 
     permission = Permission.objects.get(codename="add_product")
@@ -92,17 +96,14 @@ def test_delete_size_with_variants_fails():
         name="Produto Size",
         description="Teste",
         category_id=category.id,
-        price=15
     )
 
     size_system = create_size_system(name="US")
 
     size = create_size(
         name="L",
-        size_system_id=size_system.id
+        size_system_id=size_system.id,
     )
-
-    from inventory.services.product_variant_services import create_variant
 
     create_variant(
         product_id=product.id,
@@ -110,22 +111,26 @@ def test_delete_size_with_variants_fails():
         size_id=size.id,
         sku="SKU-SIZE-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased",
     )
 
-    with pytest.raises(DomainError):
+    with pytest.raises(ValidationError) as exc:
         delete_size(size=size)
 
-#Version 2
+    assert exc.value.detail["messages"] == ["SizeInUse"]
+
+
 @pytest.mark.django_db
 def test_delete_color_without_variants():
     color = create_color(
         name="Preto",
-        hex_code="#000000"
+        hex_code="#000000",
     )
+    pk = color.pk
     delete_color(color=color)
-    color.refresh_from_db()
-    assert color.is_active is False
+
+    assert not Color.objects.filter(pk=pk).exists()
+    assert Color.all_objects.filter(pk=pk, deleted_at__isnull=False).exists()
 
 
 @pytest.mark.django_db
@@ -134,7 +139,7 @@ def test_delete_color_with_variants_fails():
 
     user = User.objects.create_user(
         email="soft3@test.com",
-        password="1234"
+        password="1234",
     )
 
     permission = Permission.objects.get(codename="add_product")
@@ -147,22 +152,19 @@ def test_delete_color_with_variants_fails():
         name="Produto Cor",
         description="Teste",
         category_id=category.id,
-        price=22
     )
 
     size_system = create_size_system(name="EU-COLOR")
 
     size = create_size(
         name="M",
-        size_system_id=size_system.id
+        size_system_id=size_system.id,
     )
 
     color = create_color(
         name="Azul",
-        hex_code="#0000FF"
+        hex_code="#0000FF",
     )
-
-    from inventory.services.product_variant_services import create_variant
 
     create_variant(
         product_id=product.id,
@@ -171,14 +173,14 @@ def test_delete_color_with_variants_fails():
         color_ids=[color.id],
         sku="SKU-COLOR-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased",
     )
 
-    with pytest.raises(DomainError):
+    with pytest.raises(ValidationError) as exc:
         delete_color(color=color)
 
+    assert exc.value.detail["messages"] == ["ColorInUse"]
 
-# New tests for product soft delete
 
 @pytest.mark.django_db
 def test_delete_product_without_critical_dependencies():
@@ -186,7 +188,7 @@ def test_delete_product_without_critical_dependencies():
 
     user = User.objects.create_user(
         email="soft4@test.com",
-        password="1234"
+        password="1234",
     )
 
     permission = Permission.objects.get(codename="add_product")
@@ -199,16 +201,13 @@ def test_delete_product_without_critical_dependencies():
         name="Produto Remover",
         description="Teste",
         category_id=category.id,
-        price=12
     )
+    pk = product.pk
 
-    delete_product(
-        pk=product.id,
-        user=user
-    )
+    delete_product(pk=product.id, user=user)
 
-    product.refresh_from_db()
-    assert product.status == "archived"
+    assert not Product.objects.filter(pk=pk).exists()
+    assert Product.all_objects.filter(pk=pk, deleted_at__isnull=False).exists()
 
 
 @pytest.mark.django_db
@@ -217,12 +216,12 @@ def test_delete_product_invalid_owner_fails():
 
     owner = User.objects.create_user(
         email="soft5@test.com",
-        password="1234"
+        password="1234",
     )
 
     other = User.objects.create_user(
         email="soft6@test.com",
-        password="1234"
+        password="1234",
     )
 
     permission = Permission.objects.get(codename="add_product")
@@ -236,11 +235,10 @@ def test_delete_product_invalid_owner_fails():
         name="Produto Protegido",
         description="Teste",
         category_id=category.id,
-        price=18
     )
 
-    with pytest.raises(DomainError):
+    with pytest.raises(PermissionDenied):
         delete_product(
             pk=product.id,
-            user=other
+            user=other,
         )

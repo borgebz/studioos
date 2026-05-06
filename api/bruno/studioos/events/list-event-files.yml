@@ -1,0 +1,15 @@
+info:
+  name: list-event-files
+  type: http
+  seq: 35
+
+http:
+  method: get
+  url: "{{base_url}}/api/events/1/files/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -11,7 +11,9 @@ from inventory.services.size_services import create_size
 from inventory.services.color_services import create_color
 
 from inventory.services.product_services import create_product
-from inventory.services.product_variant_services import create_variant
+from rest_framework.exceptions import ValidationError
+
+from inventory.services.product_variant_services import create_variant, delete_variant
 from inventory.services.variant_booking_services import create_booking
 
 
@@ -42,7 +44,6 @@ def test_create_complete_product_flow():
         name="T-Shirt Flow",
         description="Produto completo",
         category_id=category.id,
-        price=20
     )
 
     variant = create_variant(
@@ -52,7 +53,7 @@ def test_create_complete_product_flow():
         color_ids=[color.id],
         sku="FLOW-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     assert product.id is not None
@@ -69,8 +70,17 @@ def test_booking_flow_blocks_variant():
         password="1234"
     )
 
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    for codename, model in (
+        ("add_product", "product"),
+        ("delete_productvariant", "productvariant"),
+    ):
+        user.user_permissions.add(
+            Permission.objects.get(
+                codename=codename,
+                content_type__app_label="inventory",
+                content_type__model=model,
+            )
+        )
 
     category = create_category(name="Roupa Booking")
 
@@ -82,7 +92,6 @@ def test_booking_flow_blocks_variant():
         name="Casaco",
         description="Teste booking",
         category_id=category.id,
-        price=30
     )
 
     variant = create_variant(
@@ -91,22 +100,26 @@ def test_booking_flow_blocks_variant():
         size_id=size.id,
         sku="BOOK-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     start_at = timezone.now()
     end_at = start_at + timedelta(days=2)
 
     booking = create_booking(
+        variant_id=variant.id,
         user=user,
         booking_type="rent",
-        variant_id=variant.id,
         start_at=start_at,
-        end_at=end_at
+        end_at=end_at,
     )
 
     assert booking.id is not None
     assert booking.variant.id == variant.id
+
+    with pytest.raises(ValidationError) as exc:
+        delete_variant(variant_id=variant.id, user=user)
+    assert exc.value.detail["messages"] == ["VariantHasActiveBookings"]
 
 
 @pytest.mark.django_db
@@ -133,7 +146,6 @@ def test_multiple_variants_same_product():
         name="Sapatilhas",
         description="Dois tamanhos",
         category_id=category.id,
-        price=50
     )
 
     v1 = create_variant(
@@ -142,7 +154,7 @@ def test_multiple_variants_same_product():
         size_id=size1.id,
         sku="SAP-42",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     v2 = create_variant(
@@ -151,7 +163,7 @@ def test_multiple_variants_same_product():
         size_id=size2.id,
         sku="SAP-43",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     assert v1.product.id == product.id

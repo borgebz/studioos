@@ -19,10 +19,10 @@ from inventory.views.category_views import (
 )
 
 from inventory.views.color_views import (
-    ColorListCreateApi,
-    ColorDetailApi,
-    ColorActivateApi,
-    ColorDeactivateApi,
+    ColorListCreateView,
+    ColorDetailView,
+    ColorActivateView,
+    ColorDeactivateView,
 )
 
 from inventory.views.product_views import (
@@ -36,47 +36,37 @@ from inventory.views.product_variant_views import (
     ProductVariantListCreateView,
     ProductVariantDetailView,
 )
-
-from django.urls import path
-
-from .views.variant_booking_views import (
-
+from inventory.views.variant_booking_views import (
+    BookingDetailView,
     BookingListCreateView,
-
-    BookingDetailView
-
 )
 
 urlpatterns = [
     path("size-systems/", SizeSystemView.as_view()),
-    path("size-systems/<int:sizeSystemId>/", SizeSystemDetailView.as_view()),
-    path("size-systems/<int:sizeSystemId>/activate/", SizeSystemActivateView.as_view()),
+    path("size-systems/<int:size_system_id>/", SizeSystemDetailView.as_view()),
+    path("size-systems/<int:size_system_id>/activate/", SizeSystemActivateView.as_view()),
     path(
-        "size-systems/<int:sizeSystemId>/deactivate/",
+        "size-systems/<int:size_system_id>/deactivate/",
         SizeSystemDeactivateView.as_view(),
     ),
     path("sizes/", SizeView.as_view()),
-    path("sizes/<int:sizeId>/", SizeDeleteView.as_view()),
-    path("sizes/<int:sizeId>/activate/", SizeActivateView.as_view()),
-    path("sizes/<int:sizeId>/deactivate/", SizeDeactivateView.as_view()),
+    path("sizes/<int:size_id>/", SizeDeleteView.as_view()),
+    path("sizes/<int:size_id>/activate/", SizeActivateView.as_view()),
+    path("sizes/<int:size_id>/deactivate/", SizeDeactivateView.as_view()),
     path("categories/", CategoryView.as_view()),
-    path("categories/<int:categoryId>/", CategoryDetailView.as_view()),
-    path("categories/<int:categoryId>/activate/", CategoryActivateView.as_view()),
-    path("categories/<int:categoryId>/deactivate/", CategoryDeactivateView.as_view()),
-    path("colors/", ColorListCreateApi.as_view()),
-    path("colors/<int:colorId>/", ColorDetailApi.as_view()),
-    path("colors/<int:colorId>/activate/", ColorActivateApi.as_view()),
-    path("colors/<int:colorId>/deactivate/", ColorDeactivateApi.as_view()),
-    # MEMBER
+    path("categories/<int:category_id>/", CategoryDetailView.as_view()),
+    path("categories/<int:category_id>/activate/", CategoryActivateView.as_view()),
+    path("categories/<int:category_id>/deactivate/", CategoryDeactivateView.as_view()),
+    path("colors/", ColorListCreateView.as_view()),
+    path("colors/<int:color_id>/", ColorDetailView.as_view()),
+    path("colors/<int:color_id>/activate/", ColorActivateView.as_view()),
+    path("colors/<int:color_id>/deactivate/", ColorDeactivateView.as_view()),
     path("products/", ProductListCreateView.as_view()),
     path("products/<int:pk>/", ProductDetailView.as_view()),
-    # SCHOOL
     path("school/products/", SchoolProductListCreateView.as_view()),
     path("school/products/<int:pk>/", SchoolProductDetailView.as_view()),
-
     path("products/<int:product_id>/variants/", ProductVariantListCreateView.as_view()),
     path("variants/<int:variant_id>/", ProductVariantDetailView.as_view()),
-
     path("variants/<int:variant_id>/bookings/", BookingListCreateView.as_view()),
     path("bookings/<int:booking_id>/", BookingDetailView.as_view()),
 ]

@@ -45,7 +45,6 @@ class SizeView(APIView):
         return Response(SizeSerializer(sizes, many=True).data)
 
 
-# Delete
 class SizeDeleteView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -53,15 +52,14 @@ class SizeDeleteView(APIView):
         responses={204: None, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.delete_size")
-    def delete(self, request, sizeId):
-        size = services.get_size(pk=sizeId)
+    def delete(self, request, size_id):
+        size = services.get_size(pk=size_id)
 
         services.delete_size(size=size, deleted_by=request.user)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# Activate
 class SizeActivateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -69,15 +67,14 @@ class SizeActivateView(APIView):
         responses={200: SizeSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_size")
-    def post(self, request, sizeId):
-        size = services.get_size(pk=sizeId)
+    def post(self, request, size_id):
+        size = services.get_size(pk=size_id)
 
         size = services.activate_size(size=size, updated_by=request.user)
 
         return Response(SizeSerializer(size).data)
 
 
-# Deactivate
 class SizeDeactivateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -85,8 +82,8 @@ class SizeDeactivateView(APIView):
         responses={200: SizeSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_size")
-    def post(self, request, sizeId):
-        size = services.get_size(pk=sizeId)
+    def post(self, request, size_id):
+        size = services.get_size(pk=size_id)
 
         size = services.deactivate_size(size=size, updated_by=request.user)
 

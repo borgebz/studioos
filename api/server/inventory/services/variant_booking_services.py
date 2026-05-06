@@ -1,109 +1,132 @@
+import logging
+
 from django.db import transaction
-from core.exceptions import DomainError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
-from inventory.models import VariantBooking, ProductVariant
+from core.exceptions import AppNotFound
+
+from inventory.django_validation import raise_drf_from_model_validation
+from inventory.models import Product, ProductVariant, VariantBooking
+
+logger = logging.getLogger(__name__)
+
+VALID_BOOKING_TYPES = {choice.value for choice in VariantBooking.BookingType}
+VALID_STATUS = {choice.value for choice in VariantBooking.Status}
+
+_ACTIVE_OVERLAP_STATUSES = (
+    VariantBooking.Status.PENDING,
+    VariantBooking.Status.CONFIRMED,
+    VariantBooking.Status.ACTIVE,
+)
 
 
-VALID_BOOKING_TYPES = [
-    "reservation", "loan", "rent", "rental",
-    "school_use", "maintenance", "blocked"
-]
-
-VALID_STATUS = [
-    "pending", "confirmed", "active",
-    "completed", "cancelled"
-]
-
-
-# ===============================
-# HELPERS
-# ===============================
-
-def _get_variant(variant_id, user):
+def _get_variant(*, variant_id, user):
     try:
-        variant = ProductVariant.objects.exclude(status="inactive").get(id=variant_id)
+        variant = ProductVariant.objects.exclude(
+            status=ProductVariant.Status.INACTIVE
+        ).get(id=variant_id)
     except ProductVariant.DoesNotExist:
-        raise DomainError("VariantNotFound", "Variante não encontrada.")
+        raise AppNotFound("VariantNotFound")
 
     product = variant.product
 
-    # permissões
-    if product.owner_type == "member":
+    if product.owner_type == Product.OwnerType.MEMBER:
         if product.owner_id != user.id:
-            raise DomainError("PermissionDenied", "Sem acesso.")
+            raise PermissionDenied()
 
-    elif product.owner_type == "school":
+    elif product.owner_type == Product.OwnerType.SCHOOL:
         if not user.has_perm("inventory.manage_school_inventory"):
-            raise DomainError("PermissionDenied", "Sem permissão.")
+            raise PermissionDenied()
 
     return variant
 
 
-def _validate_dates(start_at, end_at):
+def _validate_dates(*, start_at, end_at):
     if not start_at or not end_at:
-        raise DomainError("InvalidBookingDates", "Datas obrigatórias.")
+        raise ValidationError({"messages": ["InvalidBookingDates"]})
 
     if start_at >= end_at:
-        raise DomainError("InvalidBookingDates", "start_at deve ser anterior a end_at.")
+        raise ValidationError({"messages": ["InvalidBookingDateRange"]})
 
 
-def _check_overlap(variant, start_at, end_at, exclude_id=None):
+def _check_overlap(*, variant, start_at, end_at, exclude_id=None):
     overlapping = VariantBooking.objects.filter(
         variant=variant,
-        status__in=["pending", "confirmed", "active"]
-    ).filter(
-        start_at__lt=end_at,
-        end_at__gt=start_at
-    )
+        status__in=_ACTIVE_OVERLAP_STATUSES,
+    ).filter(start_at__lt=end_at, end_at__gt=start_at)
 
     if exclude_id:
         overlapping = overlapping.exclude(id=exclude_id)
 
-
     if overlapping.exists():
-        raise DomainError("BookingOverlap", "Já existe booking neste período.")
+        logger.warning(
+            "Booking overlap rejected for variant %s",
+            variant.pk,
+        )
+        raise ValidationError({"messages": ["BookingOverlap"]})
 
 
-# ===========Create====================
+def _booking_has_pending_dependencies(*, booking):
+    """Reserved for payments / linked entities. When True, blocks soft-delete."""
+    return False
+
+
 @transaction.atomic
-def create_booking(variant_id, user, **data):
-    variant = _get_variant(variant_id, user)
+def create_booking(*, variant_id, user, **data):
+    from django.core.exceptions import ValidationError as DjangoValidationError
 
-    if not data.get("booking_type"):
-        raise DomainError("InvalidBookingType", "booking_type é obrigatório.")
+    variant = _get_variant(variant_id=variant_id, user=user)
 
-    if data.get("booking_type") not in VALID_BOOKING_TYPES:
-        raise DomainError("InvalidBookingType", "booking_type inválido.")
+    booking_type = data.get("booking_type")
+    if not booking_type:
+        raise ValidationError({"messages": ["InvalidBookingType"]})
+
+    if booking_type not in VALID_BOOKING_TYPES:
+        raise ValidationError({"messages": ["InvalidBookingType"]})
 
     if data.get("status") and data.get("status") not in VALID_STATUS:
-        raise DomainError("InvalidBookingStatus", "status inválido.")
+        raise ValidationError({"messages": ["InvalidBookingStatus"]})
 
     start_at = data.get("start_at")
     end_at = data.get("end_at")
 
-    _validate_dates(start_at, end_at)
-    _check_overlap(variant, start_at, end_at)
+    _validate_dates(start_at=start_at, end_at=end_at)
+    _check_overlap(variant=variant, start_at=start_at, end_at=end_at)
 
-    booking = VariantBooking.objects.create(
+    booking = VariantBooking(
         variant=variant,
-        booking_type=data.get("booking_type"),
-        status=data.get("status", "pending"),
+        booking_type=booking_type,
+        status=data.get("status") or VariantBooking.Status.PENDING,
         start_at=start_at,
         end_at=end_at,
         actual_start_at=data.get("actual_start_at"),
         actual_end_at=data.get("actual_end_at"),
         title=data.get("title") or "Booking",
         notes=data.get("notes", ""),
-        created_by_user=user
+        created_by=user,
+    )
+    try:
+        booking.full_clean()
+    except DjangoValidationError as exc:
+        raise_drf_from_model_validation(exc)
+    booking.save()
+
+    logger.info(
+        "VariantBooking created: %s variant %s by user %s",
+        booking.pk,
+        variant_id,
+        user.pk,
     )
 
     return booking
 
-#=================List====================
-def list_bookings(variant_id, user, filters=None):
-    variant = _get_variant(variant_id, user)
 
-    queryset = variant.bookings.exclude(status="cancelled").order_by("start_at")
+def list_bookings(*, variant_id, user, filters=None):
+    variant = _get_variant(variant_id=variant_id, user=user)
+
+    queryset = variant.bookings.exclude(
+        status=VariantBooking.Status.CANCELLED
+    ).order_by("start_at")
 
     if filters:
         if filters.get("status"):
@@ -121,39 +144,42 @@ def list_bookings(variant_id, user, filters=None):
     return queryset
 
 
-#=================Detail====================
-def get_booking(booking_id, user):
+def get_booking(*, booking_id, user):
     try:
         booking = VariantBooking.objects.get(id=booking_id)
     except VariantBooking.DoesNotExist:
-        raise DomainError("BookingNotFound", "Booking não encontrado.")
+        raise AppNotFound("BookingNotFound")
 
-    _get_variant(booking.variant.id, user)
+    _get_variant(variant_id=booking.variant_id, user=user)
 
     return booking
 
-#=================Update====================
+
 @transaction.atomic
-def update_booking(booking_id, user, **data):
-    booking = get_booking(booking_id, user)
+def update_booking(*, booking_id, user, **data):
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    booking = get_booking(booking_id=booking_id, user=user)
 
     if "variant" in data or "variant_id" in data:
-        raise DomainError(
-            "BookingVariantImmutable",
-            "Não é permitido alterar a variante do booking."
-        )
+        raise ValidationError({"messages": ["BookingVariantImmutable"]})
 
     if "booking_type" in data and data["booking_type"] not in VALID_BOOKING_TYPES:
-        raise DomainError("InvalidBookingType", "booking_type inválido.")
+        raise ValidationError({"messages": ["InvalidBookingType"]})
 
     if "status" in data and data["status"] not in VALID_STATUS:
-        raise DomainError("InvalidBookingStatus", "status inválido.")
+        raise ValidationError({"messages": ["InvalidBookingStatus"]})
 
     start_at = data.get("start_at", booking.start_at)
     end_at = data.get("end_at", booking.end_at)
 
-    _validate_dates(start_at, end_at)
-    _check_overlap(booking.variant, start_at, end_at, exclude_id=booking.id)
+    _validate_dates(start_at=start_at, end_at=end_at)
+    _check_overlap(
+        variant=booking.variant,
+        start_at=start_at,
+        end_at=end_at,
+        exclude_id=booking.id,
+    )
 
     for field in [
         "booking_type",
@@ -168,27 +194,30 @@ def update_booking(booking_id, user, **data):
         if field in data:
             setattr(booking, field, data[field])
 
+    booking.updated_by = user
+    try:
+        booking.full_clean()
+    except DjangoValidationError as exc:
+        raise_drf_from_model_validation(exc)
     booking.save()
 
     return booking
 
 
-#=================Delete(Soft)====================
 @transaction.atomic
-def delete_booking(booking_id, user):
-    booking = get_booking(booking_id, user)
+def delete_booking(*, booking_id, user):
+    booking = get_booking(booking_id=booking_id, user=user)
 
-    if booking.status in ["cancelled", "completed"]:
+    if booking.deleted_at:
         return booking
 
-    has_dependencies = False
-
-    if has_dependencies:
-        raise DomainError(
-            "BookingHasCriticalDependencies",
-            "Booking não pode ser removido por dependências críticas."
+    if _booking_has_pending_dependencies(booking=booking):
+        logger.warning(
+            "Booking delete blocked: booking %s has pending dependencies",
+            booking_id,
         )
+        raise ValidationError({"messages": ["BookingHasCriticalDependencies"]})
 
-    booking.status = "cancelled"
-    booking.save()
+    booking.delete(deleted_by=user)
+    logger.info("VariantBooking soft-deleted: %s by user %s", booking_id, user.pk)
     return booking

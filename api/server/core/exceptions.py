@@ -21,21 +21,6 @@ EXCEPTION_CODES = {
 }
 
 
-# DomainError for business/domain errors
-class DomainError(exceptions.APIException):
-    """Erro de negócio/domínio com código padronizado."""
-    status_code = 400
-    default_code = "domain_error"
-    default_detail = "Business rule validation failed."
-
-    def __init__(self, code, detail):
-        super().__init__()
-        self.detail = {
-            "code": code,
-            "detail": detail,
-        }
-
-
 class AppNotFound(exceptions.NotFound):
     """Use when the API should return a specific error code in ``errors.messages`` (not generic ``NotFound``)."""
 
@@ -101,15 +86,6 @@ def custom_exception_handler(exc, context):
 
     if response is None:
         return None
-
-    if isinstance(exc, DomainError):
-        response.data = {
-            "errors": {
-                "messages": [exc.detail.get("code")],
-                "detail": exc.detail.get("detail"),
-            }
-        }
-        return response
 
     jwt_code = _simplejwt_error_code(exc)
     if jwt_code:

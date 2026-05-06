@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import config.pytest_db_host_env  # noqa: F401 — redundant if plugin loaded; keeps conftest-only runs safe
+
 import uuid
 from datetime import date, datetime, timezone as dt_timezone
 

@@ -15,7 +15,19 @@ from inventory.serializers.category_serializers import (
 )
 
 
-# Base View
+def _optional_bool(raw):
+    if raw is None:
+        return None
+    if isinstance(raw, bool):
+        return raw
+    s = str(raw).strip().lower()
+    if s in ("true", "1", "yes"):
+        return True
+    if s in ("false", "0", "no"):
+        return False
+    return None
+
+
 class CategoryView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -28,7 +40,9 @@ class CategoryView(APIView):
         serializer = CreateCategorySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        category = services.create_category(**serializer.validated_data)
+        category = services.create_category(
+            **serializer.validated_data, created_by=request.user
+        )
 
         return Response(CategorySerializer(category).data, status=201)
 
@@ -37,49 +51,56 @@ class CategoryView(APIView):
     )
     @require_perm("inventory.view_category")
     def get(self, request):
+        raw_active = request.query_params.get("is_active")
         categories = services.list_categories(
             parent_category_id=request.query_params.get("parent_category_id"),
-            is_active=request.query_params.get("is_active"),
+            is_active=_optional_bool(raw_active),
             size_system_id=request.query_params.get("size_system_id"),
         )
 
         return Response(CategorySerializer(categories, many=True).data)
 
 
-# Detail View
 class CategoryDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=UpdateCategorySerializer,
+        responses={200: CategorySerializer, **DEFAULT_ERROR_RESPONSES},
+    )
     @require_perm("inventory.change_category")
-    def put(self, request, categoryId):
-        serializer = UpdateCategorySerializer(data=request.data)
+    def patch(self, request, category_id):
+        serializer = UpdateCategorySerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        category = services.get_category(pk=categoryId)
+        category = services.get_category(pk=category_id)
 
         category = services.update_category(
-            category=category, **serializer.validated_data
+            category=category, **serializer.validated_data, updated_by=request.user
         )
 
         return Response(CategorySerializer(category).data)
 
+    @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
     @require_perm("inventory.delete_category")
-    def delete(self, request, categoryId):
-        category = services.get_category(pk=categoryId)
+    def delete(self, request, category_id):
+        category = services.get_category(pk=category_id)
 
-        services.delete_category(category=category)
+        services.delete_category(category=category, deleted_by=request.user)
 
         return Response(status=204)
 
 
-# Activate/Deactivate View
 class CategoryActivateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={200: CategorySerializer, **DEFAULT_ERROR_RESPONSES},
+    )
     @require_perm("inventory.change_category")
-    def post(self, request, categoryId):
-        category = services.get_category(pk=categoryId)
-        category = services.activate_category(category=category)
+    def post(self, request, category_id):
+        category = services.get_category(pk=category_id)
+        category = services.activate_category(category=category, updated_by=request.user)
 
         return Response(CategorySerializer(category).data)
 
@@ -87,9 +108,12 @@ class CategoryActivateView(APIView):
 class CategoryDeactivateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={200: CategorySerializer, **DEFAULT_ERROR_RESPONSES},
+    )
     @require_perm("inventory.change_category")
-    def post(self, request, categoryId):
-        category = services.get_category(pk=categoryId)
-        category = services.deactivate_category(category=category)
+    def post(self, request, category_id):
+        category = services.get_category(pk=category_id)
+        category = services.deactivate_category(category=category, updated_by=request.user)
 
         return Response(CategorySerializer(category).data)

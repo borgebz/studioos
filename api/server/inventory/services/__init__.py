@@ -1,15 +1,25 @@
 from .product_services import (
-    create_product as create_product,
-    list_products as list_products,
-    get_product as get_product,
-    update_product as update_product,
-    delete_product as delete_product,
+    create_product,
+    create_school_product,
+    delete_product,
+    delete_school_product,
+    get_product,
+    get_school_product,
+    list_products,
+    list_school_products,
+    update_product,
+    update_school_product,
 )
 
 __all__ = [
     "create_product",
-    "list_products",
-    "get_product",
-    "update_product",
+    "create_school_product",
     "delete_product",
+    "delete_school_product",
+    "get_product",
+    "get_school_product",
+    "list_products",
+    "list_school_products",
+    "update_product",
+    "update_school_product",
 ]

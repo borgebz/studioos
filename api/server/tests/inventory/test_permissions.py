@@ -1,9 +1,7 @@
 import pytest
-
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-
-from core.exceptions import DomainError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from inventory.services.category_services import create_category
 from inventory.services.product_services import create_product
@@ -15,21 +13,18 @@ def test_user_without_permission_cannot_create_product():
 
     user = User.objects.create_user(
         email="nopermission@test.com",
-        password="1234"
+        password="1234",
     )
 
     category = create_category(name="Roupa")
 
-    with pytest.raises(DomainError) as exc:
+    with pytest.raises(PermissionDenied):
         create_product(
             user=user,
             name="Produto X",
             description="Teste",
             category_id=category.id,
-            price=10
         )
-
-    assert exc.value.detail["code"] == "PermissionDenied"
 
 
 @pytest.mark.django_db
@@ -38,10 +33,14 @@ def test_user_with_permission_can_create_product():
 
     user = User.objects.create_user(
         email="withpermission@test.com",
-        password="1234"
+        password="1234",
     )
 
-    permission = Permission.objects.get(codename="add_product")
+    permission = Permission.objects.get(
+        codename="add_product",
+        content_type__app_label="inventory",
+        content_type__model="product",
+    )
     user.user_permissions.add(permission)
 
     category = create_category(name="Roupa")
@@ -51,7 +50,6 @@ def test_user_with_permission_can_create_product():
         name="Produto Y",
         description="Teste",
         category_id=category.id,
-        price=15
     )
 
     assert product.id is not None
@@ -64,20 +62,25 @@ def test_user_cannot_create_product_with_invalid_category():
 
     user = User.objects.create_user(
         email="invalidcategory@test.com",
-        password="1234"
+        password="1234",
     )
 
-    permission = Permission.objects.get(codename="add_product")
+    permission = Permission.objects.get(
+        codename="add_product",
+        content_type__app_label="inventory",
+        content_type__model="product",
+    )
     user.user_permissions.add(permission)
 
-    with pytest.raises(DomainError):
+    with pytest.raises(ValidationError) as exc:
         create_product(
             user=user,
             name="Produto Z",
             description="Teste",
             category_id=9999,
-            price=20
         )
+
+    assert exc.value.detail["messages"] == ["InvalidCategory"]
 
 
 @pytest.mark.django_db
@@ -86,16 +89,15 @@ def test_user_without_permission_cannot_create_second_product():
 
     user = User.objects.create_user(
         email="blocked@test.com",
-        password="1234"
+        password="1234",
     )
 
     category = create_category(name="Calçado")
 
-    with pytest.raises(DomainError):
+    with pytest.raises(PermissionDenied):
         create_product(
             user=user,
             name="Sapatos",
             description="Teste",
             category_id=category.id,
-            price=30
         )

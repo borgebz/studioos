@@ -60,7 +60,6 @@ def test_reference_data_can_create_product_and_variant():
         name="Produto Seed",
         description="Teste",
         category_id=category.id,
-        price=20
     )
 
     variant = create_variant(
@@ -69,7 +68,7 @@ def test_reference_data_can_create_product_and_variant():
         size_id=size.id,
         sku="SEED-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     assert product.id is not None

@@ -1,14 +1,13 @@
 from rest_framework import serializers
+
 from inventory.models import SizeSystem, Size
 
 
-# 🔹 Serializer para Size (nested)
 class SizeInputSerializer(serializers.Serializer):
     name = serializers.CharField()
     sort_order = serializers.IntegerField(required=False)
 
 
-# 🔹 CREATE
 class CreateSizeSystemSerializer(serializers.Serializer):
     name = serializers.CharField()
     is_active = serializers.BooleanField(required=False)
@@ -31,25 +30,29 @@ class CreateSizeSystemSerializer(serializers.Serializer):
         return value
 
 
-# 🔹 UPDATE
 class UpdateSizeSystemSerializer(serializers.Serializer):
-    name = serializers.CharField()
+    name = serializers.CharField(required=False)
+
+    def __init__(self, *args, size_system=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._size_system = size_system
 
     def validate_name(self, value):
+        if value is None:
+            return value
         normalized = value.strip().lower()
 
         qs = SizeSystem.objects.filter(name__iexact=normalized)
 
-        if self.instance:
-            qs = qs.exclude(pk=self.instance.pk)
+        if self._size_system is not None:
+            qs = qs.exclude(pk=self._size_system.pk)
 
         if qs.exists():
             raise serializers.ValidationError("SizeSystemAlreadyExists")
 
-        return value
+        return value.strip()
 
 
-# 🔹 OUTPUT
 class SizeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Size

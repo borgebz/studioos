@@ -37,7 +37,6 @@ def test_product_media_can_link_to_multiple_variants():
         name="Produto Media",
         description="Teste",
         category_id=category.id,
-        price=20
     )
 
     v1 = create_variant(
@@ -46,7 +45,7 @@ def test_product_media_can_link_to_multiple_variants():
         size_id=size1.id,
         sku="MED-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     v2 = create_variant(
@@ -55,7 +54,7 @@ def test_product_media_can_link_to_multiple_variants():
         size_id=size2.id,
         sku="MED-002",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     image = SimpleUploadedFile(
@@ -104,7 +103,6 @@ def test_variant_media_cannot_duplicate_same_relation():
         name="Produto Duplicate",
         description="Teste",
         category_id=category.id,
-        price=25
     )
 
     variant = create_variant(
@@ -113,7 +111,7 @@ def test_variant_media_cannot_duplicate_same_relation():
         size_id=size.id,
         sku="DUP-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     image = SimpleUploadedFile(
@@ -161,7 +159,6 @@ def test_variant_media_must_belong_to_same_product():
         name="Produto A",
         description="Teste",
         category_id=category.id,
-        price=10
     )
 
     product2 = create_product(
@@ -169,7 +166,6 @@ def test_variant_media_must_belong_to_same_product():
         name="Produto B",
         description="Teste",
         category_id=category.id,
-        price=15
     )
 
     variant = create_variant(
@@ -178,7 +174,7 @@ def test_variant_media_must_belong_to_same_product():
         size_id=size.id,
         sku="OWN-001",
         condition="new",
-        acquisition_type="owned"
+        acquisition_type="purchased"
     )
 
     image = SimpleUploadedFile(

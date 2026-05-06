@@ -1,61 +1,94 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from django.core.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from core.permissions import require_perm
+from core.schemas import DEFAULT_ERROR_RESPONSES
+
+from inventory.pagination import InventoryPageNumberPagination
+from inventory.schemas import inventory_paginated_schema
+from inventory.serializers.product_variant_serializers import ProductVariantSerializer
 from inventory.services.product_variant_services import (
-    list_variants,
-    get_variant,
     create_variant,
-    update_variant,
     delete_variant,
-)
-
-from inventory.serializers.product_variant_serializers import (
-    ProductVariantSerializer,
+    get_variant,
+    list_variants,
+    update_variant,
 )
 
 
 class ProductVariantListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={
+            200: inventory_paginated_schema(
+                name="InventoryProductVariantList",
+                results_serializer=ProductVariantSerializer,
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("inventory.view_product")
     def get(self, request, product_id):
-        try:
-            variants = list_variants(product_id, request.user)
-            serializer = ProductVariantSerializer(variants, many=True)
-            return Response(serializer.data)
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=400)
+        variants = list_variants(product_id=product_id, user=request.user)
+        paginator = InventoryPageNumberPagination()
+        page = paginator.paginate_queryset(variants, request)
+        return paginator.get_paginated_response(
+            ProductVariantSerializer(page, many=True).data
+        )
 
+    @extend_schema(
+        request=ProductVariantSerializer,
+        responses={201: ProductVariantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("inventory.add_product")
     def post(self, request, product_id):
-        try:
-            variant = create_variant(product_id, request.user, **request.data)
-            serializer = ProductVariantSerializer(variant)
-            return Response(serializer.data, status=201)
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=400)
+        serializer = ProductVariantSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        variant = create_variant(
+            product_id=product_id,
+            user=request.user,
+            **serializer.validated_data,
+        )
+        variant = get_variant(variant_id=variant.id, user=request.user)
+        return Response(
+            ProductVariantSerializer(variant).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class ProductVariantDetailView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses={200: ProductVariantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("inventory.view_product")
     def get(self, request, variant_id):
-        try:
-            variant = get_variant(variant_id, request.user)
-            serializer = ProductVariantSerializer(variant)
-            return Response(serializer.data)
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=400)
+        variant = get_variant(variant_id=variant_id, user=request.user)
+        return Response(ProductVariantSerializer(variant).data)
 
-    def put(self, request, variant_id):
-        try:
-            variant = update_variant(variant_id, request.user, **request.data)
-            serializer = ProductVariantSerializer(variant)
-            return Response(serializer.data)
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=400)
+    @extend_schema(
+        request=ProductVariantSerializer,
+        responses={200: ProductVariantSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("inventory.change_product")
+    def patch(self, request, variant_id):
+        serializer = ProductVariantSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        variant = update_variant(
+            variant_id=variant_id,
+            user=request.user,
+            **serializer.validated_data,
+        )
+        variant = get_variant(variant_id=variant.id, user=request.user)
+        return Response(ProductVariantSerializer(variant).data)
 
+    @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
+    @require_perm("inventory.delete_productvariant")
     def delete(self, request, variant_id):
-        try:
-            delete_variant(variant_id, request.user)
-            return Response({"message": "Variante arquivada com sucesso"})
-        except ValidationError as e:
-            return Response({"error": str(e)}, status=400)
+        delete_variant(variant_id=variant_id, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -1,5 +1,6 @@
 import pytest
-from core.exceptions import DomainError
+from rest_framework.exceptions import ValidationError
+
 from inventory.models import SizeSystem
 from inventory.services.size_system_services import create_size_system
 
@@ -16,11 +17,10 @@ def test_create_size_system():
 def test_duplicate_size_system_name():
     create_size_system(name="EU")
 
-    with pytest.raises(DomainError) as exc:
+    with pytest.raises(ValidationError) as exc:
         create_size_system(name="EU")
 
-    assert exc.value.detail.get("code") == "DuplicateSizeSystemName"
-    assert "Já existe" in exc.value.detail["detail"]
+    assert exc.value.detail["messages"] == ["DuplicateSizeSystemName"]
 
 
 @pytest.mark.django_db

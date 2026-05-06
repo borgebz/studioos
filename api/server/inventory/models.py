@@ -1,15 +1,16 @@
-from django.db import models
+import uuid
+from pathlib import Path
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db import models
+
+from core.models import BaseModel
 
 
-# Create your models here.
-class BaseModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        abstract = True
+def product_media_upload_to(instance, filename):
+    ext = Path(filename).suffix.lower()
+    return f"products/{uuid.uuid4()}{ext}"
 
 
 # Size System Model
@@ -49,7 +50,13 @@ class Size(BaseModel):
     )
 
     class Meta:
-        unique_together = ("name", "size_system")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "size_system"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="inventory_size_name_system_active_uniq",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.size_system})"
@@ -60,8 +67,20 @@ class Color(BaseModel):
     name = models.CharField(max_length=100)
     hex_code = models.CharField(max_length=7)
     is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="inventory_color_name_active_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=["hex_code"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="inventory_color_hex_code_active_uniq",
+            ),
+        ]
 
     def __str__(self):
         return self.name
@@ -80,7 +99,9 @@ class Product(BaseModel):
         ARCHIVED = "archived", "Archived"
 
     owner_type = models.CharField(max_length=20, choices=OwnerType.choices)
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
+    )
 
     category = models.ForeignKey(
         Category, null=True, blank=True, on_delete=models.SET_NULL
@@ -88,13 +109,28 @@ class Product(BaseModel):
 
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
 
     target_gender = models.CharField(max_length=50, blank=True, null=True)
     brand = models.CharField(max_length=255, blank=True, null=True)
     material = models.CharField(max_length=255, blank=True, null=True)
 
     status = models.CharField(max_length=20, choices=Status.choices)
+
+    class Meta:
+        permissions = [
+            ("view_school_product", "Can view school products"),
+            ("add_school_product", "Can add school products"),
+            ("change_school_product", "Can change school products"),
+            ("delete_school_product", "Can delete school products"),
+            ("manage_school_inventory", "Can manage school-owned inventory variants and bookings"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.owner_type == self.OwnerType.MEMBER and self.owner_id is None:
+            raise ValidationError("ProductMemberRequiresOwner")
+        if self.owner_type == self.OwnerType.SCHOOL and self.owner_id is not None:
+            raise ValidationError("SchoolProductMustNotHaveOwner")
 
     def __str__(self):
         return self.name
@@ -133,7 +169,7 @@ class ProductVariant(BaseModel):
     size = models.ForeignKey(Size, null=True, blank=True, on_delete=models.SET_NULL)
 
     condition = models.CharField(max_length=20, choices=Condition.choices)
-    sku = models.CharField(max_length=100, unique=True)
+    sku = models.CharField(max_length=100, blank=True, null=True)
 
     status = models.CharField(max_length=20, choices=Status.choices)
 
@@ -143,39 +179,65 @@ class ProductVariant(BaseModel):
     internal_notes = models.TextField(blank=True, null=True)
     public_notes = models.TextField(blank=True, null=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sku"],
+                condition=models.Q(deleted_at__isnull=True, sku__isnull=False)
+                & ~models.Q(sku=""),
+                name="inventory_productvariant_sku_active_uniq",
+            ),
+        ]
+        permissions = [
+            ("can_manage_variant_bookings", "Can manage variant bookings"),
+        ]
+
     def __str__(self):
-        return f"{self.product.name} - {self.sku}"
+        sku_display = self.sku or "—"
+        return f"{self.product.name} - {sku_display}"
 
 
 # Variant Color Model
-class VariantColor(models.Model):
+class VariantColor(BaseModel):
     variant = models.ForeignKey(
         ProductVariant, on_delete=models.CASCADE, related_name="colors"
     )
     color = models.ForeignKey(Color, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ("variant", "color")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["variant", "color"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="inventory_variantcolor_variant_color_active_uniq",
+            ),
+        ]
 
 
 # Product Media Model
 class ProductMedia(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="media")
 
-    image = models.ImageField(upload_to="products/")
+    image = models.ImageField(upload_to=product_media_upload_to)
     is_primary = models.BooleanField(default=False)
     sort_order = models.IntegerField(default=0)
 
 
-# Variant Medi Model
-class VariantMedia(models.Model):
+# Variant Media Model
+class VariantMedia(BaseModel):
     variant = models.ForeignKey(
         ProductVariant, on_delete=models.CASCADE, related_name="media_links"
     )
     product_media = models.ForeignKey(ProductMedia, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ("variant", "product_media")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["variant", "product_media"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="inventory_variantmedia_variant_media_active_uniq",
+            ),
+        ]
 
     def clean(self):
         if self.product_media.product_id != self.variant.product_id:
@@ -183,7 +245,7 @@ class VariantMedia(models.Model):
 
 
 # School Product Details Model
-class SchoolProductDetails(models.Model):
+class SchoolProductDetails(BaseModel):
     product = models.OneToOneField(
         Product, on_delete=models.CASCADE, related_name="school_details"
     )
@@ -228,13 +290,6 @@ class VariantBooking(BaseModel):
     actual_start_at = models.DateTimeField(null=True, blank=True)
     actual_end_at = models.DateTimeField(null=True, blank=True)
 
-    created_by_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="created_bookings",
-    )
-
     approved_by_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -248,15 +303,4 @@ class VariantBooking(BaseModel):
 
     def clean(self):
         if self.start_at >= self.end_at:
-            raise ValidationError("Invalid time range")
-
-        overlapping = VariantBooking.objects.filter(
-            variant=self.variant,
-            status__in=[self.Status.PENDING, self.Status.CONFIRMED, self.Status.ACTIVE],
-        ).filter(start_at__lt=self.end_at, end_at__gt=self.start_at)
-
-        if self.pk:
-            overlapping = overlapping.exclude(pk=self.pk)
-
-        if overlapping.exists():
-            raise ValidationError("This variant is already booked for this time range")
+            raise ValidationError("InvalidBookingDateRange")

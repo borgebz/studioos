@@ -28,6 +28,12 @@ request:
         if (path.includes("/onboard/")) {
           return;
         }
+        if (path.includes("/api/accounts/activate")) {
+          return;
+        }
+        if (path.includes("/api/schema")) {
+          return;
+        }
 
         const baseUrl =
           bru.getEnvVar("base_url") ||
