@@ -4,8 +4,8 @@ info:
   seq: 2
 
 http:
-  method: POST
-  url: http://127.0.0.1:8000/api/coachings/teachers/6/availability/
+  method: post
+  url: "{{base_url}}/api/coachings/teachers/6/availability/"
   body:
     type: json
     data: |-

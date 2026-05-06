@@ -1,27 +1,24 @@
 info:
-  name: edit
+  name: patch-profile
   type: http
   seq: 3
 
 http:
   method: patch
-  url: http://127.0.0.1:8000/api/accounts/profile/me/
-  headers:
-    - name: Authorization
-      value: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc0ODAwNzY5LCJpYXQiOjE3NzQ3OTcxNjksImp0aSI6IjQyNTc5N2YxOThmNDRlYWE4ZDg5MDkxMGQ5MGVkYjY1IiwidXNlcl9pZCI6IjIifQ.MFFl44V9e08HBWC-oR6BFDHzzDQYUnzIkx7nicv0-CE
+  url: "{{base_url}}/api/accounts/profile/me/"
   body:
     type: multipart-form
     data:
       - name: photo
         type: file
         value:
-          - ./files/profile-photo.png
+          - ./files/profile-photo.jpeg
       - name: display_name
         type: text
-        value: jorge
+        value: Jorge Updated
       - name: bio
         type: text
-        value: cozinheiro
+        value: Updated bio
   auth: inherit
 
 settings:

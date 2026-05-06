@@ -1,50 +1,45 @@
-<!doctype html>
-<html lang="pt">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aula Cancelada</title>
-  </head>
-  <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background-color:#f4f4f4;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
-      style="max-width:600px;margin:40px auto;background-color:#ffffff;border-radius:8px;overflow:hidden;">
-      <tr>
-        <td style="background-color:#1a1a2e;padding:30px 40px;text-align:center;">
-          <h1 style="color:#ffffff;margin:0;font-size:24px;">StudioOS</h1>
-          <p style="color:#cccccc;margin:8px 0 0;font-size:14px;">Escola de Dança</p>
-        </td>
-      </tr>
-      <tr>
-        <td style="background-color:#ffebee;padding:12px 40px;border-bottom:1px solid #ffcdd2;">
-          <p style="margin:0;color:#c62828;font-size:14px;font-weight:bold;">❌ Aula cancelada</p>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:40px;">
-          <h2 style="color:#1a1a2e;margin:0 0 16px;font-size:20px;">Olá {{ recipient.first_name }},</h2>
-          <p style="color:#333333;font-size:16px;line-height:1.6;margin:0 0 24px;">
-            A sua aula de <strong>{{ modality }}</strong> agendada para <strong>{{ coaching_date }}</strong> foi cancelada.
-          </p>
-          {% if cancellation_reason %}
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
-            style="background-color:#f8f8f8;border-radius:6px;margin:0 0 24px;">
-            <tr>
-              <td style="padding:20px;">
-                <p style="margin:0;color:#666666;font-size:14px;"><strong style="color:#1a1a2e;">Motivo:</strong> {{ cancellation_reason }}</p>
-              </td>
-            </tr>
-          </table>
-          {% endif %}
-          <p style="color:#666666;font-size:14px;line-height:1.5;margin:0;">
-            Se tiver dúvidas, por favor contacte a coordenação.
-          </p>
-        </td>
-      </tr>
-      <tr>
-        <td style="background-color:#f8f8f8;padding:20px 40px;text-align:center;border-top:1px solid #eeeeee;">
-          <p style="color:#999999;font-size:12px;margin:0;">StudioOS — Escola de Dança</p>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>
+{% extends "emails/base.html" %}
+{% block title %}Aula cancelada — StudioOS{% endblock %}
+{% block preheader %}A sua aula de {{ modality }} a {{ coaching_date }} foi cancelada.{% endblock %}
+
+{% block banner %}
+  <tr>
+    <td style="padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fdecec;">
+        <tr>
+          <td class="ea-pad" style="padding:18px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="28" style="width:28px; height:28px; background-color:#b3261e; border-radius:50%; text-align:center; vertical-align:middle; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#ffffff; line-height:28px; mso-line-height-rule:exactly;">&#x2715;</td>
+                <td style="width:12px; line-height:1px; font-size:0;">&nbsp;</td>
+                <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; font-weight:600; line-height:1.4; color:#8c1a14;">Aula cancelada</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+{% endblock %}
+
+{% block content %}
+  <h1 style="margin:0 0 12px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:1.3; color:#1a8280;" class="ea-h1">
+    Olá, {{ recipient.first_name }}
+  </h1>
+  <p style="margin:0 0 20px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; color:#2a2a3a;">
+    A sua aula particular de <strong style="color:#1a8280;">{{ modality }}</strong> agendada para <strong style="color:#1a8280;">{{ coaching_date }}</strong> foi cancelada.
+  </p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f6f6fa; border:1px solid #e6e6ee; border-radius:6px; margin:0 0 24px 0;">
+    <tr>
+      <td style="padding:16px 20px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;">
+        <div style="font-size:12px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:#5b5b6b; margin-bottom:6px;">Motivo</div>
+        <div style="font-size:14px; line-height:1.5; color:#2a2a3a;">{{ cancellation_reason }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.5; color:#5b5b6b;">
+    Se tiver dúvidas, contacte a equipa da StudioOS.
+  </p>
+{% endblock %}

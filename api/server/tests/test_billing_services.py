@@ -7,7 +7,9 @@ import pytest
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 from billing.models import BillingEntrySourceType, BillingEntryStatus
 
@@ -270,5 +272,6 @@ class TestGetBillingEntryForRequest:
             is_active=True,
         )
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.get_billing_entry_for_request(pk=rows[0].pk, requesting_user=other)
+        assert "BillingEntryNotFound" in str(exc.value.detail)

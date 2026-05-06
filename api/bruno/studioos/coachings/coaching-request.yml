@@ -4,13 +4,13 @@ info:
   seq: 11
 
 http:
-  method: POST
-  url: http://127.0.0.1:8000/api/coachings/request/
+  method: post
+  url: "{{base_url}}/api/coachings/request/"
   body:
     type: json
     data: |-
       {
-        "teacher_id": 1,
+        "teacher_id": 6,
         "modality_id": 1,
         "studio_id": 1,
         "start_datetime": "2026-04-20T10:00:00Z",

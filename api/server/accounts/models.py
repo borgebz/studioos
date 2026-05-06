@@ -59,6 +59,7 @@ class User(AuditMixin, SoftDeleteMixin, AbstractUser):
         permissions = [
             ("can_teach", "Can be assigned teaching modalities"),
             ("can_list_users", "Can list all users"),
+            ("can_invite_user", "Can issue single and bulk invites"),
             (
                 "can_participate_in_coaching",
                 "Can be enrolled as a participant in coaching classes",

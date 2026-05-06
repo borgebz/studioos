@@ -2,9 +2,10 @@ import logging
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
-from accounts.services import get_user_by_pk
+from accounts.services import assert_user_can_participate_in_coaching, get_user_by_pk
+from core.exceptions import AppNotFound
 from classes.models import Classe, ClasseMember
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ def get_classe(*, pk):
     try:
         return _classe_detail_queryset().get(pk=pk)
     except Classe.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ClasseNotFound")
 
 
 @transaction.atomic
@@ -49,7 +50,7 @@ def update_classe(*, pk, requesting_user, **updates):
     try:
         classe = Classe.objects.select_for_update().get(pk=pk)
     except Classe.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ClasseNotFound")
 
     if "name" in updates:
         classe.name = updates["name"]
@@ -74,7 +75,7 @@ def delete_classe(*, pk, requesting_user):
     try:
         classe = Classe.objects.get(pk=pk)
     except Classe.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ClasseNotFound")
     classe.delete(deleted_by=requesting_user)
     logger.info("Classe %s deleted by user=%s", pk, requesting_user.id)
 
@@ -83,7 +84,7 @@ def list_classe_members(*, classe_id):
     try:
         Classe.objects.get(pk=classe_id)
     except Classe.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ClasseNotFound")
     return ClasseMember.objects.filter(classe_id=classe_id).select_related("student")
 
 
@@ -92,11 +93,10 @@ def add_classe_member(*, classe_id, student_id, created_by):
     try:
         classe = Classe.objects.get(pk=classe_id)
     except Classe.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ClasseNotFound")
 
     student = get_user_by_pk(pk=student_id)
-    if not student.has_perm("accounts.can_participate_in_coaching"):
-        raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
+    assert_user_can_participate_in_coaching(user=student)
 
     member = ClasseMember(
         classe=classe,
@@ -125,11 +125,11 @@ def remove_classe_member(*, classe_id, member_pk, requesting_user):
     try:
         Classe.objects.get(pk=classe_id)
     except Classe.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ClasseNotFound")
     try:
         member = ClasseMember.objects.get(pk=member_pk, classe_id=classe_id)
     except ClasseMember.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("ClasseMemberNotFound")
     member.delete(deleted_by=requesting_user)
     logger.info(
         "ClasseMember %s removed from classe=%s by user=%s",

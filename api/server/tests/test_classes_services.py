@@ -1,7 +1,9 @@
 import uuid
 
 import pytest
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 
 @pytest.fixture
@@ -56,12 +58,13 @@ class TestUpdateClasse:
     def test_update_not_found(self, direction_user):
         from classes import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.update_classe(
                 pk=999999,
                 requesting_user=direction_user,
                 name="Nope",
             )
+        assert "ClasseNotFound" in str(exc.value.detail)
 
 
 @pytest.mark.django_db
@@ -77,8 +80,9 @@ class TestDeleteClasse:
     def test_delete_not_found(self, direction_user):
         from classes import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.delete_classe(pk=999999, requesting_user=direction_user)
+        assert "ClasseNotFound" in str(exc.value.detail)
 
 
 @pytest.mark.django_db
@@ -139,12 +143,13 @@ class TestClasseMembers:
     def test_add_member_classe_not_found(self, direction_user, student_user):
         from classes import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.add_classe_member(
                 classe_id=999999,
                 student_id=student_user.pk,
                 created_by=direction_user,
             )
+        assert "ClasseNotFound" in str(exc.value.detail)
 
     def test_remove_member(self, direction_user, student_user, classe):
         from classes import services

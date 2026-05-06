@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/api/events/1/schedule-publication/
+  url: "{{base_url}}/api/events/1/schedule-publication/"
   body:
     type: json
     data: |-

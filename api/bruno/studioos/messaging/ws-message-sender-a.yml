@@ -1,0 +1,17 @@
+info:
+  name: ws-message-sender-a
+  type: websocket
+  seq: 5
+
+websocket:
+  url: ws://{{base_host}}/ws/conversations/1/?token={{sender-a}}
+  message:
+    type: json
+    data: |-
+      {
+          "body": "Ola Professor!"
+      }
+
+settings:
+  timeout: 0
+  keepAliveInterval: 0

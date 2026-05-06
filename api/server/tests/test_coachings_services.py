@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AppNotFound
 
@@ -1133,11 +1133,12 @@ class TestParticipants:
     ):
         from coachings import services
 
-        with pytest.raises(AppNotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.student_accept_coaching_invitation(
                 coaching_class_id=scheduled_coaching.pk,
                 user=student,
             )
+        assert "ParticipantNotFound" in str(exc.value.detail)
 
     def test_add_participant_requires_student_capability(
         self, scheduled_coaching, teacher_user, direction_user
@@ -1531,13 +1532,14 @@ class TestUpdateCoaching:
     def test_update_modality_id_not_found(self, requested_coaching, direction_user):
         from coachings import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.update_coaching(
                 pk=requested_coaching.pk,
                 requesting_user=direction_user,
                 allow_teacher_change=True,
                 updates={"modality_id": 999_999_999},
             )
+        assert "ModalityNotFound" in str(exc.value.detail)
 
     def test_update_not_editable_when_completed(
         self, direction_user, teacher_user, modality, studio_with_modality
@@ -1771,12 +1773,13 @@ class TestUserModality:
     def test_add_user_modality_invalid_user(self, direction_user, modality):
         from modality import services
 
-        with pytest.raises(NotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.add_user_modality(
                 user_id=999_999,
                 modality_id=modality.pk,
                 requesting_user=direction_user,
             )
+        assert "TeacherNotFound" in str(exc.value.detail)
 
 
 @pytest.mark.django_db
@@ -2181,7 +2184,7 @@ class TestDirectCoordinationCoachingWithClasse:
     ):
         from coachings import services
 
-        with pytest.raises(AppNotFound):
+        with pytest.raises(AppNotFound) as exc:
             services.create_direct_coordination_coaching(
                 teacher_id=teacher_user.pk,
                 modality_id=modality.pk,
@@ -2192,6 +2195,7 @@ class TestDirectCoordinationCoachingWithClasse:
                 requesting_user=direction_user,
                 classe_id=999999,
             )
+        assert "ClasseNotFound" in str(exc.value.detail)
 
     def test_empty_classe_raises(
         self,
@@ -2219,6 +2223,54 @@ class TestDirectCoordinationCoachingWithClasse:
                 classe_id=empty_classe.pk,
             )
         assert "ClasseHasNoMembers" in str(exc.value.detail)
+
+    def test_classe_roster_rejects_member_without_participate_permission(
+        self,
+        direction_user,
+        teacher_user,
+        modality,
+        studio_with_modality,
+        db,
+    ):
+        """Bulk classe roster must not enrol users lacking ``can_participate_in_coaching``."""
+        from django.contrib.auth import get_user_model
+
+        from accounts.models import Role
+        from classes.models import Classe, ClasseMember
+        from coachings import services
+
+        User = get_user_model()
+        parent = User.objects.create_user(
+            email=f"parent_only_{uuid.uuid4().hex[:8]}@test.local",
+            password="test-pass-123",
+            first_name="Parent",
+            last_name="Only",
+            is_active=True,
+        )
+        parent.groups.add(Role.objects.get(code="parent").group)
+
+        classe = Classe.objects.create(
+            name=f"Classe invalid member {uuid.uuid4().hex[:8]}",
+            created_by=direction_user,
+        )
+        ClasseMember.objects.create(
+            classe=classe,
+            student=parent,
+            created_by=direction_user,
+        )
+
+        with pytest.raises(ValidationError) as exc:
+            services.create_direct_coordination_coaching(
+                teacher_id=teacher_user.pk,
+                modality_id=modality.pk,
+                studio_id=studio_with_modality.pk,
+                total_price="50.00",
+                start_datetime=_dt(1),
+                end_datetime=_dt(2),
+                requesting_user=direction_user,
+                classe_id=classe.pk,
+            )
+        assert "UserCannotParticipateInCoaching" in str(exc.value.detail)
 
     def test_no_classe_uses_enrollment_roster(
         self,

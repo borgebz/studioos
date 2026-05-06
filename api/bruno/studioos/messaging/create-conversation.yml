@@ -1,0 +1,21 @@
+info:
+  name: create-or-open-direct-conversation
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{base_url}}/api/messaging/conversations/"
+  body:
+    type: json
+    data: |-
+      {
+        "user_id": 2
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

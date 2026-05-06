@@ -4,7 +4,9 @@ from decimal import ROUND_DOWN, Decimal, InvalidOperation
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 from billing.models import (
     BillingEntry,
@@ -308,11 +310,11 @@ def get_billing_entry_for_request(*, pk, requesting_user):
             "fine",
         ).get(pk=pk)
     except BillingEntry.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("BillingEntryNotFound")
 
     if not _staff_can_use_student_filters(user=requesting_user):
         if entry.student_id != requesting_user.pk:
-            raise NotFound()
+            raise AppNotFound("BillingEntryNotFound")
     return entry
 
 
@@ -388,11 +390,11 @@ def get_fine_for_request(*, pk, requesting_user):
             "reviewed_by",
         ).get(pk=pk)
     except Fine.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("FineNotFound")
 
     if not _staff_can_use_student_filters(user=requesting_user):
         if fine.student_id != requesting_user.pk:
-            raise NotFound()
+            raise AppNotFound("FineNotFound")
     return fine
 
 

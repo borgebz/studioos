@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/api/billing/fines/1/
+  url: "{{base_url}}/api/billing/fines/1/"
   auth: inherit
 
 settings:
