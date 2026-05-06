@@ -2,9 +2,12 @@ info:
   name: ws-message-sender-b
   type: websocket
   seq: 6
+  description: >
+    Uses env `sender-b` (JWT query param). WebSocket calls do not run the collection
+    login script; set `sender-b` or copy an access token from the cookie jar after HTTP login.
 
 websocket:
-  url: ws://{{base_host}}/ws/conversations/1/?token={{access_token}}
+  url: ws://{{base_host}}/ws/conversations/1/?token={{sender-b}}
   message:
     type: json
     data: |-

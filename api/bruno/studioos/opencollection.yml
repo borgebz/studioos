@@ -16,16 +16,41 @@ config:
 
 request:
   auth:
-    type: bearer
-    token: "{{access_token}}"
+    type: none
   scripts:
     - type: before-request
       code: |-
-        const path = req.getPath() || "";
-        if (path.includes("/auth/login")) {
+        // Open Collection / some Bruno builds omit req.getPath(); avoid calling missing APIs (fixes "not a function").
+        var pathStr = "";
+        var urlStr = "";
+        try {
+          if (req && typeof req.getUrl === "function") {
+            urlStr = req.getUrl() || "";
+          }
+          if (req && typeof req.getPath === "function") {
+            pathStr = req.getPath() || "";
+          }
+        } catch (e) {}
+
+        var reqName = "";
+        try {
+          if (req && typeof req.getName === "function") {
+            reqName = req.getName() || "";
+          }
+        } catch (e2) {}
+
+        var skipLoginHook =
+          (pathStr && pathStr.indexOf("/auth/login") !== -1) ||
+          (urlStr && urlStr.indexOf("/auth/login") !== -1) ||
+          reqName.toLowerCase() === "login";
+        if (skipLoginHook) {
           return;
         }
-        if (path.includes("/onboard/")) {
+
+        if (
+          (pathStr && pathStr.indexOf("/onboard/") !== -1) ||
+          (urlStr && urlStr.indexOf("/onboard/") !== -1)
+        ) {
           return;
         }
 
@@ -54,21 +79,47 @@ request:
             data: { email, password },
           });
         } catch (err) {
-          const body = err.response?.data ?? err.message;
+          var body = err && err.response && err.response.data;
+          if (body === undefined && err) {
+            body = err.message;
+          }
           throw new Error(
             "Login failed: " +
               (typeof body === "string" ? body : JSON.stringify(body))
           );
         }
 
-        if (res.status !== 200 || !res.data || !res.data.access) {
-          throw new Error("Login failed: " + JSON.stringify(res.data ?? res.status));
+        if (res.status !== 200) {
+          throw new Error("Login failed: " + JSON.stringify(res.data !== undefined ? res.data : res.status));
         }
 
-        bru.setVar("access_token", res.data.access);
-        bru.setVar("refresh_token", res.data.refresh);
-        bru.setEnvVar("access_token", res.data.access, { persist: true });
-        bru.setEnvVar("refresh_token", res.data.refresh, { persist: true });
+        // Tokens are httpOnly cookies; sync jar into vars when the sandbox exposes bru.cookies.get / bru.setVar.
+        function safeCookie(name) {
+          if (!bru.cookies || typeof bru.cookies.get !== "function") {
+            return undefined;
+          }
+          try {
+            return bru.cookies.get(name);
+          } catch (e3) {
+            return undefined;
+          }
+        }
+        function safeSetVar(key, val) {
+          if (typeof bru.setVar !== "function") {
+            return;
+          }
+          try {
+            bru.setVar(key, val);
+          } catch (e4) {}
+        }
+        var access = safeCookie("studioos_access");
+        var refresh = safeCookie("studioos_refresh");
+        if (access) {
+          safeSetVar("access_token", access);
+        }
+        if (refresh) {
+          safeSetVar("refresh_token", refresh);
+        }
 bundled: false
 extensions:
   bruno:

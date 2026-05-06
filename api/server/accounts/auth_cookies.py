@@ -1,5 +1,3 @@
-import os
-
 from django.conf import settings
 
 
@@ -8,22 +6,28 @@ REFRESH_COOKIE_NAME = "studioos_refresh"
 
 
 def set_auth_cookies(response, access_token, refresh_token):
+    sj = settings.SIMPLE_JWT
+    access_max_age = int(sj["ACCESS_TOKEN_LIFETIME"].total_seconds())
+    refresh_max_age = int(sj["REFRESH_TOKEN_LIFETIME"].total_seconds())
+
+    cookie_kwargs = {
+        "httponly": True,
+        "secure": settings.DEBUG is False,
+        "samesite": "Lax",
+    }
+
     response.set_cookie(
         ACCESS_COOKIE_NAME,
         access_token,
-        max_age=os.environ.get("JWT_ACCESS_TOKEN_LIFETIME_MINUTES"),  # 15 min
-        httponly=True,
-        secure=settings.DEBUG is False,
-        samesite="Lax",
+        max_age=access_max_age,
+        **cookie_kwargs,
     )
 
     response.set_cookie(
         REFRESH_COOKIE_NAME,
         refresh_token,
-        max_age=os.environ.get("JWT_REFRESH_TOKEN_LIFETIME_DAYS"),  # 7 dias
-        httponly=True,
-        secure=settings.DEBUG is False,
-        samesite="Lax",
+        max_age=refresh_max_age,
+        **cookie_kwargs,
     )
 
 
