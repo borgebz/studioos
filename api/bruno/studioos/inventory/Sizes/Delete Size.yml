@@ -1,0 +1,17 @@
+info:
+  name: Delete Size
+  type: http
+  seq: 6
+
+http:
+  method: DELETE
+  url: http://127.0.0.1:8000/inventory/sizes/4/
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjIxNDk5LCJpYXQiOjE3NzY2MjA1OTksImp0aSI6ImFkZWI0ODk1MTMzNzQ1ZDg5MzVjYjA0OThlODlkYmEwIiwidXNlcl9pZCI6IjEifQ.mIvlSejI4ASQCS1iap-Dbk8expb2Lkw6co9gPHUxhfw
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

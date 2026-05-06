@@ -1,0 +1,27 @@
+info:
+  name: create-school-product
+  type: http
+  seq: 17
+
+http:
+  method: post
+  url: "{{base_url}}/inventory/school/products/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "School uniform item",
+        "description": "From Bruno",
+        "school_details": {
+          "inventory_code": "SKU-SCH-1",
+          "storage_location": "A1",
+          "notes": ""
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

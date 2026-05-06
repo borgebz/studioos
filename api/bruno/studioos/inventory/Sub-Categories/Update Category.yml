@@ -1,0 +1,21 @@
+info:
+  name: update-category
+  type: http
+  seq: 5
+
+http:
+  method: patch
+  url: "{{base_url}}/inventory/categories/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Updated category name"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

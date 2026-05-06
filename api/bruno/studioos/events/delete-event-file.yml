@@ -1,0 +1,15 @@
+info:
+  name: delete-event-file
+  type: http
+  seq: 37
+
+http:
+  method: delete
+  url: "{{base_url}}/api/events/1/files/1/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

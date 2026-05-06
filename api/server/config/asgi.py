@@ -9,8 +9,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 django_asgi_app = get_asgi_application()
 
-from messaging.middleware import JWTAuthMiddleware
-from messaging.routing import websocket_urlpatterns
+from messaging.middleware import JWTAuthMiddleware  # noqa: E402
+from messaging.routing import websocket_urlpatterns  # noqa: E402
 
 # Browsers send Origin; CLI/desktop clients (Bruno, wscat, Postman) often omit it.
 # AllowedHostsOriginValidator treats missing Origin as invalid → 403 before JWT runs.

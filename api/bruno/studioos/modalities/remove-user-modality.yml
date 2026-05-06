@@ -1,0 +1,15 @@
+info:
+  name: remove-user-modality
+  type: http
+  seq: 7
+
+http:
+  method: delete
+  url: "{{base_url}}/api/modalities/users/6/modalities/1/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

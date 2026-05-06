@@ -8,6 +8,7 @@ from core.models import BaseModel
 class BillingEntrySourceType(models.TextChoices):
     COACHING = "coaching", "Coaching"
     FINE = "fine", "Fine"
+    MARKETPLACE = "marketplace", "Marketplace"
 
 
 class BillingEntryStatus(models.TextChoices):
@@ -47,6 +48,14 @@ class BillingEntry(BaseModel):
         blank=True,
         related_name="billing_entries",
         help_text="Set when source_type=fine. Generated on Fine approval.",
+    )
+    marketplace_transaction = models.ForeignKey(
+        "marketplace.ProductTransaction",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="billing_entries",
+        help_text="Set when source_type=marketplace. Generated on transaction completion.",
     )
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -114,6 +123,19 @@ class BillingEntry(BaseModel):
                 condition=Q(deleted_at__isnull=True)
                 & Q(source_type=BillingEntrySourceType.FINE),
                 name="uniq_fine_billing_entry",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    ~Q(source_type=BillingEntrySourceType.MARKETPLACE)
+                    | Q(marketplace_transaction_id__isnull=False)
+                ),
+                name="billing_entry_marketplace_source_has_fk",
+            ),
+            models.UniqueConstraint(
+                fields=("marketplace_transaction",),
+                condition=Q(deleted_at__isnull=True)
+                & Q(source_type=BillingEntrySourceType.MARKETPLACE),
+                name="uniq_marketplace_billing_entry",
             ),
         ]
         indexes = [

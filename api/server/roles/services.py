@@ -22,9 +22,13 @@ def get_role_by_code(*, code):
             "content_type__app_label",
             "codename",
         )
-        return Role.objects.select_related("group").prefetch_related(
-            Prefetch("group__permissions", queryset=perms_qs),
-        ).get(code=code)
+        return (
+            Role.objects.select_related("group")
+            .prefetch_related(
+                Prefetch("group__permissions", queryset=perms_qs),
+            )
+            .get(code=code)
+        )
     except Role.DoesNotExist:
         raise AppNotFound("RoleNotFound")
 

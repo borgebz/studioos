@@ -1,0 +1,25 @@
+info:
+  name: send-message-with-file
+  type: http
+  seq: 5
+
+http:
+  method: post
+  url: "{{base_url}}/api/messaging/conversations/1/messages/"
+  body:
+    type: multipart-form
+    data:
+      - name: body
+        type: text
+        value: See attachment
+      - name: file
+        type: file
+        value:
+          - ../enrollment/files/payment-proof.png
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

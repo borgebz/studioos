@@ -1,0 +1,15 @@
+info:
+  name: delete-category
+  type: http
+  seq: 6
+
+http:
+  method: delete
+  url: "{{base_url}}/inventory/categories/1/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

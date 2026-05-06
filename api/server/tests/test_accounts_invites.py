@@ -15,7 +15,7 @@ from openpyxl import Workbook
 from rest_framework.exceptions import ValidationError
 
 from accounts import invite_store
-from accounts.models import Role, User
+from accounts.models import User
 from accounts.services import (
     assert_inviter_can_assign_role,
     bulk_invite_users,
@@ -73,7 +73,9 @@ def _make_xlsx(rows: list[tuple[str, str]]) -> SimpleUploadedFile:
 @pytest.mark.django_db
 class TestInviteHierarchy:
     def test_direction_can_invite_teacher(self, direction_user):
-        assert_inviter_can_assign_role(inviter=direction_user, target_role_code="teacher")
+        assert_inviter_can_assign_role(
+            inviter=direction_user, target_role_code="teacher"
+        )
 
     def test_coordination_cannot_invite_coordination(self, coordination_user):
         with pytest.raises(ValidationError) as exc:
@@ -155,7 +157,9 @@ class TestOnboardingFlow:
 
     def test_consumed_token_rejected_on_second_use(self, direction_user):
         email = f"tok2_{uuid.uuid4().hex[:8]}@test.local"
-        invited = invite_user(email=email, role_code="parent", created_by=direction_user)
+        invited = invite_user(
+            email=email, role_code="parent", created_by=direction_user
+        )
         r = invite_store.get_redis_client()
         token = r.get(f"invite_user:{invited.pk}")
         complete_onboarding(
@@ -181,7 +185,9 @@ class TestOnboardingFlow:
 
     def test_resend_active_user_rejected(self, direction_user):
         email = f"active_{uuid.uuid4().hex[:8]}@test.local"
-        invited = invite_user(email=email, role_code="teacher", created_by=direction_user)
+        invited = invite_user(
+            email=email, role_code="teacher", created_by=direction_user
+        )
         r = invite_store.get_redis_client()
         token = r.get(f"invite_user:{invited.pk}")
         complete_onboarding(

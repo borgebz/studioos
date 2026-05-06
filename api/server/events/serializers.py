@@ -84,9 +84,7 @@ class EventSerializer(serializers.ModelSerializer):
     def get_cover_photo_url(self, obj):
         return event_cover_photo_absolute_url(serializer=self, obj=obj)
 
-    @extend_schema_field(
-        serializers.ListField(child=serializers.IntegerField())
-    )
+    @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
     def get_class_target_classe_ids(self, obj):
         return list(
             EventClassTarget.objects.filter(event=obj)

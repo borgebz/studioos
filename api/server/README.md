@@ -8,6 +8,10 @@ uv run python manage.py migrate
 uv run python manage.py seed_permissions
 uv run python manage.py seed_roles
 uv run python manage.py seed_modalities
+uv run python manage.py seed_size_systems
+uv run python manage.py seed_sizes
+uv run python manage.py seed_categories
+uv run python manage.py seed_colors
 uv run python manage.py bootstrap_user --email dev@test.com --password '123456' --role direction
 uv run python manage.py runserver
 ```
@@ -28,6 +32,10 @@ docker compose exec api uv run python manage.py migrate
 docker compose exec api uv run python manage.py seed_permissions
 docker compose exec api uv run python manage.py seed_roles
 docker compose exec api uv run python manage.py seed_modalities
+docker compose exec api uv run python manage.py seed_size_systems
+docker compose exec api uv run python manage.py seed_sizes
+docker compose exec api uv run python manage.py seed_categories
+docker compose exec api uv run python manage.py seed_colors
 docker compose exec api uv run python manage.py bootstrap_user --email dev@test.com --password '123456' --role direction
 ```
 

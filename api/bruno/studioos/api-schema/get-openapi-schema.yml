@@ -1,0 +1,15 @@
+info:
+  name: get-openapi-schema
+  type: http
+  seq: 1
+
+http:
+  method: get
+  url: "{{base_url}}/api/schema/"
+  auth: none
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

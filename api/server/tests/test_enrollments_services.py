@@ -472,7 +472,7 @@ class TestApproveEnrollment:
         e = services.start_review(enrollment=e, updated_by=direction_user)
 
         with patch("accounts.tasks.send_activation_email_task.delay"):
-            services.approve_enrollment(enrollment=e, updated_by=direction_user)
+            e = services.approve_enrollment(enrollment=e, updated_by=direction_user)
         parent.refresh_from_db()
         assert parent.phone == "911111111"
         student.refresh_from_db()

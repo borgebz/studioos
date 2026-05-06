@@ -322,7 +322,9 @@ def activate_account(*, uid, token, password):
 INVITE_TARGETS_DIRECTION = frozenset(
     {"coordination", "collaborator", "teacher", "parent", "student"}
 )
-INVITE_TARGETS_COORDINATION = frozenset({"collaborator", "teacher", "parent", "student"})
+INVITE_TARGETS_COORDINATION = frozenset(
+    {"collaborator", "teacher", "parent", "student"}
+)
 
 
 def _invite_scope_for_user(*, inviter) -> str | None:
@@ -423,9 +425,7 @@ def _parse_bulk_invite_headers(ws):
     header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
     if not header_row:
         raise ValidationError({"messages": ["BulkInviteFileInvalid"]})
-    headers = [
-        (str(h).strip().lower() if h is not None else "") for h in header_row
-    ]
+    headers = [(str(h).strip().lower() if h is not None else "") for h in header_row]
     try:
         email_idx = headers.index("email")
         role_idx = headers.index("role")
@@ -503,7 +503,9 @@ def _validate_bulk_invite_rows(*, inviter, parsed_rows):
         if e["email"]
     ]
     existing_emails = set(
-        User.all_objects.filter(email__in=candidate_emails).values_list("email", flat=True)
+        User.all_objects.filter(email__in=candidate_emails).values_list(
+            "email", flat=True
+        )
     )
 
     for entry in parsed_rows:
@@ -520,7 +522,9 @@ def _validate_bulk_invite_rows(*, inviter, parsed_rows):
             except DjangoValidationError:
                 errs.append("InvalidEmail")
 
-        email_norm = User.objects.normalize_email(raw_email).lower() if raw_email else ""
+        email_norm = (
+            User.objects.normalize_email(raw_email).lower() if raw_email else ""
+        )
 
         role_code = raw_role.strip().lower() if raw_role else ""
         if not role_code:

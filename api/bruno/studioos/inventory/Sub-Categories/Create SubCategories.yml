@@ -1,0 +1,31 @@
+info:
+  name: Create SubCategories
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: http://127.0.0.1:8000/inventory/categories/
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Calçado",
+        "subcategories": [
+          {
+            "name": "Ténis"
+          },
+          {
+            "name": "Botas"
+          }
+        ]
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjI0NjUzLCJpYXQiOjE3NzY2MjM3NTMsImp0aSI6IjAyYzI5YWVlYzE0MDRjOTI5OTg4N2M3Yjk3OGM2NzJjIiwidXNlcl9pZCI6IjEifQ.E1vikJvVMO4NqwOa-Te2RC14dfluFDjVcbR7FrVE0nc
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
