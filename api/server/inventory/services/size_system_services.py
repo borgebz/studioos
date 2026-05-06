@@ -21,9 +21,18 @@ def get_size_system(*, pk):
 
 # LIST
 def list_size_systems():
-    return SizeSystem.objects.filter(is_active=True).prefetch_related(
-        Prefetch("sizes", queryset=Size.objects.filter(is_active=True).order_by("sort_order", "name"))
-    ).order_by("name")
+    return (
+        SizeSystem.objects.filter(is_active=True)
+        .prefetch_related(
+            Prefetch(
+                "sizes",
+                queryset=Size.objects.filter(is_active=True).order_by(
+                    "sort_order", "name"
+                ),
+            )
+        )
+        .order_by("name")
+    )
 
 
 # CREATE
@@ -84,8 +93,7 @@ def update_size_system(*, size_system, name=None, updated_by=None):
 # DELETE (Soft + regras)
 def delete_size_system(*, size_system, deleted_by=None):
     has_variants = ProductVariant.objects.filter(
-        Q(product__category__size_system=size_system)
-        | Q(size__size_system=size_system)
+        Q(product__category__size_system=size_system) | Q(size__size_system=size_system)
     ).exists()
 
     has_categories = Category.objects.filter(size_system=size_system).exists()

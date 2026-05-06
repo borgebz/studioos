@@ -41,7 +41,6 @@ from inventory.services.color_services import (
     create_color,
     deactivate_color,
     delete_color,
-    get_color,
 )
 from inventory.services.product_services import (
     create_product,
@@ -67,7 +66,6 @@ from inventory.services.size_services import (
     create_size,
     deactivate_size,
     delete_size,
-    get_size,
 )
 from inventory.services.size_system_services import (
     activate_size_system,
@@ -279,6 +277,7 @@ class TestSizeSystemCRUD:
         pk = ss.id
         delete_size_system(size_system=ss)
         from inventory.models import SizeSystem
+
         assert not SizeSystem.objects.filter(id=pk, deleted_at__isnull=True).exists()
 
     @pytest.mark.django_db
@@ -309,14 +308,18 @@ class TestSizeCRUD:
     @pytest.mark.django_db
     @pytest.mark.parametrize("size_name", size_data)
     def test_create_size(self, size_name, clothing_system):
-        sz = create_size(name=f"{size_name}_{_uid()}", size_system_id=clothing_system.id)
+        sz = create_size(
+            name=f"{size_name}_{_uid()}", size_system_id=clothing_system.id
+        )
         assert sz.id is not None
         assert sz.size_system_id == clothing_system.id
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("size_name", size_data)
     def test_deactivate_and_activate_size(self, size_name, clothing_system):
-        sz = create_size(name=f"{size_name}_{_uid()}", size_system_id=clothing_system.id)
+        sz = create_size(
+            name=f"{size_name}_{_uid()}", size_system_id=clothing_system.id
+        )
         deactivated = deactivate_size(size=sz)
         assert deactivated.is_active is False
         reactivated = activate_size(size=sz)
@@ -325,10 +328,13 @@ class TestSizeCRUD:
     @pytest.mark.django_db
     @pytest.mark.parametrize("size_name", size_data)
     def test_delete_size(self, size_name, clothing_system):
-        sz = create_size(name=f"{size_name}_{_uid()}", size_system_id=clothing_system.id)
+        sz = create_size(
+            name=f"{size_name}_{_uid()}", size_system_id=clothing_system.id
+        )
         pk = sz.id
         delete_size(size=sz)
         from inventory.models import Size
+
         assert not Size.objects.filter(id=pk, deleted_at__isnull=True).exists()
 
     @pytest.mark.django_db
@@ -345,9 +351,13 @@ class TestSizeCRUD:
         assert sz1.id != sz2.id
 
     @pytest.mark.django_db
-    def test_size_in_use_delete_blocked(self, member_user, category_costumes, clothing_system):
+    def test_size_in_use_delete_blocked(
+        self, member_user, category_costumes, clothing_system
+    ):
         sz = create_size(name=f"InUseSz_{_uid()}", size_system_id=clothing_system.id)
-        p = create_product(user=member_user, name=f"SzProd_{_uid()}", category_id=category_costumes.id)
+        p = create_product(
+            user=member_user, name=f"SzProd_{_uid()}", category_id=category_costumes.id
+        )
         create_variant(
             product_id=p.id,
             user=member_user,
@@ -407,6 +417,7 @@ class TestCategoryCRUD:
         pk = cat.id
         delete_category(category=cat)
         from inventory.models import Category
+
         assert not Category.objects.filter(id=pk, deleted_at__isnull=True).exists()
 
     @pytest.mark.django_db
@@ -467,6 +478,7 @@ class TestColorCRUD:
         pk = c.id
         delete_color(color=c)
         from inventory.models import Color
+
         assert not Color.objects.filter(id=pk, deleted_at__isnull=True).exists()
 
     @pytest.mark.django_db
@@ -515,13 +527,21 @@ class TestMemberProductLifecycle:
         ("Tutu Branco", "Vestido de ballet clássico", "female", "Chloé", "tulle"),
         ("Leotard Preto", "Body para ensaio", "female", "Capezio", "lycra"),
         ("Calças Jazz", "Calças elásticas para jazz", "unisex", "Bloch", "spandex"),
-        ("Saia Contemporânea", "Saia fluida para contemporâneo", "female", None, "chiffon"),
+        (
+            "Saia Contemporânea",
+            "Saia fluida para contemporâneo",
+            "female",
+            None,
+            "chiffon",
+        ),
         ("Top Urbano", "Top para hip-hop", "male", "Puma", "cotton"),
     ]
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,desc,gender,brand,material", product_data)
-    def test_create_product(self, name, desc, gender, brand, material, member_user, category_costumes):
+    def test_create_product(
+        self, name, desc, gender, brand, material, member_user, category_costumes
+    ):
         p = create_product(
             user=member_user,
             name=f"{name}_{_uid()}",
@@ -537,7 +557,9 @@ class TestMemberProductLifecycle:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,desc,gender,brand,material", product_data)
-    def test_update_product(self, name, desc, gender, brand, material, member_user, category_costumes):
+    def test_update_product(
+        self, name, desc, gender, brand, material, member_user, category_costumes
+    ):
         p = create_product(
             user=member_user,
             name=f"{name}_{_uid()}",
@@ -555,7 +577,9 @@ class TestMemberProductLifecycle:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,desc,gender,brand,material", product_data)
-    def test_delete_product_no_variants(self, name, desc, gender, brand, material, member_user, category_costumes):
+    def test_delete_product_no_variants(
+        self, name, desc, gender, brand, material, member_user, category_costumes
+    ):
         p = create_product(
             user=member_user,
             name=f"{name}_{_uid()}",
@@ -565,12 +589,21 @@ class TestMemberProductLifecycle:
         pk = p.id
         delete_product(pk=pk, user=member_user)
         from inventory.models import Product
+
         assert not Product.objects.filter(id=pk, deleted_at__isnull=True).exists()
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,desc,gender,brand,material", product_data)
     def test_delete_product_with_variants_blocked(
-        self, name, desc, gender, brand, material, member_user, category_costumes, size_m
+        self,
+        name,
+        desc,
+        gender,
+        brand,
+        material,
+        member_user,
+        category_costumes,
+        size_m,
     ):
         p = create_product(
             user=member_user,
@@ -593,7 +626,9 @@ class TestMemberProductLifecycle:
     def test_member_cannot_see_another_members_product(self, category_costumes):
         user_a = _make_member()
         user_b = _make_member()
-        p = create_product(user=user_a, name=f"Private_{_uid()}", category_id=category_costumes.id)
+        p = create_product(
+            user=user_a, name=f"Private_{_uid()}", category_id=category_costumes.id
+        )
         with pytest.raises(PermissionDenied):
             get_product(pk=p.id, user=user_b)
 
@@ -601,8 +636,12 @@ class TestMemberProductLifecycle:
     def test_member_list_only_own_products(self, category_costumes):
         user_a = _make_member()
         user_b = _make_member()
-        p1 = create_product(user=user_a, name=f"A_{_uid()}", category_id=category_costumes.id)
-        create_product(user=user_b, name=f"B_{_uid()}", category_id=category_costumes.id)
+        p1 = create_product(
+            user=user_a, name=f"A_{_uid()}", category_id=category_costumes.id
+        )
+        create_product(
+            user=user_b, name=f"B_{_uid()}", category_id=category_costumes.id
+        )
         results = list(list_products(user=user_a))
         ids = [r.id for r in results]
         assert p1.id in ids
@@ -633,7 +672,9 @@ class TestSchoolProductLifecycle:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,inv_code,location", school_data)
-    def test_create_school_product(self, name, inv_code, location, school_manager, category_costumes):
+    def test_create_school_product(
+        self, name, inv_code, location, school_manager, category_costumes
+    ):
         p = create_school_product(
             user=school_manager,
             name=f"{name}_{_uid()}",
@@ -647,7 +688,9 @@ class TestSchoolProductLifecycle:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,inv_code,location", school_data)
-    def test_update_school_product(self, name, inv_code, location, school_manager, category_costumes):
+    def test_update_school_product(
+        self, name, inv_code, location, school_manager, category_costumes
+    ):
         p = create_school_product(
             user=school_manager,
             name=f"{name}_{_uid()}",
@@ -665,7 +708,9 @@ class TestSchoolProductLifecycle:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,inv_code,location", school_data)
-    def test_delete_school_product_no_variants(self, name, inv_code, location, school_manager, category_costumes):
+    def test_delete_school_product_no_variants(
+        self, name, inv_code, location, school_manager, category_costumes
+    ):
         p = create_school_product(
             user=school_manager,
             name=f"{name}_{_uid()}",
@@ -675,11 +720,14 @@ class TestSchoolProductLifecycle:
         pk = p.id
         delete_school_product(pk=pk, user=school_manager)
         from inventory.models import Product
+
         assert not Product.objects.filter(id=pk, deleted_at__isnull=True).exists()
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,inv_code,location", school_data)
-    def test_member_cannot_create_school_product(self, name, inv_code, location, category_costumes):
+    def test_member_cannot_create_school_product(
+        self, name, inv_code, location, category_costumes
+    ):
         member = _make_member()
         with pytest.raises(PermissionDenied):
             create_school_product(
@@ -690,7 +738,9 @@ class TestSchoolProductLifecycle:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("name,inv_code,location", school_data)
-    def test_member_cannot_view_school_product(self, name, inv_code, location, school_manager, category_costumes):
+    def test_member_cannot_view_school_product(
+        self, name, inv_code, location, school_manager, category_costumes
+    ):
         p = create_school_product(
             user=school_manager,
             name=f"{name}_{_uid()}",
@@ -716,7 +766,9 @@ class TestSchoolProductLifecycle:
         assert p.owner_id is None
 
     @pytest.mark.django_db
-    def test_member_product_cannot_have_school_details(self, member_user, category_costumes):
+    def test_member_product_cannot_have_school_details(
+        self, member_user, category_costumes
+    ):
         with pytest.raises(ValidationError) as exc:
             create_product(
                 user=member_user,
@@ -746,7 +798,14 @@ class TestProductVariantLifecycle:
     @pytest.mark.django_db
     @pytest.mark.parametrize("condition,acq_type,sku_prefix", variant_data)
     def test_create_variant(
-        self, condition, acq_type, sku_prefix, member_user, member_product, size_m, color_black
+        self,
+        condition,
+        acq_type,
+        sku_prefix,
+        member_user,
+        member_product,
+        size_m,
+        color_black,
     ):
         v = create_variant(
             product_id=member_product.id,
@@ -800,7 +859,10 @@ class TestProductVariantLifecycle:
         pk = v.id
         delete_variant(variant_id=pk, user=member_user)
         from inventory.models import ProductVariant
-        assert not ProductVariant.objects.filter(id=pk, deleted_at__isnull=True).exists()
+
+        assert not ProductVariant.objects.filter(
+            id=pk, deleted_at__isnull=True
+        ).exists()
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("condition,acq_type,sku_prefix", variant_data)
@@ -895,7 +957,9 @@ class TestProductVariantLifecycle:
         assert v.id is not None
 
     @pytest.mark.django_db
-    def test_member_cannot_create_variant_on_school_product(self, school_product, size_m):
+    def test_member_cannot_create_variant_on_school_product(
+        self, school_product, size_m
+    ):
         member = _make_member()
         with pytest.raises(PermissionDenied):
             create_variant(
@@ -926,7 +990,14 @@ class TestVariantBookingLifecycle:
     @pytest.mark.django_db
     @pytest.mark.parametrize("booking_type,title,start_delta,end_delta", booking_data)
     def test_create_booking(
-        self, booking_type, title, start_delta, end_delta, member_user, member_product, size_m
+        self,
+        booking_type,
+        title,
+        start_delta,
+        end_delta,
+        member_user,
+        member_product,
+        size_m,
     ):
         v = create_variant(
             product_id=member_product.id,
@@ -952,7 +1023,14 @@ class TestVariantBookingLifecycle:
     @pytest.mark.django_db
     @pytest.mark.parametrize("booking_type,title,start_delta,end_delta", booking_data)
     def test_update_booking(
-        self, booking_type, title, start_delta, end_delta, member_user, member_product, size_m
+        self,
+        booking_type,
+        title,
+        start_delta,
+        end_delta,
+        member_user,
+        member_product,
+        size_m,
     ):
         v = create_variant(
             product_id=member_product.id,
@@ -983,7 +1061,14 @@ class TestVariantBookingLifecycle:
     @pytest.mark.django_db
     @pytest.mark.parametrize("booking_type,title,start_delta,end_delta", booking_data)
     def test_delete_booking(
-        self, booking_type, title, start_delta, end_delta, member_user, member_product, size_m
+        self,
+        booking_type,
+        title,
+        start_delta,
+        end_delta,
+        member_user,
+        member_product,
+        size_m,
     ):
         v = create_variant(
             product_id=member_product.id,
@@ -1004,13 +1089,22 @@ class TestVariantBookingLifecycle:
         )
         pk = b.id
         delete_booking(booking_id=pk, user=member_user)
-        from inventory.models import VariantBooking
-        assert not VariantBooking.objects.filter(id=pk, deleted_at__isnull=True).exists()
+
+        assert not VariantBooking.objects.filter(
+            id=pk, deleted_at__isnull=True
+        ).exists()
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("booking_type,title,start_delta,end_delta", booking_data)
     def test_get_booking(
-        self, booking_type, title, start_delta, end_delta, member_user, member_product, size_m
+        self,
+        booking_type,
+        title,
+        start_delta,
+        end_delta,
+        member_user,
+        member_product,
+        size_m,
     ):
         v = create_variant(
             product_id=member_product.id,
@@ -1035,7 +1129,14 @@ class TestVariantBookingLifecycle:
     @pytest.mark.django_db
     @pytest.mark.parametrize("booking_type,title,start_delta,end_delta", booking_data)
     def test_list_bookings(
-        self, booking_type, title, start_delta, end_delta, member_user, member_product, size_m
+        self,
+        booking_type,
+        title,
+        start_delta,
+        end_delta,
+        member_user,
+        member_product,
+        size_m,
     ):
         v = create_variant(
             product_id=member_product.id,
@@ -1076,7 +1177,9 @@ class TestBookingGuards:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("s1,e1,s2,e2", overlap_scenarios)
-    def test_overlap_booking_blocked(self, s1, e1, s2, e2, member_user, member_product, size_m):
+    def test_overlap_booking_blocked(
+        self, s1, e1, s2, e2, member_user, member_product, size_m
+    ):
         now = timezone.now()
         v = create_variant(
             product_id=member_product.id,
@@ -1113,7 +1216,9 @@ class TestBookingGuards:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("s_delta,e_delta", invalid_date_scenarios)
-    def test_invalid_date_range_blocked(self, s_delta, e_delta, member_user, member_product, size_m):
+    def test_invalid_date_range_blocked(
+        self, s_delta, e_delta, member_user, member_product, size_m
+    ):
         now = timezone.now()
         v = create_variant(
             product_id=member_product.id,
@@ -1204,7 +1309,9 @@ class TestBookingGuards:
         assert b1.id != b2.id
 
     @pytest.mark.django_db
-    def test_booking_update_immutable_variant(self, member_user, member_product, size_m):
+    def test_booking_update_immutable_variant(
+        self, member_user, member_product, size_m
+    ):
         now = timezone.now()
         v = create_variant(
             product_id=member_product.id,
@@ -1305,7 +1412,9 @@ class TestSchoolVariantBookings:
             )
 
     @pytest.mark.django_db
-    def test_school_manager_can_update_booking_status(self, school_manager, school_product, size_m):
+    def test_school_manager_can_update_booking_status(
+        self, school_manager, school_product, size_m
+    ):
         v = create_variant(
             product_id=school_product.id,
             user=school_manager,
@@ -1327,7 +1436,9 @@ class TestSchoolVariantBookings:
         assert updated.status == "blocked"
 
     @pytest.mark.django_db
-    def test_school_variant_overlap_blocked(self, school_manager, school_product, size_m):
+    def test_school_variant_overlap_blocked(
+        self, school_manager, school_product, size_m
+    ):
         v = create_variant(
             product_id=school_product.id,
             user=school_manager,
@@ -1366,8 +1477,14 @@ class TestCrossActorIsolation:
     """Members and school managers must not bleed into each other's data."""
 
     @pytest.mark.django_db
-    def test_school_manager_cannot_delete_member_product(self, member_user, category_costumes):
-        p = create_product(user=member_user, name=f"MemberProd_{_uid()}", category_id=category_costumes.id)
+    def test_school_manager_cannot_delete_member_product(
+        self, member_user, category_costumes
+    ):
+        p = create_product(
+            user=member_user,
+            name=f"MemberProd_{_uid()}",
+            category_id=category_costumes.id,
+        )
         mgr = _make_school_manager()
         with pytest.raises(PermissionDenied):
             delete_product(pk=p.id, user=mgr)
@@ -1376,7 +1493,9 @@ class TestCrossActorIsolation:
     def test_five_members_isolated_products(self, category_costumes):
         members = [_make_member() for _ in range(5)]
         products = [
-            create_product(user=m, name=f"Prod_{i}_{_uid()}", category_id=category_costumes.id)
+            create_product(
+                user=m, name=f"Prod_{i}_{_uid()}", category_id=category_costumes.id
+            )
             for i, m in enumerate(members)
         ]
         for i, member in enumerate(members):
@@ -1541,7 +1660,9 @@ class TestBookingStatusTransitions:
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("from_status,to_status", status_sequences)
-    def test_booking_status_update(self, from_status, to_status, member_user, member_product, size_m):
+    def test_booking_status_update(
+        self, from_status, to_status, member_user, member_product, size_m
+    ):
         now = timezone.now()
         v = create_variant(
             product_id=member_product.id,

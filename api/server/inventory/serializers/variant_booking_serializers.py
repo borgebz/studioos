@@ -33,7 +33,9 @@ class VariantBookingWriteSerializer(serializers.ModelSerializer):
     """Create/update payload (variant comes from URL)."""
 
     booking_type = serializers.ChoiceField(choices=VariantBooking.BookingType.choices)
-    status = serializers.ChoiceField(choices=VariantBooking.Status.choices, required=False)
+    status = serializers.ChoiceField(
+        choices=VariantBooking.Status.choices, required=False
+    )
 
     class Meta:
         model = VariantBooking

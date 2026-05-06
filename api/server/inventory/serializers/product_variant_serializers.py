@@ -74,22 +74,18 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         }
         fields = [
             "id",
-
             # core
             "sku",
             "condition",
             "status",
             "acquisition_type",
             "acquired_at",
-
             # notes
             "internal_notes",
             "public_notes",
-
             # size
             "size",
             "size_id",
-
             # colors/media
             "colors",
             "color_ids",

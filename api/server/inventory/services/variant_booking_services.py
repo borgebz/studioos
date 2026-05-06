@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 VALID_BOOKING_TYPES = {choice.value for choice in VariantBooking.BookingType}
 VALID_STATUS = {choice.value for choice in VariantBooking.Status}
 
+
 def _get_variant(*, variant_id, user):
     try:
         variant = ProductVariant.objects.exclude(

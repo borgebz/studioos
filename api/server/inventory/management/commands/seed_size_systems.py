@@ -22,23 +22,17 @@ class Command(BaseCommand):
                 name=item["name"],
                 defaults={
                     "is_active": item["is_active"],
-                }
+                },
             )
 
             if was_created:
                 created += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f"Created: {obj.name}")
-                )
+                self.stdout.write(self.style.SUCCESS(f"Created: {obj.name}"))
             else:
                 updated += 1
-                self.stdout.write(
-                    self.style.WARNING(f"Updated: {obj.name}")
-                )
+                self.stdout.write(self.style.WARNING(f"Updated: {obj.name}"))
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Done. Created {created}, updated {updated}."
-            )
+            self.style.SUCCESS(f"Done. Created {created}, updated {updated}.")
         )

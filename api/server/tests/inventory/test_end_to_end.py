@@ -21,10 +21,7 @@ from inventory.services.variant_booking_services import create_booking
 def test_create_complete_product_flow():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="flow1@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="flow1@test.com", password="1234")
 
     permission = Permission.objects.get(codename="add_product")
     user.user_permissions.add(permission)
@@ -34,10 +31,7 @@ def test_create_complete_product_flow():
     size_system = create_size_system(name="EU-FLOW")
     size = create_size(name="M", size_system_id=size_system.id)
 
-    color = create_color(
-        name="Azul Flow",
-        hex_code="#0000FF"
-    )
+    color = create_color(name="Azul Flow", hex_code="#0000FF")
 
     product = create_product(
         user=user,
@@ -53,7 +47,7 @@ def test_create_complete_product_flow():
         color_ids=[color.id],
         sku="FLOW-001",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
     assert product.id is not None
@@ -65,10 +59,7 @@ def test_create_complete_product_flow():
 def test_booking_flow_blocks_variant():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="flow2@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="flow2@test.com", password="1234")
 
     for codename, model in (
         ("add_product", "product"),
@@ -100,7 +91,7 @@ def test_booking_flow_blocks_variant():
         size_id=size.id,
         sku="BOOK-001",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
     start_at = timezone.now()
@@ -126,10 +117,7 @@ def test_booking_flow_blocks_variant():
 def test_multiple_variants_same_product():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="flow3@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="flow3@test.com", password="1234")
 
     permission = Permission.objects.get(codename="add_product")
     user.user_permissions.add(permission)
@@ -154,7 +142,7 @@ def test_multiple_variants_same_product():
         size_id=size1.id,
         sku="SAP-42",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
     v2 = create_variant(
@@ -163,7 +151,7 @@ def test_multiple_variants_same_product():
         size_id=size2.id,
         sku="SAP-43",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
     assert v1.product.id == product.id

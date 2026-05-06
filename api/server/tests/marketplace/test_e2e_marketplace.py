@@ -16,6 +16,7 @@ def _uid() -> str:
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def school_staff(db):
     """User with all marketplace + inventory school permissions (simulates coordination/direction)."""
@@ -27,7 +28,9 @@ def school_staff(db):
         last_name="Member",
         is_active=True,
     )
-    perms = Permission.objects.filter(content_type__app_label__in=["marketplace", "inventory"])
+    perms = Permission.objects.filter(
+        content_type__app_label__in=["marketplace", "inventory"]
+    )
     user.user_permissions.add(*perms)
     user.refresh_from_db()
     return user
@@ -91,6 +94,7 @@ def parent_user(db):
 
 def _client(api_client_factory, user):
     from rest_framework.test import APIClient
+
     c = APIClient()
     c.force_authenticate(user=user)
     return c
@@ -100,12 +104,17 @@ def _client(api_client_factory, user):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _create_school_variant(staff_client, *, sku_prefix="SCH"):
     """Creates a school product + variant and returns (product_id, variant_id)."""
-    cat = staff_client.post("/inventory/categories/", {"name": f"Cat-{_uid()}"}, format="json")
+    cat = staff_client.post(
+        "/inventory/categories/", {"name": f"Cat-{_uid()}"}, format="json"
+    )
     assert cat.status_code == 201
 
-    ss = staff_client.post("/inventory/size-systems/", {"name": f"SS-{_uid()}"}, format="json")
+    ss = staff_client.post(
+        "/inventory/size-systems/", {"name": f"SS-{_uid()}"}, format="json"
+    )
     assert ss.status_code == 201
 
     sz = staff_client.post(
@@ -147,7 +156,9 @@ def _create_school_variant(staff_client, *, sku_prefix="SCH"):
 
 def _create_member_variant(owner_client, *, sku_prefix="MBR"):
     """Creates a member-owned product + variant and returns (product_id, variant_id)."""
-    cat = owner_client.post("/inventory/categories/", {"name": f"MCat-{_uid()}"}, format="json")
+    cat = owner_client.post(
+        "/inventory/categories/", {"name": f"MCat-{_uid()}"}, format="json"
+    )
     assert cat.status_code == 201
 
     product = owner_client.post(
@@ -182,6 +193,7 @@ def _create_member_variant(owner_client, *, sku_prefix="MBR"):
 #           Actors: staff, member_a, member_b
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     """
@@ -210,22 +222,39 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
 
     # --- actors ---
     staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local", password="x", first_name="S", last_name="T", is_active=True
+        email=f"staff_{_uid()}@t.local",
+        password="x",
+        first_name="S",
+        last_name="T",
+        is_active=True,
     )
-    perms = Permission.objects.filter(content_type__app_label__in=["marketplace", "inventory"])
+    perms = Permission.objects.filter(
+        content_type__app_label__in=["marketplace", "inventory"]
+    )
     staff.user_permissions.add(*perms)
     staff.refresh_from_db()
 
     mem_a = User.objects.create_user(
-        email=f"ma_{_uid()}@t.local", password="x", first_name="A", last_name="M", is_active=True
+        email=f"ma_{_uid()}@t.local",
+        password="x",
+        first_name="A",
+        last_name="M",
+        is_active=True,
     )
     mem_b = User.objects.create_user(
-        email=f"mb_{_uid()}@t.local", password="x", first_name="B", last_name="M", is_active=True
+        email=f"mb_{_uid()}@t.local",
+        password="x",
+        first_name="B",
+        last_name="M",
+        is_active=True,
     )
 
-    sc = APIClient(); sc.force_authenticate(user=staff)
-    ca = APIClient(); ca.force_authenticate(user=mem_a)
-    cb = APIClient(); cb.force_authenticate(user=mem_b)
+    sc = APIClient()
+    sc.force_authenticate(user=staff)
+    ca = APIClient()
+    ca.force_authenticate(user=mem_a)
+    cb = APIClient()
+    cb.force_authenticate(user=mem_b)
 
     # staff creates product + variant
     _, variant_id = _create_school_variant(sc, sku_prefix="RENT1")
@@ -255,7 +284,7 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     # member_a browses and favorites
     browse = ca.get("/marketplace/listings/")
     assert browse.status_code == 200
-    listing_ids = [l["id"] for l in browse.data["results"]]
+    listing_ids = [row["id"] for row in browse.data["results"]]
     assert listing_id in listing_ids
 
     fav = ca.post(f"/marketplace/listings/{listing_id}/favorite/")
@@ -342,6 +371,7 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
 
     # variant must still be AVAILABLE after both RENT completions
     from inventory.models import ProductVariant
+
     variant = ProductVariant.objects.get(id=variant_id)
     assert variant.status == ProductVariant.Status.AVAILABLE
 
@@ -351,7 +381,7 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
 
     favorites = ca.get("/marketplace/listings/favorites/")
     assert favorites.status_code == 200
-    assert not any(l["id"] == listing_id for l in favorites.data["results"])
+    assert not any(row["id"] == listing_id for row in favorites.data["results"])
 
 
 # ---------------------------------------------------------------------------
@@ -359,6 +389,7 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
 #           completes sale — variant becomes SOLD and listing closes.
 #           Actors: member_owner, buyer_a, buyer_b, staff (school view)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 def test_e2e_02_member_sell_one_accepted_one_rejected(db):
@@ -386,29 +417,51 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     User = get_user_model()
 
     owner = User.objects.create_user(
-        email=f"owner_{_uid()}@t.local", password="x", first_name="O", last_name="wner", is_active=True
+        email=f"owner_{_uid()}@t.local",
+        password="x",
+        first_name="O",
+        last_name="wner",
+        is_active=True,
     )
     inv_perms = Permission.objects.filter(content_type__app_label="inventory")
     owner.user_permissions.add(*inv_perms)
     owner.refresh_from_db()
 
     buyer_a = User.objects.create_user(
-        email=f"ba_{_uid()}@t.local", password="x", first_name="Buyer", last_name="A", is_active=True
+        email=f"ba_{_uid()}@t.local",
+        password="x",
+        first_name="Buyer",
+        last_name="A",
+        is_active=True,
     )
     buyer_b = User.objects.create_user(
-        email=f"bb_{_uid()}@t.local", password="x", first_name="Buyer", last_name="B", is_active=True
+        email=f"bb_{_uid()}@t.local",
+        password="x",
+        first_name="Buyer",
+        last_name="B",
+        is_active=True,
     )
     staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local", password="x", first_name="S", last_name="T", is_active=True
+        email=f"staff_{_uid()}@t.local",
+        password="x",
+        first_name="S",
+        last_name="T",
+        is_active=True,
     )
-    mkt_perms = Permission.objects.filter(content_type__app_label__in=["marketplace", "inventory"])
+    mkt_perms = Permission.objects.filter(
+        content_type__app_label__in=["marketplace", "inventory"]
+    )
     staff.user_permissions.add(*mkt_perms)
     staff.refresh_from_db()
 
-    co = APIClient(); co.force_authenticate(user=owner)
-    ca = APIClient(); ca.force_authenticate(user=buyer_a)
-    cb = APIClient(); cb.force_authenticate(user=buyer_b)
-    cs = APIClient(); cs.force_authenticate(user=staff)
+    co = APIClient()
+    co.force_authenticate(user=owner)
+    ca = APIClient()
+    ca.force_authenticate(user=buyer_a)
+    cb = APIClient()
+    cb.force_authenticate(user=buyer_b)
+    cs = APIClient()
+    cs.force_authenticate(user=staff)
 
     # owner creates product + variant
     _, variant_id = _create_member_variant(co, sku_prefix="SELL")
@@ -445,7 +498,7 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     # buyer_a browses, views detail, requests
     browse = ca.get("/marketplace/listings/")
     assert browse.status_code == 200
-    assert any(l["id"] == listing_id for l in browse.data["results"])
+    assert any(row["id"] == listing_id for row in browse.data["results"])
 
     detail_a = ca.get(f"/marketplace/listings/{listing_id}/")
     assert detail_a.status_code == 200
@@ -497,6 +550,7 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     if accept_a.status_code == 403:
         # Grant owner marketplace accept ability via direct service call fallback
         from marketplace import services
+
         txn = services.accept_transaction(transaction_id=txn_a_id, user=owner)
         assert txn.status == "accepted"
     else:
@@ -504,6 +558,7 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
 
     # owner completes the sale
     from marketplace import services as mkt_services
+
     completed = mkt_services.complete_transaction(transaction_id=txn_a_id, user=owner)
     assert completed.status == "completed"
 
@@ -525,6 +580,7 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
 #           staff blocks, issue resolved, unblocked, completed.
 #           Actors: staff, coordination, member_a, member_b
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.django_db
 def test_e2e_03_school_lend_block_unblock_then_complete(db):
@@ -554,22 +610,39 @@ def test_e2e_03_school_lend_block_unblock_then_complete(db):
     User = get_user_model()
 
     staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local", password="x", first_name="S", last_name="T", is_active=True
+        email=f"staff_{_uid()}@t.local",
+        password="x",
+        first_name="S",
+        last_name="T",
+        is_active=True,
     )
-    perms = Permission.objects.filter(content_type__app_label__in=["marketplace", "inventory"])
+    perms = Permission.objects.filter(
+        content_type__app_label__in=["marketplace", "inventory"]
+    )
     staff.user_permissions.add(*perms)
     staff.refresh_from_db()
 
     mem_a = User.objects.create_user(
-        email=f"ma_{_uid()}@t.local", password="x", first_name="A", last_name="M", is_active=True
+        email=f"ma_{_uid()}@t.local",
+        password="x",
+        first_name="A",
+        last_name="M",
+        is_active=True,
     )
     mem_b = User.objects.create_user(
-        email=f"mb_{_uid()}@t.local", password="x", first_name="B", last_name="M", is_active=True
+        email=f"mb_{_uid()}@t.local",
+        password="x",
+        first_name="B",
+        last_name="M",
+        is_active=True,
     )
 
-    cs = APIClient(); cs.force_authenticate(user=staff)
-    ca = APIClient(); ca.force_authenticate(user=mem_a)
-    cb = APIClient(); cb.force_authenticate(user=mem_b)
+    cs = APIClient()
+    cs.force_authenticate(user=staff)
+    ca = APIClient()
+    ca.force_authenticate(user=mem_a)
+    cb = APIClient()
+    cb.force_authenticate(user=mem_b)
 
     # staff creates school item
     _, variant_id = _create_school_variant(cs, sku_prefix="LEND")
@@ -682,6 +755,7 @@ def test_e2e_03_school_lend_block_unblock_then_complete(db):
 #           Actors: member_owner, renter, receiver (staff accepting donation), staff
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 def test_e2e_04_member_donate_queued_after_active_loan(db):
     """
@@ -711,29 +785,51 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
     User = get_user_model()
 
     owner = User.objects.create_user(
-        email=f"owner_{_uid()}@t.local", password="x", first_name="O", last_name="wner", is_active=True
+        email=f"owner_{_uid()}@t.local",
+        password="x",
+        first_name="O",
+        last_name="wner",
+        is_active=True,
     )
     inv_perms = Permission.objects.filter(content_type__app_label="inventory")
     owner.user_permissions.add(*inv_perms)
     owner.refresh_from_db()
 
     renter = User.objects.create_user(
-        email=f"rent_{_uid()}@t.local", password="x", first_name="R", last_name="ent", is_active=True
+        email=f"rent_{_uid()}@t.local",
+        password="x",
+        first_name="R",
+        last_name="ent",
+        is_active=True,
     )
     receiver = User.objects.create_user(
-        email=f"recv_{_uid()}@t.local", password="x", first_name="Rec", last_name="eiver", is_active=True
+        email=f"recv_{_uid()}@t.local",
+        password="x",
+        first_name="Rec",
+        last_name="eiver",
+        is_active=True,
     )
     staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local", password="x", first_name="S", last_name="T", is_active=True
+        email=f"staff_{_uid()}@t.local",
+        password="x",
+        first_name="S",
+        last_name="T",
+        is_active=True,
     )
-    mkt_perms = Permission.objects.filter(content_type__app_label__in=["marketplace", "inventory"])
+    mkt_perms = Permission.objects.filter(
+        content_type__app_label__in=["marketplace", "inventory"]
+    )
     staff.user_permissions.add(*mkt_perms)
     staff.refresh_from_db()
 
-    co = APIClient(); co.force_authenticate(user=owner)
-    cr = APIClient(); cr.force_authenticate(user=renter)
-    cv = APIClient(); cv.force_authenticate(user=receiver)
-    cs = APIClient(); cs.force_authenticate(user=staff)
+    co = APIClient()
+    co.force_authenticate(user=owner)
+    cr = APIClient()
+    cr.force_authenticate(user=renter)
+    cv = APIClient()
+    cv.force_authenticate(user=receiver)
+    cs = APIClient()
+    cs.force_authenticate(user=staff)
 
     _, variant_id = _create_member_variant(co, sku_prefix="DNLEND")
 
@@ -794,6 +890,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
 
     # donation start_at should be >= loan end_at (queued)
     from marketplace.models import ProductTransaction
+
     donate_txn = ProductTransaction.objects.get(id=donate_txn_id)
     assert donate_txn.start_at >= loan_end
 
@@ -803,6 +900,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
 
     # owner accepts both using service layer (member-owned)
     from marketplace import services as mkt_svc
+
     mkt_svc.accept_transaction(transaction_id=loan_txn_id, user=owner)
     mkt_svc.accept_transaction(transaction_id=donate_txn_id, user=owner)
 
@@ -844,6 +942,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
 #           Actors: staff, member_a, member_b, parent
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.django_db
 def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     """
@@ -882,26 +981,48 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     User = get_user_model()
 
     staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local", password="x", first_name="S", last_name="T", is_active=True
+        email=f"staff_{_uid()}@t.local",
+        password="x",
+        first_name="S",
+        last_name="T",
+        is_active=True,
     )
-    perms = Permission.objects.filter(content_type__app_label__in=["marketplace", "inventory"])
+    perms = Permission.objects.filter(
+        content_type__app_label__in=["marketplace", "inventory"]
+    )
     staff.user_permissions.add(*perms)
     staff.refresh_from_db()
 
     mem_a = User.objects.create_user(
-        email=f"ma_{_uid()}@t.local", password="x", first_name="MA", last_name="U", is_active=True
+        email=f"ma_{_uid()}@t.local",
+        password="x",
+        first_name="MA",
+        last_name="U",
+        is_active=True,
     )
     mem_b = User.objects.create_user(
-        email=f"mb_{_uid()}@t.local", password="x", first_name="MB", last_name="U", is_active=True
+        email=f"mb_{_uid()}@t.local",
+        password="x",
+        first_name="MB",
+        last_name="U",
+        is_active=True,
     )
     parent = User.objects.create_user(
-        email=f"par_{_uid()}@t.local", password="x", first_name="Par", last_name="ent", is_active=True
+        email=f"par_{_uid()}@t.local",
+        password="x",
+        first_name="Par",
+        last_name="ent",
+        is_active=True,
     )
 
-    cs = APIClient(); cs.force_authenticate(user=staff)
-    ca = APIClient(); ca.force_authenticate(user=mem_a)
-    cb = APIClient(); cb.force_authenticate(user=mem_b)
-    cp = APIClient(); cp.force_authenticate(user=parent)
+    cs = APIClient()
+    cs.force_authenticate(user=staff)
+    ca = APIClient()
+    ca.force_authenticate(user=mem_a)
+    cb = APIClient()
+    cb.force_authenticate(user=mem_b)
+    cp = APIClient()
+    cp.force_authenticate(user=parent)
 
     # staff creates 3 school variants
     _, v1_id = _create_school_variant(cs, sku_prefix="V1")
@@ -911,7 +1032,12 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     def _publish_listing(client, variant_id, listing_type, title):
         r = client.post(
             "/marketplace/school/listings/",
-            {"variant_id": variant_id, "listing_type": listing_type, "title": title, "asking_price": "3.00"},
+            {
+                "variant_id": variant_id,
+                "listing_type": listing_type,
+                "title": title,
+                "asking_price": "3.00",
+            },
             format="json",
         )
         assert r.status_code == 201
@@ -927,7 +1053,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     # member_a browses all — expects at least 3 results
     browse_all = ca.get("/marketplace/listings/")
     assert browse_all.status_code == 200
-    all_ids = [l["id"] for l in browse_all.data["results"]]
+    all_ids = [row["id"] for row in browse_all.data["results"]]
     assert rent1_id in all_ids
     assert rent2_id in all_ids
     assert sell1_id in all_ids
@@ -935,7 +1061,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     # member_a filters rent listings
     browse_rent = ca.get("/marketplace/listings/?listing_type=rent")
     assert browse_rent.status_code == 200
-    rent_ids = [l["id"] for l in browse_rent.data["results"]]
+    rent_ids = [row["id"] for row in browse_rent.data["results"]]
     assert rent1_id in rent_ids
     assert rent2_id in rent_ids
     assert sell1_id not in rent_ids
@@ -943,7 +1069,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     # member_b filters sell
     browse_sell = cb.get("/marketplace/listings/?listing_type=sell")
     assert browse_sell.status_code == 200
-    sell_ids = [l["id"] for l in browse_sell.data["results"]]
+    sell_ids = [row["id"] for row in browse_sell.data["results"]]
     assert sell1_id in sell_ids
     assert rent1_id not in sell_ids
 
@@ -958,7 +1084,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     ca.post(f"/marketplace/listings/{sell1_id}/favorite/")
     fav_list = ca.get("/marketplace/listings/favorites/")
     assert fav_list.status_code == 200
-    fav_ids = [l["id"] for l in fav_list.data["results"]]
+    fav_ids = [row["id"] for row in fav_list.data["results"]]
     assert rent1_id in fav_ids
     assert sell1_id in fav_ids
 
@@ -994,7 +1120,11 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     week2_end = now + timedelta(days=18)
     ma_req = ca.post(
         f"/marketplace/listings/{rent1_id}/request/",
-        {"start_at": week2_start.isoformat(), "end_at": week2_end.isoformat(), "notes": "week 2 slot"},
+        {
+            "start_at": week2_start.isoformat(),
+            "end_at": week2_end.isoformat(),
+            "notes": "week 2 slot",
+        },
         format="json",
     )
     assert ma_req.status_code == 201
@@ -1031,7 +1161,9 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
 
     # staff accepts + completes the SELL
     cs.post(f"/marketplace/school/transactions/{mb_sell_txn_id}/accept/")
-    sell_complete = cs.post(f"/marketplace/school/transactions/{mb_sell_txn_id}/complete/")
+    sell_complete = cs.post(
+        f"/marketplace/school/transactions/{mb_sell_txn_id}/complete/"
+    )
     assert sell_complete.status_code == 200
     assert sell_complete.data["status"] == "completed"
 
@@ -1050,12 +1182,14 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
 
     # unpublished listing no longer in browse
     browse_after = cp.get("/marketplace/listings/")
-    active_ids = [l["id"] for l in browse_after.data["results"]]
+    active_ids = [row["id"] for row in browse_after.data["results"]]
     assert rent2_id not in active_ids
 
     # parent still has rent1 in mine favorites
     parent_favs = cp.get("/marketplace/listings/favorites/")
+    assert parent_favs.status_code == 200
+    assert rent1_id in [row["id"] for row in parent_favs.data["results"]]
     # parent didn't favorite — check member_a favorites unchanged
     ma_favs = ca.get("/marketplace/listings/favorites/")
-    fav_ids_after = [l["id"] for l in ma_favs.data["results"]]
+    fav_ids_after = [row["id"] for row in ma_favs.data["results"]]
     assert rent1_id in fav_ids_after

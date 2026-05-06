@@ -100,7 +100,9 @@ class CategoryActivateView(APIView):
     @require_perm("inventory.change_category")
     def post(self, request, category_id):
         category = services.get_category(pk=category_id)
-        category = services.activate_category(category=category, updated_by=request.user)
+        category = services.activate_category(
+            category=category, updated_by=request.user
+        )
 
         return Response(CategorySerializer(category).data)
 
@@ -114,6 +116,8 @@ class CategoryDeactivateView(APIView):
     @require_perm("inventory.change_category")
     def post(self, request, category_id):
         category = services.get_category(pk=category_id)
-        category = services.deactivate_category(category=category, updated_by=request.user)
+        category = services.deactivate_category(
+            category=category, updated_by=request.user
+        )
 
         return Response(CategorySerializer(category).data)

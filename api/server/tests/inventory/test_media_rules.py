@@ -18,10 +18,7 @@ from inventory.services.product_variant_services import create_variant
 def test_product_media_can_link_to_multiple_variants():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="media1@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="media1@test.com", password="1234")
 
     permission = Permission.objects.get(codename="add_product")
     user.user_permissions.add(permission)
@@ -45,7 +42,7 @@ def test_product_media_can_link_to_multiple_variants():
         size_id=size1.id,
         sku="MED-001",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
     v2 = create_variant(
@@ -54,29 +51,16 @@ def test_product_media_can_link_to_multiple_variants():
         size_id=size2.id,
         sku="MED-002",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
-    image = SimpleUploadedFile(
-        "test.jpg",
-        b"filecontent",
-        content_type="image/jpeg"
-    )
+    image = SimpleUploadedFile("test.jpg", b"filecontent", content_type="image/jpeg")
 
-    media = ProductMedia.objects.create(
-        product=product,
-        image=image
-    )
+    media = ProductMedia.objects.create(product=product, image=image)
 
-    VariantMedia.objects.create(
-        variant=v1,
-        product_media=media
-    )
+    VariantMedia.objects.create(variant=v1, product_media=media)
 
-    VariantMedia.objects.create(
-        variant=v2,
-        product_media=media
-    )
+    VariantMedia.objects.create(variant=v2, product_media=media)
 
     assert VariantMedia.objects.filter(product_media=media).count() == 2
 
@@ -85,10 +69,7 @@ def test_product_media_can_link_to_multiple_variants():
 def test_variant_media_cannot_duplicate_same_relation():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="media2@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="media2@test.com", password="1234")
 
     permission = Permission.objects.get(codename="add_product")
     user.user_permissions.add(permission)
@@ -111,40 +92,24 @@ def test_variant_media_cannot_duplicate_same_relation():
         size_id=size.id,
         sku="DUP-001",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
-    image = SimpleUploadedFile(
-        "dup.jpg",
-        b"filecontent",
-        content_type="image/jpeg"
-    )
+    image = SimpleUploadedFile("dup.jpg", b"filecontent", content_type="image/jpeg")
 
-    media = ProductMedia.objects.create(
-        product=product,
-        image=image
-    )
+    media = ProductMedia.objects.create(product=product, image=image)
 
-    VariantMedia.objects.create(
-        variant=variant,
-        product_media=media
-    )
+    VariantMedia.objects.create(variant=variant, product_media=media)
 
     with pytest.raises(IntegrityError):
-        VariantMedia.objects.create(
-            variant=variant,
-            product_media=media
-        )
+        VariantMedia.objects.create(variant=variant, product_media=media)
 
 
 @pytest.mark.django_db
 def test_variant_media_must_belong_to_same_product():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="media3@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="media3@test.com", password="1234")
 
     permission = Permission.objects.get(codename="add_product")
     user.user_permissions.add(permission)
@@ -174,24 +139,14 @@ def test_variant_media_must_belong_to_same_product():
         size_id=size.id,
         sku="OWN-001",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
-    image = SimpleUploadedFile(
-        "own.jpg",
-        b"filecontent",
-        content_type="image/jpeg"
-    )
+    image = SimpleUploadedFile("own.jpg", b"filecontent", content_type="image/jpeg")
 
-    media = ProductMedia.objects.create(
-        product=product2,
-        image=image
-    )
+    media = ProductMedia.objects.create(product=product2, image=image)
 
-    relation = VariantMedia(
-        variant=variant,
-        product_media=media
-    )
+    relation = VariantMedia(variant=variant, product_media=media)
 
     with pytest.raises(ValidationError):
         relation.clean()

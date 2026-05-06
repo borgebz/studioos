@@ -54,7 +54,9 @@ class ListingListCreateView(APIView):
     def post(self, request):
         serializer = ListingCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        listing = services.create_listing(user=request.user, **serializer.validated_data)
+        listing = services.create_listing(
+            user=request.user, **serializer.validated_data
+        )
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -67,7 +69,9 @@ class ListingDetailView(APIView):
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request, listing_id):
         listing = services.get_listing(listing_id=listing_id)
-        return Response(ListingDetailSerializer(listing, context={"request": request}).data)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )
 
     @extend_schema(
         request=ListingUpdateSerializer,
@@ -79,7 +83,9 @@ class ListingDetailView(APIView):
         listing = services.update_listing(
             listing_id=listing_id, user=request.user, **serializer.validated_data
         )
-        return Response(ListingDetailSerializer(listing, context={"request": request}).data)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )
 
     @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
     def delete(self, request, listing_id):
@@ -93,7 +99,9 @@ class ListingPublishView(APIView):
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     def post(self, request, listing_id):
         listing = services.publish_listing(listing_id=listing_id, user=request.user)
-        return Response(ListingDetailSerializer(listing, context={"request": request}).data)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )
 
 
 class ListingUnpublishView(APIView):
@@ -102,7 +110,9 @@ class ListingUnpublishView(APIView):
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     def post(self, request, listing_id):
         listing = services.unpublish_listing(listing_id=listing_id, user=request.user)
-        return Response(ListingDetailSerializer(listing, context={"request": request}).data)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )
 
 
 class ListingFavoriteView(APIView):
@@ -174,6 +184,7 @@ class FavoriteListingsView(APIView):
 # School-scoped listing views
 # ---------------------------------------------------------------------------
 
+
 class SchoolListingListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -208,7 +219,9 @@ class SchoolListingListCreateView(APIView):
     def post(self, request):
         serializer = ListingCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        listing = services.create_listing(user=request.user, **serializer.validated_data)
+        listing = services.create_listing(
+            user=request.user, **serializer.validated_data
+        )
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -229,7 +242,9 @@ class SchoolListingDetailView(APIView):
         listing = services.update_listing(
             listing_id=listing_id, user=request.user, **serializer.validated_data
         )
-        return Response(ListingDetailSerializer(listing, context={"request": request}).data)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )
 
 
 class SchoolListingPublishView(APIView):
@@ -239,7 +254,9 @@ class SchoolListingPublishView(APIView):
     @require_perm("marketplace.manage_school_listings")
     def post(self, request, listing_id):
         listing = services.publish_listing(listing_id=listing_id, user=request.user)
-        return Response(ListingDetailSerializer(listing, context={"request": request}).data)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )
 
 
 class SchoolListingUnpublishView(APIView):
@@ -249,4 +266,6 @@ class SchoolListingUnpublishView(APIView):
     @require_perm("marketplace.manage_school_listings")
     def post(self, request, listing_id):
         listing = services.unpublish_listing(listing_id=listing_id, user=request.user)
-        return Response(ListingDetailSerializer(listing, context={"request": request}).data)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )

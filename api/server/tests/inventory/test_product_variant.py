@@ -209,5 +209,8 @@ def test_delete_variant_archives():
     )
 
     from inventory.models import ProductVariant
+
     assert not ProductVariant.objects.filter(id=variant.id).exists()
-    assert ProductVariant.all_objects.filter(id=variant.id, deleted_at__isnull=False).exists()
+    assert ProductVariant.all_objects.filter(
+        id=variant.id, deleted_at__isnull=False
+    ).exists()

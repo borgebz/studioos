@@ -8,7 +8,6 @@ from core.exceptions import AppNotFound
 from inventory.models import Product, ProductVariant, VariantBooking
 from marketplace.models import Listing, ProductTransaction
 from marketplace.services.listing_services import (
-    _ACTIVE_BOOKING_STATUSES,
     _check_date_overlap,
     _compute_available_from,
     _get_listing_or_404,
@@ -75,11 +74,11 @@ def list_transactions(*, user, filters=None):
 def list_my_transactions(*, user):
     from django.db.models import Q
 
-    return ProductTransaction.objects.filter(
-        Q(requester=user) | Q(owner=user)
-    ).select_related(
-        "listing", "variant__product"
-    ).order_by("-created_at")
+    return (
+        ProductTransaction.objects.filter(Q(requester=user) | Q(owner=user))
+        .select_related("listing", "variant__product")
+        .order_by("-created_at")
+    )
 
 
 def get_transaction(*, transaction_id):
@@ -111,7 +110,9 @@ def request_transaction(*, user, **data):
         start_at = _compute_available_from(variant)
         end_at = start_at  # point-in-time booking
 
-    owner = variant.product.owner or user  # fallback for school items resolved at accept time
+    owner = (
+        variant.product.owner or user
+    )  # fallback for school items resolved at accept time
 
     txn = ProductTransaction(
         listing=listing,
@@ -135,7 +136,11 @@ def request_transaction(*, user, **data):
         booking_type=booking_type,
         status=VariantBooking.Status.PENDING,
         start_at=start_at,
-        end_at=end_at if end_at != start_at else timezone.now() + __import__("datetime").timedelta(minutes=1),
+        end_at=(
+            end_at
+            if end_at != start_at
+            else timezone.now() + __import__("datetime").timedelta(minutes=1)
+        ),
         title=f"Transaction {txn.pk}",
         created_by=user,
     )
@@ -143,7 +148,10 @@ def request_transaction(*, user, **data):
 
     logger.info(
         "Transaction %s created (type=%s) by user %s, booking %s created",
-        txn.pk, transaction_type, user.pk, booking.pk,
+        txn.pk,
+        transaction_type,
+        user.pk,
+        booking.pk,
     )
     return txn
 
@@ -226,6 +234,7 @@ def complete_transaction(*, transaction_id, user):
 
     # Create billing entry for any priced transaction
     from billing.services import create_billing_entry_for_transaction
+
     create_billing_entry_for_transaction(transaction=txn, user=user)
 
     logger.info("Transaction %s completed by user %s", transaction_id, user.pk)

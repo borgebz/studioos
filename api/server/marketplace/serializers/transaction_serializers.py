@@ -15,9 +15,7 @@ class TransactionDetailSerializer(serializers.ModelSerializer):
     owner_display = serializers.SerializerMethodField()
     listing_title = serializers.CharField(source="listing.title", read_only=True)
     variant_sku = serializers.CharField(source="variant.sku", read_only=True)
-    product_name = serializers.CharField(
-        source="variant.product.name", read_only=True
-    )
+    product_name = serializers.CharField(source="variant.product.name", read_only=True)
 
     class Meta:
         model = ProductTransaction

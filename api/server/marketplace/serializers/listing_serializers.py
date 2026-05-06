@@ -11,7 +11,9 @@ class ListingListSerializer(serializers.ModelSerializer):
     product_category = serializers.CharField(
         source="variant.product.category.name", read_only=True
     )
-    variant_condition = serializers.CharField(source="variant.condition", read_only=True)
+    variant_condition = serializers.CharField(
+        source="variant.condition", read_only=True
+    )
     variant_size = serializers.CharField(source="variant.size.name", read_only=True)
     variant_status = serializers.CharField(source="variant.status", read_only=True)
     available_from = serializers.SerializerMethodField()
@@ -41,7 +43,11 @@ class ListingListSerializer(serializers.ModelSerializer):
         )
         if primary and primary.image:
             request = self.context.get("request")
-            return request.build_absolute_uri(primary.image.url) if request else primary.image.url
+            return (
+                request.build_absolute_uri(primary.image.url)
+                if request
+                else primary.image.url
+            )
         return None
 
     def get_available_from(self, obj):
@@ -90,14 +96,10 @@ class ListingDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_product(self, obj):
-        return ProductDetailSerializer(
-            obj.variant.product, context=self.context
-        ).data
+        return ProductDetailSerializer(obj.variant.product, context=self.context).data
 
     def get_variant(self, obj):
-        return ProductVariantSerializer(
-            obj.variant, context=self.context
-        ).data
+        return ProductVariantSerializer(obj.variant, context=self.context).data
 
     def get_active_booking_windows(self, obj):
         from inventory.models import VariantBooking
@@ -123,9 +125,7 @@ class ListingDetailSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-        return obj.favorites.filter(
-            user=request.user, deleted_at__isnull=True
-        ).exists()
+        return obj.favorites.filter(user=request.user, deleted_at__isnull=True).exists()
 
     def get_favorites_count(self, obj):
         return obj.favorites.filter(deleted_at__isnull=True).count()
@@ -136,7 +136,9 @@ class ListingCreateSerializer(serializers.Serializer):
     listing_type = serializers.ChoiceField(choices=Listing.ListingType.choices)
     title = serializers.CharField(max_length=255)
     description = serializers.CharField(required=False, allow_blank=True, default="")
-    asking_price = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    asking_price = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
     is_public = serializers.BooleanField(required=False, default=False)
     # Nested product creation — used when variant_id is not provided
     product = serializers.DictField(required=False, allow_null=True)
@@ -148,7 +150,9 @@ class ListingUpdateSerializer(serializers.Serializer):
     )
     title = serializers.CharField(max_length=255, required=False)
     description = serializers.CharField(required=False, allow_blank=True)
-    asking_price = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    asking_price = serializers.CharField(
+        required=False, allow_null=True, allow_blank=True
+    )
     is_public = serializers.BooleanField(required=False)
     # Allow editing underlying product/variant fields inline
     product = serializers.DictField(required=False, allow_null=True)

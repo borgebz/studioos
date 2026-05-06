@@ -15,7 +15,15 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ["id", "sender_id", "body", "file_url", "original_filename", "mime_type", "created_at"]
+        fields = [
+            "id",
+            "sender_id",
+            "body",
+            "file_url",
+            "original_filename",
+            "mime_type",
+            "created_at",
+        ]
         read_only_fields = fields
 
     @extend_schema_field(serializers.CharField(allow_null=True))
@@ -55,8 +63,12 @@ class CreateConversationSerializer(serializers.Serializer):
 class SendMessageSerializer(serializers.Serializer):
     body = serializers.CharField(required=False, allow_blank=True, default="")
     file = serializers.FileField(required=False, allow_null=True)
-    original_filename = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    mime_type = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    original_filename = serializers.CharField(
+        max_length=255, required=False, allow_blank=True
+    )
+    mime_type = serializers.CharField(
+        max_length=100, required=False, allow_blank=True, default=""
+    )
 
     def validate_file(self, value):
         if value is None:
@@ -70,7 +82,9 @@ class SendMessageSerializer(serializers.Serializer):
 
     def validate(self, data):
         if not data.get("body") and not data.get("file"):
-            raise serializers.ValidationError({"messages": ["MessageBodyOrFileRequired"]})
+            raise serializers.ValidationError(
+                {"messages": ["MessageBodyOrFileRequired"]}
+            )
         if data.get("file") and not data.get("original_filename"):
             data["original_filename"] = data["file"].name
         return data

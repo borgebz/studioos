@@ -30,7 +30,7 @@ class Command(BaseCommand):
                 defaults={
                     "hex_code": item["hex_code"],
                     "is_active": item["is_active"],
-                }
+                },
             )
 
             if was_created:
@@ -42,7 +42,5 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(
-                f"Done. Created {created}, updated {updated}."
-            )
+            self.style.SUCCESS(f"Done. Created {created}, updated {updated}.")
         )

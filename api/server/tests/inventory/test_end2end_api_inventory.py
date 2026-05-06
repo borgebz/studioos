@@ -264,7 +264,9 @@ def test_e2e_03_colors_endpoints_validation_activation_and_filtering(inv_client)
     assert invalid_hex.status_code == 400
     assert invalid_hex.data["errors"]["messages"] == ["InvalidHexCode"]
 
-    deact = inv_client.post(f"/inventory/colors/{color_id}/deactivate/", {}, format="json")
+    deact = inv_client.post(
+        f"/inventory/colors/{color_id}/deactivate/", {}, format="json"
+    )
     assert deact.status_code == 200
     assert deact.data["is_active"] is False
 
@@ -556,6 +558,7 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     delete_variant = inv_client.delete(f"/inventory/variants/{variant_id}/")
     assert delete_variant.status_code == 204
 
-    delete_school = inv_client.delete(f"/inventory/school/products/{school_product_id}/")
+    delete_school = inv_client.delete(
+        f"/inventory/school/products/{school_product_id}/"
+    )
     assert delete_school.status_code == 204
-

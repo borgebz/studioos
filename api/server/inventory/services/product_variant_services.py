@@ -132,11 +132,15 @@ def _validate_media(*, product, media_ids):
 def list_variants(*, product_id, user):
     product = _get_product(product_id=product_id, user=user)
 
-    return product.variants.select_related("size", "product__category").prefetch_related(
-        "colors__color",
-        "media_links__product_media",
-        _active_bookings_prefetch(),
-    ).order_by("id")
+    return (
+        product.variants.select_related("size", "product__category")
+        .prefetch_related(
+            "colors__color",
+            "media_links__product_media",
+            _active_bookings_prefetch(),
+        )
+        .order_by("id")
+    )
 
 
 # ===============================
@@ -190,7 +194,9 @@ def create_variant(*, product_id, user, **data):
         variant.save()
     except IntegrityError as exc:
         if "inventory_productvariant_sku" in str(exc):
-            logger.warning("SKU integrity conflict on create_variant product %s", product_id)
+            logger.warning(
+                "SKU integrity conflict on create_variant product %s", product_id
+            )
             raise ValidationError({"messages": ["DuplicateSKU"]}) from exc
         raise
 

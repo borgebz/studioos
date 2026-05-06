@@ -52,16 +52,39 @@ urlpatterns = [
     # ------------------------------------------------------------------
     path("school/listings/", SchoolListingListCreateView.as_view()),
     path("school/listings/<int:listing_id>/", SchoolListingDetailView.as_view()),
-    path("school/listings/<int:listing_id>/publish/", SchoolListingPublishView.as_view()),
-    path("school/listings/<int:listing_id>/unpublish/", SchoolListingUnpublishView.as_view()),
+    path(
+        "school/listings/<int:listing_id>/publish/", SchoolListingPublishView.as_view()
+    ),
+    path(
+        "school/listings/<int:listing_id>/unpublish/",
+        SchoolListingUnpublishView.as_view(),
+    ),
     # ------------------------------------------------------------------
     # School-scoped transactions (staff / coordination)
     # ------------------------------------------------------------------
     path("school/transactions/", SchoolTransactionListView.as_view()),
-    path("school/transactions/<int:transaction_id>/", SchoolTransactionDetailView.as_view()),
-    path("school/transactions/<int:transaction_id>/accept/", SchoolTransactionAcceptView.as_view()),
-    path("school/transactions/<int:transaction_id>/reject/", SchoolTransactionRejectView.as_view()),
-    path("school/transactions/<int:transaction_id>/complete/", SchoolTransactionCompleteView.as_view()),
-    path("school/transactions/<int:transaction_id>/block/", SchoolTransactionBlockView.as_view()),
-    path("school/transactions/<int:transaction_id>/unblock/", SchoolTransactionUnblockView.as_view()),
+    path(
+        "school/transactions/<int:transaction_id>/",
+        SchoolTransactionDetailView.as_view(),
+    ),
+    path(
+        "school/transactions/<int:transaction_id>/accept/",
+        SchoolTransactionAcceptView.as_view(),
+    ),
+    path(
+        "school/transactions/<int:transaction_id>/reject/",
+        SchoolTransactionRejectView.as_view(),
+    ),
+    path(
+        "school/transactions/<int:transaction_id>/complete/",
+        SchoolTransactionCompleteView.as_view(),
+    ),
+    path(
+        "school/transactions/<int:transaction_id>/block/",
+        SchoolTransactionBlockView.as_view(),
+    ),
+    path(
+        "school/transactions/<int:transaction_id>/unblock/",
+        SchoolTransactionUnblockView.as_view(),
+    ),
 ]

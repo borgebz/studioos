@@ -7,7 +7,10 @@ from rest_framework.views import APIView
 from core.permissions import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
 
-from inventory.serializers.color_serializers import ColorSerializer, CreateColorSerializer
+from inventory.serializers.color_serializers import (
+    ColorSerializer,
+    CreateColorSerializer,
+)
 from inventory.services import color_services as services
 
 
@@ -46,7 +49,9 @@ class ColorListCreateView(APIView):
         serializer = CreateColorSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        color = services.create_color(**serializer.validated_data, created_by=request.user)
+        color = services.create_color(
+            **serializer.validated_data, created_by=request.user
+        )
         return Response(ColorSerializer(color).data, status=status.HTTP_201_CREATED)
 
 

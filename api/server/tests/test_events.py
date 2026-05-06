@@ -71,9 +71,7 @@ class TestEventClassTargeting:
         assert resp.status_code == 400
         assert "EventClassTargetRequiredWhenTargetIsClasses" in str(resp.content)
 
-    def test_update_event_replaces_class_targets(
-        self, auth_client, direction_user
-    ):
+    def test_update_event_replaces_class_targets(self, auth_client, direction_user):
         c1 = self._make_classe(direction_user)
         c2 = self._make_classe(direction_user)
         resp = auth_client.post(

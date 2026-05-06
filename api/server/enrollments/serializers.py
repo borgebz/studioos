@@ -198,6 +198,7 @@ class EnrollmentSubmitSerializer(serializers.Serializer):
         if value >= date.today():
             raise serializers.ValidationError("DateOfBirthMustBeInPast")
         return value
+
     student_nif = serializers.CharField(max_length=20, required=False, default="")
     student_nationality = serializers.CharField(
         max_length=100, required=False, default=""

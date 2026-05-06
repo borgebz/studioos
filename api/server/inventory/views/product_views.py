@@ -62,7 +62,9 @@ class ProductListCreateView(APIView):
         serializer = ProductCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        product = services.create_product(user=request.user, **serializer.validated_data)
+        product = services.create_product(
+            user=request.user, **serializer.validated_data
+        )
         return Response(
             ProductDetailSerializer(product).data, status=status.HTTP_201_CREATED
         )
@@ -88,7 +90,9 @@ class ProductDetailView(APIView):
         serializer = ProductUpdateSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        product = services.update_product(pk=pk, user=request.user, **serializer.validated_data)
+        product = services.update_product(
+            pk=pk, user=request.user, **serializer.validated_data
+        )
         return Response(ProductDetailSerializer(product).data)
 
     @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
@@ -130,7 +134,9 @@ class SchoolProductListCreateView(APIView):
         serializer = SchoolProductCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        product = services.create_school_product(user=request.user, **serializer.validated_data)
+        product = services.create_school_product(
+            user=request.user, **serializer.validated_data
+        )
         return Response(
             ProductDetailSerializer(product).data, status=status.HTTP_201_CREATED
         )

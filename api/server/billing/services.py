@@ -238,7 +238,8 @@ def create_billing_entry_for_transaction(*, transaction, user):
 
     if not raw_price:
         logger.info(
-            "Skipping billing entry for transaction id=%s — no price set", transaction.pk
+            "Skipping billing entry for transaction id=%s — no price set",
+            transaction.pk,
         )
         return None
 
@@ -279,6 +280,7 @@ def create_billing_entry_for_transaction(*, transaction, user):
         amount,
     )
     return entry
+
 
 # Map participant final-status → fine reason
 _FINE_REASON_FROM_PARTICIPANT_STATUS = {

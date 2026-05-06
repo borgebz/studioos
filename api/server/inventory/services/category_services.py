@@ -39,7 +39,11 @@ def get_category(*, pk):
 
 # LIST (hierárquico)
 def list_categories(*, parent_category_id=None, is_active=None, size_system_id=None):
-    qs = Category.objects.all().prefetch_related("children").select_related("parent", "size_system")
+    qs = (
+        Category.objects.all()
+        .prefetch_related("children")
+        .select_related("parent", "size_system")
+    )
     if parent_category_id:
         qs = qs.filter(parent_id=parent_category_id)
     else:
@@ -80,7 +84,9 @@ def create_category(
 
     size_system = None
     if size_system_id:
-        size_system = SizeSystem.objects.filter(pk=size_system_id, is_active=True).first()
+        size_system = SizeSystem.objects.filter(
+            pk=size_system_id, is_active=True
+        ).first()
         if not size_system:
             raise ValidationError({"messages": ["InvalidSizeSystem"]})
 

@@ -13,6 +13,7 @@ Billing rules under test:
   - source_type filter on /api/billing/entries/ isolates marketplace rows
   - Cancel a billing entry after transaction completion
 """
+
 from __future__ import annotations
 
 import config.pytest_db_host_env  # noqa: F401
@@ -35,6 +36,7 @@ User = get_user_model()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _uid() -> str:
     return uuid.uuid4().hex[:8]
@@ -156,7 +158,9 @@ def _publish_listing(staff_client, variant_id, listing_type, *, asking_price=Non
     return lid
 
 
-def _full_flow(staff_client, listing_id, requester_client, *, start_at=None, end_at=None):
+def _full_flow(
+    staff_client, listing_id, requester_client, *, start_at=None, end_at=None
+):
     """
     Request → accept → complete a transaction via school endpoints.
     Returns (txn_id, billing_entry_or_None).
@@ -194,6 +198,7 @@ def _full_flow(staff_client, listing_id, requester_client, *, start_at=None, end
 #           Actors: staff, member_a (buyer), member_b (rejected), direction
 # ===========================================================================
 
+
 @pytest.mark.django_db
 def test_billing_01_sell_asking_price_entry_created_rejected_buyer_not_billed(db):
     """
@@ -228,7 +233,7 @@ def test_billing_01_sell_asking_price_entry_created_rejected_buyer_not_billed(db
     # member_a browses and views detail
     browse = ca.get("/marketplace/listings/")
     assert browse.status_code == 200
-    assert any(l["id"] == listing_id for l in browse.data["results"])
+    assert any(row["id"] == listing_id for row in browse.data["results"])
 
     detail = ca.get(f"/marketplace/listings/{listing_id}/")
     assert detail.status_code == 200
@@ -310,6 +315,7 @@ def test_billing_01_sell_asking_price_entry_created_rejected_buyer_not_billed(db
 #           variant stays AVAILABLE after completion; two sequential renters.
 #           Actors: staff, member_a (week 1), member_b (week 2), direction
 # ===========================================================================
+
 
 @pytest.mark.django_db
 def test_billing_02_rent_agreed_price_overrides_asking_variant_stays_available(db):
@@ -409,12 +415,17 @@ def test_billing_02_rent_agreed_price_overrides_asking_variant_stays_available(d
     assert entry_a.id in all_ids
     assert entry_b.id in all_ids
 
-    total = sum(Decimal(e["amount_due"]) for e in all_mkt.json()
-                if e["id"] in [entry_a.id, entry_b.id])
+    total = sum(
+        Decimal(e["amount_due"])
+        for e in all_mkt.json()
+        if e["id"] in [entry_a.id, entry_b.id]
+    )
     assert total == Decimal("13.50")
 
     # direction filters by student → only member_a's entry
-    by_student = cd.get(f"/api/billing/entries/?source_type=marketplace&student_id={member_a.id}")
+    by_student = cd.get(
+        f"/api/billing/entries/?source_type=marketplace&student_id={member_a.id}"
+    )
     assert by_student.status_code == 200
     student_ids_in_result = {e["id"] for e in by_student.json()}
     assert entry_a.id in student_ids_in_result
@@ -427,6 +438,7 @@ def test_billing_02_rent_agreed_price_overrides_asking_variant_stays_available(d
 #           Actors: staff, member_a (donation), member_b (lend-no-price),
 #                   member_c (lend-with-price), direction
 # ===========================================================================
+
 
 @pytest.mark.django_db
 def test_billing_03_donate_no_entry_lend_no_price_no_entry_lend_with_price_entry(db):
@@ -456,8 +468,8 @@ def test_billing_03_donate_no_entry_lend_no_price_no_entry_lend_with_price_entry
     v2_id = _create_school_variant(cs, sku_prefix="LNFP")
     v3_id = _create_school_variant(cs, sku_prefix="LNWP")
 
-    donate_lid = _publish_listing(cs, v1_id, "donate")           # no price
-    lend_nopr_lid = _publish_listing(cs, v2_id, "lend")          # no price
+    donate_lid = _publish_listing(cs, v1_id, "donate")  # no price
+    lend_nopr_lid = _publish_listing(cs, v2_id, "lend")  # no price
     lend_pr_lid = _publish_listing(cs, v3_id, "lend", asking_price="3.00")
 
     # --- DONATE flow ---
@@ -511,6 +523,7 @@ def test_billing_03_donate_no_entry_lend_no_price_no_entry_lend_with_price_entry
 # Test 4 — Multiple independent billing entries; cancel one; status filters.
 #           Actors: staff, member_a, member_b, direction (billing manager)
 # ===========================================================================
+
 
 @pytest.mark.django_db
 def test_billing_04_multiple_entries_cancel_one_status_filter(db):
@@ -570,14 +583,18 @@ def test_billing_04_multiple_entries_cancel_one_status_filter(db):
     assert cancel_r.json()["status"] == "cancelled"
 
     # filter status=pending → only B
-    pending_list = cd.get("/api/billing/entries/?source_type=marketplace&status=pending")
+    pending_list = cd.get(
+        "/api/billing/entries/?source_type=marketplace&status=pending"
+    )
     assert pending_list.status_code == 200
     pending_ids = {e["id"] for e in pending_list.json()}
     assert entry_b.id in pending_ids
     assert entry_a.id not in pending_ids
 
     # filter status=cancelled → only A
-    cancelled_list = cd.get("/api/billing/entries/?source_type=marketplace&status=cancelled")
+    cancelled_list = cd.get(
+        "/api/billing/entries/?source_type=marketplace&status=cancelled"
+    )
     assert cancelled_list.status_code == 200
     cancelled_ids = {e["id"] for e in cancelled_list.json()}
     assert entry_a.id in cancelled_ids
@@ -612,6 +629,7 @@ def test_billing_04_multiple_entries_cancel_one_status_filter(db):
 #           mixed coaching + marketplace billing with source_type isolation.
 #           Actors: member_owner, member_buyer, direction, member_other
 # ===========================================================================
+
 
 @pytest.mark.django_db
 def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
@@ -697,7 +715,7 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
     # buyer browses, views detail, favorites
     browse = cb.get("/marketplace/listings/")
     assert browse.status_code == 200
-    assert any(l["id"] == listing_id for l in browse.data["results"])
+    assert any(row["id"] == listing_id for row in browse.data["results"])
 
     detail = cb.get(f"/marketplace/listings/{listing_id}/")
     assert detail.status_code == 200
@@ -717,7 +735,7 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
     assert req.data["transaction_type"] == "sell"
 
     # owner accepts + completes via service (member-owned bypass view perm check)
-    from marketplace.models import ProductTransaction
+
     mkt_svc.accept_transaction(transaction_id=txn_id, user=member_owner)
     mkt_svc.complete_transaction(transaction_id=txn_id, user=member_owner)
 
@@ -727,7 +745,7 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
         marketplace_transaction_id=txn_id,
     )
     assert entry.amount_due == Decimal("25.00")
-    assert entry.student_id == member_buyer.id   # buyer is payer
+    assert entry.student_id == member_buyer.id  # buyer is payer
     assert entry.status == BillingEntryStatus.PENDING
     assert entry.description == f"Mercado | {listing_title} | Compra"
 

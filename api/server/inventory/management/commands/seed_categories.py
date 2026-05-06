@@ -50,14 +50,10 @@ class Command(BaseCommand):
 
         for item in self.CATEGORIES:
             try:
-                size_system = SizeSystem.objects.get(
-                    name=item["size_system"]
-                )
+                size_system = SizeSystem.objects.get(name=item["size_system"])
             except SizeSystem.DoesNotExist:
                 self.stdout.write(
-                    self.style.ERROR(
-                        f"Missing SizeSystem: {item['size_system']}"
-                    )
+                    self.style.ERROR(f"Missing SizeSystem: {item['size_system']}")
                 )
                 skipped += 1
                 continue
@@ -66,9 +62,7 @@ class Command(BaseCommand):
 
             if item["parent_category"]:
                 try:
-                    parent = Category.objects.get(
-                        name=item["parent_category"]
-                    )
+                    parent = Category.objects.get(name=item["parent_category"])
                 except Category.DoesNotExist:
                     self.stdout.write(
                         self.style.ERROR(
@@ -85,19 +79,15 @@ class Command(BaseCommand):
                     "sort_order": item["sort_order"],
                     "is_active": item["is_active"],
                     "size_system": size_system,
-                }
+                },
             )
 
             if was_created:
                 created += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f"Created: {obj.name}")
-                )
+                self.stdout.write(self.style.SUCCESS(f"Created: {obj.name}"))
             else:
                 updated += 1
-                self.stdout.write(
-                    self.style.WARNING(f"Updated: {obj.name}")
-                )
+                self.stdout.write(self.style.WARNING(f"Updated: {obj.name}"))
 
         self.stdout.write("")
         self.stdout.write(

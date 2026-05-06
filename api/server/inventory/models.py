@@ -122,7 +122,10 @@ class Product(BaseModel):
             ("add_school_product", "Can add school products"),
             ("change_school_product", "Can change school products"),
             ("delete_school_product", "Can delete school products"),
-            ("manage_school_inventory", "Can manage school-owned inventory variants and bookings"),
+            (
+                "manage_school_inventory",
+                "Can manage school-owned inventory variants and bookings",
+            ),
         ]
 
     def clean(self):

@@ -5,6 +5,7 @@ from django.contrib.auth.models import Permission
 from inventory.models import Product
 from inventory.services.category_services import create_category
 
+
 @pytest.mark.django_db
 def test_products_endpoint_requires_authentication():
     client = APIClient()
@@ -33,13 +34,9 @@ def test_school_products_requires_authentication():
 
 
 @pytest.mark.django_db
-
 def test_authenticated_user_can_get_products():
     User = get_user_model()
-    user = User.objects.create_user(
-        email="api1@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="api1@test.com", password="1234")
     permission = Permission.objects.get(
         codename="view_product",
         content_type__app_label="inventory",
@@ -56,13 +53,9 @@ def test_authenticated_user_can_get_products():
 
 
 @pytest.mark.django_db
-
 def test_authenticated_user_can_create_product():
     User = get_user_model()
-    user = User.objects.create_user(
-        email="api2@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="api2@test.com", password="1234")
 
     permission = Permission.objects.get(
         codename="add_product",
@@ -80,24 +73,16 @@ def test_authenticated_user_can_create_product():
         "category_id": category.id,
     }
 
-    response = client.post(
-        "/inventory/products/",
-        payload,
-        format="json"
-    )
+    response = client.post("/inventory/products/", payload, format="json")
 
     assert response.status_code in [200, 201]
     assert Product.objects.filter(name="Produto API").exists()
 
 
 @pytest.mark.django_db
-
 def test_user_without_school_permission_cannot_create_school_product():
     User = get_user_model()
-    user = User.objects.create_user(
-        email="api3@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="api3@test.com", password="1234")
 
     client = APIClient()
 
@@ -109,23 +94,16 @@ def test_user_without_school_permission_cannot_create_school_product():
         "category_id": category.id,
     }
 
-    response = client.post(
-        "/inventory/school/products/",
-        payload,
-        format="json"
-    )
-
+    response = client.post("/inventory/school/products/", payload, format="json")
 
     assert response.status_code in [401, 403]
+
 
 @pytest.mark.django_db
 def test_authenticated_user_can_get_product_detail():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="api4@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="api4@test.com", password="1234")
 
     view_permission = Permission.objects.get(
         codename="view_product",
@@ -152,7 +130,7 @@ def test_authenticated_user_can_get_product_detail():
             "description": "Teste",
             "category_id": category.id,
         },
-        format="json"
+        format="json",
     )
 
     assert create_response.status_code in [200, 201]

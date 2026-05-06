@@ -44,7 +44,9 @@ from inventory.views.variant_booking_views import (
 urlpatterns = [
     path("size-systems/", SizeSystemView.as_view()),
     path("size-systems/<int:size_system_id>/", SizeSystemDetailView.as_view()),
-    path("size-systems/<int:size_system_id>/activate/", SizeSystemActivateView.as_view()),
+    path(
+        "size-systems/<int:size_system_id>/activate/", SizeSystemActivateView.as_view()
+    ),
     path(
         "size-systems/<int:size_system_id>/deactivate/",
         SizeSystemDeactivateView.as_view(),

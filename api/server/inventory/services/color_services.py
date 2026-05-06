@@ -62,7 +62,9 @@ def delete_color(*, color, deleted_by=None):
         colors__deleted_at__isnull=True,
     ).exists()
     if in_use:
-        logger.warning("Color delete blocked: color %s in use by active variant", color.pk)
+        logger.warning(
+            "Color delete blocked: color %s in use by active variant", color.pk
+        )
         raise ValidationError({"messages": ["ColorInUse"]})
     color.delete(deleted_by=deleted_by)
     logger.info("Color soft-deleted: %s", color.pk)

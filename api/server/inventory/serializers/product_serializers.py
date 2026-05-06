@@ -65,7 +65,9 @@ class SchoolProductUpdateSerializer(ProductUpdateSerializer):
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     status = serializers.ChoiceField(choices=Product.Status.choices, read_only=True)
-    owner_type = serializers.ChoiceField(choices=Product.OwnerType.choices, read_only=True)
+    owner_type = serializers.ChoiceField(
+        choices=Product.OwnerType.choices, read_only=True
+    )
     media = ProductMediaSerializer(many=True, read_only=True)
 
     class Meta:

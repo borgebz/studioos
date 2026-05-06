@@ -15,17 +15,11 @@ from inventory.services.product_variant_services import create_variant
 
 @pytest.mark.django_db
 def test_reference_data_can_be_created():
-    color = create_color(
-        name="Preto Seed",
-        hex_code="#000000"
-    )
+    color = create_color(name="Preto Seed", hex_code="#000000")
 
     size_system = create_size_system(name="EU-SEED")
 
-    size = create_size(
-        name="M",
-        size_system_id=size_system.id
-    )
+    size = create_size(name="M", size_system_id=size_system.id)
 
     category = create_category(name="Roupa Seed")
 
@@ -39,10 +33,7 @@ def test_reference_data_can_be_created():
 def test_reference_data_can_create_product_and_variant():
     User = get_user_model()
 
-    user = User.objects.create_user(
-        email="seed@test.com",
-        password="1234"
-    )
+    user = User.objects.create_user(email="seed@test.com", password="1234")
 
     permission = Permission.objects.get(codename="add_product")
     user.user_permissions.add(permission)
@@ -50,10 +41,7 @@ def test_reference_data_can_create_product_and_variant():
     category = create_category(name="Categoria Seed")
 
     size_system = create_size_system(name="EU")
-    size = create_size(
-        name="L",
-        size_system_id=size_system.id
-    )
+    size = create_size(name="L", size_system_id=size_system.id)
 
     product = create_product(
         user=user,
@@ -68,7 +56,7 @@ def test_reference_data_can_create_product_and_variant():
         size_id=size.id,
         sku="SEED-001",
         condition="new",
-        acquisition_type="purchased"
+        acquisition_type="purchased",
     )
 
     assert product.id is not None

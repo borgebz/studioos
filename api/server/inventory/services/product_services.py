@@ -216,7 +216,14 @@ def update_product(*, pk, user, **data):
     if "category_id" in data:
         product.category = _validate_category(category_id=data.get("category_id"))
 
-    for field in ["name", "description", "target_gender", "brand", "material", "status"]:
+    for field in [
+        "name",
+        "description",
+        "target_gender",
+        "brand",
+        "material",
+        "status",
+    ]:
         if field in data:
             setattr(product, field, data[field])
 
@@ -241,7 +248,14 @@ def update_school_product(*, pk, user, **data):
 
     _validate_status(status=data.get("status"))
 
-    for field in ["name", "description", "target_gender", "brand", "material", "status"]:
+    for field in [
+        "name",
+        "description",
+        "target_gender",
+        "brand",
+        "material",
+        "status",
+    ]:
         if field in data:
             setattr(product, field, data[field])
 
@@ -320,7 +334,9 @@ def _handle_media(*, product, media_list, created_by=None):
         try:
             pm.full_clean()
         except Exception:
-            logger.exception("ProductMedia validation failed for product %s", product.pk)
+            logger.exception(
+                "ProductMedia validation failed for product %s", product.pk
+            )
             raise
         pm.save()
 
@@ -392,7 +408,9 @@ def _handle_variants(*, product, variants, created_by=None):
                 vc.save()
 
 
-def _handle_school_details(*, product, school_details, created_by=None, updated_by=None):
+def _handle_school_details(
+    *, product, school_details, created_by=None, updated_by=None
+):
     from inventory.models import SchoolProductDetails
 
     try:
