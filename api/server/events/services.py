@@ -496,23 +496,17 @@ def replace_event_class_targets(
         and event.visibility_state == EventVisibilityState.PUBLISHED
         and event.notification_target == NotificationTarget.CLASSES
     ):
-        raise ValidationError(
-            {"messages": ["CannotClearClassTargetsOnPublishedEvent"]}
-        )
+        raise ValidationError({"messages": ["CannotClearClassTargetsOnPublishedEvent"]})
 
     if desired:
-        found = set(
-            Classe.objects.filter(pk__in=desired).values_list("pk", flat=True)
-        )
+        found = set(Classe.objects.filter(pk__in=desired).values_list("pk", flat=True))
         if found != desired:
             raise ValidationError(
                 {"class_target_classe_ids": ["InvalidClassTargetIds"]}
             )
 
     current = set(
-        EventClassTarget.objects.filter(event=event).values_list(
-            "classe_id", flat=True
-        )
+        EventClassTarget.objects.filter(event=event).values_list("classe_id", flat=True)
     )
 
     actor = updated_by if updated_by is not None else created_by

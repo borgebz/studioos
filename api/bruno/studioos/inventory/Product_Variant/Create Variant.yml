@@ -1,0 +1,38 @@
+info:
+  name: Create Variant
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://127.0.0.1:8000/inventory/products/1/variants/
+  body:
+    type: json
+    data: |-
+      {
+
+        "sku": "TSHIRT-100",
+
+        "condition": "new",
+
+        "status": "available",
+
+        "acquisition_type": "purchased"
+
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc3MzAwMTg1LCJpYXQiOjE3NzcyOTkyODUsImp0aSI6IjM4NGQ4N2ExZDRmMDQzOWRhMzkzZDA1ZjFjY2M4MDMxIiwidXNlcl9pZCI6IjEifQ.7801t1Rw1O-XQJ_fUJvpPfCYm-okiKS1O5cka2xbvH4
+
+runtime:
+  variables:
+    - name: login_email
+      value: dbatista@ipca.pt
+    - name: login_password
+      value: olamundo
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

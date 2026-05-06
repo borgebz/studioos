@@ -1,0 +1,25 @@
+info:
+  name: upload-event-file
+  type: http
+  seq: 36
+
+http:
+  method: post
+  url: "{{base_url}}/api/events/1/files/"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value:
+          - ../enrollment/files/payment-proof.png
+      - name: file_name
+        type: text
+        value: proof.png
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

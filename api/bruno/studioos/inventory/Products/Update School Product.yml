@@ -1,0 +1,21 @@
+info:
+  name: update-school-product
+  type: http
+  seq: 18
+
+http:
+  method: patch
+  url: "{{base_url}}/inventory/school/products/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "School uniform item (updated)"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

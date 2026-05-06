@@ -30,7 +30,11 @@ class ConversationListView(APIView):
     @require_perm("messaging.can_list_conversations")
     def get(self, request):
         conversations = services.list_conversations(user=request.user)
-        return Response(ConversationSerializer(conversations, many=True, context={"request": request}).data)
+        return Response(
+            ConversationSerializer(
+                conversations, many=True, context={"request": request}
+            ).data
+        )
 
     @extend_schema(
         request=CreateConversationSerializer,
@@ -64,9 +68,13 @@ class MessageListView(APIView):
     )
     @require_perm("messaging.can_list_conversations")
     def get(self, request, conversation_id):
-        messages = services.get_messages(conversation_id=conversation_id, user=request.user)
+        messages = services.get_messages(
+            conversation_id=conversation_id, user=request.user
+        )
         services.mark_read(conversation_id=conversation_id, user=request.user)
-        return Response(MessageSerializer(messages, many=True, context={"request": request}).data)
+        return Response(
+            MessageSerializer(messages, many=True, context={"request": request}).data
+        )
 
     @extend_schema(
         request=SendMessageSerializer,
@@ -80,6 +88,7 @@ class MessageListView(APIView):
 
         if "data" in request.data and isinstance(request.data["data"], str):
             import json
+
             payload = json.loads(request.data["data"])
         else:
             payload = request.data
@@ -99,7 +108,9 @@ class MessageListView(APIView):
         msg = services.get_messages(
             conversation_id=conversation_id, user=request.user
         ).get(pk=msg.pk)
-        logger.info("MessageListView.post: user %s sent message %s", request.user.pk, msg.pk)
+        logger.info(
+            "MessageListView.post: user %s sent message %s", request.user.pk, msg.pk
+        )
         return Response(
             MessageSerializer(msg, context={"request": request}).data,
             status=status.HTTP_201_CREATED,

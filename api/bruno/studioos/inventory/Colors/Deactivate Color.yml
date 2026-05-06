@@ -1,0 +1,15 @@
+info:
+  name: deactivate-color
+  type: http
+  seq: 6
+
+http:
+  method: post
+  url: "{{base_url}}/inventory/colors/1/deactivate/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

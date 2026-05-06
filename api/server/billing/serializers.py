@@ -86,7 +86,9 @@ class BillingEntryDetailSerializer(serializers.ModelSerializer):
         choices=BillingEntrySourceType.choices, read_only=True
     )
     status = serializers.ChoiceField(choices=BillingEntryStatus.choices, read_only=True)
-    coaching_class = CoachingClassBillingDetailSerializer(read_only=True, allow_null=True)
+    coaching_class = CoachingClassBillingDetailSerializer(
+        read_only=True, allow_null=True
+    )
     coaching_participant = CoachingParticipantBillingSerializer(read_only=True)
     fine = FineBillingSummarySerializer(read_only=True, allow_null=True)
 
@@ -161,7 +163,9 @@ class FineListSerializer(serializers.ModelSerializer):
 class FineDetailSerializer(serializers.ModelSerializer):
     reason = serializers.ChoiceField(choices=FineReason.choices, read_only=True)
     status = serializers.ChoiceField(choices=FineStatus.choices, read_only=True)
-    coaching_class = CoachingClassBillingDetailSerializer(read_only=True, allow_null=True)
+    coaching_class = CoachingClassBillingDetailSerializer(
+        read_only=True, allow_null=True
+    )
     coaching_participant = CoachingParticipantBillingSerializer(read_only=True)
     reviewed_by = UserResponseSerializer(read_only=True, allow_null=True)
     suggested_amount = serializers.SerializerMethodField()

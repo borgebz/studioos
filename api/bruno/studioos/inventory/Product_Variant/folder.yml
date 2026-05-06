@@ -1,0 +1,12 @@
+info:
+  name: Product_Variant
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit
+  variables:
+    - name: login_email
+      value: dbatista@ipca.pt
+    - name: login_password
+      value: olamundo

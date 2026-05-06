@@ -1,0 +1,15 @@
+info:
+  name: list-user-modalities
+  type: http
+  seq: 5
+
+http:
+  method: get
+  url: "{{base_url}}/api/modalities/users/6/modalities/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

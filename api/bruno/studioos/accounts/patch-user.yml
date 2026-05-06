@@ -1,0 +1,21 @@
+info:
+  name: patch-user
+  type: http
+  seq: 12
+
+http:
+  method: patch
+  url: "{{base_url}}/api/accounts/users/9/"
+  body:
+    type: json
+    data: |-
+      {
+        "first_name": "Updated"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

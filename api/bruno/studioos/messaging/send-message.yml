@@ -7,11 +7,11 @@ http:
   method: post
   url: "{{base_url}}/api/messaging/conversations/1/messages/"
   body:
-    type: json
-    data: |-
-      {
-        "body": "Hello from Bruno REST"
-      }
+    type: multipart-form
+    data:
+      - name: body
+        type: text
+        value: Hello from Bruno REST
   auth: inherit
 
 settings:

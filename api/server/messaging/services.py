@@ -33,14 +33,16 @@ def get_or_create_direct_conversation(*, user_a, user_b, created_by=None):
             participant.full_clean()
             participant.save()
 
-        logger.info("get_or_create_direct_conversation: created conversation %s", conversation.pk)
+        logger.info(
+            "get_or_create_direct_conversation: created conversation %s",
+            conversation.pk,
+        )
         return conversation, True
 
 
 def list_conversations(*, user):
-    return (
-        Conversation.objects.filter(participants=user)
-        .prefetch_related("participants", "messages")
+    return Conversation.objects.filter(participants=user).prefetch_related(
+        "participants", "messages"
     )
 
 
@@ -56,7 +58,9 @@ def get_messages(*, conversation_id, user):
     return Message.objects.filter(conversation_id=conversation_id)
 
 
-def send_message(*, conversation, sender, body="", file=None, original_filename="", mime_type=""):
+def send_message(
+    *, conversation, sender, body="", file=None, original_filename="", mime_type=""
+):
     if not body and not file:
         raise ValidationError({"messages": ["MessageBodyOrFileRequired"]})
 
@@ -76,7 +80,9 @@ def send_message(*, conversation, sender, body="", file=None, original_filename=
     conversation.updated_by = sender
     conversation.save(update_fields=["updated_at", "updated_by"])
 
-    logger.info("send_message: message %s created in conversation %s", msg.pk, conversation.pk)
+    logger.info(
+        "send_message: message %s created in conversation %s", msg.pk, conversation.pk
+    )
     return msg
 
 

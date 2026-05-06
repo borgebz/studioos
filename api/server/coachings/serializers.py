@@ -56,10 +56,14 @@ class CoachingRequestSerializer(serializers.Serializer):
 
 class RecurringCoachingSubmitSerializer(serializers.Serializer):
     recurrence_type = serializers.ChoiceField(choices=RecurrenceType.choices)
-    recurrence_interval = serializers.IntegerField(required=False, min_value=1, default=1)
+    recurrence_interval = serializers.IntegerField(
+        required=False, min_value=1, default=1
+    )
     days_of_week = serializers.CharField(required=False, allow_blank=True, default="")
     end_date = serializers.DateField(required=False, allow_null=True)
-    occurrences_count = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    occurrences_count = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1
+    )
     notes = serializers.CharField(required=False, allow_blank=True, default="")
 
     def validate(self, attrs):

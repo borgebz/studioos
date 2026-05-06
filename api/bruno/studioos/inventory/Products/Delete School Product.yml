@@ -1,0 +1,15 @@
+info:
+  name: delete-school-product
+  type: http
+  seq: 19
+
+http:
+  method: delete
+  url: "{{base_url}}/inventory/school/products/1/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

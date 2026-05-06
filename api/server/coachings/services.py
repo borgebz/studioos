@@ -158,13 +158,14 @@ def _student_ids_for_modality_roster(*, modality_id):
     qs = User.objects.filter(pk__in=list(raw_ids)).distinct()
     if perm is not None:
         qs = qs.filter(
-            models.Q(user_permissions=perm)
-            | models.Q(groups__permissions=perm)
+            models.Q(user_permissions=perm) | models.Q(groups__permissions=perm)
         ).distinct()
     return list(qs.values_list("pk", flat=True))
 
 
-def _bulk_roster_direct_coordination(*, coaching, schedule_flag, created_by, classe_id=None):
+def _bulk_roster_direct_coordination(
+    *, coaching, schedule_flag, created_by, classe_id=None
+):
     """
     Fill roster from approved enrollments for the coaching modality.
 

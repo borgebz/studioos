@@ -32,3 +32,16 @@ DEFAULT_ERROR_RESPONSES = {
     403: ErrorResponseSerializer,  # Forbidden — authenticated but lacks permission
     404: ErrorResponseSerializer,  # Not found — resource does not exist
 }
+
+
+def paginated_list_schema(*, name, results_serializer):
+    """OpenAPI shape for ``PageNumberPagination`` list responses."""
+    return inline_serializer(
+        name=name,
+        fields={
+            "count": serializers.IntegerField(),
+            "next": serializers.URLField(allow_null=True, required=False),
+            "previous": serializers.URLField(allow_null=True, required=False),
+            "results": results_serializer(many=True),
+        },
+    )
