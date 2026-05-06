@@ -45,6 +45,7 @@ from accounts.auth_cookies import (
     set_auth_cookies,
     clear_auth_cookies,
 )
+from rest_framework.throttling import AnonRateThrottle
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class LoginView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(
         request=LoginSerializer,
