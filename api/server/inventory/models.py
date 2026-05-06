@@ -31,12 +31,28 @@ class Category(BaseModel):
     sort_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
-    size_system = models.ForeignKey(
-        SizeSystem, null=True, blank=True, on_delete=models.SET_NULL
-    )
-
     def __str__(self):
         return self.name
+
+
+# Category ↔ SizeSystem junction (ordered)
+class CategorySizeSystem(models.Model):
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name="size_systems"
+    )
+    size_system = models.ForeignKey(
+        SizeSystem, on_delete=models.CASCADE, related_name="category_links"
+    )
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["category", "size_system"],
+                name="inventory_categorysizesystem_uniq",
+            ),
+        ]
+        ordering = ["sort_order"]
 
 
 # Size Model

@@ -4,7 +4,7 @@ from django.db import transaction
 from django.db.models import Prefetch, Q
 from rest_framework.exceptions import NotFound, ValidationError
 
-from inventory.models import SizeSystem, Size, Category, ProductVariant
+from inventory.models import SizeSystem, Size, Category, CategorySizeSystem, ProductVariant
 
 logger = logging.getLogger(__name__)
 
@@ -93,10 +93,11 @@ def update_size_system(*, size_system, name=None, updated_by=None):
 # DELETE (Soft + regras)
 def delete_size_system(*, size_system, deleted_by=None):
     has_variants = ProductVariant.objects.filter(
-        Q(product__category__size_system=size_system) | Q(size__size_system=size_system)
+        Q(product__category__size_systems__size_system=size_system)
+        | Q(size__size_system=size_system)
     ).exists()
 
-    has_categories = Category.objects.filter(size_system=size_system).exists()
+    has_categories = CategorySizeSystem.objects.filter(size_system=size_system).exists()
     has_sizes = Size.objects.filter(size_system=size_system).exists()
 
     if has_variants or has_categories or has_sizes:

@@ -93,8 +93,11 @@ def _validate_size(*, product, size_id):
     except Size.DoesNotExist:
         raise ValidationError({"messages": ["InvalidSize"]})
 
-    if product.category and product.category.size_system_id:
-        if size.size_system_id != product.category.size_system_id:
+    if product.category:
+        linked_system_ids = list(
+            product.category.size_systems.values_list("size_system_id", flat=True)
+        )
+        if linked_system_ids and size.size_system_id not in linked_system_ids:
             raise ValidationError({"messages": ["InvalidSizeForCategory"]})
 
     return size

@@ -5,7 +5,7 @@ from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AppNotFound
 
-from inventory.models import Category, SizeSystem, Product
+from inventory.models import Category, CategorySizeSystem, SizeSystem, Product
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,8 @@ def get_category(*, pk):
 def list_categories(*, parent_category_id=None, is_active=None, size_system_id=None):
     qs = (
         Category.objects.all()
-        .prefetch_related("children")
-        .select_related("parent", "size_system")
+        .prefetch_related("children", "size_systems__size_system")
+        .select_related("parent")
     )
     if parent_category_id:
         qs = qs.filter(parent_id=parent_category_id)
@@ -53,9 +53,30 @@ def list_categories(*, parent_category_id=None, is_active=None, size_system_id=N
         qs = qs.filter(is_active=is_active)
 
     if size_system_id:
-        qs = qs.filter(size_system_id=size_system_id)
+        qs = qs.filter(size_systems__size_system_id=size_system_id)
 
     return qs.order_by("sort_order", "name")
+
+
+def _resolve_size_systems(size_system_ids):
+    """Validate and return SizeSystem objects for the given ids."""
+    if not size_system_ids:
+        return []
+    systems = list(SizeSystem.objects.filter(pk__in=size_system_ids, is_active=True))
+    if len(systems) != len(size_system_ids):
+        raise ValidationError({"messages": ["InvalidSizeSystem"]})
+    # Preserve caller-supplied order
+    index = {s.pk: s for s in systems}
+    return [index[pk] for pk in size_system_ids if pk in index]
+
+
+def _replace_category_size_systems(category, size_systems):
+    """Replace all CategorySizeSystem links for a category."""
+    CategorySizeSystem.objects.filter(category=category).delete()
+    for order, ss in enumerate(size_systems):
+        CategorySizeSystem.objects.create(
+            category=category, size_system=ss, sort_order=order
+        )
 
 
 # CREATE
@@ -64,7 +85,7 @@ def create_category(
     *,
     name,
     parent_category_id=None,
-    size_system_id=None,
+    size_system_ids=None,
     sort_order=0,
     is_active=True,
     subcategories=None,
@@ -82,24 +103,19 @@ def create_category(
     ).exists():
         raise ValidationError({"messages": ["DuplicateCategoryNameInLevel"]})
 
-    size_system = None
-    if size_system_id:
-        size_system = SizeSystem.objects.filter(
-            pk=size_system_id, is_active=True
-        ).first()
-        if not size_system:
-            raise ValidationError({"messages": ["InvalidSizeSystem"]})
+    size_systems = _resolve_size_systems(size_system_ids or [])
 
     category = Category(
         name=name.strip(),
         parent=parent,
-        size_system_id=size_system_id,
         sort_order=sort_order,
         is_active=is_active,
         created_by=created_by,
     )
     category.full_clean()
     category.save()
+
+    _replace_category_size_systems(category, size_systems)
 
     logger.info("Category created: %s", category.pk)
 
@@ -117,7 +133,6 @@ def create_category(
             sub_cat = Category(
                 name=sub["name"].strip(),
                 parent=category,
-                size_system_id=sub.get("size_system_id", size_system_id),
                 sort_order=sub.get("sort_order", 0),
                 is_active=sub.get("is_active", True),
                 created_by=created_by,
@@ -125,10 +140,16 @@ def create_category(
             sub_cat.full_clean()
             sub_cat.save()
 
+            sub_size_systems = _resolve_size_systems(
+                sub.get("size_system_ids") or size_system_ids or []
+            )
+            _replace_category_size_systems(sub_cat, sub_size_systems)
+
     return category
 
 
 # UPDATE
+@transaction.atomic
 def update_category(*, category, updated_by=None, **data):
     if "parent_category_id" in data:
         parent_id = data["parent_category_id"]
@@ -159,21 +180,9 @@ def update_category(*, category, updated_by=None, **data):
 
     category.name = name
 
-    if "size_system_id" in data:
-        new_size_system_id = data["size_system_id"]
-
-        if category.size_system_id and category.size_system_id != new_size_system_id:
-            raise ValidationError({"messages": ["ImmutableCategorySizeSystem"]})
-
-        if new_size_system_id:
-            size_system = SizeSystem.objects.filter(
-                pk=new_size_system_id, is_active=True
-            ).first()
-
-            if not size_system:
-                raise ValidationError({"messages": ["InvalidSizeSystem"]})
-
-            category.size_system = size_system
+    if "size_system_ids" in data:
+        size_systems = _resolve_size_systems(data["size_system_ids"] or [])
+        _replace_category_size_systems(category, size_systems)
 
     if "sort_order" in data:
         category.sort_order = data["sort_order"]
