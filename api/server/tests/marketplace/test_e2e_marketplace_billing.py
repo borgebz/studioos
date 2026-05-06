@@ -472,16 +472,23 @@ def test_billing_03_donate_no_entry_lend_no_price_no_entry_lend_with_price_entry
     lend_nopr_lid = _publish_listing(cs, v2_id, "lend")  # no price
     lend_pr_lid = _publish_listing(cs, v3_id, "lend", asking_price="3.00")
 
+    now = timezone.now()
+
     # --- DONATE flow ---
     txn_a_id, entry_a = _full_flow(cs, donate_lid, ca)
     assert entry_a is None  # no billing entry for donation
 
-    # --- LEND without price flow ---
-    txn_b_id, entry_b = _full_flow(cs, lend_nopr_lid, cb)
+    # --- LEND without price flow (dates required for LEND) ---
+    txn_b_id, entry_b = _full_flow(
+        cs,
+        lend_nopr_lid,
+        cb,
+        start_at=now + timedelta(days=1),
+        end_at=now + timedelta(days=8),
+    )
     assert entry_b is None  # no price → no billing
 
     # --- LEND with price flow ---
-    now = timezone.now()
     req_c = cc.post(
         f"/marketplace/listings/{lend_pr_lid}/request/",
         {

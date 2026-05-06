@@ -1,7 +1,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from inventory.models import Category, CategorySizeSystem, SizeSystem
+from inventory.models import Category, SizeSystem
 
 
 class SizeSystemBriefSerializer(serializers.ModelSerializer):
@@ -29,7 +29,9 @@ class CategorySerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_size_systems(self, obj):
         links = obj.size_systems.order_by("sort_order").select_related("size_system")
-        return SizeSystemBriefSerializer([link.size_system for link in links], many=True).data
+        return SizeSystemBriefSerializer(
+            [link.size_system for link in links], many=True
+        ).data
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_subcategories(self, obj):
@@ -57,7 +59,9 @@ class CreateCategorySerializer(serializers.Serializer):
                 raise serializers.ValidationError({"parent_category_id": ["NotFound"]})
 
         if size_system_ids:
-            count = SizeSystem.objects.filter(pk__in=size_system_ids, is_active=True).count()
+            count = SizeSystem.objects.filter(
+                pk__in=size_system_ids, is_active=True
+            ).count()
             if count != len(size_system_ids):
                 raise serializers.ValidationError(
                     {"size_system_ids": ["InvalidOrInactive"]}

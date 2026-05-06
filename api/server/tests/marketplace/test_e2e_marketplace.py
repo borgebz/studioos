@@ -968,7 +968,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     staff    → accepts member_b SELL transaction
     staff    → completes member_b SELL → variant SOLD
     staff    → unpublishes RENT listing 2 (maintenance)
-    parent   → checks my favorites list still includes listing 1
+    member_a → favorites list still includes listing 1 after unpublish
     """
     from datetime import timedelta
     from django.utils import timezone
@@ -1185,11 +1185,8 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     active_ids = [row["id"] for row in browse_after.data["results"]]
     assert rent2_id not in active_ids
 
-    # parent still has rent1 in mine favorites
-    parent_favs = cp.get("/marketplace/listings/favorites/")
-    assert parent_favs.status_code == 200
-    assert rent1_id in [row["id"] for row in parent_favs.data["results"]]
-    # parent didn't favorite — check member_a favorites unchanged
+    # member_a still has rent1 favorited after rent2 unpublish
     ma_favs = ca.get("/marketplace/listings/favorites/")
+    assert ma_favs.status_code == 200
     fav_ids_after = [row["id"] for row in ma_favs.data["results"]]
     assert rent1_id in fav_ids_after

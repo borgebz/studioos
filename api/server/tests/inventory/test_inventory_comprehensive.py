@@ -424,10 +424,11 @@ class TestCategoryCRUD:
     def test_category_size_system_link(self, clothing_system):
         cat = create_category(
             name=f"Linked_{_uid()}",
-            size_system_id=clothing_system.id,
+            size_system_ids=[clothing_system.id],
         )
         fetched = get_category(pk=cat.id)
-        assert fetched.size_system_id == clothing_system.id
+        linked_ids = list(fetched.size_systems.values_list("size_system_id", flat=True))
+        assert clothing_system.id in linked_ids
 
     @pytest.mark.django_db
     def test_delete_category_with_products_blocked(self, member_user):

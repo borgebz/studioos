@@ -17,7 +17,10 @@ def migrate_category_size_systems(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("inventory", "0009_variantbooking_listing_alter_productvariant_status_and_more"),
+        (
+            "inventory",
+            "0009_variantbooking_listing_alter_productvariant_status_and_more",
+        ),
     ]
 
     operations = [

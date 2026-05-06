@@ -4,7 +4,12 @@ from django.db import transaction
 from django.db.models import Prefetch, Q
 from rest_framework.exceptions import NotFound, ValidationError
 
-from inventory.models import SizeSystem, Size, Category, CategorySizeSystem, ProductVariant
+from inventory.models import (
+    SizeSystem,
+    Size,
+    CategorySizeSystem,
+    ProductVariant,
+)
 
 logger = logging.getLogger(__name__)
 

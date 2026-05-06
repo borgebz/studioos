@@ -60,7 +60,6 @@ class Command(BaseCommand):
             "sort_order": 8,
             "size_systems": [],
         },
-
         # ── VESTUÁRIO DE TREINO ───────────────────────────────────────────────────
         # Collants, bodies, leotards — core dance training wear; adults use intl + EU,
         # kids use age + height (two systems visible simultaneously).
@@ -68,31 +67,56 @@ class Command(BaseCommand):
             "name": "Collants e Bodies",
             "parent": "Vestuário de Treino",
             "sort_order": 1,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Leggings e Calças",
             "parent": "Vestuário de Treino",
             "sort_order": 2,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Saias de Ensaio",
             "parent": "Vestuário de Treino",
             "sort_order": 3,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Tops e T-Shirts",
             "parent": "Vestuário de Treino",
             "sort_order": 4,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Agasalhos e Casacos",
             "parent": "Vestuário de Treino",
             "sort_order": 5,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         # Socks/tights are one-size or generic intl — no EU numeric makes sense here.
         {
@@ -101,39 +125,62 @@ class Command(BaseCommand):
             "sort_order": 6,
             "size_systems": ["ClothingInternational", "KidsAge"],
         },
-
         # ── FIGURINOS DE ESPETÁCULO ───────────────────────────────────────────────
         {
             "name": "Tutus e Vestidos de Ballet",
             "parent": "Figurinos de Espetáculo",
             "sort_order": 1,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Figurinos de Contemporâneo",
             "parent": "Figurinos de Espetáculo",
             "sort_order": 2,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Figurinos de Jazz",
             "parent": "Figurinos de Espetáculo",
             "sort_order": 3,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Figurinos de Hip-Hop",
             "parent": "Figurinos de Espetáculo",
             "sort_order": 4,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
         {
             "name": "Figurinos Temáticos e Fantasias",
             "parent": "Figurinos de Espetáculo",
             "sort_order": 5,
-            "size_systems": ["ClothingInternational", "ClothingEU", "KidsAge", "KidsHeight"],
+            "size_systems": [
+                "ClothingInternational",
+                "ClothingEU",
+                "KidsAge",
+                "KidsHeight",
+            ],
         },
-
         # ── CALÇADO ───────────────────────────────────────────────────────────────
         # All dance footwear uses EU numeric sizing (full range 35–46).
         {
@@ -178,7 +225,6 @@ class Command(BaseCommand):
             "sort_order": 7,
             "size_systems": ["ShoesEU"],
         },
-
         # ── ACESSÓRIOS DE DANÇA ───────────────────────────────────────────────────
         # Small accessories: hair, protection, straps — all one-size items.
         {
@@ -211,7 +257,6 @@ class Command(BaseCommand):
             "sort_order": 5,
             "size_systems": ["OneSize"],
         },
-
         # ── ADEREÇOS DE CENA ──────────────────────────────────────────────────────
         # Performance props — no sizing needed.
         {
@@ -238,7 +283,6 @@ class Command(BaseCommand):
             "sort_order": 4,
             "size_systems": ["OneSize"],
         },
-
         # ── CENOGRAFIA E PALCO ────────────────────────────────────────────────────
         # Large set pieces — no meaningful size system.
         {
@@ -259,7 +303,6 @@ class Command(BaseCommand):
             "sort_order": 3,
             "size_systems": [],
         },
-
         # ── MATERIAL DE TREINO ────────────────────────────────────────────────────
         # Studio training equipment — school-owned, no size.
         {
@@ -286,7 +329,6 @@ class Command(BaseCommand):
             "sort_order": 4,
             "size_systems": [],
         },
-
         # ── MAQUILHAGEM E CARACTERIZAÇÃO ─────────────────────────────────────────
         {
             "name": "Maquilhagem de Palco",
@@ -321,12 +363,16 @@ class Command(BaseCommand):
             parent = None
             if item["parent"]:
                 try:
-                    parent = Category.objects.get(name=item["parent"], parent=None) \
-                        if not Category.objects.filter(name=item["parent"]).exists() \
+                    parent = (
+                        Category.objects.get(name=item["parent"], parent=None)
+                        if not Category.objects.filter(name=item["parent"]).exists()
                         else Category.objects.get(name=item["parent"])
+                    )
                 except Category.DoesNotExist:
                     self.stdout.write(
-                        self.style.ERROR(f"Missing parent: {item['parent']} — skipping {item['name']}")
+                        self.style.ERROR(
+                            f"Missing parent: {item['parent']} — skipping {item['name']}"
+                        )
                     )
                     skipped += 1
                     continue
