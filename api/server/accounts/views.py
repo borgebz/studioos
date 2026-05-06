@@ -28,19 +28,20 @@ from .services import (
 )
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema, inline_serializer
-from rest_framework_simplejwt.views import (
-    TokenBlacklistView,
-    TokenObtainPairView,
-    TokenRefreshView,
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from accounts.auth_cookies import (
+    set_auth_cookies,
+    clear_auth_cookies,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class LoginView(TokenObtainPairView):
+class LoginView(APIView):
     """
     POST /api/accounts/auth/login/
-    Accepts email + password, returns access and refresh tokens.
+    Accepts email + password and stores JWT in httpOnly cookies.
     """
 
     permission_classes = [AllowAny]
@@ -48,17 +49,51 @@ class LoginView(TokenObtainPairView):
     @extend_schema(
         request=LoginSerializer,
         responses={
-            200: TokenPairSerializer,
+            200: inline_serializer(
+                name="LoginSuccess",
+                fields={
+                    "detail": serializers.CharField(),
+                },
+            ),
             **DEFAULT_ERROR_RESPONSES,
         },
     )
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        logger.info("User logged in: %s", request.data.get("email"))
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        user = authenticate(
+            request,
+            email=email,
+            password=password,
+        )
+
+        if not user:
+            return Response(
+                {"detail": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+
+        response = Response(
+            {"detail": "Login successful"},
+            status=status.HTTP_200_OK,
+        )
+
+        set_auth_cookies(
+            response=response,
+            access_token=str(access),
+            refresh_token=str(refresh),
+        )
+
+        logger.info("User logged in: %s", email)
+
         return response
 
 
-class RefreshView(TokenRefreshView):
+class RefreshView(APIView):
     """
     POST /api/accounts/auth/refresh/
     Accepts refresh token, returns new access and rotated refresh tokens.
@@ -82,7 +117,7 @@ class RefreshView(TokenRefreshView):
         return super().post(request, *args, **kwargs)
 
 
-class LogoutView(TokenBlacklistView):
+class LogoutView(APIView):
     """
     POST /api/accounts/auth/logout/
     Blacklists the provided refresh token. Token is invalid after this call.
