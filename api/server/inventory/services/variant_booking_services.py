@@ -5,20 +5,13 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from core.exceptions import AppNotFound
 
-from inventory.django_validation import raise_drf_from_model_validation
+from core.exceptions import raise_drf_from_model_validation
 from inventory.models import Product, ProductVariant, VariantBooking
 
 logger = logging.getLogger(__name__)
 
 VALID_BOOKING_TYPES = {choice.value for choice in VariantBooking.BookingType}
 VALID_STATUS = {choice.value for choice in VariantBooking.Status}
-
-_ACTIVE_OVERLAP_STATUSES = (
-    VariantBooking.Status.PENDING,
-    VariantBooking.Status.CONFIRMED,
-    VariantBooking.Status.ACTIVE,
-)
-
 
 def _get_variant(*, variant_id, user):
     try:
@@ -52,7 +45,7 @@ def _validate_dates(*, start_at, end_at):
 def _check_overlap(*, variant, start_at, end_at, exclude_id=None):
     overlapping = VariantBooking.objects.filter(
         variant=variant,
-        status__in=_ACTIVE_OVERLAP_STATUSES,
+        status__in=VariantBooking.ACTIVE_HOLD_STATUSES,
     ).filter(start_at__lt=end_at, end_at__gt=start_at)
 
     if exclude_id:

@@ -4,11 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.pagination import paginated_response
 from core.permissions import require_perm
-from core.schemas import DEFAULT_ERROR_RESPONSES
-
-from inventory.pagination import InventoryPageNumberPagination
-from inventory.schemas import inventory_paginated_schema
+from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
 from inventory.serializers.product_variant_serializers import ProductVariantSerializer
 from inventory.services.product_variant_services import (
     create_variant,
@@ -24,7 +22,7 @@ class ProductVariantListCreateView(APIView):
 
     @extend_schema(
         responses={
-            200: inventory_paginated_schema(
+            200: paginated_list_schema(
                 name="InventoryProductVariantList",
                 results_serializer=ProductVariantSerializer,
             ),
@@ -34,10 +32,10 @@ class ProductVariantListCreateView(APIView):
     @require_perm("inventory.view_product")
     def get(self, request, product_id):
         variants = list_variants(product_id=product_id, user=request.user)
-        paginator = InventoryPageNumberPagination()
-        page = paginator.paginate_queryset(variants, request)
-        return paginator.get_paginated_response(
-            ProductVariantSerializer(page, many=True).data
+        return paginated_response(
+            request=request,
+            items=variants,
+            serializer_class=ProductVariantSerializer,
         )
 
     @extend_schema(

@@ -5,7 +5,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from core.exceptions import AppNotFound
 
-from inventory.django_validation import raise_drf_from_model_validation
+from core.exceptions import raise_drf_from_model_validation
 from inventory.models import Product, Category, ProductMedia, ProductVariant
 from utils.files import django_field_file_sha256, file_content_hash
 

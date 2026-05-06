@@ -261,7 +261,7 @@ def test_patch_user_not_found(auth_client):
         format="json",
     )
     assert resp.status_code == 404
-    assert "NotFound" in resp.json()["errors"]["messages"]
+    assert any("NotFound" in m for m in resp.json()["errors"]["messages"])
 
 
 @pytest.mark.django_db

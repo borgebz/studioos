@@ -6,7 +6,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from core.exceptions import AppNotFound
 
-from inventory.django_validation import raise_drf_from_model_validation
+from core.exceptions import raise_drf_from_model_validation
 from inventory.models import (
     Product,
     ProductVariant,
@@ -20,11 +20,7 @@ from inventory.models import (
 
 logger = logging.getLogger(__name__)
 
-_ACTIVE_BOOKING_STATUSES = (
-    VariantBooking.Status.PENDING,
-    VariantBooking.Status.CONFIRMED,
-    VariantBooking.Status.ACTIVE,
-)
+_ACTIVE_BOOKING_STATUSES = VariantBooking.ACTIVE_HOLD_STATUSES
 
 
 def _normalize_sku(value):

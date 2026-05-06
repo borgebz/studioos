@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     "classes",
     "roles",
     "messaging",
+    "marketplace",
 ]
 
 # API-only: no django.contrib.sessions / SessionMiddleware / AuthenticationMiddleware.

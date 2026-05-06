@@ -4,12 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.pagination import paginated_response
 from core.permissions import require_perm
-from core.schemas import DEFAULT_ERROR_RESPONSES
+from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
 
 from inventory import services
-from inventory.pagination import InventoryPageNumberPagination
-from inventory.schemas import inventory_paginated_schema
 from inventory.serializers.product_serializers import (
     ProductCreateSerializer,
     ProductDetailSerializer,
@@ -36,7 +35,7 @@ class ProductListCreateView(APIView):
 
     @extend_schema(
         responses={
-            200: inventory_paginated_schema(
+            200: paginated_list_schema(
                 name="InventoryMemberProductList",
                 results_serializer=ProductDetailSerializer,
             ),
@@ -48,10 +47,11 @@ class ProductListCreateView(APIView):
         products = services.list_products(
             user=request.user, filters=_product_list_filters(request)
         )
-        paginator = InventoryPageNumberPagination()
-        page = paginator.paginate_queryset(products, request)
-        serializer = ProductDetailSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        return paginated_response(
+            request=request,
+            items=products,
+            serializer_class=ProductDetailSerializer,
+        )
 
     @extend_schema(
         request=ProductCreateSerializer,
@@ -103,7 +103,7 @@ class SchoolProductListCreateView(APIView):
 
     @extend_schema(
         responses={
-            200: inventory_paginated_schema(
+            200: paginated_list_schema(
                 name="InventorySchoolProductList",
                 results_serializer=ProductDetailSerializer,
             ),
@@ -115,10 +115,11 @@ class SchoolProductListCreateView(APIView):
         products = services.list_school_products(
             user=request.user, filters=_product_list_filters(request)
         )
-        paginator = InventoryPageNumberPagination()
-        page = paginator.paginate_queryset(products, request)
-        serializer = ProductDetailSerializer(page, many=True)
-        return paginator.get_paginated_response(serializer.data)
+        return paginated_response(
+            request=request,
+            items=products,
+            serializer_class=ProductDetailSerializer,
+        )
 
     @extend_schema(
         request=SchoolProductCreateSerializer,

@@ -91,6 +91,30 @@ def build_fine_description(*, fine):
     return f"Multa: {reason_label} | {modality_name} | {when}"[:255]
 
 
+_MARKETPLACE_TYPE_LABELS_PT = {
+    "sell": "Compra",
+    "rent": "Aluguer",
+    "lend": "Empréstimo",
+    "donate": "Doação",
+}
+
+
+def build_marketplace_description(*, transaction):
+    """
+    'Mercado | {listing_title} | {type_label}'
+    e.g. 'Mercado | Tutu Branco | Aluguer'
+    """
+    title = (
+        transaction.listing.title
+        if transaction.listing_id is not None
+        else transaction.variant.product.name
+    )
+    type_label = _MARKETPLACE_TYPE_LABELS_PT.get(
+        transaction.transaction_type, transaction.transaction_type
+    )
+    return f"Mercado | {title} | {type_label}"[:255]
+
+
 # -----------------------------------------------------------------------------
 # Split
 # -----------------------------------------------------------------------------
@@ -185,8 +209,76 @@ def create_billing_entries_for_coaching(*, coaching, user):
 
 
 # -----------------------------------------------------------------------------
-# Fines
+# Marketplace billing entries
 # -----------------------------------------------------------------------------
+
+
+def create_billing_entry_for_transaction(*, transaction, user):
+    """
+    Create a pending billing entry for a completed marketplace transaction.
+    Called inside complete_transaction's atomic block.
+
+    Skips silently if:
+    - No price is set (agreed_price and asking_price both absent/zero)
+    - transaction_type is donate (never charged)
+
+    The requester is the payer (student field).
+    """
+    from marketplace.models import ProductTransaction
+
+    if transaction.transaction_type == ProductTransaction.TransactionType.DONATE:
+        logger.info(
+            "Skipping billing entry for DONATE transaction id=%s", transaction.pk
+        )
+        return None
+
+    raw_price = transaction.agreed_price or (
+        transaction.listing.asking_price if transaction.listing_id else None
+    )
+
+    if not raw_price:
+        logger.info(
+            "Skipping billing entry for transaction id=%s — no price set", transaction.pk
+        )
+        return None
+
+    try:
+        amount = Decimal(str(raw_price)).quantize(_QUANT)
+    except (InvalidOperation, ValueError):
+        logger.warning(
+            "Invalid price value '%s' for transaction id=%s — skipping billing entry",
+            raw_price,
+            transaction.pk,
+        )
+        return None
+
+    if amount <= 0:
+        logger.info(
+            "Skipping billing entry for transaction id=%s — amount is zero or negative",
+            transaction.pk,
+        )
+        return None
+
+    description = build_marketplace_description(transaction=transaction)
+
+    entry = BillingEntry(
+        source_type=BillingEntrySourceType.MARKETPLACE,
+        marketplace_transaction=transaction,
+        student_id=transaction.requester_id,
+        amount_due=amount,
+        description=description,
+        status=BillingEntryStatus.PENDING,
+        created_by=user,
+    )
+    entry.full_clean()
+    entry.save()
+
+    logger.info(
+        "BillingEntry created for marketplace transaction id=%s amount=%s",
+        transaction.pk,
+        amount,
+    )
+    return entry
 
 # Map participant final-status → fine reason
 _FINE_REASON_FROM_PARTICIPANT_STATUS = {

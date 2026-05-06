@@ -1,4 +1,5 @@
 # core/exceptions.py
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils.encoding import force_str
 from rest_framework import exceptions
 from rest_framework.views import exception_handler
@@ -25,6 +26,21 @@ class AppNotFound(exceptions.NotFound):
     """Use when the API should return a specific error code in ``errors.messages`` (not generic ``NotFound``)."""
 
     pass
+
+
+def raise_drf_from_model_validation(exc: DjangoValidationError) -> None:
+    """Map Django model ``ValidationError`` from ``full_clean()`` to DRF ``ValidationError``."""
+    messages = []
+    if hasattr(exc, "error_dict"):
+        for errs in exc.error_dict.values():
+            for item in errs:
+                messages.append(str(item))
+    elif hasattr(exc, "error_list"):
+        for item in exc.error_list:
+            messages.append(str(item))
+    else:
+        messages.append(str(exc))
+    raise exceptions.ValidationError({"messages": messages or ["ValidationError"]})
 
 
 def _detail_to_message_list(detail):

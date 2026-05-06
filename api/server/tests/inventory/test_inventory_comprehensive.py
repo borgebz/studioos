@@ -778,11 +778,11 @@ class TestProductVariantLifecycle:
             variant_id=v.id,
             user=member_user,
             condition="excellent",
-            status="reserved",
+            status="maintenance",
             public_notes="Updated notes",
         )
         assert updated.condition == "excellent"
-        assert updated.status == "reserved"
+        assert updated.status == "maintenance"
 
     @pytest.mark.django_db
     @pytest.mark.parametrize("condition,acq_type,sku_prefix", variant_data)
@@ -1323,8 +1323,8 @@ class TestSchoolVariantBookings:
             start_at=now,
             end_at=now + timedelta(days=2),
         )
-        updated = update_booking(booking_id=b.id, user=school_manager, status="active")
-        assert updated.status == "active"
+        updated = update_booking(booking_id=b.id, user=school_manager, status="blocked")
+        assert updated.status == "blocked"
 
     @pytest.mark.django_db
     def test_school_variant_overlap_blocked(self, school_manager, school_product, size_m):
@@ -1493,11 +1493,11 @@ class TestVariantStatusTransitions:
     """5 × variant status changes via update_variant."""
 
     status_pairs = [
-        ("available", "reserved"),
-        ("reserved", "in_use"),
-        ("in_use", "maintenance"),
+        ("available", "maintenance"),
         ("maintenance", "available"),
         ("available", "inactive"),
+        ("inactive", "available"),
+        ("available", "sold"),
     ]
 
     @pytest.mark.django_db
@@ -1533,8 +1533,8 @@ class TestBookingStatusTransitions:
 
     status_sequences = [
         ("pending", "confirmed"),
-        ("confirmed", "active"),
-        ("active", "completed"),
+        ("confirmed", "blocked"),
+        ("blocked", "confirmed"),
         ("pending", "cancelled"),
         ("confirmed", "completed"),
     ]

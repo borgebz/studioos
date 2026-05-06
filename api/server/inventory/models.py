@@ -148,8 +148,6 @@ class ProductVariant(BaseModel):
 
     class Status(models.TextChoices):
         AVAILABLE = "available"
-        RESERVED = "reserved"
-        IN_USE = "in_use"
         MAINTENANCE = "maintenance"
         INACTIVE = "inactive"
         SOLD = "sold"
@@ -266,6 +264,8 @@ class VariantBooking(BaseModel):
         RESERVATION = "reservation"
         LOAN = "loan"
         RENT = "rent"
+        SALE = "sale"
+        DONATION = "donation"
         SCHOOL_USE = "school_use"
         MAINTENANCE = "maintenance"
         BLOCKED = "blocked"
@@ -273,9 +273,17 @@ class VariantBooking(BaseModel):
     class Status(models.TextChoices):
         PENDING = "pending"
         CONFIRMED = "confirmed"
-        ACTIVE = "active"
         COMPLETED = "completed"
+        BLOCKED = "blocked"
         CANCELLED = "cancelled"
+
+    # Statuses that represent an active hold on the variant —
+    # used for overlap checks and delete guards across the codebase.
+    ACTIVE_HOLD_STATUSES = (
+        Status.PENDING,
+        Status.CONFIRMED,
+        Status.BLOCKED,
+    )
 
     variant = models.ForeignKey(
         ProductVariant, on_delete=models.CASCADE, related_name="bookings"
@@ -289,6 +297,14 @@ class VariantBooking(BaseModel):
 
     actual_start_at = models.DateTimeField(null=True, blank=True)
     actual_end_at = models.DateTimeField(null=True, blank=True)
+
+    listing = models.ForeignKey(
+        "marketplace.Listing",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bookings",
+    )
 
     approved_by_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

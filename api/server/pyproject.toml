@@ -31,6 +31,6 @@ dependencies = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
-testpaths = ["tests", "inventory"]
+testpaths = ["tests", "inventory", "enrollments"]
 pythonpath = ["."]
 addopts = ["--strict-markers", "-ra", "-p", "config.pytest_db_env_plugin"]

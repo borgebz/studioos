@@ -124,14 +124,11 @@ class ProductVariantSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.DictField())
     def get_availability(self, obj):
-        active_statuses = (
-            VariantBooking.Status.PENDING,
-            VariantBooking.Status.CONFIRMED,
-            VariantBooking.Status.ACTIVE,
-        )
         return {
             "status": obj.status,
-            "has_active_booking": obj.bookings.filter(status__in=active_statuses).exists(),
+            "has_active_booking": obj.bookings.filter(
+                status__in=VariantBooking.ACTIVE_HOLD_STATUSES
+            ).exists(),
         }
 
     def validate_media_upload(self, value):

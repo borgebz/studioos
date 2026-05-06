@@ -33,6 +33,7 @@ urlpatterns = [
     path("api/classes/", include("classes.urls")),
     path("api/roles/", include("roles.urls")),
     path("api/messaging/", include("messaging.urls")),
+    path("marketplace/", include("marketplace.urls")),
 ]
 
 # Serve media files in development only

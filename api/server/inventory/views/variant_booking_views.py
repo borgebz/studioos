@@ -5,11 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.pagination import paginated_response
 from core.permissions import require_perm
-from core.schemas import DEFAULT_ERROR_RESPONSES
-
-from inventory.pagination import InventoryPageNumberPagination
-from inventory.schemas import inventory_paginated_schema
+from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
 from inventory.serializers.variant_booking_serializers import (
     VariantBookingSerializer,
     VariantBookingWriteSerializer,
@@ -34,7 +32,7 @@ class BookingListCreateView(APIView):
 
     @extend_schema(
         responses={
-            200: inventory_paginated_schema(
+            200: paginated_list_schema(
                 name="InventoryVariantBookingList",
                 results_serializer=VariantBookingSerializer,
             ),
@@ -48,10 +46,10 @@ class BookingListCreateView(APIView):
             user=request.user,
             filters=_filters_dict(request.query_params),
         )
-        paginator = InventoryPageNumberPagination()
-        page = paginator.paginate_queryset(bookings, request)
-        return paginator.get_paginated_response(
-            VariantBookingSerializer(page, many=True).data
+        return paginated_response(
+            request=request,
+            items=bookings,
+            serializer_class=VariantBookingSerializer,
         )
 
     @extend_schema(
