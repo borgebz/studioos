@@ -11,6 +11,26 @@
     "system": "System",
     "toggleLabel": "Toggle theme"
   },
+  "auth": {
+    "login": {
+      "eyebrow": "StudioOS",
+      "brandSubtitle": "Dance School · Braga",
+      "heroTitle": "Running the school starts with a secure session.",
+      "heroBody": "Access your workspace to manage students, classes, events, and daily operations.",
+      "welcome": "Welcome",
+      "title": "Log in",
+      "subtitle": "Log in to access your account",
+      "email": "Email",
+      "emailPlaceholder": "name@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "forgotPassword": "Forgot?",
+      "rememberMe": "Remember me",
+      "submit": "Log in",
+      "submitting": "Logging in...",
+      "error": "We could not log you in. Check your email and password."
+    }
+  },
   "designSystem": {
     "title": "Design System",
     "subtitle": "Components and variations available in the project.",

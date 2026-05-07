@@ -1,5 +1,6 @@
 export const paths = {
   home: '/',
+  login: '/login',
   designSystem: '/design-system',
   designSystemButtons: '/design-system/buttons',
   designSystemInput: '/design-system/input',

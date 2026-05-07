@@ -11,6 +11,26 @@
     "system": "Sistema",
     "toggleLabel": "Alternar tema"
   },
+  "auth": {
+    "login": {
+      "eyebrow": "StudioOS",
+      "brandSubtitle": "Escola de Dança · Braga",
+      "heroTitle": "Gerir a escola começa com uma sessão segura.",
+      "heroBody": "Acede ao teu espaço para acompanhar alunos, aulas, eventos e operações do dia a dia.",
+      "welcome": "Bem-vindo",
+      "title": "Entrar",
+      "subtitle": "Inicie sessão para aceder à sua conta",
+      "email": "Email",
+      "emailPlaceholder": "ola@gmail.com",
+      "password": "Palavra-passe",
+      "passwordPlaceholder": "••••••••",
+      "forgotPassword": "Esqueceu-se?",
+      "rememberMe": "Lembrar-me",
+      "submit": "Iniciar Sessão",
+      "submitting": "A entrar...",
+      "error": "Não foi possível iniciar sessão. Confirma o email e a password."
+    }
+  },
   "designSystem": {
     "title": "Sistema de Design",
     "subtitle": "Componentes e variações disponíveis no projeto.",

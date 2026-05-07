@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { paths } from '@/app/paths'
+import { LoginPage } from '@/app/pages/LoginPage'
 import { DesignSystemLayout } from '@/app/pages/design-system/DesignSystemLayout'
 import { DesignSystemIndexPage } from '@/app/pages/design-system/DesignSystemIndexPage'
 import { ButtonsPage } from '@/app/pages/design-system/ButtonsPage'
@@ -16,6 +17,7 @@ import { HomePage } from '@/app/pages/HomePage'
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path={paths.login} element={<LoginPage />} />
       <Route path={paths.home} element={<HomePage />} />
       <Route
         path={paths.designSystem}
