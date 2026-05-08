@@ -4,7 +4,6 @@ variables:
     value: olamundo
   - name: login_email
     value: dbatista@ipca.pt
-  - secret: true
-    name: access_token
-  - secret: true
-    name: refresh_token
+  # Optional manual JWT for WebSocket `?token=` when cookie sync is unavailable.
+  - name: access_token
+    value: ""

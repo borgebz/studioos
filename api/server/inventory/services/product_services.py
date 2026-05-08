@@ -7,26 +7,23 @@ from core.exceptions import AppNotFound
 
 from core.exceptions import raise_drf_from_model_validation
 from inventory.models import Product, Category, ProductMedia, ProductVariant
-from utils.files import django_field_file_sha256, file_content_hash
+from utils.files import file_content_hash
 
 logger = logging.getLogger(__name__)
-
-ALLOWED_STATUS = [s.value for s in Product.Status]
-
-
-def _validate_status(*, status):
-    if status and status not in ALLOWED_STATUS:
-        raise ValidationError({"messages": ["InvalidProductStatus"]})
-
 
 def _validate_category(*, category_id):
     if not category_id:
         return None
 
     try:
-        return Category.objects.get(id=category_id, is_active=True)
+        category = Category.objects.get(id=category_id)
     except Category.DoesNotExist:
         raise ValidationError({"messages": ["InvalidCategory"]})
+
+    if not category.is_active:
+        raise ValidationError({"messages": ["InactiveCategory"]})
+
+    return category
 
 
 def _check_member_permission(*, user):
@@ -120,18 +117,10 @@ def get_school_product(*, pk, user):
         raise AppNotFound("ProductNotFound")
 
 
-@transaction.atomic
-def create_product(*, user, **data):
-    _check_member_permission(user=user)
-
-    if data.get("school_details"):
-        raise ValidationError({"messages": ["InvalidSchoolDetailsForOwner"]})
-
+def _create_product_core(*, user, owner_type, owner, data):
     name = data.get("name")
     if not name:
         raise ValidationError({"messages": ["InvalidProductPayload"]})
-
-    _validate_status(status=data.get("status"))
 
     category = _validate_category(category_id=data.get("category_id"))
 
@@ -143,8 +132,8 @@ def create_product(*, user, **data):
         brand=data.get("brand"),
         material=data.get("material"),
         status=data.get("status", Product.Status.ACTIVE),
-        owner_type=Product.OwnerType.MEMBER,
-        owner=user,
+        owner_type=owner_type,
+        owner=owner,
         created_by=user,
     )
     _full_clean_product(product=product)
@@ -159,36 +148,30 @@ def create_product(*, user, **data):
 
 
 @transaction.atomic
+def create_product(*, user, **data):
+    _check_member_permission(user=user)
+
+    if data.get("school_details"):
+        raise ValidationError({"messages": ["InvalidSchoolDetailsForOwner"]})
+
+    return _create_product_core(
+        user=user,
+        owner_type=Product.OwnerType.MEMBER,
+        owner=user,
+        data=data,
+    )
+
+
+@transaction.atomic
 def create_school_product(*, user, **data):
     _check_school_permission(user=user)
 
-    name = data.get("name")
-    if not name:
-        raise ValidationError({"messages": ["InvalidProductPayload"]})
-
-    _validate_status(status=data.get("status"))
-
-    category = _validate_category(category_id=data.get("category_id"))
-
-    product = Product(
-        name=name,
-        description=data.get("description", ""),
-        category=category,
-        target_gender=data.get("target_gender"),
-        brand=data.get("brand"),
-        material=data.get("material"),
-        status=data.get("status", Product.Status.ACTIVE),
+    product = _create_product_core(
+        user=user,
         owner_type=Product.OwnerType.SCHOOL,
         owner=None,
-        created_by=user,
+        data=data,
     )
-    _full_clean_product(product=product)
-    product.save()
-
-    logger.info("School product created: %s by user %s", product.pk, user.pk)
-
-    _handle_media(product=product, media_list=data.get("media"), created_by=user)
-    _handle_variants(product=product, variants=data.get("variants"), created_by=user)
 
     if data.get("school_details"):
         _handle_school_details(
@@ -211,7 +194,6 @@ def update_product(*, pk, user, **data):
     if product.owner_type != Product.OwnerType.MEMBER:
         raise PermissionDenied()
 
-    _validate_status(status=data.get("status"))
 
     if "category_id" in data:
         product.category = _validate_category(category_id=data.get("category_id"))
@@ -246,7 +228,8 @@ def update_school_product(*, pk, user, **data):
     if "owner_type" in data or "owner_id" in data:
         raise ValidationError({"messages": ["ImmutableProductOwner"]})
 
-    _validate_status(status=data.get("status"))
+    if "category_id" in data:
+        product.category = _validate_category(category_id=data.get("category_id"))
 
     for field in [
         "name",
@@ -295,19 +278,8 @@ def delete_school_product(*, pk, user):
 def _media_image_is_duplicate(*, product, upload_file):
     if upload_file is None:
         return False
-    try:
-        new_hash = file_content_hash(upload_file)
-    except OSError:
-        return False
-    for pm in ProductMedia.objects.filter(product=product):
-        if not pm.image:
-            continue
-        try:
-            if django_field_file_sha256(pm.image) == new_hash:
-                return True
-        except OSError:
-            continue
-    return False
+    new_hash = file_content_hash(upload_file)
+    return ProductMedia.objects.filter(product=product, content_hash=new_hash).exists()
 
 
 def _handle_media(*, product, media_list, created_by=None):
@@ -324,11 +296,13 @@ def _handle_media(*, product, media_list, created_by=None):
                 product.pk,
             )
             continue
+        content_hash = file_content_hash(image)
         pm = ProductMedia(
             product=product,
             image=image,
             is_primary=item.get("is_primary", False),
             sort_order=item.get("sort_order", item.get("order", 0)),
+            content_hash=content_hash,
             created_by=created_by,
         )
         try:
@@ -345,10 +319,37 @@ def _handle_media_update(*, product, media_list, deleted_by=None):
     if media_list is None:
         return
 
-    for pm in ProductMedia.objects.filter(product=product):
+    from inventory.models import VariantMedia
+
+    # Build a map of old media by content_hash so we can remap VariantMedia references.
+    old_media = list(
+        ProductMedia.objects.filter(product=product).order_by("sort_order", "pk")
+    )
+    old_media_by_hash = {pm.content_hash: pm.id for pm in old_media if pm.content_hash}
+
+    for pm in old_media:
         pm.delete(deleted_by=deleted_by)
 
     _handle_media(product=product, media_list=media_list, created_by=deleted_by)
+
+    # Remap VariantMedia references from old media to new media by content_hash.
+    new_media = list(
+        ProductMedia.objects.filter(product=product).order_by("sort_order", "pk")
+    )
+
+    remapped_old_ids = set()
+    for new_pm in new_media:
+        if new_pm.content_hash and new_pm.content_hash in old_media_by_hash:
+            old_pm_id = old_media_by_hash[new_pm.content_hash]
+            VariantMedia.objects.filter(product_media_id=old_pm_id).update(
+                product_media=new_pm
+            )
+            remapped_old_ids.add(old_pm_id)
+
+    # Clean up orphaned VariantMedia records where old PM was deleted but no matching new PM exists.
+    orphaned_old_ids = set(old_media_by_hash.values()) - remapped_old_ids
+    if orphaned_old_ids:
+        VariantMedia.objects.filter(product_media_id__in=orphaned_old_ids).delete()
 
 
 def _handle_variants(*, product, variants, created_by=None):

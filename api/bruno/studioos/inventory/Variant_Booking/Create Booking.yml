@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/inventory/variants/1/bookings/
+  url: "{{base_url}}/inventory/variants/1/bookings/"
   body:
     type: json
     data: |-
@@ -20,9 +20,7 @@ http:
         "title": "Aula de Hip-Hop"
 
       }
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc3MzcwMTMyLCJpYXQiOjE3NzczNjkyMzIsImp0aSI6IjgxYzE0NDk3OThhMDRmMzM5NmU2OGQzYzVkNTE1OTgzIiwidXNlcl9pZCI6IjEifQ.4aOO0fQUgNWU64da6ggRyJsqTyUQkGyVXSAozOX9VTg
+  auth: inherit
 
 settings:
   encodeUrl: true

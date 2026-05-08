@@ -5,7 +5,7 @@ info:
 
 http:
   method: DELETE
-  url: http://127.0.0.1:8000/inventory/bookings/2/
+  url: "{{base_url}}/inventory/bookings/2/"
   auth: inherit
 
 settings:

@@ -29,70 +29,42 @@ class ProductMediaSerializer(serializers.ModelSerializer):
         fields = ["id", "image", "is_primary", "sort_order"]
 
 
-class ProductVariantSerializer(serializers.ModelSerializer):
+class ProductVariantReadSerializer(serializers.ModelSerializer):
+    """Read-only serializer used for GET responses."""
 
-    # READ
     size = VariantSizeSerializer(read_only=True)
 
     colors = serializers.SerializerMethodField()
     media = serializers.SerializerMethodField()
     availability = serializers.SerializerMethodField()
 
-    # Explicit ChoiceFields for enum fields
     condition = serializers.ChoiceField(
-        choices=ProductVariant.Condition.choices, required=False
+        choices=ProductVariant.Condition.choices, read_only=True
     )
     status = serializers.ChoiceField(
-        choices=ProductVariant.Status.choices, required=False
+        choices=ProductVariant.Status.choices, read_only=True
     )
     acquisition_type = serializers.ChoiceField(
-        choices=ProductVariant.AcquisitionType.choices, required=False
-    )
-
-    # WRITE
-    size_id = serializers.IntegerField(write_only=True, required=False)
-    color_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False,
-    )
-    media_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False,
-    )
-    media_upload = serializers.ListField(
-        child=serializers.ImageField(),
-        write_only=True,
-        required=False,
+        choices=ProductVariant.AcquisitionType.choices, read_only=True
     )
 
     class Meta:
         model = ProductVariant
-        extra_kwargs = {
-            "sku": {"required": False, "allow_null": True, "allow_blank": True},
-        }
         fields = [
             "id",
-            # core
             "sku",
             "condition",
             "status",
             "acquisition_type",
             "acquired_at",
-            # notes
             "internal_notes",
             "public_notes",
-            # size
             "size",
-            "size_id",
-            # colors/media
             "colors",
-            "color_ids",
             "media",
             "availability",
-            "media_ids",
-            "media_upload",
+            "created_at",
+            "updated_at",
         ]
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
@@ -122,10 +94,57 @@ class ProductVariantSerializer(serializers.ModelSerializer):
     def get_availability(self, obj):
         return {
             "status": obj.status,
-            "has_active_booking": obj.bookings.filter(
-                status__in=VariantBooking.ACTIVE_HOLD_STATUSES
-            ).exists(),
+            "has_active_booking": any(
+                b.status in VariantBooking.ACTIVE_HOLD_STATUSES
+                for b in obj.bookings.all()
+            ),
         }
+
+
+class ProductVariantWriteSerializer(serializers.ModelSerializer):
+    """Write serializer used for POST/PATCH."""
+
+    condition = serializers.ChoiceField(
+        choices=ProductVariant.Condition.choices, required=False
+    )
+    status = serializers.ChoiceField(
+        choices=ProductVariant.Status.choices, required=False
+    )
+    acquisition_type = serializers.ChoiceField(
+        choices=ProductVariant.AcquisitionType.choices, required=False
+    )
+
+    size_id = serializers.IntegerField(required=False, allow_null=True)
+    color_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+    )
+    media_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+    )
+    media_upload = serializers.ListField(
+        child=serializers.ImageField(),
+        required=False,
+    )
+
+    class Meta:
+        model = ProductVariant
+        extra_kwargs = {
+            "sku": {"required": False, "allow_null": True, "allow_blank": True},
+        }
+        fields = [
+            "sku",
+            "condition",
+            "status",
+            "acquisition_type",
+            "internal_notes",
+            "public_notes",
+            "size_id",
+            "color_ids",
+            "media_ids",
+            "media_upload",
+        ]
 
     def validate_media_upload(self, value):
         if not value:
@@ -140,3 +159,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             data.setdefault("status", ProductVariant.Status.AVAILABLE)
             data.setdefault("acquisition_type", ProductVariant.AcquisitionType.OTHER)
         return data
+
+
+# Backward-compatible alias so existing imports keep working.
+ProductVariantSerializer = ProductVariantReadSerializer

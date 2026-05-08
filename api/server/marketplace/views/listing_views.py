@@ -19,13 +19,15 @@ from marketplace.serializers import (
 def _listing_filters(request):
     q = request.query_params
     out = {}
-    for key in ["listing_type", "category_id", "size_id", "color_id", "condition"]:
+    for key in ["search", "listing_type", "category_id", "size_id", "color_id", "condition"]:
         if q.get(key):
             out[key] = q.get(key)
     return out or None
 
 
 class ListingListCreateView(APIView):
+    """Public listings — only ACTIVE + is_public."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -64,11 +66,27 @@ class ListingListCreateView(APIView):
 
 
 class ListingDetailView(APIView):
+    """Detail view with authorization: public listings visible to anyone authenticated,
+    otherwise only owner or user with view_productlisting permission."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request, listing_id):
         listing = services.get_listing(listing_id=listing_id)
+        # Public + active listings are visible to any authenticated user
+        if not (
+            listing.status == "active" and listing.is_public
+        ):
+            # Not public — must be owner or have admin perm
+            is_owner = listing.created_by_id == request.user.id
+            has_admin_perm = request.user.has_perm(
+                "marketplace.view_productlisting"
+            )
+            if not is_owner and not has_admin_perm:
+                from rest_framework.exceptions import PermissionDenied
+
+                raise PermissionDenied()
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data
         )
@@ -139,6 +157,8 @@ class ListingAvailabilityView(APIView):
 
 
 class MyListingsView(APIView):
+    """Returns the current user's own listings regardless of status."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -150,6 +170,7 @@ class MyListingsView(APIView):
             **DEFAULT_ERROR_RESPONSES,
         }
     )
+    @require_perm("marketplace.view_own_listings")
     def get(self, request):
         listings = services.list_my_listings(user=request.user)
         return paginated_response(
@@ -199,12 +220,7 @@ class SchoolListingListCreateView(APIView):
     )
     @require_perm("marketplace.manage_school_listings")
     def get(self, request):
-        from inventory.models import Product
-        from marketplace.models import Listing
-
-        qs = Listing.objects.filter(
-            variant__product__owner_type=Product.OwnerType.SCHOOL
-        ).order_by("-created_at")
+        qs = services.list_school_listings()
         return paginated_response(
             request=request,
             items=qs,
@@ -220,7 +236,7 @@ class SchoolListingListCreateView(APIView):
         serializer = ListingCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         listing = services.create_listing(
-            user=request.user, **serializer.validated_data
+            user=request.user, school_only=True, **serializer.validated_data
         )
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data,
@@ -230,6 +246,14 @@ class SchoolListingListCreateView(APIView):
 
 class SchoolListingDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
+    @require_perm("marketplace.manage_school_listings")
+    def get(self, request, listing_id):
+        listing = services.get_listing(listing_id=listing_id)
+        return Response(
+            ListingDetailSerializer(listing, context={"request": request}).data
+        )
 
     @extend_schema(
         request=ListingUpdateSerializer,

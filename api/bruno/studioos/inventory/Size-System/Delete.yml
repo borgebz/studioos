@@ -5,10 +5,8 @@ info:
 
 http:
   method: DELETE
-  url: http://127.0.0.1:8000/inventory/size-systems/1/
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjIwNTczLCJpYXQiOjE3NzY2MTk2NzMsImp0aSI6ImUyOTBkODRmZGFiZDQxZTI4M2E3NWZjNTE0YTFhYjdlIiwidXNlcl9pZCI6IjEifQ.v2Qfs3LqIT2wf0NENf-e_jv2E1GPh8GrLS4-hlOolGY
+  url: "{{base_url}}/inventory/size-systems/1/"
+  auth: inherit
 
 settings:
   encodeUrl: true

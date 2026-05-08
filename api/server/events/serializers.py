@@ -6,7 +6,6 @@ from rest_framework import serializers
 
 from events.models import (
     Event,
-    EventClassTarget,
     EventComment,
     EventFile,
     EventInterest,
@@ -86,11 +85,7 @@ class EventSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
     def get_class_target_classe_ids(self, obj):
-        return list(
-            EventClassTarget.objects.filter(event=obj)
-            .order_by("classe_id")
-            .values_list("classe_id", flat=True)
-        )
+        return sorted(ct.classe_id for ct in obj.class_targets.all())
 
 
 def _validate_cover_image(value):

@@ -46,7 +46,7 @@ class EnrollmentPeriodListView(APIView):
         },
     )
     def get(self, request):
-        periods = services.list_periods()
+        periods = services.list_periods(filters={"is_open": True})
         return Response(EnrollmentPeriodSerializer(periods, many=True).data)
 
 

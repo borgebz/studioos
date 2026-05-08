@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema
 
 from core.permissions import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
+from core.utils import optional_bool as _optional_bool
 
 from inventory.services import category_services as services
 from inventory.serializers.category_serializers import (
@@ -13,19 +14,6 @@ from inventory.serializers.category_serializers import (
     UpdateCategorySerializer,
     CategorySerializer,
 )
-
-
-def _optional_bool(raw):
-    if raw is None:
-        return None
-    if isinstance(raw, bool):
-        return raw
-    s = str(raw).strip().lower()
-    if s in ("true", "1", "yes"):
-        return True
-    if s in ("false", "0", "no"):
-        return False
-    return None
 
 
 class CategoryView(APIView):
@@ -52,8 +40,18 @@ class CategoryView(APIView):
     @require_perm("inventory.view_category")
     def get(self, request):
         raw_active = request.query_params.get("is_active")
+
+        raw_parent_id = request.query_params.get("parent_category_id")
+        try:
+            parent_id = int(raw_parent_id) if raw_parent_id else None
+        except (ValueError, TypeError):
+            return Response(
+                {"parent_category_id": ["Must be a valid integer."]},
+                status=400,
+            )
+
         categories = services.list_categories(
-            parent_category_id=request.query_params.get("parent_category_id"),
+            parent_category_id=parent_id,
             is_active=_optional_bool(raw_active),
             size_system_id=request.query_params.get("size_system_id"),
         )
@@ -63,6 +61,14 @@ class CategoryView(APIView):
 
 class CategoryDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: CategorySerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("inventory.view_category")
+    def get(self, request, category_id):
+        category = services.get_category(pk=category_id)
+        return Response(CategorySerializer(category).data)
 
     @extend_schema(
         request=UpdateCategorySerializer,

@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
@@ -52,10 +53,13 @@ def _assert_can_accept(*, user, txn):
 
 
 def _assert_can_cancel(*, user, txn):
-    """Cancel: requester or owner."""
-    if user.id not in (txn.requester_id, txn.owner_id):
-        if not user.has_perm("marketplace.manage_school_listings"):
-            raise PermissionDenied()
+    """Cancel: requester, owner (member items), or staff (school items)."""
+    if user.id == txn.requester_id:
+        return
+    if txn.owner_id and user.id == txn.owner_id:
+        return
+    if not user.has_perm("marketplace.manage_school_listings"):
+        raise PermissionDenied()
 
 
 def list_transactions(*, user, filters=None):
@@ -81,8 +85,14 @@ def list_my_transactions(*, user):
     )
 
 
-def get_transaction(*, transaction_id):
-    return _get_transaction_or_404(transaction_id)
+def get_transaction(*, transaction_id, qs_filter=None):
+    try:
+        qs = ProductTransaction.objects.all()
+        if qs_filter is not None:
+            qs = qs.filter(qs_filter)
+        return qs.get(id=transaction_id)
+    except ProductTransaction.DoesNotExist:
+        raise AppNotFound("TransactionNotFound")
 
 
 @transaction.atomic
@@ -99,6 +109,9 @@ def request_transaction(*, user, **data):
     start_at = data.get("start_at")
     end_at = data.get("end_at")
 
+    # Lock the variant row to serialise concurrent overlap checks (race condition guard).
+    ProductVariant.objects.select_for_update().get(id=variant.id)
+
     if transaction_type in _DATE_REQUIRED_TYPES:
         if not start_at or not end_at:
             raise ValidationError({"messages": ["DatesRequiredForRentOrLend"]})
@@ -108,11 +121,9 @@ def request_transaction(*, user, **data):
     else:
         # SELL / DONATE — compute start_at as next available slot
         start_at = _compute_available_from(variant)
-        end_at = start_at  # point-in-time booking
+        end_at = start_at + timedelta(days=1)
 
-    owner = (
-        variant.product.owner or user
-    )  # fallback for school items resolved at accept time
+    owner = variant.product.owner  # None for school items — staff acts via permission
 
     txn = ProductTransaction(
         listing=listing,
@@ -126,6 +137,7 @@ def request_transaction(*, user, **data):
         notes=data.get("notes", ""),
         created_by=user,
     )
+    txn.full_clean()
     txn.save()
 
     # Create a PENDING booking to lock the variant window immediately
@@ -133,17 +145,15 @@ def request_transaction(*, user, **data):
     booking = VariantBooking(
         variant=variant,
         listing=listing,
+        transaction=txn,
         booking_type=booking_type,
         status=VariantBooking.Status.PENDING,
         start_at=start_at,
-        end_at=(
-            end_at
-            if end_at != start_at
-            else timezone.now() + __import__("datetime").timedelta(minutes=1)
-        ),
+        end_at=end_at,
         title=f"Transaction {txn.pk}",
         created_by=user,
     )
+    booking.full_clean()
     booking.save()
 
     logger.info(
@@ -168,10 +178,8 @@ def accept_transaction(*, transaction_id, user):
     txn.updated_by = user
     txn.save()
 
-    # Advance the linked booking to CONFIRMED
     VariantBooking.objects.filter(
-        listing=txn.listing,
-        variant=txn.variant,
+        transaction=txn,
         status=VariantBooking.Status.PENDING,
     ).update(status=VariantBooking.Status.CONFIRMED)
 
@@ -192,8 +200,7 @@ def reject_transaction(*, transaction_id, user):
     txn.save()
 
     VariantBooking.objects.filter(
-        listing=txn.listing,
-        variant=txn.variant,
+        transaction=txn,
         status=VariantBooking.Status.PENDING,
     ).update(status=VariantBooking.Status.CANCELLED)
 
@@ -215,8 +222,7 @@ def complete_transaction(*, transaction_id, user):
     txn.save()
 
     VariantBooking.objects.filter(
-        listing=txn.listing,
-        variant=txn.variant,
+        transaction=txn,
         status=VariantBooking.Status.CONFIRMED,
     ).update(status=VariantBooking.Status.COMPLETED)
 
@@ -227,10 +233,12 @@ def complete_transaction(*, transaction_id, user):
         txn.variant.updated_by = user
         txn.variant.save()
 
-        # Close associated listing
-        Listing.objects.filter(id=txn.listing_id).update(
-            status=Listing.ListingStatus.CLOSED
-        )
+        if txn.listing_id:
+            listing = Listing.objects.get(id=txn.listing_id)
+            listing.status = Listing.ListingStatus.CLOSED
+            listing.is_public = False
+            listing.updated_by = user
+            listing.save()
 
     # Create billing entry for any priced transaction
     from billing.services import create_billing_entry_for_transaction
@@ -257,8 +265,7 @@ def cancel_transaction(*, transaction_id, user):
     txn.save()
 
     VariantBooking.objects.filter(
-        listing=txn.listing,
-        variant=txn.variant,
+        transaction=txn,
         status__in=[VariantBooking.Status.PENDING, VariantBooking.Status.CONFIRMED],
     ).update(status=VariantBooking.Status.CANCELLED)
 
@@ -279,8 +286,7 @@ def block_transaction(*, transaction_id, user):
     txn.save()
 
     VariantBooking.objects.filter(
-        listing=txn.listing,
-        variant=txn.variant,
+        transaction=txn,
         status=VariantBooking.Status.CONFIRMED,
     ).update(status=VariantBooking.Status.BLOCKED)
 
@@ -301,8 +307,7 @@ def unblock_transaction(*, transaction_id, user):
     txn.save()
 
     VariantBooking.objects.filter(
-        listing=txn.listing,
-        variant=txn.variant,
+        transaction=txn,
         status=VariantBooking.Status.BLOCKED,
     ).update(status=VariantBooking.Status.CONFIRMED)
 

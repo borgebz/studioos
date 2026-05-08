@@ -5,16 +5,14 @@ info:
 
 http:
   method: PUT
-  url: http://127.0.0.1:8000/inventory/size-systems/1/
+  url: "{{base_url}}/inventory/size-systems/1/"
   body:
     type: json
     data: |-
       {
         "name": "Roupa Atualizada"
       }
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjA0NjA0LCJpYXQiOjE3NzY2MDM3MDQsImp0aSI6ImIyZjZiZWJkZjRmZTQ0NWJhZWE2N2JjNTcxNDkxZjUxIiwidXNlcl9pZCI6IjEifQ.LHG1DxSRBDHJCgqjW-YIrn3IENCt3c9bZk8p3cYpJ08
+  auth: inherit
 
 settings:
   encodeUrl: true

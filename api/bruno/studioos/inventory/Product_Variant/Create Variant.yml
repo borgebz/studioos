@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/inventory/products/1/variants/
+  url: "{{base_url}}/inventory/products/1/variants/"
   body:
     type: json
     data: |-
@@ -20,9 +20,7 @@ http:
         "acquisition_type": "purchased"
 
       }
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc3MzAwMTg1LCJpYXQiOjE3NzcyOTkyODUsImp0aSI6IjM4NGQ4N2ExZDRmMDQzOWRhMzkzZDA1ZjFjY2M4MDMxIiwidXNlcl9pZCI6IjEifQ.7801t1Rw1O-XQJ_fUJvpPfCYm-okiKS1O5cka2xbvH4
+  auth: inherit
 
 runtime:
   variables:

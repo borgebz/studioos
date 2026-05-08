@@ -17,14 +17,18 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         created = 0
         updated = 0
+        skipped = 0
 
         for item in self.SIZE_SYSTEMS:
-            obj, was_created = SizeSystem.objects.update_or_create(
+            obj, was_created = SizeSystem.all_objects.update_or_create(
                 name=item["name"],
                 defaults={"is_active": item["is_active"]},
             )
 
-            if was_created:
+            if obj.is_deleted:
+                skipped += 1
+                self.stdout.write(f"Skipped (deleted): {obj.name}")
+            elif was_created:
                 created += 1
                 self.stdout.write(self.style.SUCCESS(f"Created: {obj.name}"))
             else:
@@ -33,5 +37,5 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(f"Done. Created {created}, updated {updated}.")
+            self.style.SUCCESS(f"Done. Created {created}, updated {updated}, skipped {skipped}.")
         )

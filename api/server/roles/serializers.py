@@ -1,4 +1,4 @@
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Permission
 from rest_framework import serializers
 
 from accounts.models import Role
@@ -38,16 +38,6 @@ class CreateRoleSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=50)
     name = serializers.CharField(max_length=150)
     description = serializers.CharField()
-
-    def validate_code(self, value):
-        if Role.all_objects.filter(code=value).exists():
-            raise serializers.ValidationError("RoleCodeAlreadyExists")
-        return value
-
-    def validate_name(self, value):
-        if Group.objects.filter(name=value).exists():
-            raise serializers.ValidationError("RoleNameAlreadyExists")
-        return value
 
 
 class UpdateRoleSerializer(serializers.ModelSerializer):

@@ -7,6 +7,10 @@ from marketplace.views.listing_views import (
     ListingPublishView,
     ListingUnpublishView,
     MyListingsView,
+    SchoolListingDetailView,
+    SchoolListingListCreateView,
+    SchoolListingPublishView,
+    SchoolListingUnpublishView,
 )
 from marketplace.views.transaction_views import (
     MyTransactionsView,
@@ -17,8 +21,11 @@ from marketplace.views.transaction_views import (
     SchoolTransactionListView,
     SchoolTransactionRejectView,
     SchoolTransactionUnblockView,
+    TransactionAcceptView,
     TransactionCancelView,
+    TransactionCompleteView,
     TransactionDetailView,
+    TransactionRejectView,
     TransactionRequestView,
 )
 
@@ -31,6 +38,10 @@ __all__ = [
     "ListingPublishView",
     "ListingUnpublishView",
     "MyListingsView",
+    "SchoolListingDetailView",
+    "SchoolListingListCreateView",
+    "SchoolListingPublishView",
+    "SchoolListingUnpublishView",
     "MyTransactionsView",
     "SchoolTransactionAcceptView",
     "SchoolTransactionBlockView",
@@ -39,7 +50,10 @@ __all__ = [
     "SchoolTransactionListView",
     "SchoolTransactionRejectView",
     "SchoolTransactionUnblockView",
+    "TransactionAcceptView",
     "TransactionCancelView",
+    "TransactionCompleteView",
     "TransactionDetailView",
+    "TransactionRejectView",
     "TransactionRequestView",
 ]

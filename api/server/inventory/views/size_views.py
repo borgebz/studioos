@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema
 
 from core.permissions import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
+from core.utils import optional_bool as _optional_bool
 
 from inventory.services import size_services as services
 from inventory.serializers.size_serializers import (
@@ -38,15 +39,37 @@ class SizeView(APIView):
     )
     @require_perm("inventory.view_size")
     def get(self, request):
-        size_system_id = request.query_params.get("size_system_id")
+        raw_system_id = request.query_params.get("size_system_id")
+        try:
+            size_system_id = int(raw_system_id) if raw_system_id else None
+        except (ValueError, TypeError):
+            return Response(
+                {"size_system_id": ["Must be a valid integer."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        sizes = services.list_sizes(size_system_id=size_system_id)
+        raw_active = request.query_params.get("is_active")
+        is_active = _optional_bool(raw_active)
+
+        # Default to active-only for users without management permission
+        if is_active is None and not request.user.has_perm("inventory.change_size"):
+            is_active = True
+
+        sizes = services.list_sizes(size_system_id=size_system_id, is_active=is_active)
 
         return Response(SizeSerializer(sizes, many=True).data)
 
 
-class SizeDeleteView(APIView):
+class SizeDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: SizeSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("inventory.view_size")
+    def get(self, request, size_id):
+        size = services.get_size(pk=size_id)
+        return Response(SizeSerializer(size).data)
 
     @extend_schema(
         responses={204: None, **DEFAULT_ERROR_RESPONSES},

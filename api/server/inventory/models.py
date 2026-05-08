@@ -18,6 +18,15 @@ class SizeSystem(BaseModel):
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="inventory_sizesystem_name_active_uniq",
+            ),
+        ]
+
     def __str__(self):
         return self.name
 
@@ -31,12 +40,21 @@ class Category(BaseModel):
     sort_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "parent"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="inventory_category_name_parent_active_uniq",
+            ),
+        ]
+
     def __str__(self):
         return self.name
 
 
 # Category ↔ SizeSystem junction (ordered)
-class CategorySizeSystem(models.Model):
+class CategorySizeSystem(BaseModel):
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="size_systems"
     )
@@ -49,6 +67,7 @@ class CategorySizeSystem(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["category", "size_system"],
+                condition=models.Q(deleted_at__isnull=True),
                 name="inventory_categorysizesystem_uniq",
             ),
         ]
@@ -236,6 +255,7 @@ class ProductMedia(BaseModel):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="media")
 
     image = models.ImageField(upload_to=product_media_upload_to)
+    content_hash = models.CharField(max_length=64, blank=True, default="")
     is_primary = models.BooleanField(default=False)
     sort_order = models.IntegerField(default=0)
 
@@ -325,6 +345,14 @@ class VariantBooking(BaseModel):
         related_name="bookings",
     )
 
+    transaction = models.ForeignKey(
+        "marketplace.ProductTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bookings",
+    )
+
     approved_by_user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -336,6 +364,15 @@ class VariantBooking(BaseModel):
     title = models.CharField(max_length=255)
     notes = models.TextField(blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["variant", "status", "start_at", "end_at"],
+                name="idx_booking_overlap_check",
+            ),
+        ]
+
     def clean(self):
-        if self.start_at >= self.end_at:
-            raise ValidationError("InvalidBookingDateRange")
+        if self.start_at and self.end_at:
+            if self.start_at >= self.end_at:
+                raise ValidationError("InvalidBookingDateRange")

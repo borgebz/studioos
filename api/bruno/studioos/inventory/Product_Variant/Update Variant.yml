@@ -5,7 +5,7 @@ info:
 
 http:
   method: PUT
-  url: http://127.0.0.1:8000/inventory/variants/2/
+  url: "{{base_url}}/inventory/variants/2/"
   body:
     type: json
     data: |-

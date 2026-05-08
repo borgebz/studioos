@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: http://127.0.0.1:8000/inventory/products/
+  url: "{{base_url}}/inventory/products/"
   body:
     type: json
     data: |-
@@ -18,9 +18,7 @@ http:
         "price": 19.99
 
       }
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjMwNTYzLCJpYXQiOjE3NzY2Mjk2NjMsImp0aSI6IjVjMWIzMzhhOGJiZTQyOTc4MTE0YWRkYjM5MTNhMDk1IiwidXNlcl9pZCI6IjEifQ.VcNcx7Ir5UzkEfMYoLYW6BRcucfF8X1NOMpjScnMuMk
+  auth: inherit
 
 settings:
   encodeUrl: true

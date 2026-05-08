@@ -104,7 +104,7 @@ class RoleDetailView(APIView):
         return Response(RoleDetailSerializer(role).data)
 
     @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
-    @require_perm("accounts.change_role")
+    @require_perm("accounts.delete_role")
     def delete(self, request, code):
         role = services.get_role_by_code(code=code)
         services.delete_role(role=role, deleted_by=request.user)

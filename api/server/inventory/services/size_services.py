@@ -19,8 +19,11 @@ def get_size(*, pk):
 
 
 # LIST (com filtro)
-def list_sizes(*, size_system_id=None):
-    qs = Size.objects.filter(is_active=True).select_related("size_system")
+def list_sizes(*, size_system_id=None, is_active=None):
+    qs = Size.objects.select_related("size_system")
+
+    if is_active is not None:
+        qs = qs.filter(is_active=is_active)
 
     if size_system_id is not None:
         qs = qs.filter(size_system_id=size_system_id)

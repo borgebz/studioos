@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from core.decorators import require_perm
+from .models import User
 from .serializers import (
     ActivateAccountSerializer,
     BulkInviteFileSerializer,
@@ -36,6 +37,7 @@ from .services import (
     update_profile_for_user,
     update_user_core_fields,
 )
+from core.pagination import paginated_response
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema, inline_serializer
 from django.contrib.auth import authenticate
@@ -71,8 +73,10 @@ class LoginView(APIView):
         },
     )
     def post(self, request):
-        email = request.data.get("email")
-        password = request.data.get("password")
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
 
         user = authenticate(
             request,
@@ -82,7 +86,7 @@ class LoginView(APIView):
 
         if not user:
             return Response(
-                {"detail": "Invalid credentials"},
+                {"errors": {"messages": ["InvalidCredentials"]}},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -196,7 +200,11 @@ class UserListView(APIView):
     @require_perm("accounts.can_list_users")
     def get(self, request):
         users = list_users()
-        return Response(UserResponseSerializer(users, many=True).data)
+        return paginated_response(
+            request=request,
+            items=users,
+            serializer_class=UserResponseSerializer,
+        )
 
     @extend_schema(
         request=CreateUserSerializer,
@@ -278,7 +286,17 @@ class MeView(APIView):
 
     @extend_schema(responses={200: MeSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request):
-        serializer = MeSerializer(request.user, context={"request": request})
+        from django.contrib.auth.models import Group
+        from django.db.models import Prefetch
+
+        user = User.objects.prefetch_related(
+            Prefetch(
+                "groups",
+                queryset=Group.objects.select_related("role").prefetch_related("permissions"),
+            ),
+            "user_permissions",
+        ).get(pk=request.user.pk)
+        serializer = MeSerializer(user, context={"request": request})
         return Response(serializer.data)
 
 
@@ -352,6 +370,7 @@ class ActivateAccountView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(
         request=ActivateAccountSerializer,
@@ -453,6 +472,7 @@ class OnboardingTokenView(APIView):
     """
 
     permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
 
     @extend_schema(
         responses={

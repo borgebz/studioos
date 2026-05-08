@@ -7,7 +7,10 @@ from rest_framework.views import APIView
 from core.pagination import paginated_response
 from core.permissions import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
-from inventory.serializers.product_variant_serializers import ProductVariantSerializer
+from inventory.serializers.product_variant_serializers import (
+    ProductVariantReadSerializer,
+    ProductVariantWriteSerializer,
+)
 from inventory.services.product_variant_services import (
     create_variant,
     delete_variant,
@@ -24,7 +27,7 @@ class ProductVariantListCreateView(APIView):
         responses={
             200: paginated_list_schema(
                 name="InventoryProductVariantList",
-                results_serializer=ProductVariantSerializer,
+                results_serializer=ProductVariantReadSerializer,
             ),
             **DEFAULT_ERROR_RESPONSES,
         },
@@ -35,16 +38,16 @@ class ProductVariantListCreateView(APIView):
         return paginated_response(
             request=request,
             items=variants,
-            serializer_class=ProductVariantSerializer,
+            serializer_class=ProductVariantReadSerializer,
         )
 
     @extend_schema(
-        request=ProductVariantSerializer,
-        responses={201: ProductVariantSerializer, **DEFAULT_ERROR_RESPONSES},
+        request=ProductVariantWriteSerializer,
+        responses={201: ProductVariantReadSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.add_product")
     def post(self, request, product_id):
-        serializer = ProductVariantSerializer(data=request.data)
+        serializer = ProductVariantWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         variant = create_variant(
             product_id=product_id,
@@ -53,7 +56,7 @@ class ProductVariantListCreateView(APIView):
         )
         variant = get_variant(variant_id=variant.id, user=request.user)
         return Response(
-            ProductVariantSerializer(variant).data,
+            ProductVariantReadSerializer(variant).data,
             status=status.HTTP_201_CREATED,
         )
 
@@ -62,20 +65,20 @@ class ProductVariantDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        responses={200: ProductVariantSerializer, **DEFAULT_ERROR_RESPONSES},
+        responses={200: ProductVariantReadSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.view_product")
     def get(self, request, variant_id):
         variant = get_variant(variant_id=variant_id, user=request.user)
-        return Response(ProductVariantSerializer(variant).data)
+        return Response(ProductVariantReadSerializer(variant).data)
 
     @extend_schema(
-        request=ProductVariantSerializer,
-        responses={200: ProductVariantSerializer, **DEFAULT_ERROR_RESPONSES},
+        request=ProductVariantWriteSerializer,
+        responses={200: ProductVariantReadSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_product")
     def patch(self, request, variant_id):
-        serializer = ProductVariantSerializer(data=request.data, partial=True)
+        serializer = ProductVariantWriteSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         variant = update_variant(
             variant_id=variant_id,
@@ -83,7 +86,7 @@ class ProductVariantDetailView(APIView):
             **serializer.validated_data,
         )
         variant = get_variant(variant_id=variant.id, user=request.user)
-        return Response(ProductVariantSerializer(variant).data)
+        return Response(ProductVariantReadSerializer(variant).data)
 
     @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
     @require_perm("inventory.delete_productvariant")

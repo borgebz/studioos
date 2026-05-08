@@ -356,7 +356,7 @@ class Command(BaseCommand):
         skipped = 0
 
         # Pre-load all size systems into memory to avoid repeated DB hits.
-        size_system_map = {ss.name: ss for ss in SizeSystem.objects.all()}
+        size_system_map = {ss.name: ss for ss in SizeSystem.all_objects.all()}
 
         for item in self.CATEGORIES:
             # Resolve parent
@@ -364,9 +364,9 @@ class Command(BaseCommand):
             if item["parent"]:
                 try:
                     parent = (
-                        Category.objects.get(name=item["parent"], parent=None)
-                        if not Category.objects.filter(name=item["parent"]).exists()
-                        else Category.objects.get(name=item["parent"])
+                        Category.all_objects.get(name=item["parent"], parent=None)
+                        if not Category.all_objects.filter(name=item["parent"]).exists()
+                        else Category.all_objects.get(name=item["parent"])
                     )
                 except Category.DoesNotExist:
                     self.stdout.write(
@@ -404,23 +404,25 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            # Upsert category
-            category, was_created = Category.objects.update_or_create(
+            # Upsert category (use all_objects to include soft-deleted rows)
+            category, was_created = Category.all_objects.update_or_create(
                 name=item["name"],
                 parent=parent,
                 defaults={
                     "sort_order": item["sort_order"],
-                    "is_active": True,
                 },
             )
 
-            # Replace size system links
-            CategorySizeSystem.objects.filter(category=category).delete()
+            if category.is_deleted:
+                skipped += 1
+                continue
+
+            # Upsert size system links (use all_objects to include soft-deleted rows)
             for order, ss in enumerate(size_systems):
-                CategorySizeSystem.objects.create(
+                CategorySizeSystem.all_objects.update_or_create(
                     category=category,
                     size_system=ss,
-                    sort_order=order,
+                    defaults={"sort_order": order},
                 )
 
             if was_created:

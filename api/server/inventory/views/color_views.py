@@ -6,25 +6,13 @@ from rest_framework.views import APIView
 
 from core.permissions import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
+from core.utils import optional_bool as _optional_bool
 
 from inventory.serializers.color_serializers import (
     ColorSerializer,
     CreateColorSerializer,
 )
 from inventory.services import color_services as services
-
-
-def _optional_bool(raw):
-    if raw is None:
-        return None
-    if isinstance(raw, bool):
-        return raw
-    s = str(raw).strip().lower()
-    if s in ("true", "1", "yes"):
-        return True
-    if s in ("false", "0", "no"):
-        return False
-    return None
 
 
 class ColorListCreateView(APIView):
@@ -57,6 +45,14 @@ class ColorListCreateView(APIView):
 
 class ColorDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: ColorSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("inventory.view_color")
+    def get(self, request, color_id):
+        color = services.get_color(pk=color_id)
+        return Response(ColorSerializer(color).data)
 
     @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
     @require_perm("inventory.delete_color")

@@ -1,6 +1,7 @@
 import logging
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AppNotFound
@@ -87,9 +88,9 @@ def update_studio(*, pk: int, user, allowed_modality_ids=None, **data):
 def delete_studio(*, pk: int, user):
     studio = get_studio(pk=pk)
 
-    active_links = StudioModality.objects.filter(studio=studio)
-    for link in active_links:
-        link.delete(deleted_by=user)
+    StudioModality.objects.filter(studio=studio).update(
+        deleted_at=timezone.now(), deleted_by=user
+    )
 
     studio.delete(deleted_by=user)
 

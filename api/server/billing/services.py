@@ -2,7 +2,7 @@ import logging
 from decimal import ROUND_DOWN, Decimal, InvalidOperation
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
@@ -197,8 +197,12 @@ def create_billing_entries_for_coaching(*, coaching, user):
             created_by=user,
         )
         entry.full_clean()
-        entry.save()
         entries.append(entry)
+
+    try:
+        BillingEntry.objects.bulk_create(entries)
+    except IntegrityError:
+        raise ValidationError({"messages": ["DuplicateBillingEntry"]})
 
     logger.info(
         "Created %d billing entries for CoachingClass id=%s",
@@ -232,26 +236,18 @@ def create_billing_entry_for_transaction(*, transaction, user):
         )
         return None
 
-    raw_price = transaction.agreed_price or (
+    amount = transaction.agreed_price or (
         transaction.listing.asking_price if transaction.listing_id else None
     )
 
-    if not raw_price:
+    if not amount:
         logger.info(
             "Skipping billing entry for transaction id=%s — no price set",
             transaction.pk,
         )
         return None
 
-    try:
-        amount = Decimal(str(raw_price)).quantize(_QUANT)
-    except (InvalidOperation, ValueError):
-        logger.warning(
-            "Invalid price value '%s' for transaction id=%s — skipping billing entry",
-            raw_price,
-            transaction.pk,
-        )
-        return None
+    amount = Decimal(amount).quantize(_QUANT)
 
     if amount <= 0:
         logger.info(
@@ -316,8 +312,9 @@ def create_fines_for_coaching(*, coaching, user):
             created_by=user,
         )
         fine.full_clean()
-        fine.save()
         fines.append(fine)
+
+    Fine.objects.bulk_create(fines)
 
     logger.info(
         "Created %d fines (pending_review) for CoachingClass id=%s",
@@ -414,6 +411,9 @@ def get_billing_entry_for_request(*, pk, requesting_user):
 
 @transaction.atomic
 def cancel_billing_entry(*, entry, notes, updated_by):
+    # Re-fetch with row lock to prevent concurrent cancellation (race condition guard).
+    entry = BillingEntry.objects.select_for_update().get(pk=entry.pk)
+
     notes_clean = (notes or "").strip()
     if not notes_clean:
         raise ValidationError({"messages": ["CancellationNotesRequired"]})
@@ -500,7 +500,7 @@ def _resolve_fine_amount(amount):
         amount = Decimal(str(amount)).quantize(_QUANT)
     except (InvalidOperation, ValueError):
         raise ValidationError({"messages": ["FineAmountInvalid"]})
-    if amount < 0:
+    if amount <= 0:
         raise ValidationError({"messages": ["FineAmountNegative"]})
     return amount
 
@@ -511,6 +511,9 @@ def approve_fine(*, fine, amount, reviewed_by, notes=""):
     Approve a fine (status=APPROVED) and generate the matching BillingEntry.
     `amount` is optional — when None, falls back to settings default.
     """
+    # Re-fetch with row lock to prevent concurrent approve/waive (race condition guard).
+    fine = Fine.objects.select_for_update().get(pk=fine.pk)
+
     if fine.status != FineStatus.PENDING_REVIEW:
         raise ValidationError({"messages": ["FineNotPendingReview"]})
 
@@ -555,6 +558,9 @@ def waive_fine(*, fine, reviewed_by, notes):
     """
     Waive a pending fine — no charge generated. `notes` required for audit trail.
     """
+    # Re-fetch with row lock to prevent concurrent approve/waive (race condition guard).
+    fine = Fine.objects.select_for_update().get(pk=fine.pk)
+
     if fine.status != FineStatus.PENDING_REVIEW:
         raise ValidationError({"messages": ["FineNotPendingReview"]})
 

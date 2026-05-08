@@ -28,12 +28,16 @@ class Listing(BaseModel):
     )
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    asking_price = models.CharField(max_length=100, blank=True, null=True)
+    asking_price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     is_public = models.BooleanField(default=False)
 
     class Meta:
         permissions = [
             ("manage_school_listings", "Can manage school-owned listings"),
+            ("view_own_listings", "Can view own listings"),
+            ("view_productlisting", "Can view any listing"),
         ]
 
     def __str__(self):
@@ -107,9 +111,13 @@ class ProductTransaction(BaseModel):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name="owned_transactions",
     )
-    agreed_price = models.CharField(max_length=100, blank=True, null=True)
+    agreed_price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     start_at = models.DateTimeField(null=True, blank=True)
     end_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
@@ -120,6 +128,12 @@ class ProductTransaction(BaseModel):
         blank=True,
         related_name="recorded_transactions",
     )
+
+    class Meta:
+        permissions = [
+            ("view_own_transactions", "Can view own transactions"),
+            ("view_all_transactions", "Can view any transaction"),
+        ]
 
     def __str__(self):
         return f"Transaction {self.pk} ({self.transaction_type}) — {self.status}"

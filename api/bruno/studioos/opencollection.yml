@@ -47,16 +47,35 @@ request:
           return;
         }
 
+        // Do not login immediately before refresh/logout — would reset cookies and confuse refresh testing.
+        var skipAuthHook =
+          (pathStr && pathStr.indexOf("/auth/refresh") !== -1) ||
+          (urlStr && urlStr.indexOf("/auth/refresh") !== -1) ||
+          reqName.toLowerCase() === "refresh" ||
+          (pathStr && pathStr.indexOf("/auth/logout") !== -1) ||
+          (urlStr && urlStr.indexOf("/auth/logout") !== -1) ||
+          reqName.toLowerCase() === "logout";
+        if (skipAuthHook) {
+          return;
+        }
+
         if (
           (pathStr && pathStr.indexOf("/onboard/") !== -1) ||
           (urlStr && urlStr.indexOf("/onboard/") !== -1)
         ) {
           return;
         }
-        if (path.includes("/api/accounts/activate")) {
+        if (
+          (pathStr && pathStr.indexOf("/api/accounts/activate") !== -1) ||
+          (urlStr && urlStr.indexOf("/api/accounts/activate") !== -1) ||
+          reqName.toLowerCase() === "activate-account"
+        ) {
           return;
         }
-        if (path.includes("/api/schema")) {
+        if (
+          (pathStr && pathStr.indexOf("/api/schema") !== -1) ||
+          (urlStr && urlStr.indexOf("/api/schema") !== -1)
+        ) {
           return;
         }
 
@@ -73,6 +92,12 @@ request:
         if (!email || !password) {
           throw new Error(
             "Set login_email and login_password on the active environment (or collection variables)."
+          );
+        }
+
+        if (typeof bru.sendRequest !== "function") {
+          throw new Error(
+            "This collection requires bru.sendRequest (Open Collection / Bruno 2+). Update Bruno or use requests that do not depend on the login pre-request script."
           );
         }
 

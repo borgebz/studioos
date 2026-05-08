@@ -1,0 +1,16 @@
+Olá {{ recipient.first_name }},
+
+{% if is_scheduled %}Foi agendada uma aula de {{ modality }} pela coordenação.{% else %}Foi criada uma aula de {{ modality }} pela coordenação (pendente de aprovação).{% endif %}
+{% if is_recurring %}Esta aula faz parte de uma série recorrente com {{ total_sessions }} sessão(ões).{% endif %}
+
+Modalidade: {{ modality }}
+Data e hora: {{ coaching_date }}
+{% if studio %}Estúdio: {{ studio }}{% endif %}
+{% if total_price %}Valor: {{ total_price }}€{% endif %}
+Estado: {% if is_scheduled %}Agendada{% else %}Pendente{% endif %}
+
+Aceda à plataforma para mais detalhes:
+{{ coaching_url }}
+
+Cumprimentos,
+StudioOS — Escola de Dança

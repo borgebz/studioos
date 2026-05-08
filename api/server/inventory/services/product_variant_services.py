@@ -89,9 +89,12 @@ def _validate_size(*, product, size_id):
         return None
 
     try:
-        size = Size.objects.get(id=size_id, is_active=True)
+        size = Size.objects.get(id=size_id)
     except Size.DoesNotExist:
         raise ValidationError({"messages": ["InvalidSize"]})
+
+    if not size.is_active:
+        raise ValidationError({"messages": ["InactiveSize"]})
 
     if product.category:
         linked_system_ids = list(
@@ -107,10 +110,13 @@ def _validate_colors(*, color_ids):
     if not color_ids:
         return []
 
-    colors = list(Color.objects.filter(id__in=color_ids, is_active=True))
+    colors = list(Color.objects.filter(id__in=color_ids))
 
     if len(colors) != len(color_ids):
         raise ValidationError({"messages": ["InvalidColor"]})
+
+    if any(not c.is_active for c in colors):
+        raise ValidationError({"messages": ["InactiveColor"]})
 
     return colors
 

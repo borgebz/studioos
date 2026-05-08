@@ -10,8 +10,8 @@ http:
     type: json
     data: |-
       {
-          "email": "student@teste.com",
-          "password": "123456"
+          "email": "{{login_email}}",
+          "password": "{{login_password}}"
       }
 
 settings:

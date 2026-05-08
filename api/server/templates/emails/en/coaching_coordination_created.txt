@@ -1,0 +1,16 @@
+Hello {{ recipient.first_name }},
+
+{% if is_scheduled %}A {{ modality }} class has been scheduled by coordination.{% else %}A {{ modality }} class has been created by coordination (pending approval).{% endif %}
+{% if is_recurring %}This class is part of a recurring series with {{ total_sessions }} session(s).{% endif %}
+
+Modality: {{ modality }}
+Date and time: {{ coaching_date }}
+{% if studio %}Studio: {{ studio }}{% endif %}
+{% if total_price %}Price: {{ total_price }}€{% endif %}
+Status: {% if is_scheduled %}Scheduled{% else %}Pending{% endif %}
+
+Access the platform for more details:
+{{ coaching_url }}
+
+Best regards,
+StudioOS — Dance School

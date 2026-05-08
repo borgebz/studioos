@@ -23,8 +23,11 @@ from marketplace.views.transaction_views import (
     SchoolTransactionListView,
     SchoolTransactionRejectView,
     SchoolTransactionUnblockView,
+    TransactionAcceptView,
     TransactionCancelView,
+    TransactionCompleteView,
     TransactionDetailView,
+    TransactionRejectView,
     TransactionRequestView,
 )
 
@@ -47,6 +50,12 @@ urlpatterns = [
     path("transactions/mine/", MyTransactionsView.as_view()),
     path("transactions/<int:transaction_id>/", TransactionDetailView.as_view()),
     path("transactions/<int:transaction_id>/cancel/", TransactionCancelView.as_view()),
+    path("transactions/<int:transaction_id>/accept/", TransactionAcceptView.as_view()),
+    path("transactions/<int:transaction_id>/reject/", TransactionRejectView.as_view()),
+    path(
+        "transactions/<int:transaction_id>/complete/",
+        TransactionCompleteView.as_view(),
+    ),
     # ------------------------------------------------------------------
     # School-scoped listings (staff / coordination)
     # ------------------------------------------------------------------

@@ -68,20 +68,25 @@ def _check_date_overlap(*, variant, start_at, end_at, exclude_booking_id=None):
 
 
 def list_listings(*, user, filters=None):
-    qs = (
+    qs = _exclude_stale_variants(
         Listing.objects.filter(
             status=Listing.ListingStatus.ACTIVE,
             is_public=True,
         )
-        .exclude(variant__status__in=_NON_LISTABLE_STATUSES)
-        .exclude(variant__deleted_at__isnull=False)
-        .exclude(variant__product__deleted_at__isnull=False)
-        .select_related("variant__product__category", "variant__size")
-        .prefetch_related("variant__product__media")
-        .order_by("-created_at")
-    )
+    ).select_related("variant__product__category", "variant__size").prefetch_related(
+        "variant__product__media"
+    ).order_by("-created_at")
 
     if filters:
+        if filters.get("search"):
+            term = filters["search"]
+            from django.db.models import Q
+
+            qs = qs.filter(
+                Q(title__icontains=term)
+                | Q(description__icontains=term)
+                | Q(variant__product__name__icontains=term)
+            )
         if filters.get("listing_type"):
             qs = qs.filter(listing_type=filters["listing_type"])
         if filters.get("category_id"):
@@ -100,19 +105,29 @@ def get_listing(*, listing_id):
     return _get_listing_or_404(listing_id)
 
 
+def _exclude_stale_variants(qs):
+    return (
+        qs.exclude(variant__status__in=_NON_LISTABLE_STATUSES)
+        .exclude(variant__deleted_at__isnull=False)
+        .exclude(variant__product__deleted_at__isnull=False)
+    )
+
+
 def list_my_listings(*, user):
-    return Listing.objects.filter(created_by=user).order_by("-created_at")
+    qs = Listing.objects.filter(created_by=user).order_by("-created_at")
+    return _exclude_stale_variants(qs)
 
 
 def list_favorited_listings(*, user):
-    return Listing.objects.filter(
+    qs = Listing.objects.filter(
         favorites__user=user,
         favorites__deleted_at__isnull=True,
     ).order_by("-created_at")
+    return _exclude_stale_variants(qs)
 
 
 @transaction.atomic
-def create_listing(*, user, **data):
+def create_listing(*, user, school_only=False, **data):
     variant_id = data.get("variant_id")
     nested_product = data.get("product")
 
@@ -121,12 +136,28 @@ def create_listing(*, user, **data):
 
     if variant_id:
         try:
-            variant = ProductVariant.objects.get(id=variant_id)
+            variant = ProductVariant.objects.select_related("product").get(
+                id=variant_id
+            )
         except ProductVariant.DoesNotExist:
             raise AppNotFound("VariantNotFound")
 
         if variant.status in _NON_LISTABLE_STATUSES:
             raise ValidationError({"messages": ["VariantNotListable"]})
+
+        if school_only and variant.product.owner_type != Product.OwnerType.SCHOOL:
+            raise ValidationError({"messages": ["VariantMustBeSchoolOwned"]})
+
+        is_owner = (
+            variant.product.owner_type == Product.OwnerType.MEMBER
+            and variant.product.owner_id == user.id
+        )
+        is_school_manager = (
+            variant.product.owner_type == Product.OwnerType.SCHOOL
+            and user.has_perm("marketplace.manage_school_listings")
+        )
+        if not is_owner and not is_school_manager:
+            raise ValidationError({"messages": ["VariantOwnershipRequired"]})
     else:
         # Inline product + variant creation delegated to inventory services
         from inventory import services as inventory_services
@@ -147,6 +178,7 @@ def create_listing(*, user, **data):
         is_public=data.get("is_public", False),
         created_by=user,
     )
+    listing.full_clean()
     listing.save()
 
     logger.info("Listing created: %s by user %s", listing.pk, user.pk)
@@ -159,6 +191,9 @@ def update_listing(*, listing_id, user, **data):
 
     listing = _get_listing_or_404(listing_id)
     _assert_can_manage(user=user, listing=listing)
+
+    if listing.status == Listing.ListingStatus.CLOSED:
+        raise ValidationError({"messages": ["ListingClosed"]})
 
     for field in ["listing_type", "title", "description", "asking_price", "is_public"]:
         if field in data:
@@ -190,6 +225,9 @@ def publish_listing(*, listing_id, user):
     if listing.status == Listing.ListingStatus.ACTIVE:
         raise ValidationError({"messages": ["ListingAlreadyPublished"]})
 
+    if listing.variant.status in _NON_LISTABLE_STATUSES:
+        raise ValidationError({"messages": ["VariantNotListable"]})
+
     listing.status = Listing.ListingStatus.ACTIVE
     listing.is_public = True
     listing.updated_by = user
@@ -218,13 +256,14 @@ def delete_listing(*, listing_id, user):
 
 def add_favorite(*, listing_id, user):
     listing = _get_listing_or_404(listing_id)
-    if ListingFavorite.objects.filter(
-        listing=listing, user=user, deleted_at__isnull=True
-    ).exists():
+    fav, created = ListingFavorite.objects.get_or_create(
+        listing=listing,
+        user=user,
+        deleted_at__isnull=True,
+        defaults={"created_by": user},
+    )
+    if not created:
         raise ValidationError({"messages": ["AlreadyFavorited"]})
-
-    fav = ListingFavorite(listing=listing, user=user, created_by=user)
-    fav.save()
     return fav
 
 
@@ -236,6 +275,13 @@ def remove_favorite(*, listing_id, user):
     except ListingFavorite.DoesNotExist:
         raise AppNotFound("FavoriteNotFound")
     fav.delete(deleted_by=user)
+
+
+def list_school_listings():
+    qs = Listing.objects.filter(
+        variant__product__owner_type=Product.OwnerType.SCHOOL
+    ).order_by("-created_at")
+    return _exclude_stale_variants(qs)
 
 
 def get_availability(*, listing_id):

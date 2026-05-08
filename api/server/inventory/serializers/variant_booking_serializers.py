@@ -7,6 +7,9 @@ class VariantBookingSerializer(serializers.ModelSerializer):
     booking_type = serializers.ChoiceField(choices=VariantBooking.BookingType.choices)
     status = serializers.ChoiceField(choices=VariantBooking.Status.choices)
     created_by = serializers.PrimaryKeyRelatedField(read_only=True)
+    listing_id = serializers.PrimaryKeyRelatedField(
+        source="listing", read_only=True
+    )
 
     class Meta:
         model = VariantBooking
@@ -15,6 +18,7 @@ class VariantBookingSerializer(serializers.ModelSerializer):
             "variant",
             "booking_type",
             "status",
+            "listing_id",
             "start_at",
             "end_at",
             "actual_start_at",
@@ -26,7 +30,7 @@ class VariantBookingSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "variant", "created_by", "created_at", "updated_at"]
+        read_only_fields = ["id", "variant", "listing_id", "created_by", "created_at", "updated_at"]
 
 
 class VariantBookingWriteSerializer(serializers.ModelSerializer):
