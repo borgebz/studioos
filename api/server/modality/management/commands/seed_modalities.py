@@ -109,9 +109,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         created_count = 0
         existing_count = 0
+        skipped_count = 0
 
         for entry in MODALITIES:
-            _, created = Modality.objects.get_or_create(
+            obj, created = Modality.all_objects.get_or_create(
                 name=entry["name"],
                 defaults={
                     "description": entry.get("description", ""),
@@ -120,7 +121,10 @@ class Command(BaseCommand):
                     "max_age_months": entry.get("max_age_months"),
                 },
             )
-            if created:
+            if obj.is_deleted:
+                skipped_count += 1
+                self.stdout.write(f"  Skipped (deleted): {entry['name']}")
+            elif created:
                 created_count += 1
                 self.stdout.write(self.style.SUCCESS(f"  Created: {entry['name']}"))
             else:
@@ -129,6 +133,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"\nDone. Created {created_count}, skipped {existing_count} existing."
+                f"\nDone. Created {created_count}, skipped {existing_count} existing, "
+                f"skipped {skipped_count} deleted."
             )
         )

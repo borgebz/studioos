@@ -1,6 +1,7 @@
 import logging
 
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from accounts.services import get_teacher_user_by_pk
@@ -100,9 +101,9 @@ def update_modality(*, pk: int, user, allowed_studio_ids=None, **data):
 def delete_modality(*, pk: int, user):
     modality = get_modality(pk=pk)
 
-    active_links = UserModality.objects.filter(modality=modality)
-    for link in active_links:
-        link.delete(deleted_by=user)
+    UserModality.objects.filter(modality=modality).update(
+        deleted_at=timezone.now(), deleted_by=user
+    )
 
     modality.delete(deleted_by=user)
 

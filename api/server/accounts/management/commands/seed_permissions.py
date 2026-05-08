@@ -3,6 +3,10 @@ from django.core.management.base import BaseCommand
 
 from accounts.models import Role
 
+# ---------------------------------------------------------------------------
+# Permission groups — organised by app / domain
+# ---------------------------------------------------------------------------
+
 EVENTS_PERMISSIONS_MANAGEMENT = [
     "events.view_event",
     "events.add_event",
@@ -123,9 +127,41 @@ INVENTORY_PERMISSIONS = [
     "inventory.delete_variantmedia",
 ]
 
+MARKETPLACE_PERMISSIONS_MANAGEMENT = [
+    "marketplace.manage_school_listings",
+    "marketplace.view_productlisting",
+    "marketplace.view_all_transactions",
+]
+
+MARKETPLACE_PERMISSIONS_USER = [
+    "marketplace.view_own_listings",
+    "marketplace.view_own_transactions",
+]
+
+# ---------------------------------------------------------------------------
+# Role → permission mapping
+#
+# Hierarchy (highest → lowest):
+#   direction > coordination > collaborator / teacher / teacher_external
+#   parent and student are separate tracks with own-data access.
+#
+# Principles:
+# - direction: full management of every module.
+# - coordination: day-to-day operations (scheduling, reviews, class mgmt),
+#     but NOT role/user admin or enrollment-period management.
+# - collaborator: read-only view of operational data + messaging.
+# - teacher / teacher_external: own availability, accept/reject coaching,
+#     view classes, messaging, and profile.
+# - parent: request coaching for dependents, confirm dependent attendance,
+#     view billing/fines, view classes, marketplace participation.
+# - student: request coaching, participate, view own billing, view classes,
+#     marketplace participation.
+# ---------------------------------------------------------------------------
+
 ROLE_PERMISSIONS = {
     "direction": [
         # accounts
+        "accounts.add_user",
         "accounts.change_user",
         "accounts.view_user",
         "accounts.can_list_users",
@@ -147,6 +183,7 @@ ROLE_PERMISSIONS = {
         "studios.change_studio",
         "studios.delete_studio",
         "studios.view_studio",
+        # modality
         "modality.add_modality",
         "modality.add_usermodality",
         "modality.change_modality",
@@ -154,9 +191,14 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
+        # coachings (full management + scheduling)
         *COACHINGS_PERMISSIONS,
+        "coachings.can_schedule_coaching",
+        # events
         *EVENTS_PERMISSIONS_MANAGEMENT,
+        # classes
         *CLASSES_PERMISSIONS,
+        # billing
         "billing.view_billingentry",
         "billing.add_billingentry",
         "billing.change_billingentry",
@@ -167,10 +209,16 @@ ROLE_PERMISSIONS = {
         "billing.change_fine",
         "billing.delete_fine",
         "billing.can_review_fine",
+        # messaging
         *MESSAGING_PERMISSIONS,
+        # inventory
         *INVENTORY_PERMISSIONS,
+        # marketplace
+        *MARKETPLACE_PERMISSIONS_MANAGEMENT,
+        *MARKETPLACE_PERMISSIONS_USER,
     ],
     "coordination": [
+        # accounts (view/invite only — no role management)
         "accounts.view_user",
         "accounts.view_role",
         "accounts.can_list_users",
@@ -186,6 +234,7 @@ ROLE_PERMISSIONS = {
         "studios.change_studio",
         "studios.delete_studio",
         "studios.view_studio",
+        # modality
         "modality.add_modality",
         "modality.add_usermodality",
         "modality.change_modality",
@@ -193,15 +242,23 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
+        # coachings (full management + scheduling)
         *COACHINGS_PERMISSIONS,
         "coachings.can_schedule_coaching",
+        # events
         *EVENTS_PERMISSIONS_MANAGEMENT,
+        # classes
         *CLASSES_PERMISSIONS,
+        # billing (view + cancel + fine review — no creation)
         "billing.view_billingentry",
         "billing.can_cancel_billingentry",
         "billing.view_fine",
         "billing.can_review_fine",
+        # messaging
         *MESSAGING_PERMISSIONS,
+        # marketplace
+        *MARKETPLACE_PERMISSIONS_MANAGEMENT,
+        *MARKETPLACE_PERMISSIONS_USER,
     ],
     "collaborator": [
         "accounts.view_user",
@@ -220,14 +277,17 @@ ROLE_PERMISSIONS = {
         "studios.view_studio",
         "modality.view_modality",
         "modality.view_usermodality",
+        # own availability management
         "coachings.view_teacheravailability",
         "coachings.add_teacheravailability",
         "coachings.change_teacheravailability",
         "coachings.delete_teacheravailability",
+        # coaching interaction
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
         "coachings.view_coachingparticipant",
+        # classes (read-only)
         "classes.view_classe",
         "classes.view_classemember",
         *MESSAGING_PERMISSIONS,
@@ -239,37 +299,58 @@ ROLE_PERMISSIONS = {
         "studios.view_studio",
         "modality.view_modality",
         "modality.view_usermodality",
+        # own availability management
         "coachings.view_teacheravailability",
         "coachings.add_teacheravailability",
         "coachings.change_teacheravailability",
         "coachings.delete_teacheravailability",
+        # coaching interaction
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
         "coachings.can_reject_coaching_as_teacher",
         "coachings.view_coachingparticipant",
+        # classes (read-only)
         "classes.view_classe",
         "classes.view_classemember",
         *MESSAGING_PERMISSIONS,
     ],
     "parent": [
         "accounts.view_user",
+        "studios.view_studio",
+        "modality.view_modality",
+        # coaching: request on behalf of dependents + confirm attendance
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
-        "studios.view_studio",
         "coachings.view_coachingparticipant",
         "coachings.can_confirm_dependent_coaching_attendance",
+        # classes (read-only — see children's classes)
+        "classes.view_classe",
+        "classes.view_classemember",
+        # billing (view own children's entries)
+        "billing.view_billingentry",
+        "billing.view_fine",
+        # marketplace
+        *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
     "student": [
         "accounts.view_user",
         "accounts.can_participate_in_coaching",
+        "studios.view_studio",
+        "modality.view_modality",
+        # coaching: request + participate
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
-        "studios.view_studio",
         "coachings.view_coachingparticipant",
         "coachings.add_coachingparticipant",
+        # classes (read-only — see own classes)
+        "classes.view_classe",
+        "classes.view_classemember",
+        # billing (view own entries)
         "billing.view_billingentry",
         "billing.view_fine",
+        # marketplace
+        *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
 }

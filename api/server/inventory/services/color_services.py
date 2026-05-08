@@ -31,6 +31,9 @@ def list_colors(*, is_active=None):
 
 @transaction.atomic
 def create_color(*, name, hex_code, is_active=True, created_by=None):
+    if not re.match(HEX_REGEX, hex_code):
+        raise ValidationError({"messages": ["InvalidHexCode"]})
+
     normalized_name = name.strip().lower()
 
     if Color.objects.filter(name__iexact=normalized_name).exists():
@@ -38,9 +41,6 @@ def create_color(*, name, hex_code, is_active=True, created_by=None):
 
     if Color.objects.filter(hex_code__iexact=hex_code).exists():
         raise ValidationError({"messages": ["DuplicateColorHexCode"]})
-
-    if not re.match(HEX_REGEX, hex_code):
-        raise ValidationError({"messages": ["InvalidHexCode"]})
 
     color = Color(
         name=name.strip(),

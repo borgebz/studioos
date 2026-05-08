@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.http import QueryDict
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
@@ -20,11 +22,32 @@ from inventory.services.variant_booking_services import (
     update_booking,
 )
 
+_PAGINATION_PARAMS = {"page", "page_size"}
+
 
 def _filters_dict(query_params):
+    """Build a validated filter dict, excluding pagination keys and checking dates."""
     if isinstance(query_params, QueryDict):
-        return {k: query_params.get(k) for k in query_params.keys()}
-    return dict(query_params)
+        raw = {k: query_params.get(k) for k in query_params.keys()}
+    else:
+        raw = dict(query_params)
+
+    # Strip pagination params
+    filters = {k: v for k, v in raw.items() if k not in _PAGINATION_PARAMS}
+
+    # Validate date strings
+    for date_key in ("start_at", "end_at"):
+        val = filters.get(date_key)
+        if val:
+            try:
+                datetime.fromisoformat(val)
+            except (ValueError, TypeError):
+                return None, Response(
+                    {date_key: ["Must be a valid ISO 8601 datetime string."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+    return filters, None
 
 
 class BookingListCreateView(APIView):
@@ -41,10 +64,19 @@ class BookingListCreateView(APIView):
     )
     @require_perm("inventory.view_product")
     def get(self, request, variant_id):
+        include_cancelled = request.query_params.get(
+            "include_cancelled", ""
+        ).lower() in ("true", "1")
+
+        filters, err = _filters_dict(request.query_params)
+        if err is not None:
+            return err
+
         bookings = list_bookings(
             variant_id=variant_id,
             user=request.user,
-            filters=_filters_dict(request.query_params),
+            filters=filters,
+            include_cancelled=include_cancelled,
         )
         return paginated_response(
             request=request,

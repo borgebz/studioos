@@ -23,9 +23,10 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         created = 0
         updated = 0
+        skipped = 0
 
         for item in self.COLORS:
-            obj, was_created = Color.objects.update_or_create(
+            obj, was_created = Color.all_objects.update_or_create(
                 name=item["name"],
                 defaults={
                     "hex_code": item["hex_code"],
@@ -33,7 +34,10 @@ class Command(BaseCommand):
                 },
             )
 
-            if was_created:
+            if obj.is_deleted:
+                skipped += 1
+                self.stdout.write(f"Skipped (deleted): {obj.name}")
+            elif was_created:
                 created += 1
                 self.stdout.write(self.style.SUCCESS(f"Created: {obj.name}"))
             else:
@@ -42,5 +46,5 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(f"Done. Created {created}, updated {updated}.")
+            self.style.SUCCESS(f"Done. Created {created}, updated {updated}, skipped {skipped}.")
         )

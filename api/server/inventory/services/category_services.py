@@ -26,6 +26,8 @@ def _would_create_cycle(*, category, proposed_parent):
             .values_list("parent_id", flat=True)
             .first()
         )
+    if steps >= max_steps:
+        raise ValidationError({"messages": ["CategoryHierarchyTooDeep"]})
     return False
 
 

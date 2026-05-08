@@ -12,15 +12,13 @@ class SchoolProductDetailsSerializer(serializers.Serializer):
 
 class ProductMediaInputSerializer(serializers.Serializer):
     image = serializers.ImageField(required=False)
-    file = serializers.ImageField(required=False)
     is_primary = serializers.BooleanField(required=False, default=False)
     sort_order = serializers.IntegerField(required=False, default=0)
 
     def validate(self, data):
-        for key in ("image", "file"):
-            f = data.get(key)
-            if f is not None:
-                validate_inventory_image_upload(f, field_label=key)
+        f = data.get("image")
+        if f is not None:
+            validate_inventory_image_upload(f, field_label="image")
         return data
 
 
@@ -28,6 +26,17 @@ class ProductMediaSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductMedia
         fields = ["id", "image", "is_primary", "sort_order"]
+
+
+class InlineVariantSerializer(serializers.Serializer):
+    size_id = serializers.IntegerField(required=False, allow_null=True)
+    sku = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    condition = serializers.CharField(required=False)
+    acquisition_type = serializers.CharField(required=False)
+    color_ids = serializers.ListField(
+        child=serializers.IntegerField(), required=False, default=list
+    )
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class ProductCreateSerializer(serializers.Serializer):
@@ -41,7 +50,7 @@ class ProductCreateSerializer(serializers.Serializer):
         choices=Product.Status.choices, required=False, default=Product.Status.ACTIVE
     )
     media = ProductMediaInputSerializer(many=True, required=False)
-    variants = serializers.ListField(child=serializers.DictField(), required=False)
+    variants = InlineVariantSerializer(many=True, required=False, default=list)
 
 
 class SchoolProductCreateSerializer(ProductCreateSerializer):
@@ -69,6 +78,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         choices=Product.OwnerType.choices, read_only=True
     )
     media = ProductMediaSerializer(many=True, read_only=True)
+    school_details = SchoolProductDetailsSerializer(read_only=True)
 
     class Meta:
         model = Product
@@ -84,6 +94,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "material",
             "status",
             "media",
+            "school_details",
             "created_at",
             "updated_at",
         ]

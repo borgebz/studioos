@@ -2,7 +2,6 @@ import logging
 import uuid
 from functools import lru_cache
 
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
@@ -261,6 +260,12 @@ def update_profile_for_user(*, profile, updated_by=None, **fields):
     return profile
 
 
+ALLOWED_USER_UPDATE_FIELDS = {
+    "first_name", "last_name", "email", "phone", "phone_country_code",
+    "language", "parent_id", "address", "postal_code",
+}
+
+
 @transaction.atomic
 def update_user_core_fields(*, pk, updated_by, **updates):
     """
@@ -270,6 +275,10 @@ def update_user_core_fields(*, pk, updated_by, **updates):
     """
     if not updates:
         return get_user_with_roles_prefetched(pk=pk)
+
+    invalid_keys = set(updates.keys()) - ALLOWED_USER_UPDATE_FIELDS
+    if invalid_keys:
+        raise ValidationError({"messages": ["InvalidFieldUpdate"]})
 
     user = get_user_by_pk(pk=pk)
     for key, value in updates.items():
@@ -296,7 +305,6 @@ def update_user_core_fields(*, pk, updated_by, **updates):
 
 
 def activate_account(*, uid, token, password):
-    User = get_user_model()
     try:
         pk = force_str(urlsafe_base64_decode(uid))
         account_user = User.objects.get(pk=pk)
@@ -502,10 +510,12 @@ def _validate_bulk_invite_rows(*, inviter, parsed_rows):
         for e in parsed_rows
         if e["email"]
     ]
+    from django.db.models.functions import Lower
+
     existing_emails = set(
-        User.all_objects.filter(email__in=candidate_emails).values_list(
-            "email", flat=True
-        )
+        User.all_objects.annotate(lower_email=Lower("email"))
+        .filter(lower_email__in=candidate_emails)
+        .values_list("lower_email", flat=True)
     )
 
     for entry in parsed_rows:
@@ -615,7 +625,14 @@ def bulk_invite_users(*, inviter, uploaded_file):
         len(users_out),
         getattr(inviter, "email", inviter),
     )
-    return [get_user_with_roles_prefetched(pk=u.pk) for u in users_out]
+    return list(
+        User.objects.filter(pk__in=[u.pk for u in users_out]).prefetch_related(
+            Prefetch(
+                "groups",
+                queryset=Group.objects.select_related("role"),
+            )
+        )
+    )
 
 
 def get_onboarding_preview(*, token: str):

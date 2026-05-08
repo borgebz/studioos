@@ -215,6 +215,18 @@ COACHING_LATE_CANCELLATION_HOURS = config(
 # table in the future for direction-controlled configuration.
 COACHING_FINE_DEFAULT_AMOUNT = config("COACHING_FINE_DEFAULT_AMOUNT", default="25.00")
 
+# Reminder windows (hours after coaching end_datetime) for the
+# WAITING_CONFIRMATION → attendance/teacher confirmation reminders.
+# Comma-separated "hours:final" pairs, e.g. "24:0,42:1" means:
+#   24h = first reminder (not final), 42h = final reminder.
+COACHING_REMINDER_WINDOWS_RAW = config(
+    "COACHING_REMINDER_WINDOWS", default="24:0,42:1"
+)
+COACHING_REMINDER_WINDOWS = []
+for _pair in COACHING_REMINDER_WINDOWS_RAW.split(","):
+    _h, _f = _pair.strip().split(":")
+    COACHING_REMINDER_WINDOWS.append((int(_h), bool(int(_f))))
+
 
 # -----------------------------------------------------------------------------
 # Internationalisation

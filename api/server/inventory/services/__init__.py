@@ -1,3 +1,10 @@
+from . import category_services  # noqa: F401
+from . import color_services  # noqa: F401
+from . import size_services  # noqa: F401
+from . import size_system_services  # noqa: F401
+from . import product_variant_services  # noqa: F401
+from . import variant_booking_services  # noqa: F401
+
 from .product_services import (
     create_product,
     create_school_product,
@@ -12,6 +19,12 @@ from .product_services import (
 )
 
 __all__ = [
+    "category_services",
+    "color_services",
+    "size_services",
+    "size_system_services",
+    "product_variant_services",
+    "variant_booking_services",
     "create_product",
     "create_school_product",
     "delete_product",

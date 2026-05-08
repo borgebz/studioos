@@ -28,15 +28,20 @@ class CategorySerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_size_systems(self, obj):
-        links = obj.size_systems.order_by("sort_order").select_related("size_system")
-        return SizeSystemBriefSerializer(
-            [link.size_system for link in links], many=True
-        ).data
+        css = obj.size_systems.all()  # uses prefetch cache
+        return [{"id": cs.size_system_id, "name": cs.size_system.name} for cs in css]
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_subcategories(self, obj):
-        children = obj.children.all().order_by("sort_order", "name")
-        return CategorySerializer(children, many=True).data
+        depth = self.context.get("_category_depth", 0)
+        if depth >= 3:
+            return []
+        children = obj.children.filter(deleted_at__isnull=True).order_by(
+            "sort_order", "name"
+        )
+        return CategorySerializer(
+            children, many=True, context={**self.context, "_category_depth": depth + 1}
+        ).data
 
 
 class CreateCategorySerializer(serializers.Serializer):

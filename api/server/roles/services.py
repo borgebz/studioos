@@ -70,6 +70,8 @@ def set_role_permissions(*, role, permission_ids: list[int], updated_by):
     perms = Permission.objects.filter(pk__in=permission_ids).select_related(
         "content_type"
     )
+    if perms.count() != len(set(permission_ids)):
+        raise ValidationError({"messages": ["InvalidPermissionIds"]})
     role.group.permissions.set(perms)
     role.updated_by = updated_by
     role.save(update_fields=["updated_by", "updated_at"])

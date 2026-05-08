@@ -51,6 +51,7 @@ class SoftDeleteMixin(models.Model):
         self.deleted_at = timezone.now()
         self.deleted_by = deleted_by
         self.save(update_fields=["deleted_at", "deleted_by", "updated_at"])
+        return (1, {self._meta.label: 1})
 
     def hard_delete(self, using=None, keep_parents=False):
         """Permanently delete the record from the database."""

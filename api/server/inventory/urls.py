@@ -7,7 +7,7 @@ from inventory.views.size_system_views import (
 )
 from inventory.views.size_views import (
     SizeView,
-    SizeDeleteView,
+    SizeDetailView,
     SizeActivateView,
     SizeDeactivateView,
 )
@@ -52,7 +52,7 @@ urlpatterns = [
         SizeSystemDeactivateView.as_view(),
     ),
     path("sizes/", SizeView.as_view()),
-    path("sizes/<int:size_id>/", SizeDeleteView.as_view()),
+    path("sizes/<int:size_id>/", SizeDetailView.as_view()),
     path("sizes/<int:size_id>/activate/", SizeActivateView.as_view()),
     path("sizes/<int:size_id>/deactivate/", SizeDeactivateView.as_view()),
     path("categories/", CategoryView.as_view()),

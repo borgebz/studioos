@@ -13,6 +13,13 @@ def message_file_path(instance, filename):
 
 
 class Conversation(BaseModel):
+    listing = models.ForeignKey(
+        "marketplace.Listing",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="conversations",
+    )
     participants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         through="ConversationParticipant",

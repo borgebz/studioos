@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/inventory/bookings/5/
+  url: "{{base_url}}/inventory/bookings/5/"
   auth: inherit
 
 settings:

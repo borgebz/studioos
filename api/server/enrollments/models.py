@@ -240,6 +240,7 @@ class EnrollmentFile(BaseModel):
     file = models.FileField(upload_to=enrollment_file_path)
     original_filename = models.CharField(max_length=255)
     mime_type = models.CharField(max_length=100, blank=True, default="")
+    content_hash = models.CharField(max_length=64, blank=True, default="")
 
     def __str__(self):
         return f"{self.enrollment} — {self.original_filename}"

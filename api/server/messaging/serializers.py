@@ -50,9 +50,9 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(MessageSerializer(allow_null=True))
     def get_last_message(self, obj):
-        last = obj.messages.last()
-        if last:
-            return MessageSerializer(last, context=self.context).data
+        msgs = list(obj.messages.all())  # uses prefetch cache, no extra query
+        if msgs:
+            return MessageSerializer(msgs[-1], context=self.context).data
         return None
 
 

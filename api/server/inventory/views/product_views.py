@@ -19,15 +19,26 @@ from inventory.serializers.product_serializers import (
 
 
 def _product_list_filters(request):
+    """Build validated filter dict from query params.  Returns (dict|None, error_response|None)."""
     q = request.query_params
     out = {}
-    if q.get("category_id"):
-        out["category_id"] = q.get("category_id")
+
+    raw_cat = q.get("category_id")
+    if raw_cat:
+        try:
+            out["category_id"] = int(raw_cat)
+        except (ValueError, TypeError):
+            from rest_framework.response import Response as _Resp
+
+            return None, _Resp(
+                {"category_id": ["Must be a valid integer."]}, status=400
+            )
+
     if q.get("status"):
         out["status"] = q.get("status")
     if q.get("name"):
         out["name"] = q.get("name")
-    return out if out else None
+    return (out if out else None), None
 
 
 class ProductListCreateView(APIView):
@@ -44,9 +55,10 @@ class ProductListCreateView(APIView):
     )
     @require_perm("inventory.view_product")
     def get(self, request):
-        products = services.list_products(
-            user=request.user, filters=_product_list_filters(request)
-        )
+        filters, err = _product_list_filters(request)
+        if err is not None:
+            return err
+        products = services.list_products(user=request.user, filters=filters)
         return paginated_response(
             request=request,
             items=products,
@@ -116,9 +128,10 @@ class SchoolProductListCreateView(APIView):
     )
     @require_perm("inventory.view_school_product")
     def get(self, request):
-        products = services.list_school_products(
-            user=request.user, filters=_product_list_filters(request)
-        )
+        filters, err = _product_list_filters(request)
+        if err is not None:
+            return err
+        products = services.list_school_products(user=request.user, filters=filters)
         return paginated_response(
             request=request,
             items=products,

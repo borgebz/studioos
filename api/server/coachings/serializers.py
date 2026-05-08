@@ -71,6 +71,10 @@ class RecurringCoachingSubmitSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"messages": ["RecurringEndDateAndOccurrencesExclusive"]}
             )
+        if not attrs.get("end_date") and not attrs.get("occurrences_count"):
+            raise serializers.ValidationError(
+                {"messages": ["RecurringEndConditionRequired"]}
+            )
         return attrs
 
 
@@ -91,7 +95,11 @@ class DirectCoordinationCoachingCreateSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, allow_blank=True)
     schedule = serializers.BooleanField(
         default=True,
-        help_text="Roster fill: true = ACTIVE from enrollments; false = staff-invite (INVITED).",
+        help_text="true = coaching is created as SCHEDULED; false = goes through approval flow (REQUESTED).",
+    )
+    auto_confirm_participants = serializers.BooleanField(
+        default=True,
+        help_text="true = participants added as ACTIVE; false = participants added as INVITED (must accept).",
     )
     classe_id = serializers.IntegerField(required=False, allow_null=True)
     recurring_coaching = RecurringCoachingSubmitSerializer(
@@ -111,6 +119,14 @@ class CoachingRejectSerializer(serializers.Serializer):
 
 class CoachingCancelSerializer(serializers.Serializer):
     cancellation_reason = serializers.CharField(required=False, allow_blank=True)
+
+
+class RecurringSeriesCancelSerializer(serializers.Serializer):
+    cancellation_reason = serializers.CharField(required=False, allow_blank=True)
+    cancel_past = serializers.BooleanField(
+        default=False,
+        help_text="If true, also cancels sessions that have already ended (still cancellable by status).",
+    )
 
 
 class TeacherConfirmCoachingSerializer(serializers.Serializer):
@@ -153,6 +169,7 @@ class CoachingListQuerySerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=CoachingStatus.choices, required=False)
     studio_id = serializers.IntegerField(required=False)
     requested_by_id = serializers.IntegerField(required=False)
+    recurring_coaching_id = serializers.IntegerField(required=False)
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
 
@@ -191,6 +208,8 @@ class CoachingParticipantSerializer(serializers.ModelSerializer):
 
 
 class RecurringCoachingSerializer(serializers.ModelSerializer):
+    sessions_count = serializers.IntegerField(read_only=True, default=None)
+
     class Meta:
         model = RecurringCoaching
         fields = [
@@ -201,6 +220,7 @@ class RecurringCoachingSerializer(serializers.ModelSerializer):
             "end_date",
             "occurrences_count",
             "notes",
+            "sessions_count",
         ]
 
 
@@ -216,9 +236,14 @@ class CoachingClassSerializer(serializers.ModelSerializer):
         read_only=True,
         allow_null=True,
     )
-    recurring_coaching = RecurringCoachingSerializer(
-        read_only=True,
-    )
+    recurring_coaching = serializers.SerializerMethodField()
+
+    def get_recurring_coaching(self, obj):
+        if obj.recurring_coaching is None:
+            return None
+        rc = obj.recurring_coaching
+        rc.sessions_count = getattr(obj, "_recurring_sessions_count", None)
+        return RecurringCoachingSerializer(rc).data
 
     class Meta:
         model = CoachingClass

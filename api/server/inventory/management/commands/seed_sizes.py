@@ -67,7 +67,7 @@ class Command(BaseCommand):
 
         for item in self.SIZES:
             try:
-                size_system = SizeSystem.objects.get(name=item["size_system"])
+                size_system = SizeSystem.all_objects.get(name=item["size_system"])
             except SizeSystem.DoesNotExist:
                 self.stdout.write(
                     self.style.ERROR(f"Missing SizeSystem: {item['size_system']}")
@@ -75,7 +75,7 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            obj, was_created = Size.objects.update_or_create(
+            obj, was_created = Size.all_objects.update_or_create(
                 name=item["name"],
                 size_system=size_system,
                 defaults={
@@ -84,7 +84,12 @@ class Command(BaseCommand):
                 },
             )
 
-            if was_created:
+            if obj.is_deleted:
+                skipped += 1
+                self.stdout.write(
+                    f"Skipped (deleted): {obj.name} ({size_system.name})"
+                )
+            elif was_created:
                 created += 1
                 self.stdout.write(
                     self.style.SUCCESS(f"Created: {obj.name} ({size_system.name})")

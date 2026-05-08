@@ -53,14 +53,14 @@ class UpdateSizeSystemSerializer(serializers.Serializer):
         return value.strip()
 
 
-class SizeSerializer(serializers.ModelSerializer):
+class SizeSystemSizeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Size
         fields = ["id", "name", "sort_order", "is_active"]
 
 
 class SizeSystemSerializer(serializers.ModelSerializer):
-    sizes = SizeSerializer(many=True, read_only=True)
+    sizes = SizeSystemSizeSerializer(many=True, read_only=True)
 
     class Meta:
         model = SizeSystem

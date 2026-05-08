@@ -63,6 +63,7 @@ class Event(BaseModel):
         choices=EventVisibilityState.choices,
         default=EventVisibilityState.DRAFT,
     )
+    cover_photo_hash = models.CharField(max_length=64, blank=True, default="")
     contact_info = models.TextField(blank=True)
     publication_scheduled_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
@@ -120,6 +121,7 @@ class EventFile(BaseModel):
     )
     file = models.FileField(upload_to=event_file_path)
     file_name = models.CharField(max_length=255, blank=True)
+    content_hash = models.CharField(max_length=64, blank=True, default="")
 
     def __str__(self):
         return self.file_name or f"File #{self.pk}"

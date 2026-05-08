@@ -75,6 +75,12 @@ urlpatterns = [
         views.CoachingCancelView.as_view(),
         name="coaching-cancel",
     ),
+    # --- Recurring series ---
+    path(
+        "recurring/<int:recurring_id>/cancel/",
+        views.RecurringSeriesCancelView.as_view(),
+        name="recurring-series-cancel",
+    ),
     # --- Coaching CRUD ---
     path(
         "<int:pk>/",

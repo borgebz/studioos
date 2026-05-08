@@ -9,9 +9,7 @@ http:
   body:
     type: json
     data: |-
-      {
-        "refresh": "{{refresh_token}}"
-      }
+      {}
   auth: inherit
 
 settings:

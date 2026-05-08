@@ -71,7 +71,7 @@ class CreateUserSerializer(serializers.Serializer):
     phone_country_code = serializers.CharField(max_length=5, required=False, default="")
 
     def validate_email(self, value):
-        if User.all_objects.filter(email=value).exists():
+        if User.all_objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError("EmailAlreadyExists")
         return value.lower()
 

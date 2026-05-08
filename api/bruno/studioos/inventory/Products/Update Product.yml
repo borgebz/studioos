@@ -5,7 +5,7 @@ info:
 
 http:
   method: PUT
-  url: http://127.0.0.1:8000/inventory/products/1/
+  url: "{{base_url}}/inventory/products/1/"
   body:
     type: json
     data: |-
@@ -17,9 +17,7 @@ http:
         "owner_type": "member",
         "status": "active"
       }
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjMyNjU2LCJpYXQiOjE3NzY2MzE3NTYsImp0aSI6ImUxM2Y2NDVmOGY1YjRiMjM4YjQwZjUzZWY1YTA1NjU5IiwidXNlcl9pZCI6IjEifQ.Btm4xx56FsCsxgMFlVqVd53sGmRzUR8OMKDUUOuWgTY
+  auth: inherit
 
 settings:
   encodeUrl: true

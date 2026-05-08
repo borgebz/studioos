@@ -17,7 +17,12 @@ VALID_STATUS = {choice.value for choice in VariantBooking.Status}
 def _get_variant(*, variant_id, user):
     try:
         variant = ProductVariant.objects.exclude(
-            status=ProductVariant.Status.INACTIVE
+            status__in=[
+                ProductVariant.Status.INACTIVE,
+                ProductVariant.Status.SOLD,
+                ProductVariant.Status.DONATED,
+                ProductVariant.Status.ARCHIVED,
+            ]
         ).get(id=variant_id)
     except ProductVariant.DoesNotExist:
         raise AppNotFound("VariantNotFound")
@@ -60,11 +65,6 @@ def _check_overlap(*, variant, start_at, end_at, exclude_id=None):
         raise ValidationError({"messages": ["BookingOverlap"]})
 
 
-def _booking_has_pending_dependencies(*, booking):
-    """Reserved for payments / linked entities. When True, blocks soft-delete."""
-    return False
-
-
 @transaction.atomic
 def create_booking(*, variant_id, user, **data):
     from django.core.exceptions import ValidationError as DjangoValidationError
@@ -85,6 +85,8 @@ def create_booking(*, variant_id, user, **data):
     end_at = data.get("end_at")
 
     _validate_dates(start_at=start_at, end_at=end_at)
+    # Lock the variant row to serialise concurrent overlap checks (race condition guard).
+    ProductVariant.objects.select_for_update().get(id=variant.id)
     _check_overlap(variant=variant, start_at=start_at, end_at=end_at)
 
     booking = VariantBooking(
@@ -115,12 +117,15 @@ def create_booking(*, variant_id, user, **data):
     return booking
 
 
-def list_bookings(*, variant_id, user, filters=None):
+def list_bookings(*, variant_id, user, filters=None, include_cancelled=False):
     variant = _get_variant(variant_id=variant_id, user=user)
 
-    queryset = variant.bookings.exclude(
-        status=VariantBooking.Status.CANCELLED
-    ).order_by("start_at")
+    queryset = variant.bookings.all()
+
+    if not include_cancelled:
+        queryset = queryset.exclude(status=VariantBooking.Status.CANCELLED)
+
+    queryset = queryset.order_by("start_at")
 
     if filters:
         if filters.get("status"):
@@ -168,6 +173,8 @@ def update_booking(*, booking_id, user, **data):
     end_at = data.get("end_at", booking.end_at)
 
     _validate_dates(start_at=start_at, end_at=end_at)
+    # Lock the variant row to serialise concurrent overlap checks (race condition guard).
+    ProductVariant.objects.select_for_update().get(id=booking.variant_id)
     _check_overlap(
         variant=booking.variant,
         start_at=start_at,
@@ -204,13 +211,6 @@ def delete_booking(*, booking_id, user):
 
     if booking.deleted_at:
         return booking
-
-    if _booking_has_pending_dependencies(booking=booking):
-        logger.warning(
-            "Booking delete blocked: booking %s has pending dependencies",
-            booking_id,
-        )
-        raise ValidationError({"messages": ["BookingHasCriticalDependencies"]})
 
     booking.delete(deleted_by=user)
     logger.info("VariantBooking soft-deleted: %s by user %s", booking_id, user.pk)

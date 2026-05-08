@@ -1,15 +1,10 @@
 import logging
 
 from celery import shared_task
+from django.conf import settings
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
-
-# Reminder windows in hours after coaching end_datetime.
-_REMINDER_WINDOWS = [
-    (24, False),  # first reminder at 24h — (hours_since_end, is_final_reminder)
-    (42, True),  # final reminder at 42h
-]
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -286,6 +281,82 @@ def notify_new_coaching_request(self, coaching_id):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_coordination_coaching_created(self, coaching_id):
+    """
+    Notify the teacher and all participants that a coordination coaching was created.
+    For recurring series, only the anchor coaching triggers this task — the notification
+    mentions the total session count so recipients aren't spammed per session.
+    """
+    try:
+        from coachings.models import CoachingClass, CoachingParticipantStatus, CoachingStatus
+        from coachings.emails import send_coordination_coaching_created_notification
+
+        _NOTIFY_STATUSES = {
+            CoachingParticipantStatus.ACTIVE,
+            CoachingParticipantStatus.INVITED,
+        }
+
+        try:
+            coaching = (
+                CoachingClass.objects.select_related(
+                    "teacher", "modality", "studio", "recurring_coaching"
+                )
+                .prefetch_related("participants__student")
+                .get(pk=coaching_id)
+            )
+        except CoachingClass.DoesNotExist:
+            logger.warning(
+                "notify_coordination_coaching_created: coaching %s not found.",
+                coaching_id,
+            )
+            return
+
+        is_scheduled = coaching.status == CoachingStatus.SCHEDULED
+        is_recurring = coaching.recurring_coaching_id is not None
+        total_sessions = 1
+        if is_recurring:
+            total_sessions = CoachingClass.objects.filter(
+                recurring_coaching_id=coaching.recurring_coaching_id,
+            ).count()
+
+        recipients = set()
+        for p in coaching.participants.all():
+            if p.status in _NOTIFY_STATUSES:
+                recipients.add(p.student)
+
+        for recipient in recipients:
+            send_coordination_coaching_created_notification(
+                coaching=coaching,
+                recipient=recipient,
+                is_scheduled=is_scheduled,
+                is_recurring=is_recurring,
+                total_sessions=total_sessions,
+            )
+
+        send_coordination_coaching_created_notification(
+            coaching=coaching,
+            recipient=coaching.teacher,
+            is_scheduled=is_scheduled,
+            is_recurring=is_recurring,
+            total_sessions=total_sessions,
+        )
+
+        logger.info(
+            "notify_coordination_coaching_created: notified %d recipient(s) + teacher for coaching %s.",
+            len(recipients),
+            coaching_id,
+        )
+    except Exception as exc:
+        logger.error(
+            "notify_coordination_coaching_created failed for coaching %s: %s",
+            coaching_id,
+            exc,
+            exc_info=True,
+        )
+        raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_waiting_confirmation_reminders(self):
     """
     Runs every hour. For each coaching in WAITING_CONFIRMATION, sends reminders
@@ -320,7 +391,7 @@ def send_waiting_confirmation_reminders(self):
 
             in_window = False
             is_final = False
-            for target_hours, _is_final in _REMINDER_WINDOWS:
+            for target_hours, _is_final in settings.COACHING_REMINDER_WINDOWS:
                 if target_hours <= hours_since_end < target_hours + 1:
                     in_window = True
                     is_final = _is_final
@@ -344,9 +415,9 @@ def send_waiting_confirmation_reminders(self):
                     is_final,
                 )
 
-            # Notify each ACTIVE participant who has not yet confirmed attendance.
+            # Notify each PENDING_COMPLETION participant who has not yet confirmed attendance.
             for participant in coaching.participants.all():
-                if participant.status == CoachingParticipantStatus.ACTIVE:
+                if participant.status == CoachingParticipantStatus.PENDING_COMPLETION:
                     send_attendance_confirmation_reminder(
                         coaching=coaching,
                         recipient=participant.student,

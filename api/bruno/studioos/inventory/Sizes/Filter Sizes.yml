@@ -5,14 +5,12 @@ info:
 
 http:
   method: GET
-  url: http://127.0.0.1:8000/inventory/sizes/?size_system_id=2
+  url: "{{base_url}}/inventory/sizes/?size_system_id=2"
   params:
     - name: size_system_id
       value: "2"
       type: query
-  auth:
-    type: bearer
-    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzc2NjIxNDk5LCJpYXQiOjE3NzY2MjA1OTksImp0aSI6ImFkZWI0ODk1MTMzNzQ1ZDg5MzVjYjA0OThlODlkYmEwIiwidXNlcl9pZCI6IjEifQ.mIvlSejI4ASQCS1iap-Dbk8expb2Lkw6co9gPHUxhfw
+  auth: inherit
 
 settings:
   encodeUrl: true

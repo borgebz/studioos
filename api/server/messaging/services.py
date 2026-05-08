@@ -11,7 +11,19 @@ logger = logging.getLogger(__name__)
 
 
 def get_or_create_direct_conversation(*, user_a, user_b, created_by=None):
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+
     with transaction.atomic():
+        # Lock the two user rows to serialise concurrent conversation creation
+        # for the same pair, preventing duplicate conversations.
+        list(
+            User.objects.select_for_update()
+            .filter(pk__in=[user_a.id, user_b.id])
+            .order_by("pk")
+        )
+
         existing = (
             Conversation.objects.filter(conversation_participants__user=user_a)
             .filter(conversation_participants__user=user_b)
@@ -92,8 +104,11 @@ def mark_read(*, conversation_id, user):
         .exclude(read_by=user)
         .exclude(sender=user)
     )
-    for msg in unread:
-        msg.read_by.add(user)
+    through_model = Message.read_by.through
+    through_objects = [
+        through_model(message_id=msg.id, user_id=user.id) for msg in unread
+    ]
+    through_model.objects.bulk_create(through_objects, ignore_conflicts=True)
 
 
 def get_user_for_conversation(*, user_id):

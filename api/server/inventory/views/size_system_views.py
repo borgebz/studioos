@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema
 
 from core.permissions import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
+from core.utils import optional_bool as _optional_bool
 
 from inventory.services import size_system_services as services
 from inventory.serializers.size_system_serializers import (
@@ -41,7 +42,16 @@ class SizeSystemView(APIView):
     )
     @require_perm("inventory.view_sizesystem")
     def get(self, request):
-        size_systems = services.list_size_systems()
+        raw_active = request.query_params.get("is_active")
+        is_active = _optional_bool(raw_active)
+
+        # Default to active-only for users without management permission
+        if is_active is None and not request.user.has_perm(
+            "inventory.change_sizesystem"
+        ):
+            is_active = True
+
+        size_systems = services.list_size_systems(is_active=is_active)
 
         return Response(SizeSystemSerializer(size_systems, many=True).data)
 

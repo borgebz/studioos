@@ -136,8 +136,8 @@ class ListingCreateSerializer(serializers.Serializer):
     listing_type = serializers.ChoiceField(choices=Listing.ListingType.choices)
     title = serializers.CharField(max_length=255)
     description = serializers.CharField(required=False, allow_blank=True, default="")
-    asking_price = serializers.CharField(
-        required=False, allow_null=True, allow_blank=True
+    asking_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
     )
     is_public = serializers.BooleanField(required=False, default=False)
     # Nested product creation — used when variant_id is not provided
@@ -150,8 +150,8 @@ class ListingUpdateSerializer(serializers.Serializer):
     )
     title = serializers.CharField(max_length=255, required=False)
     description = serializers.CharField(required=False, allow_blank=True)
-    asking_price = serializers.CharField(
-        required=False, allow_null=True, allow_blank=True
+    asking_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
     )
     is_public = serializers.BooleanField(required=False)
     # Allow editing underlying product/variant fields inline

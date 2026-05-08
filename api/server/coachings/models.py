@@ -161,15 +161,13 @@ class CoachingClass(BaseModel):
         related_name="coaching_classes",
     )
 
-    recurring_coaching = models.OneToOneField(
+    recurring_coaching = models.ForeignKey(
         "coachings.RecurringCoaching",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name="anchored_coaching_class",
-        help_text=(
-            "When set, this session anchors a recurrence pattern (same row implies recurring)."
-        ),
+        related_name="sessions",
+        help_text="Links this session to a recurrence series.",
     )
 
     class Meta:
@@ -290,4 +288,8 @@ class RecurringCoaching(BaseModel):
         if self.end_date and self.occurrences_count:
             raise DjangoValidationError(
                 {"occurrences_count": ["RecurringEndDateAndOccurrencesExclusive"]}
+            )
+        if not self.end_date and not self.occurrences_count:
+            raise DjangoValidationError(
+                {"occurrences_count": ["RecurringEndConditionRequired"]}
             )

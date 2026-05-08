@@ -19,9 +19,36 @@ from events.models import (
     NotificationDelivery,
     NotificationTarget,
 )
-from utils.files import django_field_file_sha256, file_content_hash
+from utils.files import file_content_hash
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Visibility state machine
+# ---------------------------------------------------------------------------
+
+_VALID_VISIBILITY_TRANSITIONS = {
+    EventVisibilityState.DRAFT: [
+        EventVisibilityState.PUBLISHED,
+        EventVisibilityState.SCHEDULED,
+        EventVisibilityState.ARCHIVED,
+    ],
+    EventVisibilityState.SCHEDULED: [
+        EventVisibilityState.PUBLISHED,
+        EventVisibilityState.DRAFT,
+        EventVisibilityState.ARCHIVED,
+    ],
+    EventVisibilityState.PUBLISHED: [
+        EventVisibilityState.ARCHIVED,
+    ],
+    EventVisibilityState.ARCHIVED: [],
+}
+
+
+def _validate_visibility_transition(event, target_state):
+    allowed = _VALID_VISIBILITY_TRANSITIONS.get(event.visibility_state, [])
+    if target_state not in allowed:
+        raise ValidationError({"messages": ["InvalidVisibilityTransition"]})
 
 
 # ---------------------------------------------------------------------------
@@ -114,6 +141,10 @@ def create_event(*, created_by=None, **data):
 
     event_state = EventState.PLANNED if event_date else EventState.DATE_TBD
 
+    cover_photo = data.get("cover_photo")
+    if cover_photo:
+        data["cover_photo_hash"] = file_content_hash(cover_photo)
+
     event = Event(
         visibility_state=EventVisibilityState.DRAFT,
         event_state=event_state,
@@ -128,16 +159,21 @@ def create_event(*, created_by=None, **data):
 
 def list_events(*, user):
     if user.is_authenticated and user.has_perm("events.can_view_unpublished_event"):
-        return Event.objects.all()
+        return Event.objects.prefetch_related("class_targets").all()
 
-    return Event.objects.filter(visibility_state=EventVisibilityState.PUBLISHED)
+    return Event.objects.prefetch_related("class_targets").filter(
+        visibility_state=EventVisibilityState.PUBLISHED
+    )
 
 
 def update_event(*, event, updated_by=None, **data):
     new_cover = data.get("cover_photo")
-    if new_cover is not None and event.cover_photo:
-        if file_content_hash(new_cover) == django_field_file_sha256(event.cover_photo):
+    if new_cover is not None:
+        new_cover_hash = file_content_hash(new_cover)
+        if event.cover_photo and new_cover_hash == event.cover_photo_hash:
             data = {k: v for k, v in data.items() if k != "cover_photo"}
+        else:
+            data["cover_photo_hash"] = new_cover_hash
 
     terminal_states = frozenset(
         {
@@ -172,6 +208,7 @@ def publish_event(
     updated_by=None,
     notification=NotificationDelivery.NONE,
 ):
+    _validate_visibility_transition(event, EventVisibilityState.PUBLISHED)
     _validate_event_class_targets_for_publish(event=event)
 
     # Cancel any pending scheduled publication Beat entry.
@@ -205,6 +242,7 @@ def schedule_event_publication(
     updated_by=None,
     notification=NotificationDelivery.NONE,
 ):
+    _validate_visibility_transition(event, EventVisibilityState.SCHEDULED)
     _validate_event_class_targets_for_publish(event=event)
 
     if publication_scheduled_at <= timezone.now():
@@ -230,6 +268,7 @@ def schedule_event_publication(
 
 
 def archive_event(*, event, updated_by=None):
+    _validate_visibility_transition(event, EventVisibilityState.ARCHIVED)
     _cancel_beat_publication(task_name=_beat_task_name_for_event(event.pk))
     event.visibility_state = EventVisibilityState.ARCHIVED
     event.updated_by = updated_by
@@ -275,7 +314,10 @@ def create_interest(*, event, user):
     )
 
     interest.full_clean()
-    interest.save()
+    try:
+        interest.save()
+    except IntegrityError:
+        raise ValidationError({"messages": ["InterestAlreadyExists"]})
     return interest
 
 
@@ -459,11 +501,16 @@ def list_event_files(*, event, user):
 
 
 def create_event_file(*, event, file, file_name=None, created_by=None):
+    content_hash = file_content_hash(file)
+    if EventFile.objects.filter(event=event, content_hash=content_hash).exists():
+        raise ValidationError({"messages": ["DuplicateEventFile"]})
+
     name = (file_name or getattr(file, "name", "") or "")[:255]
     ef = EventFile(
         event=event,
         file=file,
         file_name=name,
+        content_hash=content_hash,
         created_by=created_by,
     )
     ef.full_clean()

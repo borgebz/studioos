@@ -7,6 +7,10 @@ from core.emails import send_templated_email
 logger = logging.getLogger(__name__)
 
 _SUBJECTS = {
+    "coaching_coordination_created": {
+        "pt": "Nova Aula Agendada — StudioOS",
+        "en": "New Class Scheduled — StudioOS",
+    },
     "coaching_approved": {
         "pt": "Aula Confirmada — StudioOS",
         "en": "Class Confirmed — StudioOS",
@@ -209,4 +213,32 @@ def send_attendance_confirmation_reminder(
         coaching.pk,
         recipient.pk,
         is_final_reminder,
+    )
+
+
+def send_coordination_coaching_created_notification(
+    *, coaching, recipient, is_scheduled, is_recurring=False, total_sessions=1
+):
+    """Notify teacher or participant that coordination created a coaching."""
+    lang = _language(recipient)
+    context = {
+        **_coaching_context(coaching),
+        "recipient": recipient,
+        "is_scheduled": is_scheduled,
+        "is_recurring": is_recurring,
+        "total_sessions": total_sessions,
+    }
+    send_templated_email(
+        to=recipient.email,
+        subject=_subject("coaching_coordination_created", lang),
+        template_name="coaching_coordination_created",
+        context=context,
+        language=lang,
+    )
+    logger.info(
+        "Coordination coaching created notification sent: coaching=%s recipient=%s scheduled=%s recurring=%s",
+        coaching.pk,
+        recipient.pk,
+        is_scheduled,
+        is_recurring,
     )

@@ -21,6 +21,7 @@ from enrollments.models import (
     PeriodType,
 )
 from modality.models import Modality
+from utils.files import file_content_hash
 
 import logging
 
@@ -62,6 +63,7 @@ def update_period(*, period, updated_by=None, **data):
 def open_period(*, period, updated_by=None):
     period.is_open = True
     period.updated_by = updated_by
+    period.full_clean()
     period.save()
     return period
 
@@ -69,6 +71,7 @@ def open_period(*, period, updated_by=None):
 def close_period(*, period, updated_by=None):
     period.is_open = False
     period.updated_by = updated_by
+    period.full_clean()
     period.save()
     return period
 
@@ -104,7 +107,7 @@ def _get_open_period(*, enrollment_type):
         period_type__in=matching_period_types,
         start_date__lte=today,
         end_date__gte=today,
-    ).first()
+    ).order_by("-start_date").first()
 
     if not period:
         raise ValidationError({"messages": ["NoOpenEnrollmentPeriod"]})
@@ -230,11 +233,17 @@ def submit_enrollment(
     # --- Files ---
     if files:
         for f in files:
+            content_hash = file_content_hash(f["file"])
+            if EnrollmentFile.objects.filter(
+                enrollment=enrollment, content_hash=content_hash
+            ).exists():
+                raise ValidationError({"messages": ["DuplicateEnrollmentFile"]})
             EnrollmentFile.objects.create(
                 enrollment=enrollment,
                 file=f["file"],
                 original_filename=f["original_filename"],
                 mime_type=f.get("mime_type", ""),
+                content_hash=content_hash,
                 created_by=created_by,
             )
 
@@ -283,9 +292,11 @@ def get_enrollment(*, pk):
 # ---------------------------------------------------------------------------
 
 
+@transaction.atomic
 def update_enrollment(*, enrollment, updated_by=None, **data):
-    if enrollment.status == EnrollmentStatus.APPROVED:
-        raise ValidationError({"messages": ["CannotUpdateApprovedEnrollment"]})
+    enrollment = Enrollment.objects.select_for_update().get(pk=enrollment.pk)
+    if enrollment.status not in (EnrollmentStatus.SUBMITTED, EnrollmentStatus.UNDER_REVIEW):
+        raise ValidationError({"messages": ["EnrollmentNotEditable"]})
     for field, value in data.items():
         setattr(enrollment, field, value)
     enrollment.updated_by = updated_by
@@ -509,19 +520,6 @@ def create_payment(*, enrollment, created_by=None, **data):
     """Direction creates a payment record for an enrollment."""
     payment = EnrollmentPayment(enrollment=enrollment, created_by=created_by, **data)
     payment.full_clean()
-    payment.save()
-    return payment
-
-
-@transaction.atomic
-def confirm_payment(*, payment, confirmed_by=None):
-    """Direction confirms a payment was received."""
-    payment = EnrollmentPayment.objects.select_for_update().get(pk=payment.pk)
-    if payment.status == PaymentStatus.CONFIRMED:
-        raise ValidationError({"messages": ["PaymentAlreadyConfirmed"]})
-    payment.status = PaymentStatus.CONFIRMED
-    payment.confirmed_by = confirmed_by
-    payment.updated_by = confirmed_by
     payment.save()
     return payment
 

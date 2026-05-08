@@ -55,6 +55,7 @@ class MyTransactionsView(APIView):
             **DEFAULT_ERROR_RESPONSES,
         }
     )
+    @require_perm("marketplace.view_own_transactions")
     def get(self, request):
         txns = services.list_my_transactions(user=request.user)
         return paginated_response(
@@ -65,13 +66,21 @@ class MyTransactionsView(APIView):
 
 
 class TransactionDetailView(APIView):
+    """Own-transaction detail — user must be requester or owner."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
         responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
     )
+    @require_perm("marketplace.view_own_transactions")
     def get(self, request, transaction_id):
-        txn = services.get_transaction(transaction_id=transaction_id)
+        from django.db.models import Q
+
+        txn = services.get_transaction(
+            transaction_id=transaction_id,
+            qs_filter=Q(requester=request.user) | Q(owner=request.user),
+        )
         return Response(TransactionDetailSerializer(txn).data)
 
 
@@ -83,6 +92,45 @@ class TransactionCancelView(APIView):
     )
     def post(self, request, transaction_id):
         txn = services.cancel_transaction(
+            transaction_id=transaction_id, user=request.user
+        )
+        return Response(TransactionDetailSerializer(txn).data)
+
+
+class TransactionAcceptView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
+    )
+    def post(self, request, transaction_id):
+        txn = services.accept_transaction(
+            transaction_id=transaction_id, user=request.user
+        )
+        return Response(TransactionDetailSerializer(txn).data)
+
+
+class TransactionRejectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
+    )
+    def post(self, request, transaction_id):
+        txn = services.reject_transaction(
+            transaction_id=transaction_id, user=request.user
+        )
+        return Response(TransactionDetailSerializer(txn).data)
+
+
+class TransactionCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
+    )
+    def post(self, request, transaction_id):
+        txn = services.complete_transaction(
             transaction_id=transaction_id, user=request.user
         )
         return Response(TransactionDetailSerializer(txn).data)
@@ -118,12 +166,14 @@ class SchoolTransactionListView(APIView):
 
 
 class SchoolTransactionDetailView(APIView):
+    """Admin/school detail — can view any transaction."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
         responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
     )
-    @require_perm("marketplace.manage_school_listings")
+    @require_perm("marketplace.view_all_transactions")
     def get(self, request, transaction_id):
         txn = services.get_transaction(transaction_id=transaction_id)
         return Response(TransactionDetailSerializer(txn).data)
@@ -135,6 +185,7 @@ class SchoolTransactionAcceptView(APIView):
     @extend_schema(
         responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
     )
+    @require_perm("marketplace.manage_school_listings")
     def post(self, request, transaction_id):
         txn = services.accept_transaction(
             transaction_id=transaction_id, user=request.user
@@ -148,6 +199,7 @@ class SchoolTransactionRejectView(APIView):
     @extend_schema(
         responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
     )
+    @require_perm("marketplace.manage_school_listings")
     def post(self, request, transaction_id):
         txn = services.reject_transaction(
             transaction_id=transaction_id, user=request.user
@@ -161,6 +213,7 @@ class SchoolTransactionCompleteView(APIView):
     @extend_schema(
         responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
     )
+    @require_perm("marketplace.manage_school_listings")
     def post(self, request, transaction_id):
         txn = services.complete_transaction(
             transaction_id=transaction_id, user=request.user
@@ -174,6 +227,7 @@ class SchoolTransactionBlockView(APIView):
     @extend_schema(
         responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
     )
+    @require_perm("marketplace.manage_school_listings")
     def post(self, request, transaction_id):
         txn = services.block_transaction(
             transaction_id=transaction_id, user=request.user
@@ -187,6 +241,7 @@ class SchoolTransactionUnblockView(APIView):
     @extend_schema(
         responses={200: TransactionDetailSerializer, **DEFAULT_ERROR_RESPONSES}
     )
+    @require_perm("marketplace.manage_school_listings")
     def post(self, request, transaction_id):
         txn = services.unblock_transaction(
             transaction_id=transaction_id, user=request.user

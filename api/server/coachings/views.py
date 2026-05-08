@@ -1,3 +1,4 @@
+from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -20,6 +21,7 @@ from coachings.serializers import (
     CoachingRejectSerializer,
     CoachingRequestSerializer,
     CoachingUpdateSerializer,
+    RecurringSeriesCancelSerializer,
     TeacherAvailabilityQuerySerializer,
     TeacherAvailabilitySerializer,
     TeacherAvailabilitySubmitSerializer,
@@ -27,6 +29,7 @@ from coachings.serializers import (
     TeacherConfirmCoachingSerializer,
 )
 from core.decorators import require_any_perm, require_perm
+from core.pagination import paginated_response
 from core.schemas import DEFAULT_ERROR_RESPONSES
 
 
@@ -132,7 +135,11 @@ class CoachingCollectionView(APIView):
         q = CoachingListQuerySerializer(data=request.query_params)
         q.is_valid(raise_exception=True)
         coachings = services.list_coachings(**q.validated_data)
-        return Response(CoachingClassSerializer(coachings, many=True).data)
+        return paginated_response(
+            request=request,
+            items=coachings,
+            serializer_class=CoachingClassSerializer,
+        )
 
     @extend_schema(
         request=DirectCoordinationCoachingCreateSerializer,
@@ -192,6 +199,10 @@ class CoachingDetailView(APIView):
     @extend_schema(
         request=CoachingUpdateSerializer,
         responses={200: CoachingClassSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_any_perm(
+        "coachings.change_coachingclass",
+        "coachings.view_coachingclass",
     )
     def patch(self, request, pk):
         coaching = services.get_coaching(pk=pk)
@@ -263,39 +274,52 @@ class CoachingRejectView(APIView):
         "coachings.can_reject_coaching_as_teacher",
     )
     def post(self, request, pk):
-        coaching = services.get_coaching(pk=pk)
         serializer = CoachingRejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         reason = serializer.validated_data.get("rejection_reason", "")
 
-        if coaching.status == CoachingStatus.REQUESTED:
-            if coaching.teacher_id == request.user.id and request.user.has_perm(
-                "coachings.can_reject_coaching_as_teacher"
-            ):
-                coaching = services.teacher_reject_coaching(
-                    coaching=coaching,
-                    user=request.user,
-                    rejection_reason=reason,
+        with transaction.atomic():
+            from coachings.models import CoachingClass
+            from core.exceptions import AppNotFound
+
+            try:
+                coaching = (
+                    CoachingClass.objects.select_for_update(of=("self",))
+                    .select_related("teacher", "modality", "studio", "requested_by")
+                    .get(pk=pk)
                 )
-            elif request.user.has_perm("coachings.change_coachingclass"):
+            except CoachingClass.DoesNotExist:
+                raise AppNotFound("CoachingNotFound")
+
+            if coaching.status == CoachingStatus.REQUESTED:
+                if coaching.teacher_id == request.user.id and request.user.has_perm(
+                    "coachings.can_reject_coaching_as_teacher"
+                ):
+                    coaching = services.teacher_reject_coaching(
+                        coaching=coaching,
+                        user=request.user,
+                        rejection_reason=reason,
+                    )
+                elif request.user.has_perm("coachings.change_coachingclass"):
+                    coaching = services.reject_coaching_coordination(
+                        coaching=coaching,
+                        user=request.user,
+                        rejection_reason=reason,
+                    )
+                else:
+                    raise PermissionDenied()
+            elif coaching.status == CoachingStatus.PENDING_APPROVAL:
+                if not request.user.has_perm("coachings.change_coachingclass"):
+                    raise PermissionDenied()
                 coaching = services.reject_coaching_coordination(
                     coaching=coaching,
                     user=request.user,
                     rejection_reason=reason,
                 )
             else:
-                raise PermissionDenied()
-        elif coaching.status == CoachingStatus.PENDING_APPROVAL:
-            if not request.user.has_perm("coachings.change_coachingclass"):
-                raise PermissionDenied()
-            coaching = services.reject_coaching_coordination(
-                coaching=coaching,
-                user=request.user,
-                rejection_reason=reason,
-            )
-        else:
-            raise ValidationError({"messages": ["InvalidStatusTransition"]})
+                raise ValidationError({"messages": ["InvalidStatusTransition"]})
 
+        coaching = services.get_coaching(pk=pk)
         return Response(CoachingClassSerializer(coaching).data)
 
 
@@ -354,7 +378,7 @@ class CoachingCancelView(APIView):
 
 
 class ParticipantAcceptInviteView(APIView):
-    """POST — invited student confirms attendance (staff invite → active; legacy invite → pending)."""
+    """POST — invited student confirms attendance (staff invite → active; non-staff invite → pending)."""
 
     permission_classes = [IsAuthenticated]
 
@@ -466,8 +490,31 @@ class ParticipantCancelView(APIView):
             participant_pk=pk,
             requesting_user=request.user,
             cancellation_reason=serializer.validated_data.get(
-                "cancellation_reason", "CancelledByAdministrator"
+                "cancellation_reason", ""
             ),
             may_cancel_on_behalf_of_others=can_manage,
         )
         return Response(CoachingParticipantSerializer(participant).data)
+
+
+class RecurringSeriesCancelView(APIView):
+    """POST — cancel all (future) sessions in a recurring series."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=RecurringSeriesCancelSerializer,
+        responses={200: CoachingClassSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("coachings.change_coachingclass")
+    def post(self, request, recurring_id):
+        serializer = RecurringSeriesCancelSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cancelled_ids = services.cancel_recurring_series(
+            recurring_coaching_id=recurring_id,
+            user=request.user,
+            cancellation_reason=serializer.validated_data.get("cancellation_reason", ""),
+            cancel_past=serializer.validated_data.get("cancel_past", False),
+        )
+        coachings = services.list_coachings(recurring_coaching_id=recurring_id)
+        return Response(CoachingClassSerializer(coachings, many=True).data)

@@ -48,14 +48,19 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         for role_data in ROLES:
             group, _ = Group.objects.get_or_create(name=role_data["name"])
-            _, created = Role.objects.get_or_create(
+            obj, created = Role.all_objects.get_or_create(
                 code=role_data["code"],
                 defaults={
                     "group": group,
                     "description": role_data["description"],
                 },
             )
-            status = "created" if created else "exists"
+            if obj.is_deleted:
+                status = "skipped (deleted)"
+            elif created:
+                status = "created"
+            else:
+                status = "exists"
             self.stdout.write(f"  {role_data['code']}: {status}")
 
         self.stdout.write(self.style.SUCCESS("Seed complete."))

@@ -2,6 +2,8 @@ from django.urls import path
 
 from modality import views
 
+app_name = "modality"
+
 urlpatterns = [
     path("", views.ModalityListCreateView.as_view(), name="modality-list-create"),
     path(

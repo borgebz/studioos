@@ -1,13 +1,14 @@
 import logging
 
 from django.db import transaction
-from django.db.models import Prefetch, Q
-from rest_framework.exceptions import NotFound, ValidationError
+from django.db.models import Prefetch
+from rest_framework.exceptions import ValidationError
+
+from core.exceptions import AppNotFound
 
 from inventory.models import (
     SizeSystem,
     Size,
-    CategorySizeSystem,
     ProductVariant,
 )
 
@@ -21,14 +22,20 @@ def get_size_system(*, pk):
         # (activate/deactivate/update/delete) can target inactive records.
         return SizeSystem.objects.get(pk=pk)
     except SizeSystem.DoesNotExist:
-        raise NotFound()
+        raise AppNotFound("SizeSystemNotFound")
 
 
 # LIST
-def list_size_systems():
+def list_size_systems(*, is_active=None):
+    qs = SizeSystem.objects.all()
+
+    if is_active is not None:
+        qs = qs.filter(is_active=is_active)
+    else:
+        qs = qs.filter(is_active=True)
+
     return (
-        SizeSystem.objects.filter(is_active=True)
-        .prefetch_related(
+        qs.prefetch_related(
             Prefetch(
                 "sizes",
                 queryset=Size.objects.filter(is_active=True).order_by(
@@ -58,7 +65,7 @@ def create_size_system(*, name, is_active=True, sizes=None, created_by=None):
 
     if sizes:
         size_names = set()
-        for s in sizes:
+        for idx, s in enumerate(sizes, start=1):
             s_name = s["name"].strip().lower()
             if s_name in size_names:
                 raise ValidationError({"messages": ["DuplicateSizeInSystem"]})
@@ -66,7 +73,7 @@ def create_size_system(*, name, is_active=True, sizes=None, created_by=None):
 
             size_obj = Size(
                 name=s["name"].strip(),
-                sort_order=s.get("sort_order", 0),
+                sort_order=s.get("sort_order", idx),
                 size_system=size_system,
                 created_by=created_by,
             )
@@ -97,15 +104,10 @@ def update_size_system(*, size_system, name=None, updated_by=None):
 
 # DELETE (Soft + regras)
 def delete_size_system(*, size_system, deleted_by=None):
-    has_variants = ProductVariant.objects.filter(
-        Q(product__category__size_systems__size_system=size_system)
-        | Q(size__size_system=size_system)
+    in_use = ProductVariant.objects.filter(
+        size__size_system=size_system,
     ).exists()
-
-    has_categories = CategorySizeSystem.objects.filter(size_system=size_system).exists()
-    has_sizes = Size.objects.filter(size_system=size_system).exists()
-
-    if has_variants or has_categories or has_sizes:
+    if in_use:
         logger.warning(
             "SizeSystem delete blocked: system %s still referenced",
             size_system.pk,
