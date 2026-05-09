@@ -5,7 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-cormorant: 'Cormorant Garamond', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-cormorant:
+    'Cormorant Garamond', ui-serif, Georgia, 'Times New Roman', serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -137,17 +138,54 @@
   }
 }
 
+/* Landing page typography — condensed pairing */
+.landing-display {
+  font-family: 'Archivo Narrow', 'Helvetica Neue', sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+}
+.landing-body {
+  font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+}
+.landing-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.landing-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Marquee animation */
+@keyframes landing-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.landing-marquee-track {
+  display: inline-flex;
+  gap: 64px;
+  animation: landing-marquee 40s linear infinite;
+}
+
 /* Paper grain texture — reusable */
 .grain {
   position: relative;
   isolation: isolate;
 }
 .grain::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
-  background-image: radial-gradient(var(--grain-dot, rgba(0, 0, 0, 0.035)) 1px, transparent 1px);
+  background-image: radial-gradient(
+    var(--grain-dot, rgba(0, 0, 0, 0.055)) 1px,
+    transparent 1px
+  );
   background-size: 4px 4px;
   pointer-events: none;
 }

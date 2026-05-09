@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowRight, Clock, MapPin, User, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -253,15 +254,7 @@ function ResourceColumn({
   )
 }
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-const MONTH_LABELS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
-const MONTH_SHORT = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-]
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const
 const INITIAL_RANGE = 30
 const EXPAND_BY = 30
 const DAY_ITEM_WIDTH = 52
@@ -333,8 +326,9 @@ function DayRoulette({
 
   const [rangeBefore, setRangeBefore] = useState(INITIAL_RANGE)
   const [rangeAfter, setRangeAfter] = useState(INITIAL_RANGE)
+  const { t } = useTranslation()
   const [visibleMonth, setVisibleMonth] = useState(
-    () => `${MONTH_LABELS[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`
+    () => `${t(`scheduleCalendar.months.${selectedDate.getMonth()}`)} ${selectedDate.getFullYear()}`
   )
   const startSentinelRef = useRef<HTMLDivElement>(null)
   const endSentinelRef = useRef<HTMLDivElement>(null)
@@ -416,7 +410,7 @@ function DayRoulette({
         const clampedIdx = Math.max(0, Math.min(idx, days.length - 1))
         const centeredDay = days[clampedIdx]
         if (centeredDay) {
-          const label = `${MONTH_LABELS[centeredDay.getMonth()]} ${centeredDay.getFullYear()}`
+          const label = `${t(`scheduleCalendar.months.${centeredDay.getMonth()}`)} ${centeredDay.getFullYear()}`
           setVisibleMonth((prev) => (prev === label ? prev : label))
         }
       })
@@ -442,7 +436,7 @@ function DayRoulette({
             {visibleMonth}
           </span>
           <span className="text-xs text-muted-foreground">
-            {selectedDate.getDate()} {MONTH_SHORT[selectedDate.getMonth()]} selected
+            {selectedDate.getDate()} {t(`scheduleCalendar.monthsShort.${selectedDate.getMonth()}`)} {t('scheduleCalendar.selected')}
           </span>
         </div>
         {!isSelectedToday && (
@@ -452,7 +446,7 @@ function DayRoulette({
             onClick={handleTodayClick}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            Today
+            {t('scheduleCalendar.today')}
             <ArrowRight className="h-3 w-3 text-muted-foreground" />
           </button>
         )}
@@ -502,7 +496,7 @@ function DayRoulette({
                       : 'text-muted-foreground'
                 )}
               >
-                {isFirstOfMonth ? MONTH_SHORT[day.getMonth()] : DAY_LABELS[day.getDay()]}
+                {isFirstOfMonth ? t(`scheduleCalendar.monthsShort.${day.getMonth()}`) : t(`scheduleCalendar.daysShort.${DAY_KEYS[day.getDay()]}`)}
               </span>
               <span className="text-lg font-medium leading-none">
                 {day.getDate()}
@@ -593,6 +587,7 @@ function EventDrawer({
   dayStartHour: number
   resource?: CalendarResource
 }) {
+  const { t } = useTranslation()
   if (!event) return null
 
   return (
@@ -606,13 +601,13 @@ function EventDrawer({
             {event.subtitle}
           </div>
           <SheetTitle className="text-xl">{event.title}</SheetTitle>
-          <SheetDescription className="sr-only">Event details</SheetDescription>
+          <SheetDescription className="sr-only">{t('scheduleCalendar.eventDetails')}</SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-4 py-4">
           <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Clock className="h-3 w-3" /> Time
+              <Clock className="h-3 w-3" /> {t('scheduleCalendar.time')}
             </span>
             <span className="text-sm">
               {formatTime(event.start, dayStartHour)} –{' '}
@@ -628,7 +623,7 @@ function EventDrawer({
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3" /> Studio
+                  <MapPin className="h-3 w-3" /> {t('scheduleCalendar.studio')}
                 </span>
                 <span className="text-sm">
                   {resource.name}
@@ -647,7 +642,7 @@ function EventDrawer({
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <User className="h-3 w-3" /> Teacher
+                  <User className="h-3 w-3" /> {t('scheduleCalendar.teacher')}
                 </span>
                 <span className="text-sm">{event.teacher}</span>
               </div>
@@ -659,7 +654,7 @@ function EventDrawer({
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  <Users className="h-3 w-3" /> Enrolled
+                  <Users className="h-3 w-3" /> {t('scheduleCalendar.enrolled')}
                 </span>
                 <span className="text-sm">
                   {event.enrolled}
@@ -677,7 +672,7 @@ function EventDrawer({
 
           <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Category
+              {t('scheduleCalendar.category')}
             </span>
             <Badge
               variant="outline"
@@ -694,9 +689,9 @@ function EventDrawer({
 
         <div className="mt-auto flex gap-2 border-t border-border pt-4">
           <Button variant="outline" className="flex-1" onClick={onClose}>
-            Close
+            {t('scheduleCalendar.close')}
           </Button>
-          <Button className="flex-1">Edit</Button>
+          <Button className="flex-1">{t('scheduleCalendar.edit')}</Button>
         </div>
       </SheetContent>
     </Sheet>
@@ -717,6 +712,7 @@ export function ScheduleCalendar({
   onDateChange,
   onEventClick,
 }: ScheduleCalendarProps) {
+  const { t } = useTranslation()
   const [activeCategories, setActiveCategories] = useState<Set<string>>(
     () => new Set(categories.map((c) => c.id))
   )
@@ -817,7 +813,7 @@ export function ScheduleCalendar({
                 style={{ width: GUTTER_WIDTH }}
               >
                 <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  Time
+                  {t('scheduleCalendar.time')}
                 </span>
               </div>
               {resources.map((resource, idx) => (
@@ -839,7 +835,7 @@ export function ScheduleCalendar({
                   )}
                   {resource.capacity != null && (
                     <div className="text-[10px] text-muted-foreground">
-                      Max cap. {resource.capacity}
+                      {t('scheduleCalendar.maxCap', { capacity: resource.capacity })}
                     </div>
                   )}
                 </div>

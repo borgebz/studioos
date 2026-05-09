@@ -200,9 +200,10 @@ Content:      Stacked card sections, each with a heading + description + control
 - Labels: `text-sm font-medium text-foreground`.
 - Helper text: `text-sm text-muted-foreground` below the input.
 - Error text: `text-sm text-destructive` below the input, replacing helper text.
-- Required fields: no asterisk — instead, mark optional fields with "(optional)".
+- Required fields: mark with a red asterisk (`<span className="text-destructive">*</span>`) next to the label. Do not add "(optional)" labels — if a field has no asterisk, it's understood to be optional.
 - Input groups: wrap related inputs in a card section with a section heading.
 - Use `React Hook Form` + `Zod` for all form validation.
+- **Controller wrapping:** shadcn components like `Select`, `Checkbox`, `DatePicker`, and `RadioGroup` don't use native form elements, so they must be wrapped with `Controller` from react-hook-form. Use `field.value` and `field.onChange` to wire them up. Native `Input` and `Textarea` can use `register()` directly.
 
 ### Tables
 
@@ -308,7 +309,7 @@ Content:      Stacked card sections, each with a heading + description + control
 
 ### Font
 
-Use the system font stack (default Tailwind `font-sans`). No custom fonts.
+Use the system font stack (default Tailwind `font-sans`) for all UI text. The exception is **brand identity elements** — the "StudioOS" wordmark and editorial headings (hero titles on public pages) use `Georgia, 'Times New Roman', serif` in italic. This is a deliberate brand choice, not a custom font import.
 
 ---
 
@@ -347,6 +348,7 @@ The app uses a subtle dot grain texture on the main content area (not the sideba
 - **Grain is behind content:** Uses `isolation: isolate` on the parent and `z-index: -1` on the `::before` pseudo-element. The `Input` and `Textarea` components use `bg-background dark:bg-input/30` — opaque white in light mode (covers grain dots) and the original shadcn semi-transparent tint in dark mode (grain dots are subtle enough not to matter). No per-instance overrides needed.
 - **Dark mode grain:** Uses `--grain-dot: rgba(255, 255, 255, 0.04)` for light-colored dots on dark backgrounds.
 - **Do not add grain to the sidebar** — only the content area.
+- **Transparency over grain:** Never use transparent/alpha backgrounds (e.g., `bg-primary/5`) directly on cards or elevated elements over grain — the dots bleed through. Use solid backgrounds (`bg-card`, `bg-background`) instead. If you need a tinted surface over grain, layer it: set `bg-background` on the element (solid, blocks grain) and add a `::before` pseudo-element with the tint (`before:absolute before:inset-0 before:bg-primary/5`). Make sure inner content has `relative` to sit above the pseudo-element.
 
 ---
 
@@ -365,6 +367,10 @@ Some elements are part of the brand identity and must remain in English regardle
 - The login page chip text: `"ADMIT ONE · STAGE DOOR"`
 - The login page footer tagline: `"— a small school for the moving body —"`
 - The brand name: `"StudioOS"`
+
+### Design System Pages (exempt from i18n)
+
+Design system showcase pages (`src/app/pages/design-system/`) are **dev-facing only** and do not require full i18n coverage. Hardcoded demo strings (placeholder text, sample labels, toast messages) are acceptable here — focus translation effort on real app pages and shared components.
 
 ---
 
@@ -397,6 +403,39 @@ useEffect(() => {
 - **Consolidate related fetches** into a single `useEffect` with `Promise.all` — never split independent mount-time fetches into multiple effects.
 - **Graceful permission errors:** Use `.catch(() => null)` for API calls that may fail due to role permissions (e.g., a student account can't list modalities). The page should render with partial data rather than breaking.
 - **Types from the API client:** Import types from `@/api/studioos-api` (e.g., `Modality`, `Studio`, `TeacherSummary`, `UserResponse`). Do not duplicate API types locally.
+
+### API Client Generation (Swagger)
+
+The TypeScript API client is **auto-generated** from the Django API's OpenAPI schema. Never edit `src/api/studioos-api.ts` manually.
+
+**Prerequisites:** The API server must be running locally at `http://127.0.0.1:8000` (via Docker Compose in the `studioos-product.api` repo).
+
+**Command:**
+
+```bash
+npm run generate-client
+```
+
+This runs: `swagger-typescript-api generate --path http://127.0.0.1:8000/api/schema/ --output ./src/api --name studioos-api.ts`
+
+**When to regenerate:**
+
+- After adding or modifying `@extend_schema` decorators in the API views.
+- After adding new endpoints or changing serializers.
+- After fixing incorrect/missing OpenAPI documentation.
+
+**Common issues:**
+
+- **Methods return `void`:** The API view is missing `@extend_schema(responses={...})`. Add the decorator with the correct serializer in the API repo, then regenerate.
+- **Method names change:** All generated methods are prefixed with `api` (e.g., `apiCoachingsList`, `apiModalitiesList`). If the API path or operation ID changes, method names change too — update all frontend call sites.
+- **Paginated responses typed as arrays:** If a view uses `paginated_response()` but `@extend_schema` declares `Serializer(many=True)`, the generated type says `T[]` but the runtime returns `{count, next, previous, results: T[]}`. The frontend must handle both shapes: `const items = Array.isArray(data) ? data : data?.results ?? []`.
+
+**Workflow for adding/fixing API documentation:**
+
+1. Edit the view in `studioos-product.api/server/<app>/views.py` — add/fix `@extend_schema` decorators.
+2. Verify the schema: `curl http://127.0.0.1:8000/api/schema/` and check the relevant path.
+3. Regenerate: `npm run generate-client` (from the `client/` directory).
+4. Update frontend call sites if method signatures changed.
 
 ### Mock Data (Temporary)
 
@@ -532,9 +571,70 @@ The login page has its own visual identity, separate from the main app, with a w
 - Avatar displays the user's photo when available, falling back to initials from their name.
 - Do not use mock/hardcoded user data in the sidebar.
 
+#### Sidebar Footer (User Profile)
+
+The sidebar footer uses a card-like trigger that opens a dropdown menu:
+
+- **Trigger:** A `button` styled as a subtle card (`rounded-lg border border-border/50 bg-card`) containing avatar + name + email + `ChevronsUpDown` icon. Highlights on hover with `hover:bg-accent`.
+- **Collapsed state:** When the sidebar is collapsed to icons, only the avatar is shown — text and chevron are hidden via `group-data-[collapsible=icon]:hidden`.
+- **Dropdown contents:** Theme switcher (sub-menu), language switcher (sub-menu), separator, logout (destructive). No duplicated user info in the dropdown — it's already visible in the trigger.
+- **Dropdown width:** `w-48`, aligned to start, opens upward (`side="top"`).
+
 ---
 
-## 15. Scrolling & Overflow
+## 15. Public Pages
+
+Public pages (login, enrollment) are standalone — no sidebar, no auth guard. They have their own layout and manage theme/language toggles independently.
+
+### Routing
+
+- Public pages are registered as `isPublicPage` or `isAuthPage` in `App.tsx` and render `<AppRoutes />` directly, bypassing the sidebar shell and auth check.
+- They do not use `useAuth()`. API calls that may fail without auth use `.catch(() => null)` for graceful degradation.
+
+### Layout Structure
+
+Public pages use a full-width `<main>` with grain, structured as sibling children — not nested inside a constrained container:
+
+```
+<main className="grain min-h-svh bg-background text-foreground">
+  {/* Top bar — full-width, sticky */}
+  <div className="sticky top-0 z-10 border-b border-border bg-background">
+    <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
+      {/* Logo + contact info + theme/lang toggles */}
+    </div>
+  </div>
+
+  {/* Content — constrained */}
+  <div className="mx-auto max-w-4xl px-6 py-10">
+    {/* Hero, form cards, etc. */}
+    <form id="page-form" ...>...</form>
+  </div>
+
+  {/* Sticky footer — full-width */}
+  <div className="sticky bottom-0 z-10 border-t border-border bg-background">
+    <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-2.5">
+      {/* Cancel + Submit (form="page-form") */}
+    </div>
+  </div>
+
+  {/* Copyright — full-width */}
+  <div className="border-t border-border px-6 py-3 text-center text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
+    © 2026 StudioOS · Braga
+  </div>
+</main>
+```
+
+### Key Patterns
+
+- **Top bar branding:** Logo icon (`/logo-dancer.svg`) + italic Georgia "StudioOS" wordmark in `text-primary`, matching the login page style.
+- **Theme/language toggles:** Small ghost icon buttons in the top bar, managed locally (not via sidebar).
+- **Sticky footer outside form:** When the submit button lives in a full-width sticky bar outside the `<form>`, use `id` on the form and `form="page-form"` on the submit button to link them.
+- **Hero headings:** Use Georgia serif with `clamp()` font sizes for responsive scaling (e.g., `clamp(42px, 5.5vw, 64px)`).
+- **Full-screen loading:** Use `<FullPageLoader />` as a sibling of the content during submission.
+
+---
+
+## 16. Scrolling & Overflow
 
 ### Page Scrolling
 
@@ -551,7 +651,7 @@ The login page has its own visual identity, separate from the main app, with a w
 
 ---
 
-## 16. Card Layout Patterns
+## 17. Card Layout Patterns
 
 ### Toolbar + Content Split
 
@@ -560,7 +660,7 @@ The login page has its own visual identity, separate from the main app, with a w
 
 ---
 
-## 17. API-First Data Fetching
+## 18. API-First Data Fetching
 
 - **Always prefer real API requests** over mock data. Use `apiClient.api.*` methods for all data fetching.
 - Mock data in `src/mocks/` is only acceptable as a temporary stopgap when the API endpoint genuinely does not exist yet. Delete the mock file as soon as the real endpoint is available.
@@ -568,7 +668,7 @@ The login page has its own visual identity, separate from the main app, with a w
 
 ---
 
-## 18. Accessibility
+## 19. Accessibility
 
 - All interactive elements must be keyboard navigable.
 - Focus rings use `ring` color variable — visible in both themes.

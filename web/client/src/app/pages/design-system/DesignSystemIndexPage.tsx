@@ -11,13 +11,19 @@ import {
   Circle,
   CircleAlert,
   CircleUser,
+  ClipboardList,
+  ExternalLink,
+  Globe,
+  GraduationCap,
   Layers,
   Loader,
+  LogIn,
   Menu,
   MessageCircle,
   Minus,
   MousePointerClick,
   PanelRight,
+  Plus,
   Rows3,
   ShieldAlert,
   Sparkles,
@@ -168,6 +174,45 @@ const components = [
   },
 ] as const
 
+const pages = [
+  {
+    to: paths.landing,
+    label: 'Landing Page',
+    description: 'Public landing page with school info and StudioOS features.',
+    icon: Globe,
+  },
+  {
+    to: `${paths.login}?preview`,
+    label: 'Login',
+    description: 'Authentication page with editorial branding.',
+    icon: LogIn,
+  },
+  {
+    to: paths.enrollment,
+    label: 'Enrollment',
+    description: 'Public sign-up form for students and guardians.',
+    icon: GraduationCap,
+  },
+  {
+    to: paths.coachingsCreate,
+    label: 'Create Coaching',
+    description: 'Multi-section form to schedule a coaching session.',
+    icon: Plus,
+  },
+  {
+    to: paths.calendar,
+    label: 'Calendar',
+    description: 'Weekly schedule calendar view.',
+    icon: CalendarDays,
+  },
+  {
+    to: paths.home,
+    label: 'Home',
+    description: 'Dashboard home page.',
+    icon: ClipboardList,
+  },
+] as const
+
 export function DesignSystemIndexPage() {
   const { t } = useTranslation()
 
@@ -181,6 +226,31 @@ export function DesignSystemIndexPage() {
           {t('designSystem.subtitle')}
         </p>
       </header>
+
+      <section>
+        <h2 className="text-lg font-semibold text-foreground mb-4">
+          Pages
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {pages.map(({ to, label, description, icon: Icon }) => (
+            <Link key={to} to={to}>
+              <div className="rounded-lg border border-border bg-card p-6 transition-colors hover:bg-accent/50">
+                <div className="flex items-start justify-between">
+                  <Icon className="mb-3 size-8 text-muted-foreground" />
+                  <ExternalLink className="size-4 text-muted-foreground/50" />
+                </div>
+                <h3 className="font-semibold text-foreground">{label}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {description}
+                </p>
+                <span className="mt-2 inline-block text-sm text-primary hover:underline">
+                  View page →
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section>
         <h2 className="text-lg font-semibold text-foreground mb-4">

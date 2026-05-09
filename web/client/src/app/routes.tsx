@@ -27,16 +27,26 @@ import { LogoLoaderPage } from '@/app/pages/design-system/LogoLoaderPage'
 import { ScheduleCalendarPage } from '@/app/pages/design-system/ScheduleCalendarPage'
 import { ToastPage } from '@/app/pages/design-system/ToastPage'
 import { HomePage } from '@/app/pages/HomePage'
+import { LandingPage } from '@/app/pages/LandingPage'
 import { CalendarPage } from '@/app/pages/calendar/CalendarPage'
 import { CreateCoachingPage } from '@/app/pages/coachings/CreateCoachingPage'
+import { EnrollmentPage } from '@/app/pages/enrollments/EnrollmentPage'
+import { CreateListingPage } from '@/app/pages/marketplace/CreateListingPage'
+import { InviteUsersPage } from '@/app/pages/invites/InviteUsersPage'
+import { OnboardingPage } from '@/app/pages/onboarding/OnboardingPage'
 
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path={paths.landing} element={<LandingPage />} />
       <Route path={paths.login} element={<LoginPage />} />
       <Route path={paths.home} element={<HomePage />} />
       <Route path={paths.calendar} element={<CalendarPage />} />
       <Route path={paths.coachingsCreate} element={<CreateCoachingPage />} />
+      <Route path={paths.enrollment} element={<EnrollmentPage />} />
+      <Route path={paths.marketplaceCreate} element={<CreateListingPage />} />
+      <Route path={paths.invites} element={<InviteUsersPage />} />
+      <Route path={paths.onboarding} element={<OnboardingPage />} />
       <Route
         path={paths.designSystem}
         element={

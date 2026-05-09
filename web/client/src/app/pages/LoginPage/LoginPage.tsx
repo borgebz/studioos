@@ -117,7 +117,9 @@ export function LoginPage() {
   const locationState = location.state as LoginLocationState | null
   const redirectTo = locationState?.from?.pathname ?? paths.home
 
-  if (isAuthenticated) {
+  const isPreview = new URLSearchParams(location.search).has('preview')
+
+  if (isAuthenticated && !isPreview) {
     return <Navigate to={redirectTo} replace />
   }
 
@@ -408,7 +410,7 @@ export function LoginPage() {
             >
               — a small school for the moving body —
             </span>
-            <span>{t('auth.login.support')}</span>
+            <span className="normal-case tracking-normal">{t('auth.login.support')}</span>
           </div>
         </div>
       </div>

@@ -173,16 +173,11 @@ export function CalendarPage() {
     if (!staticLoaded.current) {
       staticLoaded.current = true
       Promise.all([
-        apiClient.api.studiosList().catch(() => null),
-        apiClient.api.modalitiesList().catch(() => null),
+        apiClient.api.apiStudiosList().catch(() => null),
+        apiClient.api.apiModalitiesList().catch(() => null),
       ]).then(([studiosRes, modalitiesRes]) => {
-        const rawStudios = studiosRes?.data
-        const studiosList = Array.isArray(rawStudios) ? rawStudios : (rawStudios as { results?: Studio[] })?.results
-        if (studiosList) setStudios(studiosList)
-
-        const rawModalities = modalitiesRes?.data
-        const modalitiesList = Array.isArray(rawModalities) ? rawModalities : (rawModalities as { results?: Modality[] })?.results
-        if (modalitiesList) setModalities(modalitiesList)
+        if (studiosRes?.data) setStudios(studiosRes.data)
+        if (modalitiesRes?.data) setModalities(modalitiesRes.data)
       })
     }
   }, [])
@@ -191,16 +186,16 @@ export function CalendarPage() {
     let cancelled = false
 
     apiClient.api
-      .coachingsList({
+      .apiCoachingsList({
         date_from: weekStart.toISOString(),
         date_to: weekEnd.toISOString(),
         status: 'scheduled',
       })
       .then((res) => {
         if (cancelled) return
-        const raw = res?.data
-        const list = Array.isArray(raw) ? raw : (raw as { results?: CoachingClass[] })?.results
-        if (list) setCoachings(list)
+        const data = res?.data as any
+        const items = Array.isArray(data) ? data : data?.results ?? []
+        setCoachings(items)
       })
       .catch(() => null)
       .finally(() => {

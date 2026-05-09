@@ -12,9 +12,11 @@ function AppShell() {
   const location = useLocation()
   const { isAuthenticated, isLoading } = useAuth()
   const isAuthPage = location.pathname === paths.login
+  const isLandingPage = location.pathname === paths.landing
+  const isPublicPage = location.pathname === paths.enrollment || location.pathname.startsWith('/onboarding/')
   const isDesignSystem = location.pathname.startsWith(paths.designSystem)
 
-  if (isAuthPage) {
+  if (isAuthPage || isLandingPage || isPublicPage) {
     return <AppRoutes />
   }
 

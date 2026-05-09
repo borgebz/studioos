@@ -73,7 +73,7 @@ interface StudentOption {
 interface ClasseOption {
   id: number
   name: string
-  memberCount: number
+  members: StudentOption[]
 }
 
 const DAYS_OF_WEEK = [
@@ -113,7 +113,6 @@ export function CreateCoachingPage() {
   const [teachers, setTeachers] = useState<TeacherSummary[]>([])
   const [allStudents, setAllStudents] = useState<StudentOption[]>([])
   const [classes, setClasses] = useState<ClasseOption[]>([])
-  const [classeMembers, setClasseMembers] = useState<StudentOption[]>([])
 
   const [modalityId, setModalityId] = useState<string>('')
   const [teacherId, setTeacherId] = useState<string>('')
@@ -147,49 +146,39 @@ export function CreateCoachingPage() {
     dataLoaded.current = true
     const load = async () => {
       const [modalitiesRes, studiosRes, teachersRes, classesRes, usersRes] = await Promise.all([
-        apiClient.api.modalitiesList().catch(() => null),
-        apiClient.api.studiosList().catch(() => null),
-        apiClient.api.accountsTeachersList().catch(() => null),
-        apiClient.api.classesRetrieve().catch(() => null),
-        apiClient.api.accountsUsersList().catch(() => null),
+        apiClient.api.apiModalitiesList().catch(() => null),
+        apiClient.api.apiStudiosList().catch(() => null),
+        apiClient.api.apiAccountsTeachersList().catch(() => null),
+        apiClient.api.apiClassesList().catch(() => null),
+        apiClient.api.apiAccountsUsersList().catch(() => null),
       ])
       if (modalitiesRes?.data) setModalities(modalitiesRes.data)
       if (studiosRes?.data) setStudios(studiosRes.data)
       if (teachersRes?.data) setTeachers(teachersRes.data)
-      if (classesRes?.data && Array.isArray(classesRes.data)) {
+      if (classesRes?.data) {
         setClasses(
-          (classesRes.data as Array<{ id: number; name: string; members_count?: number }>).map(
-            (c) => ({ id: c.id, name: c.name, memberCount: c.members_count ?? 0 }),
-          ),
+          classesRes.data.map((c) => ({
+            id: c.id,
+            name: c.name,
+            members: c.members.map((m) => {
+              const name = [m.student.first_name, m.student.last_name].filter(Boolean).join(' ') || m.student.email
+              return { id: m.student.id, name, email: m.student.email }
+            }),
+          })),
         )
       }
       if (usersRes?.data) {
-        setAllStudents(usersRes.data.map(userToStudent))
+        setAllStudents(usersRes.data.results.map(userToStudent))
       }
     }
     void load()
   }, [])
 
-  const loadClasseMembers = useCallback(
-    async (id: number) => {
-      try {
-        const res = await apiClient.api.classesMembersRetrieve(id)
-        if (res.data && Array.isArray(res.data)) {
-          const members = (
-            res.data as Array<{ id: number; user_id?: number; first_name?: string; last_name?: string; email?: string }>
-          ).map((m) => {
-            const name =
-              [m.first_name, m.last_name].filter(Boolean).join(' ') || m.email || `User ${m.user_id ?? m.id}`
-            return { id: m.user_id ?? m.id, name, email: m.email ?? '' }
-          })
-          setClasseMembers(members)
-        }
-      } catch {
-        setClasseMembers([])
-      }
-    },
-    [],
-  )
+  const selectedClasseMembers = useMemo(() => {
+    if (!classeId) return []
+    const classe = classes.find((c) => c.id === Number(classeId))
+    return classe?.members ?? []
+  }, [classeId, classes])
 
   const filteredStudios = useMemo(() => {
     if (!modalityId) return studios
@@ -223,8 +212,8 @@ export function CreateCoachingPage() {
   }
 
   const loadClasseRoster = () => {
-    if (classeMembers.length > 0) {
-      addParticipants(classeMembers)
+    if (selectedClasseMembers.length > 0) {
+      addParticipants(selectedClasseMembers)
     }
   }
 
@@ -270,13 +259,13 @@ export function CreateCoachingPage() {
           : null,
       }
 
-      const res = await apiClient.api.coachingsCreate(payload)
+      const res = await apiClient.api.apiCoachingsCreate(payload)
       const coachingId = res.data.id
 
       if (participants.length > 0) {
         await Promise.all(
           participants.map((p) =>
-            apiClient.api.coachingsParticipantsCreate(coachingId, { student_id: p.id }),
+            apiClient.api.apiCoachingsParticipantsCreate(coachingId, { student_id: p.id }),
           ),
         )
       }
@@ -722,7 +711,6 @@ export function CreateCoachingPage() {
                       value={classeId}
                       onValueChange={(v) => {
                         setClasseId(v)
-                        void loadClasseMembers(Number(v))
                       }}
                     >
                       <SelectTrigger className="mt-1.5">
@@ -735,7 +723,7 @@ export function CreateCoachingPage() {
                           <SelectItem key={c.id} value={String(c.id)}>
                             {c.name}
                             <span className="ml-2 text-muted-foreground">
-                              ({c.memberCount})
+                              ({c.members.length})
                             </span>
                           </SelectItem>
                         ))}
@@ -746,7 +734,7 @@ export function CreateCoachingPage() {
                     variant="outline"
                     size="sm"
                     className="mt-6"
-                    disabled={!classeId || classeMembers.length === 0}
+                    disabled={!classeId || selectedClasseMembers.length === 0}
                     onClick={loadClasseRoster}
                   >
                     {t('coachings.loadRoster')}

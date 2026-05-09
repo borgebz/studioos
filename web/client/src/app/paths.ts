@@ -1,5 +1,6 @@
 export const paths = {
-  home: '/',
+  landing: '/',
+  home: '/home',
   login: '/login',
   designSystem: '/design-system',
   designSystemButtons: '/design-system/buttons',
@@ -28,4 +29,9 @@ export const paths = {
   calendar: '/calendar',
   coachings: '/coachings',
   coachingsCreate: '/coachings/create',
+  enrollment: '/enrollment',
+  marketplace: '/marketplace',
+  marketplaceCreate: '/marketplace/create',
+  invites: '/invites',
+  onboarding: '/onboarding/:token',
 } as const

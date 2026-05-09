@@ -1,13 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 
 export function ToastPage() {
+  const { t } = useTranslation()
+
   return (
     <div className="space-y-12">
       <header>
-        <h1 className="text-3xl font-bold text-foreground">Toast</h1>
+        <h1 className="text-3xl font-bold text-foreground">{t('designSystem.toast')}</h1>
         <p className="mt-1 text-muted-foreground">
-          Notifications via sonner. Success, error, warning, info, and custom.
+          {t('toasts.description')}
         </p>
       </header>
 
@@ -15,38 +18,38 @@ export function ToastPage() {
         {/* Variants */}
         <div className="space-y-4">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Variants
+            {t('toasts.variants')}
           </h2>
           <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
-              onClick={() => toast('Default toast', { description: 'This is a default notification.' })}
+              onClick={() => toast(t('toasts.defaultToast'), { description: t('toasts.defaultDesc') })}
             >
-              Default
+              {t('toasts.default')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.success('Success', { description: 'Operation completed successfully.' })}
+              onClick={() => toast.success(t('toasts.success'), { description: t('toasts.successDesc') })}
             >
-              Success
+              {t('toasts.success')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.error('Error', { description: 'Something went wrong. Please try again.' })}
+              onClick={() => toast.error(t('toasts.error'), { description: t('toasts.errorDesc') })}
             >
-              Error
+              {t('toasts.error')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.warning('Warning', { description: 'This action may have consequences.' })}
+              onClick={() => toast.warning(t('toasts.warning'), { description: t('toasts.warningDesc') })}
             >
-              Warning
+              {t('toasts.warning')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.info('Info', { description: 'Here is some useful information.' })}
+              onClick={() => toast.info(t('toasts.info'), { description: t('toasts.infoDesc') })}
             >
-              Info
+              {t('toasts.info')}
             </Button>
           </div>
         </div>
@@ -54,28 +57,28 @@ export function ToastPage() {
         {/* With action */}
         <div className="space-y-4">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            With Action
+            {t('toasts.withAction')}
           </h2>
           <Button
             variant="outline"
             onClick={() =>
-              toast('Session deleted', {
-                description: 'The coaching session has been removed.',
+              toast(t('toasts.sessionDeleted'), {
+                description: t('toasts.sessionDeletedDesc'),
                 action: {
-                  label: 'Undo',
-                  onClick: () => toast.success('Restored'),
+                  label: t('toasts.undo'),
+                  onClick: () => toast.success(t('toasts.restored')),
                 },
               })
             }
           >
-            With undo action
+            {t('toasts.withUndoAction')}
           </Button>
         </div>
 
         {/* Promise */}
         <div className="space-y-4">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Promise
+            {t('toasts.promise')}
           </h2>
           <Button
             variant="outline"
@@ -83,34 +86,34 @@ export function ToastPage() {
               toast.promise(
                 new Promise<string>((resolve) => setTimeout(() => resolve('Done'), 2000)),
                 {
-                  loading: 'Saving session...',
-                  success: 'Session saved',
-                  error: 'Failed to save',
+                  loading: t('toasts.savingSession'),
+                  success: t('toasts.sessionSaved'),
+                  error: t('toasts.failedToSave'),
                 },
               )
             }
           >
-            Async operation
+            {t('toasts.asyncOperation')}
           </Button>
         </div>
 
         {/* Duration */}
         <div className="space-y-4">
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Custom Duration
+            {t('toasts.customDuration')}
           </h2>
           <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
-              onClick={() => toast.info('Quick toast', { duration: 1500 })}
+              onClick={() => toast.info(t('toasts.quickToast'), { duration: 1500 })}
             >
-              Short (1.5s)
+              {t('toasts.short')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.info('Persistent toast', { duration: 10000 })}
+              onClick={() => toast.info(t('toasts.persistentToast'), { duration: 10000 })}
             >
-              Long (10s)
+              {t('toasts.long')}
             </Button>
           </div>
         </div>

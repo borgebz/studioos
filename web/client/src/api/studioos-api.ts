@@ -24,6 +24,47 @@ export enum VisibilityStateEnum {
 }
 
 /**
+ * * `rent` - Rent
+ * * `sell` - Sell
+ * * `lend` - Lend
+ * * `donate` - Donate
+ */
+export enum TransactionTypeEnum {
+  Rent = "rent",
+  Sell = "sell",
+  Lend = "lend",
+  Donate = "donate",
+}
+
+/**
+ * * `pending` - Pending
+ * * `accepted` - Accepted
+ * * `completed` - Completed
+ * * `rejected` - Rejected
+ * * `cancelled` - Cancelled
+ * * `blocked` - Blocked
+ */
+export enum TransactionDetailStatusEnum {
+  Pending = "pending",
+  Accepted = "accepted",
+  Completed = "completed",
+  Rejected = "rejected",
+  Cancelled = "cancelled",
+  Blocked = "blocked",
+}
+
+/**
+ * * `active` - Active
+ * * `inactive` - Inactive
+ * * `archived` - Archived
+ */
+export enum StatusDc4Enum {
+  Active = "active",
+  Inactive = "inactive",
+  Archived = "archived",
+}
+
+/**
  * * `pending` - Pending
  * * `exported` - Exported
  * * `cancelled` - Cancelled
@@ -56,6 +97,23 @@ export enum StatusA03Enum {
 }
 
 /**
+ * * `available` - Available
+ * * `maintenance` - Maintenance
+ * * `inactive` - Inactive
+ * * `sold` - Sold
+ * * `donated` - Donated
+ * * `archived` - Archived
+ */
+export enum Status7B2Enum {
+  Available = "available",
+  Maintenance = "maintenance",
+  Inactive = "inactive",
+  Sold = "sold",
+  Donated = "donated",
+  Archived = "archived",
+}
+
+/**
  * * `pending_review` - Pending review
  * * `approved` - Approved
  * * `waived` - Waived
@@ -67,12 +125,40 @@ export enum Status782Enum {
 }
 
 /**
+ * * `draft` - Draft
+ * * `active` - Active
+ * * `closed` - Closed
+ */
+export enum Status421Enum {
+  Draft = "draft",
+  Active = "active",
+  Closed = "closed",
+}
+
+/**
+ * * `pending` - Pending
+ * * `confirmed` - Confirmed
+ * * `completed` - Completed
+ * * `blocked` - Blocked
+ * * `cancelled` - Cancelled
+ */
+export enum Status32EEnum {
+  Pending = "pending",
+  Confirmed = "confirmed",
+  Completed = "completed",
+  Blocked = "blocked",
+  Cancelled = "cancelled",
+}
+
+/**
  * * `coaching` - Coaching
  * * `fine` - Fine
+ * * `marketplace` - Marketplace
  */
 export enum SourceTypeEnum {
   Coaching = "coaching",
   Fine = "fine",
+  Marketplace = "marketplace",
 }
 
 /**
@@ -118,6 +204,15 @@ export enum PaymentTypeEnum {
 }
 
 /**
+ * * `school` - School
+ * * `member` - Member
+ */
+export enum OwnerTypeEnum {
+  School = "school",
+  Member = "member",
+}
+
+/**
  * * `all` - All
  * * `classes` - Classes
  */
@@ -135,6 +230,19 @@ export enum NotificationEnum {
   None = "none",
   NotificationTest = "notification_test",
   Notification = "notification",
+}
+
+/**
+ * * `rent` - Rent
+ * * `sell` - Sell
+ * * `lend` - Lend
+ * * `donate` - Donate
+ */
+export enum ListingTypeEnum {
+  Rent = "rent",
+  Sell = "sell",
+  Lend = "lend",
+  Donate = "donate",
 }
 
 /**
@@ -202,6 +310,21 @@ export enum ConsentTypeEnum {
 }
 
 /**
+ * * `new` - New
+ * * `excellent` - Excellent
+ * * `good` - Good
+ * * `fair` - Fair
+ * * `damaged` - Damaged
+ */
+export enum ConditionEnum {
+  New = "new",
+  Excellent = "excellent",
+  Good = "good",
+  Fair = "fair",
+  Damaged = "damaged",
+}
+
+/**
  * * `requested` - Requested
  * * `pending_approval` - Pending Approval
  * * `scheduled` - Scheduled
@@ -220,6 +343,47 @@ export enum CoachingClassStatusEnum {
   Completed = "completed",
   Cancelled = "cancelled",
   Rejected = "rejected",
+}
+
+/**
+ * * `reservation` - Reservation
+ * * `loan` - Loan
+ * * `rent` - Rent
+ * * `sale` - Sale
+ * * `donation` - Donation
+ * * `school_use` - School Use
+ * * `maintenance` - Maintenance
+ * * `blocked` - Blocked
+ */
+export enum BookingTypeEnum {
+  Reservation = "reservation",
+  Loan = "loan",
+  Rent = "rent",
+  Sale = "sale",
+  Donation = "donation",
+  SchoolUse = "school_use",
+  Maintenance = "maintenance",
+  Blocked = "blocked",
+}
+
+/**
+ * * `purchased` - Purchased
+ * * `donated` - Donated
+ * * `school_owned` - School Owned
+ * * `other` - Other
+ */
+export enum AcquisitionTypeEnum {
+  Purchased = "purchased",
+  Donated = "donated",
+  SchoolOwned = "school_owned",
+  Other = "other",
+}
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 /** Input for account activation — uid + token + new password. */
@@ -301,6 +465,75 @@ export interface BulkInviteUsersWrapper {
   data: BulkInviteUsersListPayload;
 }
 
+export interface Category {
+  id: number;
+  /** @maxLength 255 */
+  name: string;
+  parent?: number | null;
+  size_systems: Record<string, any>[];
+  /**
+   * @min -2147483648
+   * @max 2147483647
+   */
+  sort_order?: number;
+  is_active?: boolean;
+  subcategories: Record<string, any>[];
+}
+
+export interface ClasseMemberSummaryStudent {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+export interface ClasseMemberSummary {
+  id: number;
+  student: ClasseMemberSummaryStudent;
+}
+
+export interface Classe {
+  id: number;
+  /** @maxLength 255 */
+  name: string;
+  description?: string;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+  members: ClasseMemberSummary[];
+}
+
+export interface ClasseDetail {
+  id: number;
+  /** @maxLength 255 */
+  name: string;
+  description?: string;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+  members: ClasseMember[];
+}
+
+export interface ClasseMember {
+  id: number;
+  student: UserResponse;
+  /** @format date-time */
+  created_at: string;
+}
+
+export interface ClasseMemberSubmit {
+  student_id: number;
+}
+
+export interface ClasseSubmit {
+  /** @maxLength 255 */
+  name: string;
+  /** @default "" */
+  description?: string;
+}
+
 export interface CoachingApprove {
   studio_id: number;
   /**
@@ -346,7 +579,7 @@ export interface CoachingClass {
   total_price?: string | null;
   requested_by: UserResponse;
   recurring_id: number | null;
-  recurring_coaching: RecurringCoaching;
+  recurring_coaching: string;
   classe_id: number | null;
   notes?: string;
   teacher_notes?: string;
@@ -428,6 +661,17 @@ export interface CoachingRequest {
   end_datetime: string;
   notes?: string;
   classe_id?: number | null;
+  /** Student user ID when a parent requests on behalf of their child. */
+  on_behalf_of?: number | null;
+}
+
+export interface Color {
+  id: number;
+  /** @maxLength 100 */
+  name: string;
+  /** @maxLength 7 */
+  hex_code: string;
+  is_active?: boolean;
 }
 
 /** Public onboarding completion after invite. */
@@ -462,9 +706,27 @@ export interface ConsentInput {
 export interface Conversation {
   id: number;
   participant_ids: number[];
+  coaching_id: number | null;
+  recurring_coaching_id: number | null;
   last_message: Message | null;
   /** @format date-time */
   updated_at: string;
+}
+
+export interface CreateCategory {
+  name: string;
+  parent_category_id?: number;
+  size_system_ids?: number[];
+  sort_order?: number;
+  is_active?: boolean;
+  subcategories?: any[];
+}
+
+export interface CreateColor {
+  name: string;
+  hex_code: string;
+  /** @default true */
+  is_active?: boolean;
 }
 
 export interface CreateConversation {
@@ -477,6 +739,18 @@ export interface CreateRole {
   /** @maxLength 150 */
   name: string;
   description: string;
+}
+
+export interface CreateSize {
+  name: string;
+  size_system_id: number;
+  is_active?: boolean;
+}
+
+export interface CreateSizeSystem {
+  name: string;
+  is_active?: boolean;
+  sizes?: SizeInput[];
 }
 
 /** Input serializer for creating a new user. */
@@ -522,10 +796,15 @@ export interface DirectCoordinationCoachingCreate {
   is_billable?: boolean;
   notes?: string;
   /**
-   * Roster fill: true = ACTIVE from enrollments; false = staff-invite (INVITED).
+   * true = coaching is created as SCHEDULED; false = goes through approval flow (REQUESTED).
    * @default true
    */
   schedule?: boolean;
+  /**
+   * true = participants added as ACTIVE; false = participants added as INVITED (must accept).
+   * @default true
+   */
+  auto_confirm_participants?: boolean;
   classe_id?: number | null;
   recurring_coaching?: RecurringCoachingSubmit | null;
 }
@@ -933,6 +1212,15 @@ export interface EventUpdate {
   class_target_classe_ids?: number[];
 }
 
+export interface FavoriteListingsList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: ListingList[];
+}
+
 export interface FineApprove {
   /**
    * If omitted/null, settings.COACHING_FINE_DEFAULT_AMOUNT is used.
@@ -1006,12 +1294,172 @@ export interface FineWaive {
   notes: string;
 }
 
+export interface InlineVariant {
+  size_id?: number | null;
+  sku?: string | null;
+  condition?: string;
+  acquisition_type?: string;
+  color_ids?: number[];
+  /** @default "" */
+  notes?: string;
+}
+
+export interface InventoryMemberProductList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: ProductDetail[];
+}
+
+export interface InventoryProductVariantList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: ProductVariantRead[];
+}
+
+export interface InventorySchoolProductList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: ProductDetail[];
+}
+
+export interface InventoryVariantBookingList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: VariantBooking[];
+}
+
 /** Single invite: email + role code (see ``accounts.Role`` / seed_roles). */
 export interface InviteSingle {
   /** @format email */
   email: string;
   /** @maxLength 50 */
   role: string;
+}
+
+export interface ListingComment {
+  id: number;
+  listing: number;
+  owner: number;
+  body: string;
+  parent_comment?: number | null;
+  replies: any[];
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+export interface ListingCommentCreate {
+  body: string;
+  parent_comment_id?: number | null;
+}
+
+export interface ListingCommentUpdate {
+  body: string;
+}
+
+export interface ListingCreate {
+  variant_id?: number | null;
+  /**
+   * * `rent` - Rent
+   * * `sell` - Sell
+   * * `lend` - Lend
+   * * `donate` - Donate
+   */
+  listing_type: ListingTypeEnum;
+  /** @maxLength 255 */
+  title: string;
+  /** @default "" */
+  description?: string;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
+  /** @default false */
+  is_public?: boolean;
+  product?: Record<string, any>;
+}
+
+export interface ListingDetail {
+  id: number;
+  /**
+   * * `rent` - Rent
+   * * `sell` - Sell
+   * * `lend` - Lend
+   * * `donate` - Donate
+   */
+  listing_type: ListingTypeEnum;
+  /**
+   * * `draft` - Draft
+   * * `active` - Active
+   * * `closed` - Closed
+   */
+  status?: Status421Enum;
+  /** @maxLength 255 */
+  title: string;
+  description?: string;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
+  is_public?: boolean;
+  product: string;
+  variant: string;
+  active_booking_windows: string;
+  owner_display: string;
+  is_favorited: string;
+  favorites_count: string;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+export interface ListingList {
+  id: number;
+  /**
+   * * `rent` - Rent
+   * * `sell` - Sell
+   * * `lend` - Lend
+   * * `donate` - Donate
+   */
+  listing_type: ListingTypeEnum;
+  /**
+   * * `draft` - Draft
+   * * `active` - Active
+   * * `closed` - Closed
+   */
+  status?: Status421Enum;
+  /** @maxLength 255 */
+  title: string;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
+  primary_media_url: string;
+  product_name: string;
+  product_category: string;
+  variant_condition: string;
+  variant_size: string;
+  variant_status: string;
+  available_from: string;
+  /** @format date-time */
+  created_at: string;
 }
 
 /** Input serializer for login. */
@@ -1023,6 +1471,15 @@ export interface Login {
 
 export interface LoginSuccess {
   detail: string;
+}
+
+export interface MarketplaceListingList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: ListingList[];
 }
 
 export interface Me {
@@ -1097,6 +1554,24 @@ export interface ModalitySummary {
   name: string;
 }
 
+export interface MyListingsList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: ListingList[];
+}
+
+export interface MyTransactionsList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: TransactionDetail[];
+}
+
 export interface OnboardingCompleteSuccess {
   detail: string;
 }
@@ -1111,8 +1586,19 @@ export interface OnboardingPreviewWrapper {
   data: OnboardingPreviewInner;
 }
 
+export interface ParticipantAcceptInvite {
+  /** Student user ID when a parent accepts on behalf of their child. */
+  on_behalf_of?: number | null;
+}
+
 export interface ParticipantCancel {
   cancellation_reason?: string;
+}
+
+export interface PatchedClasseUpdate {
+  /** @maxLength 255 */
+  name?: string;
+  description?: string;
 }
 
 export interface PatchedCoachingUpdate {
@@ -1211,6 +1697,27 @@ export interface PatchedEnrollmentUpdate {
   historical_notes?: string;
 }
 
+export interface PatchedListingUpdate {
+  /**
+   * * `rent` - Rent
+   * * `sell` - Sell
+   * * `lend` - Lend
+   * * `donate` - Donate
+   */
+  listing_type?: ListingTypeEnum;
+  /** @maxLength 255 */
+  title?: string;
+  description?: string;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
+  is_public?: boolean;
+  product?: Record<string, any>;
+  variant?: Record<string, any>;
+}
+
 export interface PatchedModalityUpdate {
   /** @maxLength 255 */
   name?: string;
@@ -1224,6 +1731,58 @@ export interface PatchedModalityUpdate {
   allowed_studio_ids?: number[];
 }
 
+export interface PatchedProductUpdate {
+  name?: string;
+  description?: string;
+  category_id?: number | null;
+  target_gender?: string | null;
+  brand?: string | null;
+  material?: string | null;
+  /**
+   * * `active` - Active
+   * * `inactive` - Inactive
+   * * `archived` - Archived
+   */
+  status?: StatusDc4Enum;
+  media?: ProductMediaInput[];
+}
+
+/** Write serializer used for POST/PATCH. */
+export interface PatchedProductVariantWrite {
+  /** @maxLength 100 */
+  sku?: string | null;
+  /**
+   * * `new` - New
+   * * `excellent` - Excellent
+   * * `good` - Good
+   * * `fair` - Fair
+   * * `damaged` - Damaged
+   */
+  condition?: ConditionEnum;
+  /**
+   * * `available` - Available
+   * * `maintenance` - Maintenance
+   * * `inactive` - Inactive
+   * * `sold` - Sold
+   * * `donated` - Donated
+   * * `archived` - Archived
+   */
+  status?: Status7B2Enum;
+  /**
+   * * `purchased` - Purchased
+   * * `donated` - Donated
+   * * `school_owned` - School Owned
+   * * `other` - Other
+   */
+  acquisition_type?: AcquisitionTypeEnum;
+  internal_notes?: string | null;
+  public_notes?: string | null;
+  size_id?: number | null;
+  color_ids?: number[];
+  media_ids?: number[];
+  media_upload?: string[];
+}
+
 export interface PatchedProfile {
   /** @maxLength 200 */
   display_name?: string;
@@ -1232,6 +1791,23 @@ export interface PatchedProfile {
   photo?: string | null;
   photo_url?: string | null;
   is_public?: boolean;
+}
+
+export interface PatchedSchoolProductUpdate {
+  name?: string;
+  description?: string;
+  category_id?: number | null;
+  target_gender?: string | null;
+  brand?: string | null;
+  material?: string | null;
+  /**
+   * * `active` - Active
+   * * `inactive` - Inactive
+   * * `archived` - Archived
+   */
+  status?: StatusDc4Enum;
+  media?: ProductMediaInput[];
+  school_details?: SchoolProductDetails;
 }
 
 export interface PatchedStudioUpdate {
@@ -1252,8 +1828,20 @@ export interface PatchedTeacherAvailabilityUpdate {
   notes?: string;
 }
 
+export interface PatchedUpdateCategory {
+  name?: string;
+  parent_category_id?: number | null;
+  size_system_ids?: number[] | null;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
 export interface PatchedUpdateRole {
   description?: string;
+}
+
+export interface PatchedUpdateSizeSystem {
+  name?: string;
 }
 
 /** Partial update of principal user fields (direction / ``accounts.change_user``). */
@@ -1279,6 +1867,40 @@ export interface PatchedUserCoreUpdate {
   postal_code?: string;
 }
 
+/** Create/update payload (variant comes from URL). */
+export interface PatchedVariantBookingWrite {
+  /**
+   * * `reservation` - Reservation
+   * * `loan` - Loan
+   * * `rent` - Rent
+   * * `sale` - Sale
+   * * `donation` - Donation
+   * * `school_use` - School Use
+   * * `maintenance` - Maintenance
+   * * `blocked` - Blocked
+   */
+  booking_type?: BookingTypeEnum;
+  /**
+   * * `pending` - Pending
+   * * `confirmed` - Confirmed
+   * * `completed` - Completed
+   * * `blocked` - Blocked
+   * * `cancelled` - Cancelled
+   */
+  status?: Status32EEnum;
+  /** @format date-time */
+  start_at?: string;
+  /** @format date-time */
+  end_at?: string;
+  /** @format date-time */
+  actual_start_at?: string | null;
+  /** @format date-time */
+  actual_end_at?: string | null;
+  /** @maxLength 255 */
+  title?: string;
+  notes?: string;
+}
+
 export interface Permission {
   id: number;
   /** @maxLength 100 */
@@ -1286,6 +1908,122 @@ export interface Permission {
   app_label: string;
   /** @maxLength 255 */
   name: string;
+}
+
+export interface ProductCreate {
+  name: string;
+  /** @default "" */
+  description?: string;
+  category_id?: number;
+  target_gender?: string | null;
+  brand?: string | null;
+  material?: string | null;
+  /** @default "active" */
+  status?: StatusDc4Enum;
+  media?: ProductMediaInput[];
+  variants?: InlineVariant[];
+}
+
+export interface ProductDetail {
+  id: number;
+  owner_type: OwnerTypeEnum;
+  owner?: number | null;
+  category?: number | null;
+  /** @maxLength 255 */
+  name: string;
+  description?: string;
+  /** @maxLength 50 */
+  target_gender?: string | null;
+  /** @maxLength 255 */
+  brand?: string | null;
+  /** @maxLength 255 */
+  material?: string | null;
+  status: StatusDc4Enum;
+  media: ProductMedia[];
+  school_details: SchoolProductDetails;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+export interface ProductMedia {
+  id: number;
+  /** @format uri */
+  image: string;
+  is_primary?: boolean;
+  /**
+   * @min -2147483648
+   * @max 2147483647
+   */
+  sort_order?: number;
+}
+
+export interface ProductMediaInput {
+  /** @format uri */
+  image?: string;
+  /** @default false */
+  is_primary?: boolean;
+  /** @default 0 */
+  sort_order?: number;
+}
+
+/** Read-only serializer used for GET responses. */
+export interface ProductVariantRead {
+  id: number;
+  /** @maxLength 100 */
+  sku?: string | null;
+  condition: ConditionEnum;
+  status: Status7B2Enum;
+  acquisition_type: AcquisitionTypeEnum;
+  /** @format date-time */
+  acquired_at?: string | null;
+  internal_notes?: string | null;
+  public_notes?: string | null;
+  size: VariantSize;
+  colors: Record<string, any>[];
+  media: Record<string, any>[];
+  availability: Record<string, any>;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+/** Write serializer used for POST/PATCH. */
+export interface ProductVariantWrite {
+  /** @maxLength 100 */
+  sku?: string | null;
+  /**
+   * * `new` - New
+   * * `excellent` - Excellent
+   * * `good` - Good
+   * * `fair` - Fair
+   * * `damaged` - Damaged
+   */
+  condition?: ConditionEnum;
+  /**
+   * * `available` - Available
+   * * `maintenance` - Maintenance
+   * * `inactive` - Inactive
+   * * `sold` - Sold
+   * * `donated` - Donated
+   * * `archived` - Archived
+   */
+  status?: Status7B2Enum;
+  /**
+   * * `purchased` - Purchased
+   * * `donated` - Donated
+   * * `school_owned` - School Owned
+   * * `other` - Other
+   */
+  acquisition_type?: AcquisitionTypeEnum;
+  internal_notes?: string | null;
+  public_notes?: string | null;
+  size_id?: number | null;
+  color_ids?: number[];
+  media_ids?: number[];
+  media_upload?: string[];
 }
 
 export interface Profile {
@@ -1296,36 +2034,6 @@ export interface Profile {
   photo?: string | null;
   photo_url: string | null;
   is_public?: boolean;
-}
-
-export interface RecurringCoaching {
-  id: number;
-  /**
-   * * `daily` - Daily
-   * * `weekly` - Weekly
-   * * `biweekly` - Biweekly
-   * * `monthly` - Monthly
-   */
-  recurrence_type: RecurrenceTypeEnum;
-  /**
-   * Repeat every N periods (e.g. 2 = every other week when type is weekly).
-   * @min 0
-   * @max 2147483647
-   */
-  recurrence_interval?: number;
-  /**
-   * For weekly patterns: comma-separated weekday codes, e.g. "MO,WE".
-   * @maxLength 20
-   */
-  days_of_week?: string;
-  /** @format date */
-  end_date?: string | null;
-  /**
-   * @min 0
-   * @max 2147483647
-   */
-  occurrences_count?: number | null;
-  notes?: string;
 }
 
 export interface RecurringCoachingSubmit {
@@ -1349,6 +2057,15 @@ export interface RecurringCoachingSubmit {
   occurrences_count?: number | null;
   /** @default "" */
   notes?: string;
+}
+
+export interface RecurringSeriesCancel {
+  cancellation_reason?: string;
+  /**
+   * If true, also cancels sessions that have already ended (still cancellable by status).
+   * @default false
+   */
+  cancel_past?: boolean;
 }
 
 export interface RefreshSuccess {
@@ -1376,6 +2093,48 @@ export interface RoleList {
   permission_count: number;
 }
 
+export interface SchoolListingList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: ListingList[];
+}
+
+export interface SchoolProductCreate {
+  name: string;
+  /** @default "" */
+  description?: string;
+  category_id?: number;
+  target_gender?: string | null;
+  brand?: string | null;
+  material?: string | null;
+  /** @default "active" */
+  status?: StatusDc4Enum;
+  media?: ProductMediaInput[];
+  variants?: InlineVariant[];
+  school_details?: SchoolProductDetails;
+}
+
+export interface SchoolProductDetails {
+  /** @default "" */
+  inventory_code?: string;
+  /** @default "" */
+  storage_location?: string;
+  /** @default "" */
+  notes?: string;
+}
+
+export interface SchoolTransactionList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: TransactionDetail[];
+}
+
 export interface SendMessage {
   /** @default "" */
   body?: string;
@@ -1392,6 +2151,44 @@ export interface SendMessage {
 
 export interface SetRolePermissions {
   permission_ids: number[];
+}
+
+export interface Size {
+  id: number;
+  /** @maxLength 50 */
+  name: string;
+  size_system: number;
+  /**
+   * @min -2147483648
+   * @max 2147483647
+   */
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface SizeInput {
+  name: string;
+  sort_order?: number;
+}
+
+export interface SizeSystem {
+  id: number;
+  /** @maxLength 255 */
+  name: string;
+  is_active?: boolean;
+  sizes: SizeSystemSize[];
+}
+
+export interface SizeSystemSize {
+  id: number;
+  /** @maxLength 50 */
+  name: string;
+  /**
+   * @min -2147483648
+   * @max 2147483647
+   */
+  sort_order?: number;
+  is_active?: boolean;
 }
 
 export interface Studio {
@@ -1459,6 +2256,57 @@ export interface TeacherSummary {
   phone_country_code?: string;
 }
 
+export interface TransactionDetail {
+  id: number;
+  listing_id: number | null;
+  variant_id: number;
+  /**
+   * * `rent` - Rent
+   * * `sell` - Sell
+   * * `lend` - Lend
+   * * `donate` - Donate
+   */
+  transaction_type: TransactionTypeEnum;
+  /**
+   * * `pending` - Pending
+   * * `accepted` - Accepted
+   * * `completed` - Completed
+   * * `rejected` - Rejected
+   * * `cancelled` - Cancelled
+   * * `blocked` - Blocked
+   */
+  status?: TransactionDetailStatusEnum;
+  requester_display: string;
+  owner_display: string;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  agreed_price?: string | null;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  notes?: string;
+  listing_title: string;
+  variant_sku: string;
+  product_name: string;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+export interface TransactionRequest {
+  listing_id: number;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  /** @default "" */
+  notes?: string;
+}
+
 export interface UserModality {
   id: number;
   modality: Modality;
@@ -1496,6 +2344,88 @@ export interface UserResponse {
 
 export interface UserResponseRoleOutput {
   code: string;
+  name: string;
+}
+
+export interface VariantBooking {
+  id: number;
+  variant: number;
+  /**
+   * * `reservation` - Reservation
+   * * `loan` - Loan
+   * * `rent` - Rent
+   * * `sale` - Sale
+   * * `donation` - Donation
+   * * `school_use` - School Use
+   * * `maintenance` - Maintenance
+   * * `blocked` - Blocked
+   */
+  booking_type: BookingTypeEnum;
+  /**
+   * * `pending` - Pending
+   * * `confirmed` - Confirmed
+   * * `completed` - Completed
+   * * `blocked` - Blocked
+   * * `cancelled` - Cancelled
+   */
+  status: Status32EEnum;
+  listing_id: number;
+  /** @format date-time */
+  start_at: string;
+  /** @format date-time */
+  end_at: string;
+  /** @format date-time */
+  actual_start_at?: string | null;
+  /** @format date-time */
+  actual_end_at?: string | null;
+  approved_by_user?: number | null;
+  /** @maxLength 255 */
+  title: string;
+  notes?: string;
+  created_by: number;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+/** Create/update payload (variant comes from URL). */
+export interface VariantBookingWrite {
+  /**
+   * * `reservation` - Reservation
+   * * `loan` - Loan
+   * * `rent` - Rent
+   * * `sale` - Sale
+   * * `donation` - Donation
+   * * `school_use` - School Use
+   * * `maintenance` - Maintenance
+   * * `blocked` - Blocked
+   */
+  booking_type: BookingTypeEnum;
+  /**
+   * * `pending` - Pending
+   * * `confirmed` - Confirmed
+   * * `completed` - Completed
+   * * `blocked` - Blocked
+   * * `cancelled` - Cancelled
+   */
+  status?: Status32EEnum;
+  /** @format date-time */
+  start_at: string;
+  /** @format date-time */
+  end_at: string;
+  /** @format date-time */
+  actual_start_at?: string | null;
+  /** @format date-time */
+  actual_end_at?: string | null;
+  /** @maxLength 255 */
+  title: string;
+  notes?: string;
+}
+
+export interface VariantSize {
+  id: number;
+  /** @maxLength 50 */
   name: string;
 }
 
@@ -1767,12 +2697,12 @@ export class Api<
     /**
      * @description POST /api/accounts/activate/ Verifies the activation token, sets the password, and activates the user. Public endpoint — the user isn't authenticated yet.
      *
-     * @tags accounts
-     * @name AccountsActivateCreate
+     * @tags api
+     * @name ApiAccountsActivateCreate
      * @request POST:/api/accounts/activate/
      * @secure
      */
-    accountsActivateCreate: (
+    apiAccountsActivateCreate: (
       data: ActivateAccount,
       params: RequestParams = {},
     ) =>
@@ -1789,12 +2719,12 @@ export class Api<
     /**
      * @description POST /api/accounts/auth/login/ Accepts email + password and stores JWT in httpOnly cookies.
      *
-     * @tags accounts
-     * @name AccountsAuthLoginCreate
+     * @tags api
+     * @name ApiAccountsAuthLoginCreate
      * @request POST:/api/accounts/auth/login/
      * @secure
      */
-    accountsAuthLoginCreate: (data: Login, params: RequestParams = {}) =>
+    apiAccountsAuthLoginCreate: (data: Login, params: RequestParams = {}) =>
       this.request<LoginSuccess, ErrorResponse>({
         path: `/api/accounts/auth/login/`,
         method: "POST",
@@ -1808,12 +2738,12 @@ export class Api<
     /**
      * @description POST /api/accounts/auth/logout/ Blacklists the refresh token (JSON body and/or ``studioos_refresh`` cookie) and clears auth cookies.
      *
-     * @tags accounts
-     * @name AccountsAuthLogoutCreate
+     * @tags api
+     * @name ApiAccountsAuthLogoutCreate
      * @request POST:/api/accounts/auth/logout/
      * @secure
      */
-    accountsAuthLogoutCreate: (
+    apiAccountsAuthLogoutCreate: (
       data: RefreshTokenSource,
       params: RequestParams = {},
     ) =>
@@ -1829,12 +2759,12 @@ export class Api<
     /**
      * @description POST /api/accounts/auth/refresh/ Accepts refresh token in JSON body and/or ``studioos_refresh`` cookie; new tokens are set as httpOnly cookies (same as login).
      *
-     * @tags accounts
-     * @name AccountsAuthRefreshCreate
+     * @tags api
+     * @name ApiAccountsAuthRefreshCreate
      * @request POST:/api/accounts/auth/refresh/
      * @secure
      */
-    accountsAuthRefreshCreate: (
+    apiAccountsAuthRefreshCreate: (
       data: RefreshTokenSource,
       params: RequestParams = {},
     ) =>
@@ -1849,13 +2779,43 @@ export class Api<
       }),
 
     /**
+     * @description GET /api/accounts/emails/export/ Export filtered user emails as CSV. Direction and coordination only.
+     *
+     * @tags api
+     * @name ApiAccountsEmailsExportRetrieve
+     * @request GET:/api/accounts/emails/export/
+     */
+    apiAccountsEmailsExportRetrieve: (
+      query?: {
+        /** @minLength 1 */
+        classe_ids?: string;
+        is_active?: boolean | null;
+        /** @minLength 1 */
+        modality_ids?: string;
+        /** @minLength 1 */
+        role?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<File, any>({
+        path: `/api/accounts/emails/export/`,
+        method: "GET",
+        query: query,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description POST /api/accounts/invites/ — invite a single user (inactive until onboarding).
      *
-     * @tags accounts
-     * @name AccountsInvitesCreate
+     * @tags api
+     * @name ApiAccountsInvitesCreate
      * @request POST:/api/accounts/invites/
      */
-    accountsInvitesCreate: (data: InviteSingle, params: RequestParams = {}) =>
+    apiAccountsInvitesCreate: (
+      data: InviteSingle,
+      params: RequestParams = {},
+    ) =>
       this.request<UserResponse, ErrorResponse>({
         path: `/api/accounts/invites/`,
         method: "POST",
@@ -1868,11 +2828,11 @@ export class Api<
     /**
      * @description POST /api/accounts/invites/bulk/ — bulk invite from an Excel file.
      *
-     * @tags accounts
-     * @name AccountsInvitesBulkCreate
+     * @tags api
+     * @name ApiAccountsInvitesBulkCreate
      * @request POST:/api/accounts/invites/bulk/
      */
-    accountsInvitesBulkCreate: (
+    apiAccountsInvitesBulkCreate: (
       data: BulkInviteFile,
       params: RequestParams = {},
     ) =>
@@ -1888,11 +2848,11 @@ export class Api<
     /**
      * @description GET /auth/me/ Returns authenticated user data, role, permissions and profile. Used by the frontend to bootstrap session state and drive RBAC.
      *
-     * @tags accounts
-     * @name AccountsMeRetrieve
+     * @tags api
+     * @name ApiAccountsMeRetrieve
      * @request GET:/api/accounts/me/
      */
-    accountsMeRetrieve: (params: RequestParams = {}) =>
+    apiAccountsMeRetrieve: (params: RequestParams = {}) =>
       this.request<Me, ErrorResponse>({
         path: `/api/accounts/me/`,
         method: "GET",
@@ -1903,12 +2863,12 @@ export class Api<
     /**
      * @description GET / POST /api/accounts/onboard/{token}/ — validate token / complete onboarding (public).
      *
-     * @tags accounts
-     * @name AccountsOnboardRetrieve
+     * @tags api
+     * @name ApiAccountsOnboardRetrieve
      * @request GET:/api/accounts/onboard/{token}/
      * @secure
      */
-    accountsOnboardRetrieve: (token: string, params: RequestParams = {}) =>
+    apiAccountsOnboardRetrieve: (token: string, params: RequestParams = {}) =>
       this.request<OnboardingPreviewWrapper, ErrorResponse>({
         path: `/api/accounts/onboard/${token}/`,
         method: "GET",
@@ -1920,12 +2880,12 @@ export class Api<
     /**
      * @description GET / POST /api/accounts/onboard/{token}/ — validate token / complete onboarding (public).
      *
-     * @tags accounts
-     * @name AccountsOnboardCreate
+     * @tags api
+     * @name ApiAccountsOnboardCreate
      * @request POST:/api/accounts/onboard/{token}/
      * @secure
      */
-    accountsOnboardCreate: (
+    apiAccountsOnboardCreate: (
       token: string,
       data: CompleteOnboarding,
       params: RequestParams = {},
@@ -1943,11 +2903,11 @@ export class Api<
     /**
      * @description GET  /api/accounts/profile/me/ — retrieve own profile POST /api/accounts/profile/me/ - creates profile PATCH /api/accounts/profile/me/ — update own profile (including photo upload)
      *
-     * @tags accounts
-     * @name AccountsProfileMeRetrieve
+     * @tags api
+     * @name ApiAccountsProfileMeRetrieve
      * @request GET:/api/accounts/profile/me/
      */
-    accountsProfileMeRetrieve: (params: RequestParams = {}) =>
+    apiAccountsProfileMeRetrieve: (params: RequestParams = {}) =>
       this.request<Profile, ErrorResponse>({
         path: `/api/accounts/profile/me/`,
         method: "GET",
@@ -1958,11 +2918,11 @@ export class Api<
     /**
      * @description GET  /api/accounts/profile/me/ — retrieve own profile POST /api/accounts/profile/me/ - creates profile PATCH /api/accounts/profile/me/ — update own profile (including photo upload)
      *
-     * @tags accounts
-     * @name AccountsProfileMeCreate
+     * @tags api
+     * @name ApiAccountsProfileMeCreate
      * @request POST:/api/accounts/profile/me/
      */
-    accountsProfileMeCreate: (data: Profile, params: RequestParams = {}) =>
+    apiAccountsProfileMeCreate: (data: Profile, params: RequestParams = {}) =>
       this.request<Profile, ErrorResponse>({
         path: `/api/accounts/profile/me/`,
         method: "POST",
@@ -1975,11 +2935,11 @@ export class Api<
     /**
      * @description GET  /api/accounts/profile/me/ — retrieve own profile POST /api/accounts/profile/me/ - creates profile PATCH /api/accounts/profile/me/ — update own profile (including photo upload)
      *
-     * @tags accounts
-     * @name AccountsProfileMePartialUpdate
+     * @tags api
+     * @name ApiAccountsProfileMePartialUpdate
      * @request PATCH:/api/accounts/profile/me/
      */
-    accountsProfileMePartialUpdate: (
+    apiAccountsProfileMePartialUpdate: (
       data: PatchedProfile,
       params: RequestParams = {},
     ) =>
@@ -1995,11 +2955,11 @@ export class Api<
     /**
      * @description GET /api/accounts/teachers/ — users with ``accounts.can_teach`` (minimal fields).
      *
-     * @tags accounts
-     * @name AccountsTeachersList
+     * @tags api
+     * @name ApiAccountsTeachersList
      * @request GET:/api/accounts/teachers/
      */
-    accountsTeachersList: (params: RequestParams = {}) =>
+    apiAccountsTeachersList: (params: RequestParams = {}) =>
       this.request<TeacherSummary[], ErrorResponse>({
         path: `/api/accounts/teachers/`,
         method: "GET",
@@ -2010,12 +2970,12 @@ export class Api<
     /**
      * @description GET  /api/accounts/users/ — list users (coordination & direction). POST /api/accounts/users/ — create user.
      *
-     * @tags accounts
-     * @name AccountsUsersList
+     * @tags api
+     * @name ApiAccountsUsersList
      * @request GET:/api/accounts/users/
      */
-    accountsUsersList: (params: RequestParams = {}) =>
-      this.request<UserResponse[], ErrorResponse>({
+    apiAccountsUsersList: (params: RequestParams = {}) =>
+      this.request<PaginatedResponse<UserResponse>, ErrorResponse>({
         path: `/api/accounts/users/`,
         method: "GET",
         format: "json",
@@ -2025,11 +2985,11 @@ export class Api<
     /**
      * @description GET  /api/accounts/users/ — list users (coordination & direction). POST /api/accounts/users/ — create user.
      *
-     * @tags accounts
-     * @name AccountsUsersCreate
+     * @tags api
+     * @name ApiAccountsUsersCreate
      * @request POST:/api/accounts/users/
      */
-    accountsUsersCreate: (data: CreateUser, params: RequestParams = {}) =>
+    apiAccountsUsersCreate: (data: CreateUser, params: RequestParams = {}) =>
       this.request<UserResponse, ErrorResponse>({
         path: `/api/accounts/users/`,
         method: "POST",
@@ -2042,11 +3002,11 @@ export class Api<
     /**
      * @description PATCH /api/accounts/users/<pk>/ — update principal fields (direction only). Requires ``accounts.change_user``.
      *
-     * @tags accounts
-     * @name AccountsUsersPartialUpdate
+     * @tags api
+     * @name ApiAccountsUsersPartialUpdate
      * @request PATCH:/api/accounts/users/{id}/
      */
-    accountsUsersPartialUpdate: (
+    apiAccountsUsersPartialUpdate: (
       id: number,
       data: PatchedUserCoreUpdate,
       params: RequestParams = {},
@@ -2063,11 +3023,14 @@ export class Api<
     /**
      * @description POST /api/accounts/users/{pk}/resend-invite/
      *
-     * @tags accounts
-     * @name AccountsUsersResendInviteCreate
+     * @tags api
+     * @name ApiAccountsUsersResendInviteCreate
      * @request POST:/api/accounts/users/{id}/resend-invite/
      */
-    accountsUsersResendInviteCreate: (id: number, params: RequestParams = {}) =>
+    apiAccountsUsersResendInviteCreate: (
+      id: number,
+      params: RequestParams = {},
+    ) =>
       this.request<void, ErrorResponse>({
         path: `/api/accounts/users/${id}/resend-invite/`,
         method: "POST",
@@ -2077,11 +3040,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags billing
-     * @name BillingEntriesList
+     * @tags api
+     * @name ApiBillingEntriesList
      * @request GET:/api/billing/entries/
      */
-    billingEntriesList: (
+    apiBillingEntriesList: (
       query?: {
         coaching_class_id?: number;
         /** @format date-time */
@@ -2091,9 +3054,10 @@ export class Api<
         /**
          * * `coaching` - Coaching
          * * `fine` - Fine
+         * * `marketplace` - Marketplace
          * @minLength 1
          */
-        source_type?: "coaching" | "fine";
+        source_type?: "coaching" | "fine" | "marketplace";
         /**
          * * `pending` - Pending
          * * `exported` - Exported
@@ -2116,11 +3080,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags billing
-     * @name BillingEntriesRetrieve
+     * @tags api
+     * @name ApiBillingEntriesRetrieve
      * @request GET:/api/billing/entries/{id}/
      */
-    billingEntriesRetrieve: (id: number, params: RequestParams = {}) =>
+    apiBillingEntriesRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<BillingEntryDetail, ErrorResponse>({
         path: `/api/billing/entries/${id}/`,
         method: "GET",
@@ -2131,11 +3095,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags billing
-     * @name BillingEntriesCancelCreate
+     * @tags api
+     * @name ApiBillingEntriesCancelCreate
      * @request POST:/api/billing/entries/{id}/cancel/
      */
-    billingEntriesCancelCreate: (
+    apiBillingEntriesCancelCreate: (
       id: number,
       data: BillingEntryCancel,
       params: RequestParams = {},
@@ -2152,11 +3116,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags billing
-     * @name BillingFinesList
+     * @tags api
+     * @name ApiBillingFinesList
      * @request GET:/api/billing/fines/
      */
-    billingFinesList: (
+    apiBillingFinesList: (
       query?: {
         coaching_class_id?: number;
         /**
@@ -2187,11 +3151,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags billing
-     * @name BillingFinesRetrieve
+     * @tags api
+     * @name ApiBillingFinesRetrieve
      * @request GET:/api/billing/fines/{id}/
      */
-    billingFinesRetrieve: (id: number, params: RequestParams = {}) =>
+    apiBillingFinesRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<FineDetail, ErrorResponse>({
         path: `/api/billing/fines/${id}/`,
         method: "GET",
@@ -2202,11 +3166,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags billing
-     * @name BillingFinesApproveCreate
+     * @tags api
+     * @name ApiBillingFinesApproveCreate
      * @request POST:/api/billing/fines/{id}/approve/
      */
-    billingFinesApproveCreate: (
+    apiBillingFinesApproveCreate: (
       id: number,
       data: FineApprove,
       params: RequestParams = {},
@@ -2223,11 +3187,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags billing
-     * @name BillingFinesWaiveCreate
+     * @tags api
+     * @name ApiBillingFinesWaiveCreate
      * @request POST:/api/billing/fines/{id}/waive/
      */
-    billingFinesWaiveCreate: (
+    apiBillingFinesWaiveCreate: (
       id: number,
       data: FineWaive,
       params: RequestParams = {},
@@ -2244,72 +3208,84 @@ export class Api<
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesRetrieve
+     * @tags api
+     * @name ApiClassesList
      * @request GET:/api/classes/
      */
-    classesRetrieve: (params: RequestParams = {}) =>
-      this.request<void, any>({
+    apiClassesList: (params: RequestParams = {}) =>
+      this.request<Classe[], ErrorResponse>({
         path: `/api/classes/`,
         method: "GET",
+        format: "json",
         ...params,
       }),
 
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesCreate
+     * @tags api
+     * @name ApiClassesCreate
      * @request POST:/api/classes/
      */
-    classesCreate: (params: RequestParams = {}) =>
-      this.request<void, any>({
+    apiClassesCreate: (data: ClasseSubmit, params: RequestParams = {}) =>
+      this.request<Classe, ErrorResponse>({
         path: `/api/classes/`,
         method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
         ...params,
       }),
 
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesMembersRetrieve
+     * @tags api
+     * @name ApiClassesMembersList
      * @request GET:/api/classes/{classe_id}/members/
      */
-    classesMembersRetrieve: (classeId: number, params: RequestParams = {}) =>
-      this.request<void, any>({
+    apiClassesMembersList: (classeId: number, params: RequestParams = {}) =>
+      this.request<ClasseMember[], ErrorResponse>({
         path: `/api/classes/${classeId}/members/`,
         method: "GET",
+        format: "json",
         ...params,
       }),
 
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesMembersCreate
+     * @tags api
+     * @name ApiClassesMembersCreate
      * @request POST:/api/classes/{classe_id}/members/
      */
-    classesMembersCreate: (classeId: number, params: RequestParams = {}) =>
-      this.request<void, any>({
+    apiClassesMembersCreate: (
+      classeId: number,
+      data: ClasseMemberSubmit,
+      params: RequestParams = {},
+    ) =>
+      this.request<ClasseMember, ErrorResponse>({
         path: `/api/classes/${classeId}/members/`,
         method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
         ...params,
       }),
 
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesMembersDestroy
+     * @tags api
+     * @name ApiClassesMembersDestroy
      * @request DELETE:/api/classes/{classe_id}/members/{id}/
      */
-    classesMembersDestroy: (
+    apiClassesMembersDestroy: (
       classeId: number,
       id: number,
       params: RequestParams = {},
     ) =>
-      this.request<void, any>({
+      this.request<void, ErrorResponse>({
         path: `/api/classes/${classeId}/members/${id}/`,
         method: "DELETE",
         ...params,
@@ -2318,40 +3294,48 @@ export class Api<
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesRetrieve2
+     * @tags api
+     * @name ApiClassesRetrieve
      * @request GET:/api/classes/{id}/
      */
-    classesRetrieve2: (id: number, params: RequestParams = {}) =>
-      this.request<void, any>({
+    apiClassesRetrieve: (id: number, params: RequestParams = {}) =>
+      this.request<ClasseDetail, ErrorResponse>({
         path: `/api/classes/${id}/`,
         method: "GET",
+        format: "json",
         ...params,
       }),
 
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesPartialUpdate
+     * @tags api
+     * @name ApiClassesPartialUpdate
      * @request PATCH:/api/classes/{id}/
      */
-    classesPartialUpdate: (id: number, params: RequestParams = {}) =>
-      this.request<void, any>({
+    apiClassesPartialUpdate: (
+      id: number,
+      data: PatchedClasseUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ClasseDetail, ErrorResponse>({
         path: `/api/classes/${id}/`,
         method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
         ...params,
       }),
 
     /**
      * No description
      *
-     * @tags classes
-     * @name ClassesDestroy
+     * @tags api
+     * @name ApiClassesDestroy
      * @request DELETE:/api/classes/{id}/
      */
-    classesDestroy: (id: number, params: RequestParams = {}) =>
-      this.request<void, any>({
+    apiClassesDestroy: (id: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
         path: `/api/classes/${id}/`,
         method: "DELETE",
         ...params,
@@ -2360,16 +3344,19 @@ export class Api<
     /**
      * @description ``GET /api/coachings/`` — list coachings. ``POST /api/coachings/`` — direct coordination scheduling (timetable / scheduled coaching).
      *
-     * @tags coachings
-     * @name CoachingsList
+     * @tags api
+     * @name ApiCoachingsList
      * @request GET:/api/coachings/
      */
-    coachingsList: (
+    apiCoachingsList: (
       query?: {
         /** @format date-time */
         date_from?: string;
         /** @format date-time */
         date_to?: string;
+        /** Filter coachings where this user is a participant. */
+        participant_id?: number;
+        recurring_coaching_id?: number;
         requested_by_id?: number;
         /**
          * * `requested` - Requested
@@ -2407,11 +3394,11 @@ export class Api<
     /**
      * @description ``GET /api/coachings/`` — list coachings. ``POST /api/coachings/`` — direct coordination scheduling (timetable / scheduled coaching).
      *
-     * @tags coachings
-     * @name CoachingsCreate
+     * @tags api
+     * @name ApiCoachingsCreate
      * @request POST:/api/coachings/
      */
-    coachingsCreate: (
+    apiCoachingsCreate: (
       data: DirectCoordinationCoachingCreate,
       params: RequestParams = {},
     ) =>
@@ -2427,11 +3414,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsParticipantsList
+     * @tags api
+     * @name ApiCoachingsParticipantsList
      * @request GET:/api/coachings/{coaching_id}/participants/
      */
-    coachingsParticipantsList: (
+    apiCoachingsParticipantsList: (
       coachingId: number,
       params: RequestParams = {},
     ) =>
@@ -2445,11 +3432,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsParticipantsCreate
+     * @tags api
+     * @name ApiCoachingsParticipantsCreate
      * @request POST:/api/coachings/{coaching_id}/participants/
      */
-    coachingsParticipantsCreate: (
+    apiCoachingsParticipantsCreate: (
       coachingId: number,
       data: AddParticipant,
       params: RequestParams = {},
@@ -2466,11 +3453,11 @@ export class Api<
     /**
      * @description POST — coordination approves a peer-invited pending participant (scheduled coachings).
      *
-     * @tags coachings
-     * @name CoachingsParticipantsApproveCreate
+     * @tags api
+     * @name ApiCoachingsParticipantsApproveCreate
      * @request POST:/api/coachings/{coaching_id}/participants/{id}/approve/
      */
-    coachingsParticipantsApproveCreate: (
+    apiCoachingsParticipantsApproveCreate: (
       coachingId: number,
       id: number,
       params: RequestParams = {},
@@ -2485,11 +3472,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsParticipantsCancelCreate
+     * @tags api
+     * @name ApiCoachingsParticipantsCancelCreate
      * @request POST:/api/coachings/{coaching_id}/participants/{id}/cancel/
      */
-    coachingsParticipantsCancelCreate: (
+    apiCoachingsParticipantsCancelCreate: (
       coachingId: number,
       id: number,
       data: ParticipantCancel,
@@ -2507,11 +3494,11 @@ export class Api<
     /**
      * @description POST — student or parent confirms ATTENDED / ABSENT after session end.
      *
-     * @tags coachings
-     * @name CoachingsParticipantsConfirmAttendanceCreate
+     * @tags api
+     * @name ApiCoachingsParticipantsConfirmAttendanceCreate
      * @request POST:/api/coachings/{coaching_id}/participants/{id}/confirm-attendance/
      */
-    coachingsParticipantsConfirmAttendanceCreate: (
+    apiCoachingsParticipantsConfirmAttendanceCreate: (
       coachingId: number,
       id: number,
       data: ConfirmParticipantAttendance,
@@ -2527,19 +3514,22 @@ export class Api<
       }),
 
     /**
-     * @description POST — invited student confirms attendance (staff invite → active; legacy invite → pending).
+     * @description POST — invited student (or parent on their behalf) confirms attendance.
      *
-     * @tags coachings
-     * @name CoachingsParticipantsAcceptCreate
+     * @tags api
+     * @name ApiCoachingsParticipantsAcceptCreate
      * @request POST:/api/coachings/{coaching_id}/participants/accept/
      */
-    coachingsParticipantsAcceptCreate: (
+    apiCoachingsParticipantsAcceptCreate: (
       coachingId: number,
+      data: ParticipantAcceptInvite,
       params: RequestParams = {},
     ) =>
       this.request<CoachingParticipant, ErrorResponse>({
         path: `/api/coachings/${coachingId}/participants/accept/`,
         method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),
@@ -2547,11 +3537,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsRetrieve
+     * @tags api
+     * @name ApiCoachingsRetrieve
      * @request GET:/api/coachings/{id}/
      */
-    coachingsRetrieve: (id: number, params: RequestParams = {}) =>
+    apiCoachingsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/`,
         method: "GET",
@@ -2562,11 +3552,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsPartialUpdate
+     * @tags api
+     * @name ApiCoachingsPartialUpdate
      * @request PATCH:/api/coachings/{id}/
      */
-    coachingsPartialUpdate: (
+    apiCoachingsPartialUpdate: (
       id: number,
       data: PatchedCoachingUpdate,
       params: RequestParams = {},
@@ -2583,11 +3573,11 @@ export class Api<
     /**
      * @description POST — teacher accepts the request (coaching status only; participants unchanged).
      *
-     * @tags coachings
-     * @name CoachingsAcceptCreate
+     * @tags api
+     * @name ApiCoachingsAcceptCreate
      * @request POST:/api/coachings/{id}/accept/
      */
-    coachingsAcceptCreate: (id: number, params: RequestParams = {}) =>
+    apiCoachingsAcceptCreate: (id: number, params: RequestParams = {}) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/accept/`,
         method: "POST",
@@ -2598,11 +3588,11 @@ export class Api<
     /**
      * @description POST — coordination schedules the coaching; activates ``pending`` roster rows only.
      *
-     * @tags coachings
-     * @name CoachingsApproveCreate
+     * @tags api
+     * @name ApiCoachingsApproveCreate
      * @request POST:/api/coachings/{id}/approve/
      */
-    coachingsApproveCreate: (
+    apiCoachingsApproveCreate: (
       id: number,
       data: CoachingApprove,
       params: RequestParams = {},
@@ -2619,11 +3609,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsCancelCreate
+     * @tags api
+     * @name ApiCoachingsCancelCreate
      * @request POST:/api/coachings/{id}/cancel/
      */
-    coachingsCancelCreate: (
+    apiCoachingsCancelCreate: (
       id: number,
       data: CoachingCancel,
       params: RequestParams = {},
@@ -2640,11 +3630,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsCompleteCreate
+     * @tags api
+     * @name ApiCoachingsCompleteCreate
      * @request POST:/api/coachings/{id}/complete/
      */
-    coachingsCompleteCreate: (id: number, params: RequestParams = {}) =>
+    apiCoachingsCompleteCreate: (id: number, params: RequestParams = {}) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/complete/`,
         method: "POST",
@@ -2655,11 +3645,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsRejectCreate
+     * @tags api
+     * @name ApiCoachingsRejectCreate
      * @request POST:/api/coachings/{id}/reject/
      */
-    coachingsRejectCreate: (
+    apiCoachingsRejectCreate: (
       id: number,
       data: CoachingReject,
       params: RequestParams = {},
@@ -2676,11 +3666,11 @@ export class Api<
     /**
      * @description POST — assigned teacher confirms the session took place (waiting_confirmation).
      *
-     * @tags coachings
-     * @name CoachingsTeacherConfirmCreate
+     * @tags api
+     * @name ApiCoachingsTeacherConfirmCreate
      * @request POST:/api/coachings/{id}/teacher-confirm/
      */
-    coachingsTeacherConfirmCreate: (
+    apiCoachingsTeacherConfirmCreate: (
       id: number,
       data: TeacherConfirmCoaching,
       params: RequestParams = {},
@@ -2695,13 +3685,34 @@ export class Api<
       }),
 
     /**
+     * @description POST — cancel all (future) sessions in a recurring series.
+     *
+     * @tags api
+     * @name ApiCoachingsRecurringCancelCreate
+     * @request POST:/api/coachings/recurring/{recurring_id}/cancel/
+     */
+    apiCoachingsRecurringCancelCreate: (
+      recurringId: number,
+      data: RecurringSeriesCancel,
+      params: RequestParams = {},
+    ) =>
+      this.request<CoachingClass[], ErrorResponse>({
+        path: `/api/coachings/recurring/${recurringId}/cancel/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description ``POST /api/coachings/request/`` — student/parent (and similar) coaching requests.
      *
-     * @tags coachings
-     * @name CoachingsRequestCreate
+     * @tags api
+     * @name ApiCoachingsRequestCreate
      * @request POST:/api/coachings/request/
      */
-    coachingsRequestCreate: (
+    apiCoachingsRequestCreate: (
       data: CoachingRequest,
       params: RequestParams = {},
     ) =>
@@ -2717,11 +3728,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsTeachersAvailabilityList
+     * @tags api
+     * @name ApiCoachingsTeachersAvailabilityList
      * @request GET:/api/coachings/teachers/{user_id}/availability/
      */
-    coachingsTeachersAvailabilityList: (
+    apiCoachingsTeachersAvailabilityList: (
       userId: number,
       query?: {
         /** @format date-time */
@@ -2742,11 +3753,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsTeachersAvailabilityCreate
+     * @tags api
+     * @name ApiCoachingsTeachersAvailabilityCreate
      * @request POST:/api/coachings/teachers/{user_id}/availability/
      */
-    coachingsTeachersAvailabilityCreate: (
+    apiCoachingsTeachersAvailabilityCreate: (
       userId: number,
       data: TeacherAvailabilitySubmit,
       params: RequestParams = {},
@@ -2763,11 +3774,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsTeachersAvailabilityPartialUpdate
+     * @tags api
+     * @name ApiCoachingsTeachersAvailabilityPartialUpdate
      * @request PATCH:/api/coachings/teachers/{user_id}/availability/{id}/
      */
-    coachingsTeachersAvailabilityPartialUpdate: (
+    apiCoachingsTeachersAvailabilityPartialUpdate: (
       id: number,
       userId: number,
       data: PatchedTeacherAvailabilityUpdate,
@@ -2785,11 +3796,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags coachings
-     * @name CoachingsTeachersAvailabilityDestroy
+     * @tags api
+     * @name ApiCoachingsTeachersAvailabilityDestroy
      * @request DELETE:/api/coachings/teachers/{user_id}/availability/{id}/
      */
-    coachingsTeachersAvailabilityDestroy: (
+    apiCoachingsTeachersAvailabilityDestroy: (
       id: number,
       userId: number,
       params: RequestParams = {},
@@ -2803,12 +3814,15 @@ export class Api<
     /**
      * @description POST /api/enrollments/ — submit a new enrollment (public) Accepts multipart/form-data with either: - `data`: JSON string containing enrollment fields, modality_ids, and consents; or - flat form fields (same keys as the submit serializer), including optional `consent_rgpd` and `consent_internal_regulation` booleans instead of a `consents` JSON array when not using the `data` field. Plus one or more file uploads (e.g. payment proof) as usual. Also accepts pure application/json (without files).
      *
-     * @tags enrollments
-     * @name EnrollmentsCreate
+     * @tags api
+     * @name ApiEnrollmentsCreate
      * @request POST:/api/enrollments/
      * @secure
      */
-    enrollmentsCreate: (data: EnrollmentSubmit, params: RequestParams = {}) =>
+    apiEnrollmentsCreate: (
+      data: EnrollmentSubmit,
+      params: RequestParams = {},
+    ) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/`,
         method: "POST",
@@ -2822,11 +3836,11 @@ export class Api<
     /**
      * @description GET   /api/enrollments/<pk>/          — retrieve an enrollment PATCH /api/enrollments/<pk>/          — update snapshot data (no status changes)
      *
-     * @tags enrollments
-     * @name EnrollmentsRetrieve
+     * @tags api
+     * @name ApiEnrollmentsRetrieve
      * @request GET:/api/enrollments/{id}/
      */
-    enrollmentsRetrieve: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/`,
         method: "GET",
@@ -2837,11 +3851,11 @@ export class Api<
     /**
      * @description GET   /api/enrollments/<pk>/          — retrieve an enrollment PATCH /api/enrollments/<pk>/          — update snapshot data (no status changes)
      *
-     * @tags enrollments
-     * @name EnrollmentsPartialUpdate
+     * @tags api
+     * @name ApiEnrollmentsPartialUpdate
      * @request PATCH:/api/enrollments/{id}/
      */
-    enrollmentsPartialUpdate: (
+    apiEnrollmentsPartialUpdate: (
       id: number,
       data: PatchedEnrollmentUpdate,
       params: RequestParams = {},
@@ -2858,11 +3872,11 @@ export class Api<
     /**
      * @description POST /api/enrollments/<pk>/approve/ — approve and create users
      *
-     * @tags enrollments
-     * @name EnrollmentsApproveCreate
+     * @tags api
+     * @name ApiEnrollmentsApproveCreate
      * @request POST:/api/enrollments/{id}/approve/
      */
-    enrollmentsApproveCreate: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsApproveCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/approve/`,
         method: "POST",
@@ -2873,11 +3887,11 @@ export class Api<
     /**
      * @description POST /api/enrollments/<pk>/cancel/
      *
-     * @tags enrollments
-     * @name EnrollmentsCancelCreate
+     * @tags api
+     * @name ApiEnrollmentsCancelCreate
      * @request POST:/api/enrollments/{id}/cancel/
      */
-    enrollmentsCancelCreate: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsCancelCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/cancel/`,
         method: "POST",
@@ -2888,11 +3902,11 @@ export class Api<
     /**
      * @description GET  /api/enrollments/<pk>/payments/  — list payments for an enrollment POST /api/enrollments/<pk>/payments/  — create a payment record
      *
-     * @tags enrollments
-     * @name EnrollmentsPaymentsList
+     * @tags api
+     * @name ApiEnrollmentsPaymentsList
      * @request GET:/api/enrollments/{id}/payments/
      */
-    enrollmentsPaymentsList: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsPaymentsList: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentPaymentRead[], ErrorResponse>({
         path: `/api/enrollments/${id}/payments/`,
         method: "GET",
@@ -2903,11 +3917,11 @@ export class Api<
     /**
      * @description GET  /api/enrollments/<pk>/payments/  — list payments for an enrollment POST /api/enrollments/<pk>/payments/  — create a payment record
      *
-     * @tags enrollments
-     * @name EnrollmentsPaymentsCreate
+     * @tags api
+     * @name ApiEnrollmentsPaymentsCreate
      * @request POST:/api/enrollments/{id}/payments/
      */
-    enrollmentsPaymentsCreate: (
+    apiEnrollmentsPaymentsCreate: (
       id: number,
       data: EnrollmentPaymentCreate,
       params: RequestParams = {},
@@ -2924,11 +3938,11 @@ export class Api<
     /**
      * @description POST /api/enrollments/<pk>/payments/<payment_pk>/confirm/
      *
-     * @tags enrollments
-     * @name EnrollmentsPaymentsConfirmCreate
+     * @tags api
+     * @name ApiEnrollmentsPaymentsConfirmCreate
      * @request POST:/api/enrollments/{id}/payments/{payment_pk}/confirm/
      */
-    enrollmentsPaymentsConfirmCreate: (
+    apiEnrollmentsPaymentsConfirmCreate: (
       id: number,
       paymentPk: number,
       params: RequestParams = {},
@@ -2943,11 +3957,11 @@ export class Api<
     /**
      * @description POST /api/enrollments/<pk>/reject/
      *
-     * @tags enrollments
-     * @name EnrollmentsRejectCreate
+     * @tags api
+     * @name ApiEnrollmentsRejectCreate
      * @request POST:/api/enrollments/{id}/reject/
      */
-    enrollmentsRejectCreate: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsRejectCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/reject/`,
         method: "POST",
@@ -2958,11 +3972,11 @@ export class Api<
     /**
      * @description POST /api/enrollments/<pk>/start-review/
      *
-     * @tags enrollments
-     * @name EnrollmentsStartReviewCreate
+     * @tags api
+     * @name ApiEnrollmentsStartReviewCreate
      * @request POST:/api/enrollments/{id}/start-review/
      */
-    enrollmentsStartReviewCreate: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsStartReviewCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/start-review/`,
         method: "POST",
@@ -2973,11 +3987,11 @@ export class Api<
     /**
      * @description GET /api/enrollments/list/ — list enrollments (staff only)
      *
-     * @tags enrollments
-     * @name EnrollmentsListList
+     * @tags api
+     * @name ApiEnrollmentsListList
      * @request GET:/api/enrollments/list/
      */
-    enrollmentsListList: (
+    apiEnrollmentsListList: (
       query?: {
         /** @minLength 1 */
         academic_year?: string;
@@ -3015,12 +4029,12 @@ export class Api<
     /**
      * @description GET /api/enrollments/periods/ Public — no authentication required. Used by the enrollment form to display the open period and its fees.
      *
-     * @tags enrollments
-     * @name EnrollmentsPeriodsList
+     * @tags api
+     * @name ApiEnrollmentsPeriodsList
      * @request GET:/api/enrollments/periods/
      * @secure
      */
-    enrollmentsPeriodsList: (params: RequestParams = {}) =>
+    apiEnrollmentsPeriodsList: (params: RequestParams = {}) =>
       this.request<EnrollmentPeriod[], ErrorResponse>({
         path: `/api/enrollments/periods/`,
         method: "GET",
@@ -3032,12 +4046,12 @@ export class Api<
     /**
      * @description GET   /api/enrollments/periods/<pk>/ — public, no auth required PATCH /api/enrollments/periods/<pk>/ — direction only
      *
-     * @tags enrollments
-     * @name EnrollmentsPeriodsRetrieve
+     * @tags api
+     * @name ApiEnrollmentsPeriodsRetrieve
      * @request GET:/api/enrollments/periods/{id}/
      * @secure
      */
-    enrollmentsPeriodsRetrieve: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsPeriodsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/${id}/`,
         method: "GET",
@@ -3049,11 +4063,11 @@ export class Api<
     /**
      * @description GET   /api/enrollments/periods/<pk>/ — public, no auth required PATCH /api/enrollments/periods/<pk>/ — direction only
      *
-     * @tags enrollments
-     * @name EnrollmentsPeriodsPartialUpdate
+     * @tags api
+     * @name ApiEnrollmentsPeriodsPartialUpdate
      * @request PATCH:/api/enrollments/periods/{id}/
      */
-    enrollmentsPeriodsPartialUpdate: (
+    apiEnrollmentsPeriodsPartialUpdate: (
       id: number,
       data: PatchedEnrollmentPeriod,
       params: RequestParams = {},
@@ -3070,11 +4084,14 @@ export class Api<
     /**
      * @description POST /api/enrollments/periods/<pk>/close/ — close a period
      *
-     * @tags enrollments
-     * @name EnrollmentsPeriodsCloseCreate
+     * @tags api
+     * @name ApiEnrollmentsPeriodsCloseCreate
      * @request POST:/api/enrollments/periods/{id}/close/
      */
-    enrollmentsPeriodsCloseCreate: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsPeriodsCloseCreate: (
+      id: number,
+      params: RequestParams = {},
+    ) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/${id}/close/`,
         method: "POST",
@@ -3085,11 +4102,11 @@ export class Api<
     /**
      * @description POST /api/enrollments/periods/<pk>/open/  — open a enrollment period window
      *
-     * @tags enrollments
-     * @name EnrollmentsPeriodsOpenCreate
+     * @tags api
+     * @name ApiEnrollmentsPeriodsOpenCreate
      * @request POST:/api/enrollments/periods/{id}/open/
      */
-    enrollmentsPeriodsOpenCreate: (id: number, params: RequestParams = {}) =>
+    apiEnrollmentsPeriodsOpenCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/${id}/open/`,
         method: "POST",
@@ -3100,11 +4117,11 @@ export class Api<
     /**
      * @description POST /api/enrollments/periods/create/ Direction only. Creates a new enrollment period.
      *
-     * @tags enrollments
-     * @name EnrollmentsPeriodsCreateCreate
+     * @tags api
+     * @name ApiEnrollmentsPeriodsCreateCreate
      * @request POST:/api/enrollments/periods/create/
      */
-    enrollmentsPeriodsCreateCreate: (
+    apiEnrollmentsPeriodsCreateCreate: (
       data: EnrollmentPeriod,
       params: RequestParams = {},
     ) =>
@@ -3120,12 +4137,12 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsList
+     * @tags api
+     * @name ApiEventsList
      * @request GET:/api/events/
      * @secure
      */
-    eventsList: (params: RequestParams = {}) =>
+    apiEventsList: (params: RequestParams = {}) =>
       this.request<EventList[], ErrorResponse>({
         path: `/api/events/`,
         method: "GET",
@@ -3137,11 +4154,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsCreate
+     * @tags api
+     * @name ApiEventsCreate
      * @request POST:/api/events/
      */
-    eventsCreate: (data: EventCreate, params: RequestParams = {}) =>
+    apiEventsCreate: (data: EventCreate, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/`,
         method: "POST",
@@ -3154,12 +4171,12 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsCommentsList
+     * @tags api
+     * @name ApiEventsCommentsList
      * @request GET:/api/events/{event_id}/comments/
      * @secure
      */
-    eventsCommentsList: (eventId: number, params: RequestParams = {}) =>
+    apiEventsCommentsList: (eventId: number, params: RequestParams = {}) =>
       this.request<EventComment[], ErrorResponse>({
         path: `/api/events/${eventId}/comments/`,
         method: "GET",
@@ -3171,11 +4188,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsCommentsCreate
+     * @tags api
+     * @name ApiEventsCommentsCreate
      * @request POST:/api/events/{event_id}/comments/
      */
-    eventsCommentsCreate: (
+    apiEventsCommentsCreate: (
       eventId: number,
       data: EventCommentCreate,
       params: RequestParams = {},
@@ -3192,11 +4209,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsCommentsUpdate
+     * @tags api
+     * @name ApiEventsCommentsUpdate
      * @request PUT:/api/events/{event_id}/comments/{comment_id}/
      */
-    eventsCommentsUpdate: (
+    apiEventsCommentsUpdate: (
       commentId: number,
       eventId: number,
       data: EventCommentUpdate,
@@ -3214,11 +4231,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsCommentsDestroy
+     * @tags api
+     * @name ApiEventsCommentsDestroy
      * @request DELETE:/api/events/{event_id}/comments/{comment_id}/
      */
-    eventsCommentsDestroy: (
+    apiEventsCommentsDestroy: (
       commentId: number,
       eventId: number,
       params: RequestParams = {},
@@ -3232,12 +4249,12 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsFilesList
+     * @tags api
+     * @name ApiEventsFilesList
      * @request GET:/api/events/{event_id}/files/
      * @secure
      */
-    eventsFilesList: (eventId: number, params: RequestParams = {}) =>
+    apiEventsFilesList: (eventId: number, params: RequestParams = {}) =>
       this.request<EventFile[], ErrorResponse>({
         path: `/api/events/${eventId}/files/`,
         method: "GET",
@@ -3249,11 +4266,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsFilesCreate
+     * @tags api
+     * @name ApiEventsFilesCreate
      * @request POST:/api/events/{event_id}/files/
      */
-    eventsFilesCreate: (
+    apiEventsFilesCreate: (
       eventId: number,
       data: EventFileCreate,
       params: RequestParams = {},
@@ -3270,11 +4287,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsFilesDestroy
+     * @tags api
+     * @name ApiEventsFilesDestroy
      * @request DELETE:/api/events/{event_id}/files/{file_id}/
      */
-    eventsFilesDestroy: (
+    apiEventsFilesDestroy: (
       eventId: number,
       fileId: number,
       params: RequestParams = {},
@@ -3288,11 +4305,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsInterestsCreate
+     * @tags api
+     * @name ApiEventsInterestsCreate
      * @request POST:/api/events/{event_id}/interests/
      */
-    eventsInterestsCreate: (eventId: number, params: RequestParams = {}) =>
+    apiEventsInterestsCreate: (eventId: number, params: RequestParams = {}) =>
       this.request<EventInterest, ErrorResponse>({
         path: `/api/events/${eventId}/interests/`,
         method: "POST",
@@ -3303,11 +4320,14 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsInterestsMeDestroy
+     * @tags api
+     * @name ApiEventsInterestsMeDestroy
      * @request DELETE:/api/events/{event_id}/interests/me/
      */
-    eventsInterestsMeDestroy: (eventId: number, params: RequestParams = {}) =>
+    apiEventsInterestsMeDestroy: (
+      eventId: number,
+      params: RequestParams = {},
+    ) =>
       this.request<void, ErrorResponse>({
         path: `/api/events/${eventId}/interests/me/`,
         method: "DELETE",
@@ -3317,12 +4337,12 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPostsList
+     * @tags api
+     * @name ApiEventsPostsList
      * @request GET:/api/events/{event_id}/posts/
      * @secure
      */
-    eventsPostsList: (eventId: number, params: RequestParams = {}) =>
+    apiEventsPostsList: (eventId: number, params: RequestParams = {}) =>
       this.request<EventPost[], ErrorResponse>({
         path: `/api/events/${eventId}/posts/`,
         method: "GET",
@@ -3334,11 +4354,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPostsCreate
+     * @tags api
+     * @name ApiEventsPostsCreate
      * @request POST:/api/events/{event_id}/posts/
      */
-    eventsPostsCreate: (
+    apiEventsPostsCreate: (
       eventId: number,
       data: EventPostCreate,
       params: RequestParams = {},
@@ -3355,12 +4375,12 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPostsRetrieve
+     * @tags api
+     * @name ApiEventsPostsRetrieve
      * @request GET:/api/events/{event_id}/posts/{post_id}/
      * @secure
      */
-    eventsPostsRetrieve: (
+    apiEventsPostsRetrieve: (
       eventId: number,
       postId: number,
       params: RequestParams = {},
@@ -3376,11 +4396,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPostsUpdate
+     * @tags api
+     * @name ApiEventsPostsUpdate
      * @request PUT:/api/events/{event_id}/posts/{post_id}/
      */
-    eventsPostsUpdate: (
+    apiEventsPostsUpdate: (
       eventId: number,
       postId: number,
       data: EventPostUpdate,
@@ -3398,11 +4418,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPostsDestroy
+     * @tags api
+     * @name ApiEventsPostsDestroy
      * @request DELETE:/api/events/{event_id}/posts/{post_id}/
      */
-    eventsPostsDestroy: (
+    apiEventsPostsDestroy: (
       eventId: number,
       postId: number,
       params: RequestParams = {},
@@ -3416,11 +4436,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPostsPublishCreate
+     * @tags api
+     * @name ApiEventsPostsPublishCreate
      * @request POST:/api/events/{event_id}/posts/{post_id}/publish/
      */
-    eventsPostsPublishCreate: (
+    apiEventsPostsPublishCreate: (
       eventId: number,
       postId: number,
       data: EventPostPublish,
@@ -3438,11 +4458,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPostsSchedulePublicationCreate
+     * @tags api
+     * @name ApiEventsPostsSchedulePublicationCreate
      * @request POST:/api/events/{event_id}/posts/{post_id}/schedule-publication/
      */
-    eventsPostsSchedulePublicationCreate: (
+    apiEventsPostsSchedulePublicationCreate: (
       eventId: number,
       postId: number,
       data: EventPostSchedulePublication,
@@ -3460,12 +4480,12 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsRetrieve
+     * @tags api
+     * @name ApiEventsRetrieve
      * @request GET:/api/events/{id}/
      * @secure
      */
-    eventsRetrieve: (id: number, params: RequestParams = {}) =>
+    apiEventsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/`,
         method: "GET",
@@ -3477,11 +4497,15 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsUpdate
+     * @tags api
+     * @name ApiEventsUpdate
      * @request PUT:/api/events/{id}/
      */
-    eventsUpdate: (id: number, data: EventUpdate, params: RequestParams = {}) =>
+    apiEventsUpdate: (
+      id: number,
+      data: EventUpdate,
+      params: RequestParams = {},
+    ) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/`,
         method: "PUT",
@@ -3494,11 +4518,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsDestroy
+     * @tags api
+     * @name ApiEventsDestroy
      * @request DELETE:/api/events/{id}/
      */
-    eventsDestroy: (id: number, params: RequestParams = {}) =>
+    apiEventsDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/events/${id}/`,
         method: "DELETE",
@@ -3508,11 +4532,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsArchiveCreate
+     * @tags api
+     * @name ApiEventsArchiveCreate
      * @request POST:/api/events/{id}/archive/
      */
-    eventsArchiveCreate: (id: number, params: RequestParams = {}) =>
+    apiEventsArchiveCreate: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/archive/`,
         method: "POST",
@@ -3523,11 +4547,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsCancelCreate
+     * @tags api
+     * @name ApiEventsCancelCreate
      * @request POST:/api/events/{id}/cancel/
      */
-    eventsCancelCreate: (id: number, params: RequestParams = {}) =>
+    apiEventsCancelCreate: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/cancel/`,
         method: "POST",
@@ -3538,11 +4562,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsCompleteCreate
+     * @tags api
+     * @name ApiEventsCompleteCreate
      * @request POST:/api/events/{id}/complete/
      */
-    eventsCompleteCreate: (id: number, params: RequestParams = {}) =>
+    apiEventsCompleteCreate: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/complete/`,
         method: "POST",
@@ -3553,11 +4577,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsPublishCreate
+     * @tags api
+     * @name ApiEventsPublishCreate
      * @request POST:/api/events/{id}/publish/
      */
-    eventsPublishCreate: (
+    apiEventsPublishCreate: (
       id: number,
       data: EventPublish,
       params: RequestParams = {},
@@ -3574,11 +4598,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags events
-     * @name EventsSchedulePublicationCreate
+     * @tags api
+     * @name ApiEventsSchedulePublicationCreate
      * @request POST:/api/events/{id}/schedule-publication/
      */
-    eventsSchedulePublicationCreate: (
+    apiEventsSchedulePublicationCreate: (
       id: number,
       data: EventSchedulePublication,
       params: RequestParams = {},
@@ -3595,11 +4619,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags messaging
-     * @name MessagingConversationsList
+     * @tags api
+     * @name ApiMessagingConversationsList
      * @request GET:/api/messaging/conversations/
      */
-    messagingConversationsList: (params: RequestParams = {}) =>
+    apiMessagingConversationsList: (params: RequestParams = {}) =>
       this.request<Conversation[], ErrorResponse>({
         path: `/api/messaging/conversations/`,
         method: "GET",
@@ -3610,11 +4634,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags messaging
-     * @name MessagingConversationsCreate
+     * @tags api
+     * @name ApiMessagingConversationsCreate
      * @request POST:/api/messaging/conversations/
      */
-    messagingConversationsCreate: (
+    apiMessagingConversationsCreate: (
       data: CreateConversation,
       params: RequestParams = {},
     ) =>
@@ -3630,11 +4654,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags messaging
-     * @name MessagingConversationsMessagesList
+     * @tags api
+     * @name ApiMessagingConversationsMessagesList
      * @request GET:/api/messaging/conversations/{conversation_id}/messages/
      */
-    messagingConversationsMessagesList: (
+    apiMessagingConversationsMessagesList: (
       conversationId: number,
       params: RequestParams = {},
     ) =>
@@ -3648,11 +4672,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags messaging
-     * @name MessagingConversationsMessagesCreate
+     * @tags api
+     * @name ApiMessagingConversationsMessagesCreate
      * @request POST:/api/messaging/conversations/{conversation_id}/messages/
      */
-    messagingConversationsMessagesCreate: (
+    apiMessagingConversationsMessagesCreate: (
       conversationId: number,
       data: SendMessage,
       params: RequestParams = {},
@@ -3669,14 +4693,16 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesList
+     * @tags api
+     * @name ApiModalitiesList
      * @request GET:/api/modalities/
+     * @secure
      */
-    modalitiesList: (params: RequestParams = {}) =>
+    apiModalitiesList: (params: RequestParams = {}) =>
       this.request<Modality[], ErrorResponse>({
         path: `/api/modalities/`,
         method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -3684,11 +4710,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesCreate
+     * @tags api
+     * @name ApiModalitiesCreate
      * @request POST:/api/modalities/
      */
-    modalitiesCreate: (data: ModalitySubmit, params: RequestParams = {}) =>
+    apiModalitiesCreate: (data: ModalitySubmit, params: RequestParams = {}) =>
       this.request<Modality, ErrorResponse>({
         path: `/api/modalities/`,
         method: "POST",
@@ -3701,11 +4727,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesRetrieve
+     * @tags api
+     * @name ApiModalitiesRetrieve
      * @request GET:/api/modalities/{id}/
      */
-    modalitiesRetrieve: (id: number, params: RequestParams = {}) =>
+    apiModalitiesRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<Modality, ErrorResponse>({
         path: `/api/modalities/${id}/`,
         method: "GET",
@@ -3716,11 +4742,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesPartialUpdate
+     * @tags api
+     * @name ApiModalitiesPartialUpdate
      * @request PATCH:/api/modalities/{id}/
      */
-    modalitiesPartialUpdate: (
+    apiModalitiesPartialUpdate: (
       id: number,
       data: PatchedModalityUpdate,
       params: RequestParams = {},
@@ -3737,11 +4763,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesDestroy
+     * @tags api
+     * @name ApiModalitiesDestroy
      * @request DELETE:/api/modalities/{id}/
      */
-    modalitiesDestroy: (id: number, params: RequestParams = {}) =>
+    apiModalitiesDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/modalities/${id}/`,
         method: "DELETE",
@@ -3751,11 +4777,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesUsersModalitiesList
+     * @tags api
+     * @name ApiModalitiesUsersModalitiesList
      * @request GET:/api/modalities/users/{user_id}/modalities/
      */
-    modalitiesUsersModalitiesList: (
+    apiModalitiesUsersModalitiesList: (
       userId: number,
       params: RequestParams = {},
     ) =>
@@ -3769,11 +4795,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesUsersModalitiesCreate
+     * @tags api
+     * @name ApiModalitiesUsersModalitiesCreate
      * @request POST:/api/modalities/users/{user_id}/modalities/
      */
-    modalitiesUsersModalitiesCreate: (
+    apiModalitiesUsersModalitiesCreate: (
       userId: number,
       data: UserModalitySubmit,
       params: RequestParams = {},
@@ -3790,11 +4816,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags modalities
-     * @name ModalitiesUsersModalitiesDestroy
+     * @tags api
+     * @name ApiModalitiesUsersModalitiesDestroy
      * @request DELETE:/api/modalities/users/{user_id}/modalities/{id}/
      */
-    modalitiesUsersModalitiesDestroy: (
+    apiModalitiesUsersModalitiesDestroy: (
       id: number,
       userId: number,
       params: RequestParams = {},
@@ -3808,11 +4834,11 @@ export class Api<
     /**
      * @description GET  /api/roles/ — list roles. POST /api/roles/ — create role.
      *
-     * @tags roles
-     * @name RolesList
+     * @tags api
+     * @name ApiRolesList
      * @request GET:/api/roles/
      */
-    rolesList: (params: RequestParams = {}) =>
+    apiRolesList: (params: RequestParams = {}) =>
       this.request<RoleList[], ErrorResponse>({
         path: `/api/roles/`,
         method: "GET",
@@ -3823,11 +4849,11 @@ export class Api<
     /**
      * @description GET  /api/roles/ — list roles. POST /api/roles/ — create role.
      *
-     * @tags roles
-     * @name RolesCreate
+     * @tags api
+     * @name ApiRolesCreate
      * @request POST:/api/roles/
      */
-    rolesCreate: (data: CreateRole, params: RequestParams = {}) =>
+    apiRolesCreate: (data: CreateRole, params: RequestParams = {}) =>
       this.request<RoleDetail, ErrorResponse>({
         path: `/api/roles/`,
         method: "POST",
@@ -3840,11 +4866,11 @@ export class Api<
     /**
      * @description GET    /api/roles/<code>/ — retrieve role. PATCH  /api/roles/<code>/ — update description. DELETE /api/roles/<code>/ — delete role.
      *
-     * @tags roles
-     * @name RolesRetrieve
+     * @tags api
+     * @name ApiRolesRetrieve
      * @request GET:/api/roles/{code}/
      */
-    rolesRetrieve: (code: string, params: RequestParams = {}) =>
+    apiRolesRetrieve: (code: string, params: RequestParams = {}) =>
       this.request<RoleDetail, ErrorResponse>({
         path: `/api/roles/${code}/`,
         method: "GET",
@@ -3855,11 +4881,11 @@ export class Api<
     /**
      * @description GET    /api/roles/<code>/ — retrieve role. PATCH  /api/roles/<code>/ — update description. DELETE /api/roles/<code>/ — delete role.
      *
-     * @tags roles
-     * @name RolesPartialUpdate
+     * @tags api
+     * @name ApiRolesPartialUpdate
      * @request PATCH:/api/roles/{code}/
      */
-    rolesPartialUpdate: (
+    apiRolesPartialUpdate: (
       code: string,
       data: PatchedUpdateRole,
       params: RequestParams = {},
@@ -3876,11 +4902,11 @@ export class Api<
     /**
      * @description GET    /api/roles/<code>/ — retrieve role. PATCH  /api/roles/<code>/ — update description. DELETE /api/roles/<code>/ — delete role.
      *
-     * @tags roles
-     * @name RolesDestroy
+     * @tags api
+     * @name ApiRolesDestroy
      * @request DELETE:/api/roles/{code}/
      */
-    rolesDestroy: (code: string, params: RequestParams = {}) =>
+    apiRolesDestroy: (code: string, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/roles/${code}/`,
         method: "DELETE",
@@ -3890,11 +4916,11 @@ export class Api<
     /**
      * @description PUT /api/roles/<code>/permissions/ — replace permission set.
      *
-     * @tags roles
-     * @name RolesPermissionsUpdate
+     * @tags api
+     * @name ApiRolesPermissionsUpdate
      * @request PUT:/api/roles/{code}/permissions/
      */
-    rolesPermissionsUpdate: (
+    apiRolesPermissionsUpdate: (
       code: string,
       data: SetRolePermissions,
       params: RequestParams = {},
@@ -3911,11 +4937,11 @@ export class Api<
     /**
      * @description GET /api/roles/permissions/available/ — list Django permissions.
      *
-     * @tags roles
-     * @name RolesPermissionsAvailableList
+     * @tags api
+     * @name ApiRolesPermissionsAvailableList
      * @request GET:/api/roles/permissions/available/
      */
-    rolesPermissionsAvailableList: (params: RequestParams = {}) =>
+    apiRolesPermissionsAvailableList: (params: RequestParams = {}) =>
       this.request<Permission[], ErrorResponse>({
         path: `/api/roles/permissions/available/`,
         method: "GET",
@@ -3926,12 +4952,12 @@ export class Api<
     /**
      * @description OpenApi3 schema for this API. Format can be selected via content negotiation. - YAML: application/vnd.oai.openapi - JSON: application/vnd.oai.openapi+json
      *
-     * @tags schema
-     * @name SchemaRetrieve
+     * @tags api
+     * @name ApiSchemaRetrieve
      * @request GET:/api/schema/
      * @secure
      */
-    schemaRetrieve: (
+    apiSchemaRetrieve: (
       query?: {
         format?: "json" | "yaml";
         lang?:
@@ -4050,11 +5076,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags studios
-     * @name StudiosList
+     * @tags api
+     * @name ApiStudiosList
      * @request GET:/api/studios/
      */
-    studiosList: (params: RequestParams = {}) =>
+    apiStudiosList: (params: RequestParams = {}) =>
       this.request<Studio[], ErrorResponse>({
         path: `/api/studios/`,
         method: "GET",
@@ -4065,11 +5091,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags studios
-     * @name StudiosCreate
+     * @tags api
+     * @name ApiStudiosCreate
      * @request POST:/api/studios/
      */
-    studiosCreate: (data: StudioSubmit, params: RequestParams = {}) =>
+    apiStudiosCreate: (data: StudioSubmit, params: RequestParams = {}) =>
       this.request<Studio, ErrorResponse>({
         path: `/api/studios/`,
         method: "POST",
@@ -4082,11 +5108,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags studios
-     * @name StudiosRetrieve
+     * @tags api
+     * @name ApiStudiosRetrieve
      * @request GET:/api/studios/{id}/
      */
-    studiosRetrieve: (id: number, params: RequestParams = {}) =>
+    apiStudiosRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<Studio, ErrorResponse>({
         path: `/api/studios/${id}/`,
         method: "GET",
@@ -4097,11 +5123,11 @@ export class Api<
     /**
      * No description
      *
-     * @tags studios
-     * @name StudiosPartialUpdate
+     * @tags api
+     * @name ApiStudiosPartialUpdate
      * @request PATCH:/api/studios/{id}/
      */
-    studiosPartialUpdate: (
+    apiStudiosPartialUpdate: (
       id: number,
       data: PatchedStudioUpdate,
       params: RequestParams = {},
@@ -4118,14 +5144,1449 @@ export class Api<
     /**
      * No description
      *
-     * @tags studios
-     * @name StudiosDestroy
+     * @tags api
+     * @name ApiStudiosDestroy
      * @request DELETE:/api/studios/{id}/
      */
-    studiosDestroy: (id: number, params: RequestParams = {}) =>
+    apiStudiosDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/studios/${id}/`,
         method: "DELETE",
+        ...params,
+      }),
+  };
+  inventory = {
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryBookingsRetrieve
+     * @request GET:/inventory/bookings/{booking_id}/
+     */
+    inventoryBookingsRetrieve: (
+      bookingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<VariantBooking, ErrorResponse>({
+        path: `/inventory/bookings/${bookingId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryBookingsPartialUpdate
+     * @request PATCH:/inventory/bookings/{booking_id}/
+     */
+    inventoryBookingsPartialUpdate: (
+      bookingId: number,
+      data: PatchedVariantBookingWrite,
+      params: RequestParams = {},
+    ) =>
+      this.request<VariantBooking, ErrorResponse>({
+        path: `/inventory/bookings/${bookingId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryBookingsDestroy
+     * @request DELETE:/inventory/bookings/{booking_id}/
+     */
+    inventoryBookingsDestroy: (bookingId: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/bookings/${bookingId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryCategoriesList
+     * @request GET:/inventory/categories/
+     */
+    inventoryCategoriesList: (params: RequestParams = {}) =>
+      this.request<Category[], ErrorResponse>({
+        path: `/inventory/categories/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryCategoriesCreate
+     * @request POST:/inventory/categories/
+     */
+    inventoryCategoriesCreate: (
+      data: CreateCategory,
+      params: RequestParams = {},
+    ) =>
+      this.request<Category, ErrorResponse>({
+        path: `/inventory/categories/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryCategoriesRetrieve
+     * @request GET:/inventory/categories/{category_id}/
+     */
+    inventoryCategoriesRetrieve: (
+      categoryId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Category, ErrorResponse>({
+        path: `/inventory/categories/${categoryId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryCategoriesPartialUpdate
+     * @request PATCH:/inventory/categories/{category_id}/
+     */
+    inventoryCategoriesPartialUpdate: (
+      categoryId: number,
+      data: PatchedUpdateCategory,
+      params: RequestParams = {},
+    ) =>
+      this.request<Category, ErrorResponse>({
+        path: `/inventory/categories/${categoryId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryCategoriesDestroy
+     * @request DELETE:/inventory/categories/{category_id}/
+     */
+    inventoryCategoriesDestroy: (
+      categoryId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/categories/${categoryId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryCategoriesActivateCreate
+     * @request POST:/inventory/categories/{category_id}/activate/
+     */
+    inventoryCategoriesActivateCreate: (
+      categoryId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Category, ErrorResponse>({
+        path: `/inventory/categories/${categoryId}/activate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryCategoriesDeactivateCreate
+     * @request POST:/inventory/categories/{category_id}/deactivate/
+     */
+    inventoryCategoriesDeactivateCreate: (
+      categoryId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Category, ErrorResponse>({
+        path: `/inventory/categories/${categoryId}/deactivate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryColorsList
+     * @request GET:/inventory/colors/
+     */
+    inventoryColorsList: (params: RequestParams = {}) =>
+      this.request<Color[], ErrorResponse>({
+        path: `/inventory/colors/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryColorsCreate
+     * @request POST:/inventory/colors/
+     */
+    inventoryColorsCreate: (data: CreateColor, params: RequestParams = {}) =>
+      this.request<Color, ErrorResponse>({
+        path: `/inventory/colors/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryColorsRetrieve
+     * @request GET:/inventory/colors/{color_id}/
+     */
+    inventoryColorsRetrieve: (colorId: number, params: RequestParams = {}) =>
+      this.request<Color, ErrorResponse>({
+        path: `/inventory/colors/${colorId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryColorsDestroy
+     * @request DELETE:/inventory/colors/{color_id}/
+     */
+    inventoryColorsDestroy: (colorId: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/colors/${colorId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryColorsActivateCreate
+     * @request POST:/inventory/colors/{color_id}/activate/
+     */
+    inventoryColorsActivateCreate: (
+      colorId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Color, ErrorResponse>({
+        path: `/inventory/colors/${colorId}/activate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryColorsDeactivateCreate
+     * @request POST:/inventory/colors/{color_id}/deactivate/
+     */
+    inventoryColorsDeactivateCreate: (
+      colorId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Color, ErrorResponse>({
+        path: `/inventory/colors/${colorId}/deactivate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryProductsRetrieve
+     * @request GET:/inventory/products/
+     */
+    inventoryProductsRetrieve: (params: RequestParams = {}) =>
+      this.request<InventoryMemberProductList, ErrorResponse>({
+        path: `/inventory/products/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryProductsCreate
+     * @request POST:/inventory/products/
+     */
+    inventoryProductsCreate: (
+      data: ProductCreate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductDetail, ErrorResponse>({
+        path: `/inventory/products/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryProductsRetrieve2
+     * @request GET:/inventory/products/{id}/
+     */
+    inventoryProductsRetrieve2: (id: number, params: RequestParams = {}) =>
+      this.request<ProductDetail, ErrorResponse>({
+        path: `/inventory/products/${id}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryProductsPartialUpdate
+     * @request PATCH:/inventory/products/{id}/
+     */
+    inventoryProductsPartialUpdate: (
+      id: number,
+      data: PatchedProductUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductDetail, ErrorResponse>({
+        path: `/inventory/products/${id}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryProductsDestroy
+     * @request DELETE:/inventory/products/{id}/
+     */
+    inventoryProductsDestroy: (id: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/products/${id}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryProductsVariantsRetrieve
+     * @request GET:/inventory/products/{product_id}/variants/
+     */
+    inventoryProductsVariantsRetrieve: (
+      productId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<InventoryProductVariantList, ErrorResponse>({
+        path: `/inventory/products/${productId}/variants/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryProductsVariantsCreate
+     * @request POST:/inventory/products/{product_id}/variants/
+     */
+    inventoryProductsVariantsCreate: (
+      productId: number,
+      data: ProductVariantWrite,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductVariantRead, ErrorResponse>({
+        path: `/inventory/products/${productId}/variants/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySchoolProductsRetrieve
+     * @request GET:/inventory/school/products/
+     */
+    inventorySchoolProductsRetrieve: (params: RequestParams = {}) =>
+      this.request<InventorySchoolProductList, ErrorResponse>({
+        path: `/inventory/school/products/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySchoolProductsCreate
+     * @request POST:/inventory/school/products/
+     */
+    inventorySchoolProductsCreate: (
+      data: SchoolProductCreate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductDetail, ErrorResponse>({
+        path: `/inventory/school/products/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySchoolProductsRetrieve2
+     * @request GET:/inventory/school/products/{id}/
+     */
+    inventorySchoolProductsRetrieve2: (
+      id: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductDetail, ErrorResponse>({
+        path: `/inventory/school/products/${id}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySchoolProductsPartialUpdate
+     * @request PATCH:/inventory/school/products/{id}/
+     */
+    inventorySchoolProductsPartialUpdate: (
+      id: number,
+      data: PatchedSchoolProductUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductDetail, ErrorResponse>({
+        path: `/inventory/school/products/${id}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySchoolProductsDestroy
+     * @request DELETE:/inventory/school/products/{id}/
+     */
+    inventorySchoolProductsDestroy: (id: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/school/products/${id}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizeSystemsList
+     * @request GET:/inventory/size-systems/
+     */
+    inventorySizeSystemsList: (params: RequestParams = {}) =>
+      this.request<SizeSystem[], ErrorResponse>({
+        path: `/inventory/size-systems/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizeSystemsCreate
+     * @request POST:/inventory/size-systems/
+     */
+    inventorySizeSystemsCreate: (
+      data: CreateSizeSystem,
+      params: RequestParams = {},
+    ) =>
+      this.request<SizeSystem, ErrorResponse>({
+        path: `/inventory/size-systems/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizeSystemsPartialUpdate
+     * @request PATCH:/inventory/size-systems/{size_system_id}/
+     */
+    inventorySizeSystemsPartialUpdate: (
+      sizeSystemId: number,
+      data: PatchedUpdateSizeSystem,
+      params: RequestParams = {},
+    ) =>
+      this.request<SizeSystem, ErrorResponse>({
+        path: `/inventory/size-systems/${sizeSystemId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizeSystemsDestroy
+     * @request DELETE:/inventory/size-systems/{size_system_id}/
+     */
+    inventorySizeSystemsDestroy: (
+      sizeSystemId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/size-systems/${sizeSystemId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizeSystemsActivateCreate
+     * @request POST:/inventory/size-systems/{size_system_id}/activate/
+     */
+    inventorySizeSystemsActivateCreate: (
+      sizeSystemId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<SizeSystem, ErrorResponse>({
+        path: `/inventory/size-systems/${sizeSystemId}/activate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizeSystemsDeactivateCreate
+     * @request POST:/inventory/size-systems/{size_system_id}/deactivate/
+     */
+    inventorySizeSystemsDeactivateCreate: (
+      sizeSystemId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<SizeSystem, ErrorResponse>({
+        path: `/inventory/size-systems/${sizeSystemId}/deactivate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizesList
+     * @request GET:/inventory/sizes/
+     */
+    inventorySizesList: (params: RequestParams = {}) =>
+      this.request<Size[], ErrorResponse>({
+        path: `/inventory/sizes/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizesCreate
+     * @request POST:/inventory/sizes/
+     */
+    inventorySizesCreate: (data: CreateSize, params: RequestParams = {}) =>
+      this.request<Size, ErrorResponse>({
+        path: `/inventory/sizes/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizesRetrieve
+     * @request GET:/inventory/sizes/{size_id}/
+     */
+    inventorySizesRetrieve: (sizeId: number, params: RequestParams = {}) =>
+      this.request<Size, ErrorResponse>({
+        path: `/inventory/sizes/${sizeId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizesDestroy
+     * @request DELETE:/inventory/sizes/{size_id}/
+     */
+    inventorySizesDestroy: (sizeId: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/sizes/${sizeId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizesActivateCreate
+     * @request POST:/inventory/sizes/{size_id}/activate/
+     */
+    inventorySizesActivateCreate: (
+      sizeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Size, ErrorResponse>({
+        path: `/inventory/sizes/${sizeId}/activate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventorySizesDeactivateCreate
+     * @request POST:/inventory/sizes/{size_id}/deactivate/
+     */
+    inventorySizesDeactivateCreate: (
+      sizeId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Size, ErrorResponse>({
+        path: `/inventory/sizes/${sizeId}/deactivate/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryVariantsRetrieve
+     * @request GET:/inventory/variants/{variant_id}/
+     */
+    inventoryVariantsRetrieve: (
+      variantId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductVariantRead, ErrorResponse>({
+        path: `/inventory/variants/${variantId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryVariantsPartialUpdate
+     * @request PATCH:/inventory/variants/{variant_id}/
+     */
+    inventoryVariantsPartialUpdate: (
+      variantId: number,
+      data: PatchedProductVariantWrite,
+      params: RequestParams = {},
+    ) =>
+      this.request<ProductVariantRead, ErrorResponse>({
+        path: `/inventory/variants/${variantId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryVariantsDestroy
+     * @request DELETE:/inventory/variants/{variant_id}/
+     */
+    inventoryVariantsDestroy: (variantId: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
+        path: `/inventory/variants/${variantId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryVariantsBookingsRetrieve
+     * @request GET:/inventory/variants/{variant_id}/bookings/
+     */
+    inventoryVariantsBookingsRetrieve: (
+      variantId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<InventoryVariantBookingList, ErrorResponse>({
+        path: `/inventory/variants/${variantId}/bookings/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags inventory
+     * @name InventoryVariantsBookingsCreate
+     * @request POST:/inventory/variants/{variant_id}/bookings/
+     */
+    inventoryVariantsBookingsCreate: (
+      variantId: number,
+      data: VariantBookingWrite,
+      params: RequestParams = {},
+    ) =>
+      this.request<VariantBooking, ErrorResponse>({
+        path: `/inventory/variants/${variantId}/bookings/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+  };
+  marketplace = {
+    /**
+     * @description Public listings — only ACTIVE + is_public.
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsRetrieve
+     * @request GET:/marketplace/listings/
+     */
+    marketplaceListingsRetrieve: (params: RequestParams = {}) =>
+      this.request<MarketplaceListingList, ErrorResponse>({
+        path: `/marketplace/listings/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Public listings — only ACTIVE + is_public.
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsCreate
+     * @request POST:/marketplace/listings/
+     */
+    marketplaceListingsCreate: (
+      data: ListingCreate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/listings/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Detail view with authorization: public listings visible to anyone authenticated, otherwise only owner or user with view_productlisting permission.
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsRetrieve2
+     * @request GET:/marketplace/listings/{listing_id}/
+     */
+    marketplaceListingsRetrieve2: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Detail view with authorization: public listings visible to anyone authenticated, otherwise only owner or user with view_productlisting permission.
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsPartialUpdate
+     * @request PATCH:/marketplace/listings/{listing_id}/
+     */
+    marketplaceListingsPartialUpdate: (
+      listingId: number,
+      data: PatchedListingUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Detail view with authorization: public listings visible to anyone authenticated, otherwise only owner or user with view_productlisting permission.
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsDestroy
+     * @request DELETE:/marketplace/listings/{listing_id}/
+     */
+    marketplaceListingsDestroy: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsAvailabilityRetrieve
+     * @request GET:/marketplace/listings/{listing_id}/availability/
+     */
+    marketplaceListingsAvailabilityRetrieve: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/availability/`,
+        method: "GET",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsCommentsList
+     * @request GET:/marketplace/listings/{listing_id}/comments/
+     */
+    marketplaceListingsCommentsList: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingComment[], ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/comments/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsCommentsCreate
+     * @request POST:/marketplace/listings/{listing_id}/comments/
+     */
+    marketplaceListingsCommentsCreate: (
+      listingId: number,
+      data: ListingCommentCreate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingComment, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/comments/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsCommentsUpdate
+     * @request PUT:/marketplace/listings/{listing_id}/comments/{comment_id}/
+     */
+    marketplaceListingsCommentsUpdate: (
+      commentId: number,
+      listingId: number,
+      data: ListingCommentUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingComment, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/comments/${commentId}/`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsCommentsDestroy
+     * @request DELETE:/marketplace/listings/{listing_id}/comments/{comment_id}/
+     */
+    marketplaceListingsCommentsDestroy: (
+      commentId: number,
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/comments/${commentId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsFavoriteCreate
+     * @request POST:/marketplace/listings/{listing_id}/favorite/
+     */
+    marketplaceListingsFavoriteCreate: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/favorite/`,
+        method: "POST",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsFavoriteDestroy
+     * @request DELETE:/marketplace/listings/{listing_id}/favorite/
+     */
+    marketplaceListingsFavoriteDestroy: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/favorite/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsPublishCreate
+     * @request POST:/marketplace/listings/{listing_id}/publish/
+     */
+    marketplaceListingsPublishCreate: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/publish/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsRequestCreate
+     * @request POST:/marketplace/listings/{listing_id}/request/
+     */
+    marketplaceListingsRequestCreate: (
+      listingId: number,
+      data: TransactionRequest,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/request/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsUnpublishCreate
+     * @request POST:/marketplace/listings/{listing_id}/unpublish/
+     */
+    marketplaceListingsUnpublishCreate: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/listings/${listingId}/unpublish/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsFavoritesRetrieve
+     * @request GET:/marketplace/listings/favorites/
+     */
+    marketplaceListingsFavoritesRetrieve: (params: RequestParams = {}) =>
+      this.request<FavoriteListingsList, ErrorResponse>({
+        path: `/marketplace/listings/favorites/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Returns the current user's own listings regardless of status.
+     *
+     * @tags marketplace
+     * @name MarketplaceListingsMineRetrieve
+     * @request GET:/marketplace/listings/mine/
+     */
+    marketplaceListingsMineRetrieve: (params: RequestParams = {}) =>
+      this.request<MyListingsList, ErrorResponse>({
+        path: `/marketplace/listings/mine/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolListingsRetrieve
+     * @request GET:/marketplace/school/listings/
+     */
+    marketplaceSchoolListingsRetrieve: (params: RequestParams = {}) =>
+      this.request<SchoolListingList, ErrorResponse>({
+        path: `/marketplace/school/listings/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolListingsCreate
+     * @request POST:/marketplace/school/listings/
+     */
+    marketplaceSchoolListingsCreate: (
+      data: ListingCreate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/school/listings/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolListingsRetrieve2
+     * @request GET:/marketplace/school/listings/{listing_id}/
+     */
+    marketplaceSchoolListingsRetrieve2: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/school/listings/${listingId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolListingsPartialUpdate
+     * @request PATCH:/marketplace/school/listings/{listing_id}/
+     */
+    marketplaceSchoolListingsPartialUpdate: (
+      listingId: number,
+      data: PatchedListingUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/school/listings/${listingId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolListingsPublishCreate
+     * @request POST:/marketplace/school/listings/{listing_id}/publish/
+     */
+    marketplaceSchoolListingsPublishCreate: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/school/listings/${listingId}/publish/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolListingsUnpublishCreate
+     * @request POST:/marketplace/school/listings/{listing_id}/unpublish/
+     */
+    marketplaceSchoolListingsUnpublishCreate: (
+      listingId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingDetail, ErrorResponse>({
+        path: `/marketplace/school/listings/${listingId}/unpublish/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolTransactionsRetrieve
+     * @request GET:/marketplace/school/transactions/
+     */
+    marketplaceSchoolTransactionsRetrieve: (params: RequestParams = {}) =>
+      this.request<SchoolTransactionList, ErrorResponse>({
+        path: `/marketplace/school/transactions/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Admin/school detail — can view any transaction.
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolTransactionsRetrieve2
+     * @request GET:/marketplace/school/transactions/{transaction_id}/
+     */
+    marketplaceSchoolTransactionsRetrieve2: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/school/transactions/${transactionId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolTransactionsAcceptCreate
+     * @request POST:/marketplace/school/transactions/{transaction_id}/accept/
+     */
+    marketplaceSchoolTransactionsAcceptCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/school/transactions/${transactionId}/accept/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolTransactionsBlockCreate
+     * @request POST:/marketplace/school/transactions/{transaction_id}/block/
+     */
+    marketplaceSchoolTransactionsBlockCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/school/transactions/${transactionId}/block/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolTransactionsCompleteCreate
+     * @request POST:/marketplace/school/transactions/{transaction_id}/complete/
+     */
+    marketplaceSchoolTransactionsCompleteCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/school/transactions/${transactionId}/complete/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolTransactionsRejectCreate
+     * @request POST:/marketplace/school/transactions/{transaction_id}/reject/
+     */
+    marketplaceSchoolTransactionsRejectCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/school/transactions/${transactionId}/reject/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceSchoolTransactionsUnblockCreate
+     * @request POST:/marketplace/school/transactions/{transaction_id}/unblock/
+     */
+    marketplaceSchoolTransactionsUnblockCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/school/transactions/${transactionId}/unblock/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Own-transaction detail — user must be requester or owner.
+     *
+     * @tags marketplace
+     * @name MarketplaceTransactionsRetrieve
+     * @request GET:/marketplace/transactions/{transaction_id}/
+     */
+    marketplaceTransactionsRetrieve: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/transactions/${transactionId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceTransactionsAcceptCreate
+     * @request POST:/marketplace/transactions/{transaction_id}/accept/
+     */
+    marketplaceTransactionsAcceptCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/transactions/${transactionId}/accept/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceTransactionsCancelCreate
+     * @request POST:/marketplace/transactions/{transaction_id}/cancel/
+     */
+    marketplaceTransactionsCancelCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/transactions/${transactionId}/cancel/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceTransactionsCompleteCreate
+     * @request POST:/marketplace/transactions/{transaction_id}/complete/
+     */
+    marketplaceTransactionsCompleteCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/transactions/${transactionId}/complete/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceTransactionsRejectCreate
+     * @request POST:/marketplace/transactions/{transaction_id}/reject/
+     */
+    marketplaceTransactionsRejectCreate: (
+      transactionId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<TransactionDetail, ErrorResponse>({
+        path: `/marketplace/transactions/${transactionId}/reject/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceTransactionsMineRetrieve
+     * @request GET:/marketplace/transactions/mine/
+     */
+    marketplaceTransactionsMineRetrieve: (params: RequestParams = {}) =>
+      this.request<MyTransactionsList, ErrorResponse>({
+        path: `/marketplace/transactions/mine/`,
+        method: "GET",
+        format: "json",
         ...params,
       }),
   };
