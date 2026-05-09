@@ -19,6 +19,29 @@ def django_db_setup(django_db_setup, django_db_blocker):
         call_command("seed_modalities")
 
 
+def make_user_with_role(role_code):
+    """Create a user and assign them to a seeded role (via Group).
+
+    This is the ONLY way tests should create users with permissions,
+    ensuring test permissions always match what seed_permissions assigns.
+    """
+    from django.contrib.auth import get_user_model
+    from accounts.models import Role
+
+    User = get_user_model()
+    user = User.objects.create_user(
+        email=f"{role_code}_{uuid.uuid4().hex[:8]}@test.local",
+        password="test-pass-123",
+        first_name=role_code.capitalize(),
+        last_name="User",
+        is_active=True,
+    )
+    role = Role.objects.get(code=role_code)
+    user.groups.add(role.group)
+    user.refresh_from_db()
+    return user
+
+
 @pytest.fixture
 def api_client():
     from rest_framework.test import APIClient

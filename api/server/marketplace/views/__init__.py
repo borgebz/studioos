@@ -1,3 +1,7 @@
+from marketplace.views.comment_views import (
+    ListingCommentDetailView,
+    ListingCommentListCreateView,
+)
 from marketplace.views.listing_views import (
     FavoriteListingsView,
     ListingAvailabilityView,
@@ -30,6 +34,8 @@ from marketplace.views.transaction_views import (
 )
 
 __all__ = [
+    "ListingCommentDetailView",
+    "ListingCommentListCreateView",
     "FavoriteListingsView",
     "ListingAvailabilityView",
     "ListingDetailView",

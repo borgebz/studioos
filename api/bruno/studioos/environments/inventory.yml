@@ -1,9 +1,0 @@
-name: inventory
-variables:
-  - name: login_password
-    value: olamundo
-  - name: login_email
-    value: dbatista@ipca.pt
-  # Optional manual JWT for WebSocket `?token=` when cookie sync is unavailable.
-  - name: access_token
-    value: ""

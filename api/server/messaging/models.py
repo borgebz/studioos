@@ -20,6 +20,20 @@ class Conversation(BaseModel):
         blank=True,
         related_name="conversations",
     )
+    coaching = models.ForeignKey(
+        "coachings.CoachingClass",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="conversations",
+    )
+    recurring_coaching = models.ForeignKey(
+        "coachings.RecurringCoaching",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="conversations",
+    )
     participants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         through="ConversationParticipant",

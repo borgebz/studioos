@@ -1,6 +1,6 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -17,12 +17,14 @@ from modality.serializers import (
 
 
 class ModalityListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     @extend_schema(
         responses={200: ModalitySerializer(many=True), **DEFAULT_ERROR_RESPONSES}
     )
-    @require_perm("modality.view_modality")
     def get(self, request):
         modalities = services.get_all_modalities()
         return Response(ModalitySerializer(modalities, many=True).data)

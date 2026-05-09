@@ -20,6 +20,7 @@ request:
   scripts:
     - type: before-request
       code: |-
+        console.log("[studioos] pre-request script running");
         // Open Collection / some Bruno builds omit req.getPath(); avoid calling missing APIs (fixes "not a function").
         var pathStr = "";
         var urlStr = "";
@@ -78,7 +79,6 @@ request:
         ) {
           return;
         }
-
         const baseUrl =
           bru.getEnvVar("base_url") ||
           bru.getCollectionVar("base_url") ||
@@ -101,7 +101,35 @@ request:
           );
         }
 
-        let res;
+        // Drop stale sessions so changing login_email in the environment takes effect.
+        // Otherwise the main request can still send old studioos_* cookies (e.g. student vs direction).
+        (function clearAuthCookiesForBase() {
+          var root = String(baseUrl || "").replace(/\/$/, "");
+          try {
+            if (bru.cookies && typeof bru.cookies.clear === "function") {
+              bru.cookies.clear();
+            }
+          } catch (c0) {}
+          try {
+            if (bru.cookies && typeof bru.cookies.delete === "function") {
+              bru.cookies.delete("studioos_access");
+              bru.cookies.delete("studioos_refresh");
+            } else if (bru.cookies && typeof bru.cookies.remove === "function") {
+              bru.cookies.remove("studioos_access");
+              bru.cookies.remove("studioos_refresh");
+            }
+          } catch (c1) {}
+          try {
+            if (typeof bru.cookies.jar === "function") {
+              var jar = bru.cookies.jar();
+              if (jar && root && typeof jar.deleteCookies === "function") {
+                jar.deleteCookies(root + "/");
+              }
+            }
+          } catch (c2) {}
+        })();
+
+        var res;
         try {
           res = await bru.sendRequest({
             method: "POST",
@@ -124,33 +152,69 @@ request:
           throw new Error("Login failed: " + JSON.stringify(res.data !== undefined ? res.data : res.status));
         }
 
-        // Tokens are httpOnly cookies; sync jar into vars when the sandbox exposes bru.cookies.get / bru.setVar.
-        function safeCookie(name) {
-          if (!bru.cookies || typeof bru.cookies.get !== "function") {
-            return undefined;
+        // Parse tokens from Set-Cookie header
+        function getHeader(headers, name) {
+          if (!headers) return undefined;
+          var want = String(name).toLowerCase();
+          for (var k in headers) {
+            if (Object.prototype.hasOwnProperty.call(headers, k) && String(k).toLowerCase() === want) {
+              return headers[k];
+            }
           }
-          try {
-            return bru.cookies.get(name);
-          } catch (e3) {
-            return undefined;
+          return undefined;
+        }
+        var loginHeaders = res && res.headers;
+        var rawCookie =
+          getHeader(loginHeaders, "set-cookie") ||
+          (loginHeaders && (loginHeaders["set-cookie"] || loginHeaders["Set-Cookie"]));
+        var cookieBlob = Array.isArray(rawCookie) ? rawCookie.join(",") : String(rawCookie || "");
+        var accessM = cookieBlob.match(/studioos_access=([^;]+)/);
+        var refreshM = cookieBlob.match(/studioos_refresh=([^;]+)/);
+
+        // Set Cookie header directly on the outgoing request — cookie jar APIs are unreliable in Bruno's sandbox.
+        var cookieParts = [];
+        if (accessM) cookieParts.push("studioos_access=" + accessM[1]);
+        if (refreshM) cookieParts.push("studioos_refresh=" + refreshM[1]);
+        if (cookieParts.length > 0 && req && typeof req.setHeader === "function") {
+          req.setHeader("Cookie", cookieParts.join("; "));
+        }
+
+        // Also attempt cookie jar persistence (best-effort for the Cookies drawer).
+        (async function persistCookies() {
+          var jar = null;
+          try { jar = typeof bru.cookies.jar === "function" ? bru.cookies.jar() : null; } catch (_) {}
+          var origin = String(baseUrl || "").replace(/\/$/, "") + "/";
+          if (jar && typeof jar.setCookie === "function") {
+            try {
+              if (accessM) jar.setCookie(origin, "studioos_access", accessM[1]);
+              if (refreshM) jar.setCookie(origin, "studioos_refresh", refreshM[1]);
+            } catch (_) {}
           }
-        }
-        function safeSetVar(key, val) {
-          if (typeof bru.setVar !== "function") {
-            return;
+          if (bru.cookies && typeof bru.cookies.upsert === "function") {
+            try {
+              if (accessM) await bru.cookies.upsert({ key: "studioos_access", value: accessM[1], path: "/", httpOnly: true, sameSite: "lax" });
+              if (refreshM) await bru.cookies.upsert({ key: "studioos_refresh", value: refreshM[1], path: "/", httpOnly: true, sameSite: "lax" });
+            } catch (_) {}
           }
-          try {
-            bru.setVar(key, val);
-          } catch (e4) {}
-        }
-        var access = safeCookie("studioos_access");
-        var refresh = safeCookie("studioos_refresh");
-        if (access) {
-          safeSetVar("access_token", access);
-        }
-        if (refresh) {
-          safeSetVar("refresh_token", refresh);
-        }
+        })();
+
+        // Sync tokens into collection variables as fallback.
+        if (accessM && typeof bru.setVar === "function") { try { bru.setVar("access_token", accessM[1]); } catch (_) {} }
+        if (refreshM && typeof bru.setVar === "function") { try { bru.setVar("refresh_token", refreshM[1]); } catch (_) {} }
+
+docs:
+  content: |
+    **StudioOS cookie login (collection hook)**
+
+    - Requires **Bruno 3.0+** for YAML/Open Collection; use **Bruno 3.1.3+** if collection scripts disappear from the UI (known fixed bug).
+    - Open this folder as the collection root (must contain `opencollection.yml`).
+    - Select an **environment** with `login_email` and `login_password`.
+    - `collection.bru` duplicates the same script for classic Bruno; edit **both** if you change the hook.
+
+    You should see `[studioos] pre-request script running` in the **Timeline / Console** before each protected request.
+
+    **`bru.sendRequest` login** returns `Set-Cookie`, but Bruno does not always copy those into the **Cookies** drawer until they are saved to the jar. This collection parses `Set-Cookie` and calls **`bru.cookies.upsert`** / **`jar.setCookie`** so the UI and the following request stay in sync.
+  type: text/markdown
 bundled: false
 extensions:
   bruno:

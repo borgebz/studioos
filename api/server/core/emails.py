@@ -48,10 +48,12 @@ def send_templated_email(*, to, subject, template_name, context=None, language=N
         # The exception is fully logged above for monitoring and alerting.
 
 
-def send_simple_email(*, to, subject, body):
+def send_simple_email(*, to, subject, body, attachments=None):
     """
     Send one email without Django HTML templates.
     If `body` looks like HTML, sends multipart/alternative (plain + HTML).
+
+    attachments: optional list of (filename, content_bytes, mime_type) tuples.
     """
     from django.utils.html import strip_tags
 
@@ -72,6 +74,9 @@ def send_simple_email(*, to, subject, body):
     )
     if "<" in body and ">" in body:
         msg.attach_alternative(body, "text/html")
+
+    for filename, content, mime_type in (attachments or []):
+        msg.attach(filename, content, mime_type)
 
     try:
         msg.send()

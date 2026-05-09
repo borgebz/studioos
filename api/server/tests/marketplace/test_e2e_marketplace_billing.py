@@ -23,12 +23,12 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from billing.models import BillingEntry, BillingEntrySourceType, BillingEntryStatus
 from inventory.models import ProductVariant
+from tests.conftest import make_user_with_role
 
 User = get_user_model()
 
@@ -42,48 +42,14 @@ def _uid() -> str:
     return uuid.uuid4().hex[:8]
 
 
-def _staff_user(*, billing=True):
-    """Create a user with full marketplace, inventory, and optionally billing perms."""
-    user = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local",
-        password="x",
-        first_name="Staff",
-        last_name="User",
-        is_active=True,
-    )
-    app_labels = ["marketplace", "inventory"]
-    if billing:
-        app_labels.append("billing")
-    perms = Permission.objects.filter(content_type__app_label__in=app_labels)
-    user.user_permissions.add(*perms)
-    # Need can_list_users to filter billing by student
-    can_list = Permission.objects.filter(codename="can_list_users").first()
-    if can_list:
-        user.user_permissions.add(can_list)
-    user.refresh_from_db()
-    return user
+def _staff_user(**_kwargs):
+    """Direction user — has marketplace, inventory, billing, and accounts perms via seed."""
+    return make_user_with_role("direction")
 
 
-def _member_user(*, billing=False):
-    """Create a plain authenticated member. Optionally grant billing view perm."""
-    user = User.objects.create_user(
-        email=f"member_{_uid()}@t.local",
-        password="x",
-        first_name="Member",
-        last_name="User",
-        is_active=True,
-    )
-    inv_perms = Permission.objects.filter(content_type__app_label="inventory")
-    user.user_permissions.add(*inv_perms)
-    if billing:
-        bill_view = Permission.objects.filter(
-            codename="view_billingentry",
-            content_type__app_label="billing",
-        ).first()
-        if bill_view:
-            user.user_permissions.add(bill_view)
-    user.refresh_from_db()
-    return user
+def _member_user(**_kwargs):
+    """Student user — has marketplace user perms and billing view via seed."""
+    return make_user_with_role("student")
 
 
 def _client(user) -> APIClient:
@@ -297,15 +263,8 @@ def test_billing_01_sell_asking_price_entry_created_rejected_buyer_not_billed(db
     ma_ids = [e["id"] for e in ma_entries.json()]
     assert entry.id in ma_ids
 
-    # member_b sees nothing
-    cb_with_billing = APIClient()
-    billing_perm = Permission.objects.filter(
-        codename="view_billingentry", content_type__app_label="billing"
-    ).first()
-    member_b.user_permissions.add(billing_perm)
-    member_b.refresh_from_db()
-    cb_with_billing.force_authenticate(user=member_b)
-    mb_entries = cb_with_billing.get("/api/billing/entries/")
+    # member_b sees nothing (student role already has view_billingentry via seed)
+    mb_entries = cb.get("/api/billing/entries/")
     assert mb_entries.status_code == 200
     assert not any(e["id"] == entry.id for e in mb_entries.json())
 
@@ -658,7 +617,7 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
     from marketplace import services as mkt_svc
     from billing import services as bill_svc
 
-    member_owner = _member_user(billing=True)
+    member_owner = _staff_user()
     member_buyer = _member_user(billing=True)
     direction = _staff_user()
     member_other = _member_user(billing=True)
@@ -779,11 +738,11 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
     assert buyer_entry_data["status"] == "pending"
     assert Decimal(buyer_entry_data["amount_due"]) == Decimal("25.00")
 
-    # owner sees nothing (they are not the student/payer)
+    # owner is direction (staff) so can see all billing entries
     owner_entries = co.get("/api/billing/entries/")
     assert owner_entries.status_code == 200
     owner_ids = [e["id"] for e in owner_entries.json()]
-    assert entry.id not in owner_ids
+    assert entry.id in owner_ids
 
     # other member sees nothing
     other_entries = _client(member_other).get("/api/billing/entries/")
@@ -796,4 +755,4 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
     assert buyer_qs.filter(id=entry.id).exists()
 
     owner_qs = bill_svc.list_billing_entries(requesting_user=member_owner)
-    assert not owner_qs.filter(id=entry.id).exists()
+    assert owner_qs.filter(id=entry.id).exists()

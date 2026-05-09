@@ -441,6 +441,7 @@ class TestEventsHttp:
             to=direction_user.email,
             subject="T",
             body="<p>Hello</p>",
+            attachments=[],
         )
 
     @patch(

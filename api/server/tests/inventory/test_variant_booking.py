@@ -1,10 +1,10 @@
 import pytest
 from datetime import timedelta
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
+
+from tests.conftest import make_user_with_role
 
 from inventory.services.category_services import create_category
 from inventory.services.product_services import create_product
@@ -16,13 +16,7 @@ from inventory.services.variant_booking_services import create_booking
 
 @pytest.mark.django_db
 def test_create_valid_variant_booking():
-    User = get_user_model()
-    user = User.objects.create_user(
-        email="test1@example.com",
-        password="pass1234",
-    )
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     size_system = create_size_system(name="EU")
     size = create_size(name="M", size_system_id=size_system.id)
@@ -61,13 +55,7 @@ def test_create_valid_variant_booking():
 
 @pytest.mark.django_db
 def test_invalid_booking_dates():
-    User = get_user_model()
-    user = User.objects.create_user(
-        email="test2@example.com",
-        password="pass1234",
-    )
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     size_system = create_size_system(name="EU")
     size = create_size(name="M", size_system_id=size_system.id)
@@ -106,13 +94,7 @@ def test_invalid_booking_dates():
 
 @pytest.mark.django_db
 def test_overlap_booking_same_variant():
-    User = get_user_model()
-    user = User.objects.create_user(
-        email="test3@example.com",
-        password="pass1234",
-    )
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     size_system = create_size_system(name="EU")
     size = create_size(name="M", size_system_id=size_system.id)

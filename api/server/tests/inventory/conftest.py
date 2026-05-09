@@ -4,6 +4,8 @@ import config.pytest_db_host_env  # noqa: F401 — inner conftest loads before p
 
 import pytest
 
+from tests.conftest import make_user_with_role
+
 
 @pytest.fixture
 def inventory_permission():

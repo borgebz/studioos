@@ -26,10 +26,33 @@ class ClasseMemberSerializer(serializers.ModelSerializer):
         fields = ["id", "student", "created_at"]
 
 
+class ClasseMemberSummaryStudentSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+
+
+class ClasseMemberSummarySerializer(serializers.ModelSerializer):
+    student = ClasseMemberSummaryStudentSerializer(read_only=True)
+
+    class Meta:
+        model = ClasseMember
+        fields = ["id", "student"]
+
+
 class ClasseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Classe
         fields = ["id", "name", "description", "created_at", "updated_at"]
+
+
+class ClasseListSerializer(serializers.ModelSerializer):
+    members = ClasseMemberSummarySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Classe
+        fields = ["id", "name", "description", "created_at", "updated_at", "members"]
 
 
 class ClasseDetailSerializer(serializers.ModelSerializer):

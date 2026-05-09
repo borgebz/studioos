@@ -1,6 +1,7 @@
 from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -29,6 +30,7 @@ from coachings.serializers import (
     TeacherConfirmCoachingSerializer,
 )
 from core.decorators import require_any_perm, require_perm
+from core.guardian import resolve_acting_student
 from core.pagination import paginated_response
 from core.schemas import DEFAULT_ERROR_RESPONSES
 
@@ -177,9 +179,13 @@ class CoachingRequestCreateView(APIView):
     def post(self, request):
         serializer = CoachingRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        data = dict(serializer.validated_data)
+        on_behalf_of = data.pop("on_behalf_of", None)
+        student = resolve_acting_student(request, on_behalf_of)
         coaching = services.create_coaching_request(
             requesting_user=request.user,
-            **serializer.validated_data,
+            student=student if on_behalf_of else None,
+            **data,
         )
         coaching = services.get_coaching(pk=coaching.pk)
         return Response(
@@ -207,9 +213,19 @@ class CoachingDetailView(APIView):
     def patch(self, request, pk):
         coaching = services.get_coaching(pk=pk)
         can_change_all = request.user.has_perm("coachings.change_coachingclass")
-        is_party = request.user.id == coaching.teacher_id or (
+        is_requester = (
             coaching.requested_by_id is not None
             and request.user.id == coaching.requested_by_id
+        )
+        is_parent_of_participant = any(
+            p.student.parent_id == request.user.id
+            for p in coaching.participants.all()
+            if p.student.parent_id is not None
+        )
+        is_party = (
+            request.user.id == coaching.teacher_id
+            or is_requester
+            or is_parent_of_participant
         )
         if not can_change_all and not (
             is_party and request.user.has_perm("coachings.view_coachingclass")
@@ -279,17 +295,7 @@ class CoachingRejectView(APIView):
         reason = serializer.validated_data.get("rejection_reason", "")
 
         with transaction.atomic():
-            from coachings.models import CoachingClass
-            from core.exceptions import AppNotFound
-
-            try:
-                coaching = (
-                    CoachingClass.objects.select_for_update(of=("self",))
-                    .select_related("teacher", "modality", "studio", "requested_by")
-                    .get(pk=pk)
-                )
-            except CoachingClass.DoesNotExist:
-                raise AppNotFound("CoachingNotFound")
+            coaching = services.get_coaching_for_update(pk=pk)
 
             if coaching.status == CoachingStatus.REQUESTED:
                 if coaching.teacher_id == request.user.id and request.user.has_perm(
@@ -377,19 +383,36 @@ class CoachingCancelView(APIView):
         return Response(CoachingClassSerializer(coaching).data)
 
 
+class ParticipantAcceptInviteSerializer(serializers.Serializer):
+    on_behalf_of = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Student user ID when a parent accepts on behalf of their child.",
+    )
+
+
 class ParticipantAcceptInviteView(APIView):
-    """POST — invited student confirms attendance (staff invite → active; non-staff invite → pending)."""
+    """POST — invited student (or parent on their behalf) confirms attendance."""
 
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        request=ParticipantAcceptInviteSerializer,
         responses={200: CoachingParticipantSerializer, **DEFAULT_ERROR_RESPONSES},
     )
-    @require_perm("accounts.can_participate_in_coaching")
+    @require_any_perm(
+        "accounts.can_participate_in_coaching",
+        "coachings.add_coachingclass",
+    )
     def post(self, request, coaching_id):
+        ser = ParticipantAcceptInviteSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        on_behalf_of = ser.validated_data.get("on_behalf_of")
+        student = resolve_acting_student(request, on_behalf_of)
         participant = services.student_accept_coaching_invitation(
             coaching_class_id=coaching_id,
             user=request.user,
+            student=student if on_behalf_of else None,
         )
         return Response(CoachingParticipantSerializer(participant).data)
 
@@ -480,6 +503,7 @@ class ParticipantCancelView(APIView):
     @require_any_perm(
         "coachings.change_coachingparticipant",
         "accounts.can_participate_in_coaching",
+        "coachings.add_coachingclass",
     )
     def post(self, request, coaching_id, pk):
         can_manage = request.user.has_perm("coachings.change_coachingparticipant")

@@ -314,12 +314,28 @@ def _participant_row_for_add_participant(*, coaching, student_id, requesting_use
     The ``invited_by_staff`` flag drives downstream behaviour (e.g. accept-invite → active vs
     pending, and whether teacher-accept bumps an invite to pending).
     """
-    if (
+    is_self_request = (
         coaching.requested_by_id is not None
         and student_id == coaching.requested_by_id
         and requesting_user.pk == student_id
-    ):
+    )
+    if is_self_request:
         return CoachingParticipantStatus.PENDING, False
+
+    # Parent adding their child as part of the coaching they requested.
+    if (
+        coaching.requested_by_id is not None
+        and coaching.requested_by_id == requesting_user.pk
+        and student_id != requesting_user.pk
+    ):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        try:
+            student_obj = User.objects.get(pk=student_id)
+            if student_obj.parent_id == requesting_user.pk:
+                return CoachingParticipantStatus.PENDING, False
+        except User.DoesNotExist:
+            pass
 
     invited_by_staff = requesting_user.has_perm("coachings.change_coachingparticipant")
     if coaching.status == CoachingStatus.SCHEDULED:
@@ -738,6 +754,17 @@ def get_coaching(*, pk):
         raise AppNotFound("CoachingNotFound")
 
 
+def get_coaching_for_update(*, pk):
+    try:
+        return (
+            CoachingClass.objects.select_for_update(of=("self",))
+            .select_related("teacher", "modality", "studio", "requested_by")
+            .get(pk=pk)
+        )
+    except CoachingClass.DoesNotExist:
+        raise AppNotFound("CoachingNotFound")
+
+
 def _resolve_coaching_from_pk_or_instance(*, pk, coaching):
     if coaching is not None:
         return coaching
@@ -862,6 +889,7 @@ def list_coachings(
     status=None,
     studio_id=None,
     requested_by_id=None,
+    participant_id=None,
     recurring_coaching_id=None,
     date_from=None,
     date_to=None,
@@ -875,6 +903,8 @@ def list_coachings(
         qs = qs.filter(studio_id=studio_id)
     if requested_by_id is not None:
         qs = qs.filter(requested_by_id=requested_by_id)
+    if participant_id is not None:
+        qs = qs.filter(participants__student_id=participant_id)
     if recurring_coaching_id is not None:
         qs = qs.filter(recurring_coaching_id=recurring_coaching_id)
     if date_from is not None:
@@ -895,7 +925,10 @@ def create_coaching_request(
     notes="",
     studio_id=None,
     classe_id=None,
+    student=None,
 ):
+    actual_student = student or requesting_user
+
     _validate_datetime_range(start=start_datetime, end=end_datetime)
     _get_teacher_user(teacher_id=teacher_id)
     try:
@@ -917,7 +950,6 @@ def create_coaching_request(
             end_datetime=end_datetime,
         )
     else:
-        # Even without a studio, check for teacher schedule conflicts.
         teacher_qs = CoachingClass.objects.filter(
             teacher_id=teacher_id,
             status=CoachingStatus.SCHEDULED,
@@ -951,27 +983,31 @@ def create_coaching_request(
     coaching.full_clean()
     coaching.save()
     logger.info(
-        "CoachingClass requested by user=%s teacher=%s classe=%s",
+        "CoachingClass requested by user=%s student=%s teacher=%s classe=%s",
         requesting_user.id,
+        actual_student.id,
         teacher_id,
         classe_id,
     )
 
-    # Add the requesting user as PENDING participant (existing behaviour).
-    if requesting_user.has_perm("accounts.can_participate_in_coaching"):
+    # Add the actual student (child or self) as PENDING participant.
+    if actual_student.has_perm("accounts.can_participate_in_coaching"):
         add_participant(
             coaching_class_id=coaching.pk,
-            student_id=requesting_user.pk,
+            student_id=actual_student.pk,
             requesting_user=requesting_user,
         )
 
-    # When a classe is provided, bulk-add the remaining class members as INVITED.
     if classe_id is not None:
         _bulk_roster_coaching_request(
             coaching=coaching,
             requesting_user=requesting_user,
             classe_id=classe_id,
         )
+
+    from messaging.services import get_or_create_coaching_conversation
+
+    get_or_create_coaching_conversation(coaching=coaching, created_by=requesting_user)
 
     from coachings.tasks import notify_new_coaching_request
 
@@ -1047,7 +1083,14 @@ def create_direct_coordination_coaching(
             notes=rd.get("notes", ""),
             created_by=requesting_user,
         )
-        recurring_row.full_clean()
+        try:
+            recurring_row.full_clean()
+        except DjangoValidationError as exc:
+            error_dict = getattr(exc, "message_dict", {})
+            messages = []
+            for field_errors in error_dict.values():
+                messages.extend(field_errors)
+            raise ValidationError({"messages": messages}) from exc
         recurring_row.save()
 
     coaching_status = (
@@ -1129,6 +1172,10 @@ def create_direct_coordination_coaching(
             len(occurrence_dates),
             recurring_row.pk,
         )
+
+    from messaging.services import get_or_create_coaching_conversation
+
+    get_or_create_coaching_conversation(coaching=coaching, created_by=requesting_user)
 
     logger.info(
         "CoachingClass direct coordination create user=%s teacher=%s schedule=%s auto_confirm=%s recurring=%s",
@@ -1630,6 +1677,10 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
     except IntegrityError as exc:
         raise ValidationError({"messages": ["ParticipantAlreadyEnrolled"]}) from exc
 
+    from messaging.services import sync_coaching_conversation_participants
+
+    sync_coaching_conversation_participants(coaching=coaching)
+
     logger.info(
         "CoachingParticipant student=%s added to coaching=%s by user=%s",
         student_id,
@@ -1640,13 +1691,18 @@ def add_participant(*, coaching_class_id, student_id, requesting_user):
 
 
 @transaction.atomic
-def student_accept_coaching_invitation(*, coaching_class_id, user):
+def student_accept_coaching_invitation(*, coaching_class_id, user, student=None):
     """
     Invited participant confirms attendance.
 
     Staff-invited rows (``invited_by_staff=True``): INVITED → ACTIVE.
     Non-staff invites (``invited_by_staff=False``): INVITED → PENDING (needs staff approval).
+
+    When ``student`` is provided (parent acting on behalf of child), the lookup
+    targets the child's participant row. Guardian check is done in the view layer.
     """
+    actual_student = student or user
+
     try:
         coaching = (
             CoachingClass.objects.select_for_update()
@@ -1666,7 +1722,7 @@ def student_accept_coaching_invitation(*, coaching_class_id, user):
     try:
         participant = CoachingParticipant.objects.select_for_update().get(
             coaching_class_id=coaching_class_id,
-            student_id=user.id,
+            student_id=actual_student.id,
         )
     except CoachingParticipant.DoesNotExist:
         raise AppNotFound("ParticipantNotFound")
@@ -1766,15 +1822,21 @@ def cancel_coaching_participant(
         raise AppNotFound("CoachingNotFound")
 
     try:
-        participant = CoachingParticipant.objects.select_for_update().get(
-            pk=participant_pk,
-            coaching_class_id=coaching_class_id,
+        participant = (
+            CoachingParticipant.objects.select_for_update()
+            .select_related("student")
+            .get(pk=participant_pk, coaching_class_id=coaching_class_id)
         )
     except CoachingParticipant.DoesNotExist:
         raise AppNotFound("ParticipantNotFound")
 
     if not may_cancel_on_behalf_of_others:
-        if participant.student_id != requesting_user.id:
+        is_self = participant.student_id == requesting_user.id
+        is_guardian = (
+            participant.student.parent_id is not None
+            and participant.student.parent_id == requesting_user.id
+        )
+        if not is_self and not is_guardian:
             raise ValidationError(
                 {"messages": ["CannotCancelAnotherParticipantsRegistration"]}
             )

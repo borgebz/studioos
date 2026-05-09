@@ -1,5 +1,9 @@
 from django.urls import path
 
+from marketplace.views.comment_views import (
+    ListingCommentDetailView,
+    ListingCommentListCreateView,
+)
 from marketplace.views.listing_views import (
     FavoriteListingsView,
     ListingAvailabilityView,
@@ -43,6 +47,11 @@ urlpatterns = [
     path("listings/<int:listing_id>/unpublish/", ListingUnpublishView.as_view()),
     path("listings/<int:listing_id>/favorite/", ListingFavoriteView.as_view()),
     path("listings/<int:listing_id>/availability/", ListingAvailabilityView.as_view()),
+    path("listings/<int:listing_id>/comments/", ListingCommentListCreateView.as_view()),
+    path(
+        "listings/<int:listing_id>/comments/<int:comment_id>/",
+        ListingCommentDetailView.as_view(),
+    ),
     path("listings/<int:listing_id>/request/", TransactionRequestView.as_view()),
     # ------------------------------------------------------------------
     # Member-facing transactions

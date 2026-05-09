@@ -1,7 +1,8 @@
 import pytest
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from rest_framework.exceptions import PermissionDenied, ValidationError
+
+from tests.conftest import make_user_with_role
 
 from inventory.services.category_services import create_category
 from inventory.services.product_services import create_product
@@ -9,19 +10,7 @@ from inventory.services.product_services import create_product
 
 @pytest.mark.django_db
 def test_create_valid_product():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="prod1@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(
-        codename="add_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa")
 
@@ -58,19 +47,7 @@ def test_create_product_without_permission():
 
 @pytest.mark.django_db
 def test_create_product_without_name():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="prod3@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(
-        codename="add_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa")
 
@@ -86,19 +63,7 @@ def test_create_product_without_name():
 
 @pytest.mark.django_db
 def test_create_product_invalid_category():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="prod4@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(
-        codename="add_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     with pytest.raises(ValidationError) as exc:
         create_product(

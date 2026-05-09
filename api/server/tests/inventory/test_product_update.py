@@ -1,9 +1,9 @@
 import pytest
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AppNotFound
+
+from tests.conftest import make_user_with_role
 
 from inventory.services.category_services import create_category
 from inventory.services.product_services import (
@@ -12,25 +12,9 @@ from inventory.services.product_services import (
 )
 
 
-def _add_product_perm(user):
-    perm = Permission.objects.get(
-        codename="add_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
-    user.user_permissions.add(perm)
-
-
 @pytest.mark.django_db
 def test_update_product_simple_fields():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="update1@test.com",
-        password="1234",
-    )
-
-    _add_product_perm(user)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa")
 
@@ -57,14 +41,7 @@ def test_update_product_simple_fields():
 
 @pytest.mark.django_db
 def test_update_product_cannot_change_owner_type():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="update2@test.com",
-        password="1234",
-    )
-
-    _add_product_perm(user)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Calçado")
 
@@ -87,14 +64,7 @@ def test_update_product_cannot_change_owner_type():
 
 @pytest.mark.django_db
 def test_update_product_cannot_change_owner_id():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="update3@test.com",
-        password="1234",
-    )
-
-    _add_product_perm(user)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Acessórios")
 
@@ -117,14 +87,7 @@ def test_update_product_cannot_change_owner_id():
 
 @pytest.mark.django_db
 def test_update_product_invalid_product():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="update4@test.com",
-        password="1234",
-    )
-
-    _add_product_perm(user)
+    user = make_user_with_role("direction")
 
     with pytest.raises(AppNotFound):
         update_product(

@@ -1,9 +1,9 @@
 import pytest
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AppNotFound
+
+from tests.conftest import make_user_with_role
 
 from inventory.services.category_services import create_category
 from inventory.services.product_services import create_product
@@ -17,15 +17,7 @@ from inventory.services.size_system_services import create_size_system
 
 @pytest.mark.django_db
 def test_create_valid_variant():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="variant1@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa")
 
@@ -57,15 +49,7 @@ def test_create_valid_variant():
 
 @pytest.mark.django_db
 def test_create_variant_duplicate_sku():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="variant2@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa")
 
@@ -106,15 +90,7 @@ def test_create_variant_duplicate_sku():
 
 @pytest.mark.django_db
 def test_create_variant_invalid_product():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="variant3@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     size_system = create_size_system(name="EU")
     size = create_size(
@@ -135,15 +111,7 @@ def test_create_variant_invalid_product():
 
 @pytest.mark.django_db
 def test_create_variant_invalid_size():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="variant4@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa")
 
@@ -169,15 +137,7 @@ def test_create_variant_invalid_size():
 
 @pytest.mark.django_db
 def test_delete_variant_archives():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="variant5@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa")
 

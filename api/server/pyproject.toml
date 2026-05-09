@@ -26,6 +26,7 @@ dependencies = [
     "channels>=4.2.0",
     "channels-redis>=4.2.0",
     "daphne>=4.1.2",
+    "pytest-cov>=6.0.0",
 ]
 
 [tool.pytest.ini_options]
@@ -33,4 +34,52 @@ DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 testpaths = ["tests", "inventory", "enrollments"]
 pythonpath = ["."]
-addopts = ["--strict-markers", "-ra", "-p", "config.pytest_db_env_plugin"]
+addopts = [
+    "--strict-markers",
+    "-ra",
+    "-p", "config.pytest_db_env_plugin",
+    "--cov",
+    "--cov-report=term-missing",
+]
+
+[tool.coverage.run]
+source = [
+    "accounts",
+    "billing",
+    "classes",
+    "coachings",
+    "core",
+    "enrollments",
+    "events",
+    "inventory",
+    "marketplace",
+    "messaging",
+    "modality",
+    "roles",
+    "studios",
+]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/tests.py",
+    "*/test_*.py",
+    "*/*_tests.py",
+    "*/admin.py",
+    "*/apps.py",
+    "*/conftest.py",
+    "*/__pycache__/*",
+    "config/*",
+    "manage.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
+]
+show_missing = true
+precision = 1
+skip_empty = true

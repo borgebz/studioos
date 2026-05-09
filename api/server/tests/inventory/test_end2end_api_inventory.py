@@ -4,9 +4,9 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.utils import timezone
+
+from tests.conftest import make_user_with_role
 
 
 def _uid() -> str:
@@ -15,22 +15,8 @@ def _uid() -> str:
 
 @pytest.fixture
 def inv_user(db):
-    """
-    End-to-end API tests need broad inventory permissions so we can cover:
-    size systems, sizes, categories, colors, products, variants, and bookings.
-    """
-    User = get_user_model()
-    user = User.objects.create_user(
-        email=f"e2e_inv_{_uid()}@test.local",
-        password="test-pass-123",
-        first_name="Inventory",
-        last_name="E2E",
-        is_active=True,
-    )
-    perms = Permission.objects.filter(content_type__app_label="inventory")
-    user.user_permissions.add(*perms)
-    user.refresh_from_db()
-    return user
+    """Direction user — has all inventory permissions via seeded role."""
+    return make_user_with_role("direction")
 
 
 @pytest.fixture

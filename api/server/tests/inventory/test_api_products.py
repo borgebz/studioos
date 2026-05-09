@@ -1,7 +1,9 @@
 import pytest
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+
+from tests.conftest import make_user_with_role
+
 from inventory.models import Product
 from inventory.services.category_services import create_category
 
@@ -35,15 +37,8 @@ def test_school_products_requires_authentication():
 
 @pytest.mark.django_db
 def test_authenticated_user_can_get_products():
-    User = get_user_model()
-    user = User.objects.create_user(email="api1@test.com", password="1234")
-    permission = Permission.objects.get(
-        codename="view_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
+    user = make_user_with_role("direction")
 
-    user.user_permissions.add(permission)
     client = APIClient()
     client.force_authenticate(user=user)
     response = client.get("/inventory/products/")
@@ -54,16 +49,8 @@ def test_authenticated_user_can_get_products():
 
 @pytest.mark.django_db
 def test_authenticated_user_can_create_product():
-    User = get_user_model()
-    user = User.objects.create_user(email="api2@test.com", password="1234")
+    user = make_user_with_role("direction")
 
-    permission = Permission.objects.get(
-        codename="add_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
-
-    user.user_permissions.add(permission)
     client = APIClient()
     client.force_authenticate(user=user)
     category = create_category(name="API Category")
@@ -101,22 +88,7 @@ def test_user_without_school_permission_cannot_create_school_product():
 
 @pytest.mark.django_db
 def test_authenticated_user_can_get_product_detail():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="api4@test.com", password="1234")
-
-    view_permission = Permission.objects.get(
-        codename="view_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
-    add_permission = Permission.objects.get(
-        codename="add_product",
-        content_type__app_label="inventory",
-        content_type__model="product",
-    )
-
-    user.user_permissions.add(view_permission, add_permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Detail Category")
 

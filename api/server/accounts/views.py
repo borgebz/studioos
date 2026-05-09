@@ -11,6 +11,7 @@ from .serializers import (
     BulkInviteFileSerializer,
     CompleteOnboardingSerializer,
     CreateUserSerializer,
+    EmailExportQuerySerializer,
     InviteSingleSerializer,
     LoginSerializer,
     MeSerializer,
@@ -31,6 +32,7 @@ from .services import (
     get_onboarding_preview,
     get_profile_for_user,
     invite_user,
+    list_emails_for_export,
     list_teachers,
     list_users,
     resend_invite,
@@ -286,16 +288,9 @@ class MeView(APIView):
 
     @extend_schema(responses={200: MeSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request):
-        from django.contrib.auth.models import Group
-        from django.db.models import Prefetch
+        from accounts.services import get_me_user
 
-        user = User.objects.prefetch_related(
-            Prefetch(
-                "groups",
-                queryset=Group.objects.select_related("role").prefetch_related("permissions"),
-            ),
-            "user_permissions",
-        ).get(pk=request.user.pk)
+        user = get_me_user(pk=request.user.pk)
         serializer = MeSerializer(user, context={"request": request})
         return Response(serializer.data)
 
@@ -532,3 +527,54 @@ class ResendInviteView(APIView):
     def post(self, request, pk):
         resend_invite(user_pk=int(pk), requesting_user=request.user)
         return Response(status=status.HTTP_200_OK)
+
+
+class EmailExportView(APIView):
+    """
+    GET /api/accounts/emails/export/
+    Export filtered user emails as CSV. Direction and coordination only.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[EmailExportQuerySerializer],
+        responses={200: {"type": "string", "format": "binary"}},
+    )
+    @require_perm("accounts.can_list_users")
+    def get(self, request):
+        import csv
+        from django.http import HttpResponse
+
+        query = EmailExportQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        filters = query.validated_data
+
+        users = list_emails_for_export(
+            role=filters.get("role"),
+            classe_ids=filters.get("classe_ids"),
+            modality_ids=filters.get("modality_ids"),
+            is_active=filters.get("is_active"),
+        )
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="emails.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow(["email", "first_name", "last_name", "role", "is_active"])
+
+        for user in users:
+            role_codes = []
+            for group in user.groups.all():
+                role = getattr(group, "role", None)
+                if role:
+                    role_codes.append(role.code)
+            writer.writerow([
+                user.email,
+                user.first_name,
+                user.last_name,
+                ",".join(role_codes),
+                user.is_active,
+            ])
+
+        return response

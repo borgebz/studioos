@@ -52,6 +52,11 @@ class CoachingRequestSerializer(serializers.Serializer):
     end_datetime = serializers.DateTimeField()
     notes = serializers.CharField(required=False, allow_blank=True)
     classe_id = serializers.IntegerField(required=False, allow_null=True)
+    on_behalf_of = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Student user ID when a parent requests on behalf of their child.",
+    )
 
 
 class RecurringCoachingSubmitSerializer(serializers.Serializer):
@@ -169,6 +174,10 @@ class CoachingListQuerySerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=CoachingStatus.choices, required=False)
     studio_id = serializers.IntegerField(required=False)
     requested_by_id = serializers.IntegerField(required=False)
+    participant_id = serializers.IntegerField(
+        required=False,
+        help_text="Filter coachings where this user is a participant.",
+    )
     recurring_coaching_id = serializers.IntegerField(required=False)
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
