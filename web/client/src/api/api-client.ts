@@ -9,6 +9,42 @@ type StudioOSApiClientConfig = Omit<ApiConfig<unknown>, 'baseUrl'> & {
 
 const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/$/, '')
 
+export const SESSION_EXPIRED_EVENT = 'studioos:session-expired'
+
+const AUTH_PATHS = ['/api/accounts/auth/login/', '/api/accounts/auth/logout/', '/api/accounts/auth/refresh/']
+
+let refreshPromise: Promise<Response> | null = null
+
+function createAuthFetch(baseUrl: string): typeof fetch {
+  return async (input, init) => {
+    const response = await fetch(input, init)
+
+    if (response.status !== 401) return response
+
+    const url = typeof input === 'string' ? input : input instanceof Request ? input.url : ''
+    if (AUTH_PATHS.some((p) => url.includes(p))) return response
+
+    if (!refreshPromise) {
+      refreshPromise = fetch(`${baseUrl}/api/accounts/auth/refresh/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).finally(() => {
+        refreshPromise = null
+      })
+    }
+
+    const refreshResponse = await refreshPromise
+    if (!refreshResponse.ok) {
+      window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT))
+      return response
+    }
+
+    return fetch(input, init)
+  }
+}
+
 export const createApiClient = (config: StudioOSApiClientConfig = {}) => {
   const baseUrl = normalizeBaseUrl(config.baseUrl ?? API_BASE_URL)
   const baseApiParams: RequestParams = {
@@ -24,6 +60,7 @@ export const createApiClient = (config: StudioOSApiClientConfig = {}) => {
     ...config,
     baseUrl,
     baseApiParams,
+    customFetch: createAuthFetch(baseUrl),
   })
 }
 

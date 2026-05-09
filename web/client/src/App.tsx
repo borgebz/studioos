@@ -1,30 +1,41 @@
-import { BrowserRouter, useLocation } from 'react-router-dom'
+import { BrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
-import { TopBar } from '@/components/layout/TopBar'
 import { AppSidebar } from '@/components/layout/AppSidebar'
 import { AppRoutes } from '@/app/routes'
 import { paths } from '@/app/paths'
+import { useAuth } from '@/auth/useAuth'
+import { LogoLoader } from '@/components/shared/LogoLoader'
+import { Toaster } from '@/components/ui/sonner'
 import './App.css'
 
 function AppShell() {
   const location = useLocation()
+  const { isAuthenticated, isLoading } = useAuth()
   const isAuthPage = location.pathname === paths.login
+  const isDesignSystem = location.pathname.startsWith(paths.designSystem)
 
   if (isAuthPage) {
     return <AppRoutes />
   }
 
-  return (
-    <SidebarProvider className="flex flex-col">
-      <TopBar />
-      <div className="flex flex-1 min-h-0">
-        <AppSidebar />
-        <SidebarInset>
-          <div className="flex-1 overflow-auto p-6">
-            <AppRoutes />
-          </div>
-        </SidebarInset>
+  if (isLoading && !isDesignSystem) {
+    return (
+      <div className="flex h-svh items-center justify-center bg-background">
+        <LogoLoader />
       </div>
+    )
+  }
+
+  if (!isAuthenticated && !isDesignSystem) {
+    return <Navigate to={paths.login} replace />
+  }
+
+  return (
+    <SidebarProvider className="!h-svh !min-h-0 overflow-hidden">
+      <AppSidebar />
+      <SidebarInset className="grain overflow-hidden">
+        <AppRoutes />
+      </SidebarInset>
     </SidebarProvider>
   )
 }
@@ -33,6 +44,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppShell />
+      <Toaster position="top-right" />
     </BrowserRouter>
   )
 }

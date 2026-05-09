@@ -1,28 +1,118 @@
 import { useTranslation } from 'react-i18next'
-import { NavLink, useLocation } from 'react-router-dom'
-import { Home, Palette } from 'lucide-react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Home,
+  CalendarDays,
+  Palette,
+  GraduationCap,
+  MoreVertical,
+  Sun,
+  Moon,
+  Monitor,
+  LogOut,
+} from 'lucide-react'
 import { paths } from '@/app/paths'
+import { useAuth } from '@/auth/useAuth'
+import { useTheme, type Theme } from '@/theme/ThemeProvider'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui/sidebar'
 
 const navItems = [
   { to: paths.home, labelKey: 'nav.home', icon: Home },
+  { to: paths.calendar, labelKey: 'nav.calendar', icon: CalendarDays },
+  { to: paths.coachingsCreate, labelKey: 'nav.coachings', icon: GraduationCap },
   { to: paths.designSystem, labelKey: 'nav.designSystem', icon: Palette },
 ] as const
 
+const themes: { value: Theme; labelKey: string; icon: typeof Sun }[] = [
+  { value: 'light', labelKey: 'theme.light', icon: Sun },
+  { value: 'dark', labelKey: 'theme.dark', icon: Moon },
+  { value: 'system', labelKey: 'theme.system', icon: Monitor },
+]
+
+const languages = [
+  { code: 'pt' as const, labelKey: 'lang.pt' },
+  { code: 'en' as const, labelKey: 'lang.en' },
+] as const
+
 export function AppSidebar() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
+
+  const currentLang = i18n.language.startsWith('pt') ? 'pt' : 'en'
+
+  const handleLangChange = (code: string) => {
+    i18n.changeLanguage(code)
+    localStorage.setItem('i18nextLng', code)
+  }
+
+  const displayName = user?.full_name || user?.email || ''
+  const photoUrl = user?.profile?.photo_url
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('')
 
   return (
     <Sidebar collapsible="icon">
+      <SidebarHeader className="px-4 pt-4 pb-3">
+        <NavLink
+          to={paths.home}
+          className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
+        >
+          <span
+            className="text-primary group-data-[collapsible=icon]:hidden"
+            style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontStyle: 'italic',
+              fontSize: '21px',
+              fontWeight: 500,
+              letterSpacing: '-0.01em',
+              lineHeight: 1,
+            }}
+          >
+            StudioOS
+          </span>
+          <span
+            className="hidden text-primary group-data-[collapsible=icon]:inline"
+            style={{
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontStyle: 'italic',
+              fontSize: '18px',
+              fontWeight: 500,
+            }}
+          >
+            E
+          </span>
+        </NavLink>
+      </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
@@ -51,6 +141,85 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter className="p-2">
+        <div className="flex items-center gap-2 rounded-md p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0">
+          <Avatar size="lg">
+            {photoUrl && <AvatarImage src={photoUrl} alt={displayName} />}
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <span className="flex-1 truncate text-sm group-data-[collapsible=icon]:hidden">
+            {displayName}
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground group-data-[collapsible=icon]:hidden">
+                <MoreVertical className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="end" className="w-48">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Sun className="size-4" />
+                  {t('theme.toggleLabel')}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {themes.map(({ value, labelKey, icon: IconOption }) => (
+                    <DropdownMenuItem
+                      key={value}
+                      onClick={() => setTheme(value)}
+                      className={
+                        theme === value
+                          ? 'bg-accent text-accent-foreground'
+                          : ''
+                      }
+                    >
+                      <IconOption className="size-4" />
+                      {t(labelKey)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <span className="flex size-4 items-center justify-center text-xs font-medium">
+                    {currentLang.toUpperCase()}
+                  </span>
+                  {t(`lang.${currentLang}`)}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {languages.map(({ code, labelKey }) => (
+                    <DropdownMenuItem
+                      key={code}
+                      onClick={() => handleLangChange(code)}
+                      className={
+                        currentLang === code
+                          ? 'bg-accent text-accent-foreground'
+                          : ''
+                      }
+                    >
+                      {t(labelKey)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={async () => {
+                  await logout()
+                  navigate(paths.login, { replace: true })
+                }}
+              >
+                <LogOut className="size-4" />
+                {t('designSystem.dropdownLogout')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   )
 }
