@@ -8,10 +8,11 @@ http:
   url: "{{base_url}}/api/classes/"
   body:
     type: json
-    data: |-
+    data: |
       {
-        "name": "Ballet A",
-        "description": "Morning ballet class"
+        "name": "Eduardo e ",
+        "description": "Dançarinos"
+        
       }
   auth: inherit
 

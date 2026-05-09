@@ -1,0 +1,196 @@
+meta {
+  name: studioos
+  type: collection
+}
+
+auth {
+  mode: none
+}
+
+docs {
+  Duplicate of opencollection.yml — keep in sync when editing the login hook.
+}
+
+script:pre-request {
+console.log("[studioos] pre-request script running");
+// Open Collection / some Bruno builds omit req.getPath(); avoid calling missing APIs (fixes "not a function").
+var pathStr = "";
+var urlStr = "";
+try {
+  if (req && typeof req.getUrl === "function") {
+    urlStr = req.getUrl() || "";
+  }
+  if (req && typeof req.getPath === "function") {
+    pathStr = req.getPath() || "";
+  }
+} catch (e) {}
+
+var reqName = "";
+try {
+  if (req && typeof req.getName === "function") {
+    reqName = req.getName() || "";
+  }
+} catch (e2) {}
+
+var skipLoginHook =
+  (pathStr && pathStr.indexOf("/auth/login") !== -1) ||
+  (urlStr && urlStr.indexOf("/auth/login") !== -1) ||
+  reqName.toLowerCase() === "login";
+if (skipLoginHook) {
+  return;
+}
+
+// Do not login immediately before refresh/logout — would reset cookies and confuse refresh testing.
+var skipAuthHook =
+  (pathStr && pathStr.indexOf("/auth/refresh") !== -1) ||
+  (urlStr && urlStr.indexOf("/auth/refresh") !== -1) ||
+  reqName.toLowerCase() === "refresh" ||
+  (pathStr && pathStr.indexOf("/auth/logout") !== -1) ||
+  (urlStr && urlStr.indexOf("/auth/logout") !== -1) ||
+  reqName.toLowerCase() === "logout";
+if (skipAuthHook) {
+  return;
+}
+
+if (
+  (pathStr && pathStr.indexOf("/onboard/") !== -1) ||
+  (urlStr && urlStr.indexOf("/onboard/") !== -1)
+) {
+  return;
+}
+if (
+  (pathStr && pathStr.indexOf("/api/accounts/activate") !== -1) ||
+  (urlStr && urlStr.indexOf("/api/accounts/activate") !== -1) ||
+  reqName.toLowerCase() === "activate-account"
+) {
+  return;
+}
+if (
+  (pathStr && pathStr.indexOf("/api/schema") !== -1) ||
+  (urlStr && urlStr.indexOf("/api/schema") !== -1)
+) {
+  return;
+}
+const baseUrl =
+  bru.getEnvVar("base_url") ||
+  bru.getCollectionVar("base_url") ||
+  "http://127.0.0.1:8000";
+const email =
+  bru.getEnvVar("login_email") || bru.getCollectionVar("login_email");
+const password =
+  bru.getEnvVar("login_password") ||
+  bru.getCollectionVar("login_password");
+
+if (!email || !password) {
+  throw new Error(
+    "Set login_email and login_password on the active environment (or collection variables)."
+  );
+}
+
+if (typeof bru.sendRequest !== "function") {
+  throw new Error(
+    "This collection requires bru.sendRequest (Open Collection / Bruno 2+). Update Bruno or use requests that do not depend on the login pre-request script."
+  );
+}
+
+// Drop stale sessions so changing login_email in the environment takes effect.
+// Otherwise the main request can still send old studioos_* cookies (e.g. student vs direction).
+(function clearAuthCookiesForBase() {
+  var root = String(baseUrl || "").replace(/\/$/, "");
+  try {
+    if (bru.cookies && typeof bru.cookies.clear === "function") {
+      bru.cookies.clear();
+    }
+  } catch (c0) {}
+  try {
+    if (bru.cookies && typeof bru.cookies.delete === "function") {
+      bru.cookies.delete("studioos_access");
+      bru.cookies.delete("studioos_refresh");
+    } else if (bru.cookies && typeof bru.cookies.remove === "function") {
+      bru.cookies.remove("studioos_access");
+      bru.cookies.remove("studioos_refresh");
+    }
+  } catch (c1) {}
+  try {
+    if (typeof bru.cookies.jar === "function") {
+      var jar = bru.cookies.jar();
+      if (jar && root && typeof jar.deleteCookies === "function") {
+        jar.deleteCookies(root + "/");
+      }
+    }
+  } catch (c2) {}
+})();
+
+var res;
+try {
+  res = await bru.sendRequest({
+    method: "POST",
+    url: `${baseUrl}/api/accounts/auth/login/`,
+    headers: { "Content-Type": "application/json" },
+    data: { email, password },
+  });
+} catch (err) {
+  var body = err && err.response && err.response.data;
+  if (body === undefined && err) {
+    body = err.message;
+  }
+  throw new Error(
+    "Login failed: " +
+      (typeof body === "string" ? body : JSON.stringify(body))
+  );
+}
+
+if (res.status !== 200) {
+  throw new Error("Login failed: " + JSON.stringify(res.data !== undefined ? res.data : res.status));
+}
+
+// Parse tokens from Set-Cookie header
+function getHeader(headers, name) {
+  if (!headers) return undefined;
+  var want = String(name).toLowerCase();
+  for (var k in headers) {
+    if (Object.prototype.hasOwnProperty.call(headers, k) && String(k).toLowerCase() === want) {
+      return headers[k];
+    }
+  }
+  return undefined;
+}
+var loginHeaders = res && res.headers;
+var rawCookie =
+  getHeader(loginHeaders, "set-cookie") ||
+  (loginHeaders && (loginHeaders["set-cookie"] || loginHeaders["Set-Cookie"]));
+var cookieBlob = Array.isArray(rawCookie) ? rawCookie.join(",") : String(rawCookie || "");
+var accessM = cookieBlob.match(/studioos_access=([^;]+)/);
+var refreshM = cookieBlob.match(/studioos_refresh=([^;]+)/);
+
+// Set Cookie header directly on the outgoing request — cookie jar APIs are unreliable in Bruno's sandbox.
+var cookieParts = [];
+if (accessM) cookieParts.push("studioos_access=" + accessM[1]);
+if (refreshM) cookieParts.push("studioos_refresh=" + refreshM[1]);
+if (cookieParts.length > 0 && req && typeof req.setHeader === "function") {
+  req.setHeader("Cookie", cookieParts.join("; "));
+}
+
+// Also attempt cookie jar persistence (best-effort for the Cookies drawer).
+(async function persistCookies() {
+  var jar = null;
+  try { jar = typeof bru.cookies.jar === "function" ? bru.cookies.jar() : null; } catch (_) {}
+  var origin = String(baseUrl || "").replace(/\/$/, "") + "/";
+  if (jar && typeof jar.setCookie === "function") {
+    try {
+      if (accessM) jar.setCookie(origin, "studioos_access", accessM[1]);
+      if (refreshM) jar.setCookie(origin, "studioos_refresh", refreshM[1]);
+    } catch (_) {}
+  }
+  if (bru.cookies && typeof bru.cookies.upsert === "function") {
+    try {
+      if (accessM) await bru.cookies.upsert({ key: "studioos_access", value: accessM[1], path: "/", httpOnly: true, sameSite: "lax" });
+      if (refreshM) await bru.cookies.upsert({ key: "studioos_refresh", value: refreshM[1], path: "/", httpOnly: true, sameSite: "lax" });
+    } catch (_) {}
+  }
+})();
+
+// Sync tokens into collection variables as fallback.
+if (accessM && typeof bru.setVar === "function") { try { bru.setVar("access_token", accessM[1]); } catch (_) {} }
+if (refreshM && typeof bru.setVar === "function") { try { bru.setVar("refresh_token", refreshM[1]); } catch (_) {} }
+}
