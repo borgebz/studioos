@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "student_id": 17
+        "student_id": 10  
       }
   auth: inherit
 

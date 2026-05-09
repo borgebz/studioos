@@ -424,6 +424,14 @@ class TestCoachingLifecycle:
             end_datetime=_dt(2),
             requesting_user=direction_user,
         )
+        c2_req = services.create_coaching_request(
+            teacher_id=teacher_user.pk,
+            modality_id=modality.pk,
+            start_datetime=_dt(1),
+            end_datetime=_dt(2),
+            requesting_user=direction_user,
+        )
+
         services.teacher_accept_coaching(pk=c1_req.pk, user=teacher_user)
         services.approve_coaching(
             pk=c1_req.pk,
@@ -432,13 +440,6 @@ class TestCoachingLifecycle:
             user=direction_user,
         )
 
-        c2_req = services.create_coaching_request(
-            teacher_id=teacher_user.pk,
-            modality_id=modality.pk,
-            start_datetime=_dt(1),
-            end_datetime=_dt(2),
-            requesting_user=direction_user,
-        )
         services.teacher_accept_coaching(pk=c2_req.pk, user=teacher_user)
         with pytest.raises(ValidationError) as exc:
             services.approve_coaching(

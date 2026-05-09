@@ -69,6 +69,35 @@ class ListingFavorite(BaseModel):
         return f"Favorite: user {self.user_id} → listing {self.listing_id}"
 
 
+class ListingComment(BaseModel):
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="listing_comments",
+    )
+    body = models.TextField()
+    parent_comment = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="replies",
+    )
+
+    class Meta:
+        permissions = [
+            ("can_moderate_listingcomment", "Can moderate listing comment"),
+        ]
+
+    def __str__(self):
+        return f"Comment #{self.pk}"
+
+
 class ProductTransaction(BaseModel):
 
     class TransactionType(models.TextChoices):

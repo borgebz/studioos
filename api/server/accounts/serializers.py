@@ -281,3 +281,26 @@ class BulkInviteFileSerializer(serializers.Serializer):
         if value.size > max_size:
             raise serializers.ValidationError("BulkInviteFileInvalid")
         return value
+
+
+class EmailExportQuerySerializer(serializers.Serializer):
+    """Query params for filtering users in the email export."""
+
+    role = serializers.CharField(required=False)
+    classe_ids = serializers.CharField(required=False)
+    modality_ids = serializers.CharField(required=False)
+    is_active = serializers.BooleanField(required=False, allow_null=True, default=None)
+
+    def _parse_int_list(self, value):
+        if not value:
+            return []
+        try:
+            return [int(v.strip()) for v in value.split(",") if v.strip()]
+        except ValueError:
+            raise serializers.ValidationError("InvalidIdList")
+
+    def validate_classe_ids(self, value):
+        return self._parse_int_list(value)
+
+    def validate_modality_ids(self, value):
+        return self._parse_int_list(value)

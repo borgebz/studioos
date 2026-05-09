@@ -222,8 +222,9 @@ def test_list_users_ok_for_direction(auth_client, direction_user):
     resp = auth_client.get("/api/accounts/users/")
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
-    emails = {row["email"] for row in data}
+    results = data.get("results", data) if isinstance(data, dict) else data
+    assert isinstance(results, list)
+    emails = {row["email"] for row in results}
     assert direction_user.email in emails
 
 

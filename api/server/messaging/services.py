@@ -111,6 +111,91 @@ def mark_read(*, conversation_id, user):
     through_model.objects.bulk_create(through_objects, ignore_conflicts=True)
 
 
+def get_or_create_coaching_conversation(*, coaching, created_by=None):
+    recurring = coaching.recurring_coaching
+
+    if recurring is not None:
+        existing = Conversation.objects.filter(
+            recurring_coaching=recurring,
+        ).first()
+        if existing:
+            return existing, False
+
+    existing = Conversation.objects.filter(coaching=coaching).first()
+    if existing:
+        return existing, False
+
+    with transaction.atomic():
+        conversation = Conversation(
+            coaching=coaching,
+            recurring_coaching=recurring,
+            created_by=created_by,
+        )
+        conversation.full_clean()
+        conversation.save()
+
+        participant_user_ids = set()
+        participant_user_ids.add(coaching.teacher_id)
+
+        from coachings.models import CoachingParticipant
+
+        student_ids = CoachingParticipant.objects.filter(
+            coaching_class=coaching,
+        ).values_list("student_id", flat=True)
+        participant_user_ids.update(student_ids)
+
+        for user_id in participant_user_ids:
+            cp = ConversationParticipant(
+                conversation=conversation,
+                user_id=user_id,
+                created_by=created_by,
+            )
+            cp.full_clean()
+            cp.save()
+
+        logger.info(
+            "get_or_create_coaching_conversation: created conversation %s for coaching %s",
+            conversation.pk,
+            coaching.pk,
+        )
+        return conversation, True
+
+
+def sync_coaching_conversation_participants(*, coaching):
+    recurring = coaching.recurring_coaching
+    if recurring is not None:
+        conversation = Conversation.objects.filter(recurring_coaching=recurring).first()
+    else:
+        conversation = Conversation.objects.filter(coaching=coaching).first()
+
+    if conversation is None:
+        return
+
+    from coachings.models import CoachingParticipant
+
+    expected_user_ids = set()
+    expected_user_ids.add(coaching.teacher_id)
+
+    student_ids = CoachingParticipant.objects.filter(
+        coaching_class=coaching,
+    ).values_list("student_id", flat=True)
+    expected_user_ids.update(student_ids)
+
+    existing_user_ids = set(
+        ConversationParticipant.objects.filter(
+            conversation=conversation,
+        ).values_list("user_id", flat=True)
+    )
+
+    for user_id in expected_user_ids - existing_user_ids:
+        cp = ConversationParticipant(
+            conversation=conversation,
+            user_id=user_id,
+        )
+        cp.full_clean()
+        cp.save()
+
+
 def get_user_for_conversation(*, user_id):
     from django.contrib.auth import get_user_model
 

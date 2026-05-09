@@ -1,7 +1,7 @@
 import pytest
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from rest_framework.exceptions import PermissionDenied, ValidationError
+
+from tests.conftest import make_user_with_role
 
 from inventory.models import Category, Color, Product, Size
 from inventory.services.category_services import (
@@ -36,15 +36,7 @@ def test_delete_category_without_products():
 
 @pytest.mark.django_db
 def test_delete_category_with_products_fails():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="soft1@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Calçado")
 
@@ -79,15 +71,7 @@ def test_delete_size_without_variants():
 
 @pytest.mark.django_db
 def test_delete_size_with_variants_fails():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="soft2@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Acessórios")
 
@@ -135,15 +119,7 @@ def test_delete_color_without_variants():
 
 @pytest.mark.django_db
 def test_delete_color_with_variants_fails():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="soft3@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Cor Teste")
 
@@ -184,15 +160,7 @@ def test_delete_color_with_variants_fails():
 
 @pytest.mark.django_db
 def test_delete_product_without_critical_dependencies():
-    User = get_user_model()
-
-    user = User.objects.create_user(
-        email="soft4@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Produto Delete")
 
@@ -212,21 +180,8 @@ def test_delete_product_without_critical_dependencies():
 
 @pytest.mark.django_db
 def test_delete_product_invalid_owner_fails():
-    User = get_user_model()
-
-    owner = User.objects.create_user(
-        email="soft5@test.com",
-        password="1234",
-    )
-
-    other = User.objects.create_user(
-        email="soft6@test.com",
-        password="1234",
-    )
-
-    permission = Permission.objects.get(codename="add_product")
-    owner.user_permissions.add(permission)
-    other.user_permissions.add(permission)
+    owner = make_user_with_role("direction")
+    other = make_user_with_role("direction")
 
     category = create_category(name="Produto Owner")
 

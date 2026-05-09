@@ -296,6 +296,8 @@ def get_enrollment(*, pk):
 def update_enrollment(*, enrollment, updated_by=None, **data):
     enrollment = Enrollment.objects.select_for_update().get(pk=enrollment.pk)
     if enrollment.status not in (EnrollmentStatus.SUBMITTED, EnrollmentStatus.UNDER_REVIEW):
+        if enrollment.status == EnrollmentStatus.APPROVED:
+            raise ValidationError({"messages": ["CannotUpdateApprovedEnrollment"]})
         raise ValidationError({"messages": ["EnrollmentNotEditable"]})
     for field, value in data.items():
         setattr(enrollment, field, value)

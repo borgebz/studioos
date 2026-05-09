@@ -1,9 +1,9 @@
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+
+from tests.conftest import make_user_with_role
 
 from inventory.models import ProductMedia, VariantMedia
 
@@ -16,12 +16,7 @@ from inventory.services.product_variant_services import create_variant
 
 @pytest.mark.django_db
 def test_product_media_can_link_to_multiple_variants():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="media1@test.com", password="1234")
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Media Category")
 
@@ -67,12 +62,7 @@ def test_product_media_can_link_to_multiple_variants():
 
 @pytest.mark.django_db
 def test_variant_media_cannot_duplicate_same_relation():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="media2@test.com", password="1234")
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Media Duplicate")
 
@@ -107,12 +97,7 @@ def test_variant_media_cannot_duplicate_same_relation():
 
 @pytest.mark.django_db
 def test_variant_media_must_belong_to_same_product():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="media3@test.com", password="1234")
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Media Ownership")
 

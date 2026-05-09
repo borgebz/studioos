@@ -120,13 +120,13 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from core.exceptions import AppNotFound
 from inventory.models import Product, ProductVariant, VariantBooking
 from marketplace.models import Listing, ListingFavorite, ProductTransaction
+from tests.conftest import make_user_with_role
 
 User = get_user_model()
 
@@ -140,44 +140,12 @@ def _uid():
     return uuid.uuid4().hex[:8]
 
 
-def _make_user(*, perms=None):
-    user = User.objects.create_user(
-        email=f"u_{_uid()}@test.local",
-        password="x",
-        first_name="Test",
-        last_name="User",
-        is_active=True,
-    )
-    if perms:
-        for perm in perms:
-            if isinstance(perm, str):
-                app, codename = perm.split(".")
-                p = Permission.objects.get(
-                    codename=codename, content_type__app_label=app
-                )
-                user.user_permissions.add(p)
-            else:
-                user.user_permissions.add(perm)
-        user.refresh_from_db()
-    return user
-
-
 def _staff_user():
-    user = _make_user()
-    perms = Permission.objects.filter(
-        content_type__app_label__in=["marketplace", "inventory"]
-    )
-    user.user_permissions.add(*perms)
-    user.refresh_from_db()
-    return user
+    return make_user_with_role("direction")
 
 
 def _member_user():
-    user = _make_user()
-    perms = Permission.objects.filter(content_type__app_label="inventory")
-    user.user_permissions.add(*perms)
-    user.refresh_from_db()
-    return user
+    return make_user_with_role("student")
 
 
 def _make_product(*, owner_type, owner=None, status=Product.Status.ACTIVE):

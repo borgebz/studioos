@@ -16,7 +16,7 @@ def _classe_detail_queryset():
 
 
 def list_classes():
-    return Classe.objects.all()
+    return Classe.objects.prefetch_related("members__student").all()
 
 
 def get_classe(*, pk):

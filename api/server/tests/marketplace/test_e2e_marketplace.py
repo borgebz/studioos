@@ -4,100 +4,12 @@ import config.pytest_db_host_env  # noqa: F401
 
 import uuid
 import pytest
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+
+from tests.conftest import make_user_with_role
 
 
 def _uid() -> str:
     return uuid.uuid4().hex[:8]
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def school_staff(db):
-    """User with all marketplace + inventory school permissions (simulates coordination/direction)."""
-    User = get_user_model()
-    user = User.objects.create_user(
-        email=f"staff_{_uid()}@test.local",
-        password="test-pass",
-        first_name="Staff",
-        last_name="Member",
-        is_active=True,
-    )
-    perms = Permission.objects.filter(
-        content_type__app_label__in=["marketplace", "inventory"]
-    )
-    user.user_permissions.add(*perms)
-    user.refresh_from_db()
-    return user
-
-
-@pytest.fixture
-def member_owner(db):
-    """Regular authenticated member who owns items."""
-    User = get_user_model()
-    user = User.objects.create_user(
-        email=f"owner_{_uid()}@test.local",
-        password="test-pass",
-        first_name="Item",
-        last_name="Owner",
-        is_active=True,
-    )
-    perms = Permission.objects.filter(content_type__app_label="inventory")
-    user.user_permissions.add(*perms)
-    user.refresh_from_db()
-    return user
-
-
-@pytest.fixture
-def member_a(db):
-    """Member user — requester A."""
-    User = get_user_model()
-    return User.objects.create_user(
-        email=f"member_a_{_uid()}@test.local",
-        password="test-pass",
-        first_name="Member",
-        last_name="A",
-        is_active=True,
-    )
-
-
-@pytest.fixture
-def member_b(db):
-    """Member user — requester B."""
-    User = get_user_model()
-    return User.objects.create_user(
-        email=f"member_b_{_uid()}@test.local",
-        password="test-pass",
-        first_name="Member",
-        last_name="B",
-        is_active=True,
-    )
-
-
-@pytest.fixture
-def parent_user(db):
-    """Parent/guardian user."""
-    User = get_user_model()
-    return User.objects.create_user(
-        email=f"parent_{_uid()}@test.local",
-        password="test-pass",
-        first_name="Parent",
-        last_name="User",
-        is_active=True,
-    )
-
-
-def _client(api_client_factory, user):
-    from rest_framework.test import APIClient
-
-    c = APIClient()
-    c.force_authenticate(user=user)
-    return c
 
 
 # ---------------------------------------------------------------------------
@@ -215,39 +127,10 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     from datetime import timedelta
     from django.utils import timezone
     from rest_framework.test import APIClient
-    from django.contrib.auth import get_user_model
-    from django.contrib.auth.models import Permission
 
-    User = get_user_model()
-
-    # --- actors ---
-    staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local",
-        password="x",
-        first_name="S",
-        last_name="T",
-        is_active=True,
-    )
-    perms = Permission.objects.filter(
-        content_type__app_label__in=["marketplace", "inventory"]
-    )
-    staff.user_permissions.add(*perms)
-    staff.refresh_from_db()
-
-    mem_a = User.objects.create_user(
-        email=f"ma_{_uid()}@t.local",
-        password="x",
-        first_name="A",
-        last_name="M",
-        is_active=True,
-    )
-    mem_b = User.objects.create_user(
-        email=f"mb_{_uid()}@t.local",
-        password="x",
-        first_name="B",
-        last_name="M",
-        is_active=True,
-    )
+    staff = make_user_with_role("direction")
+    mem_a = make_user_with_role("student")
+    mem_b = make_user_with_role("student")
 
     sc = APIClient()
     sc.force_authenticate(user=staff)
@@ -409,50 +292,13 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     staff   → verifies variant is SOLD via school transactions view
     """
     from rest_framework.test import APIClient
-    from django.contrib.auth import get_user_model
-    from django.contrib.auth.models import Permission
     from inventory.models import ProductVariant
     from marketplace.models import Listing
 
-    User = get_user_model()
-
-    owner = User.objects.create_user(
-        email=f"owner_{_uid()}@t.local",
-        password="x",
-        first_name="O",
-        last_name="wner",
-        is_active=True,
-    )
-    inv_perms = Permission.objects.filter(content_type__app_label="inventory")
-    owner.user_permissions.add(*inv_perms)
-    owner.refresh_from_db()
-
-    buyer_a = User.objects.create_user(
-        email=f"ba_{_uid()}@t.local",
-        password="x",
-        first_name="Buyer",
-        last_name="A",
-        is_active=True,
-    )
-    buyer_b = User.objects.create_user(
-        email=f"bb_{_uid()}@t.local",
-        password="x",
-        first_name="Buyer",
-        last_name="B",
-        is_active=True,
-    )
-    staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local",
-        password="x",
-        first_name="S",
-        last_name="T",
-        is_active=True,
-    )
-    mkt_perms = Permission.objects.filter(
-        content_type__app_label__in=["marketplace", "inventory"]
-    )
-    staff.user_permissions.add(*mkt_perms)
-    staff.refresh_from_db()
+    owner = make_user_with_role("direction")
+    buyer_a = make_user_with_role("student")
+    buyer_b = make_user_with_role("student")
+    staff = make_user_with_role("direction")
 
     co = APIClient()
     co.force_authenticate(user=owner)
@@ -603,39 +449,11 @@ def test_e2e_03_school_lend_block_unblock_then_complete(db):
     from datetime import timedelta
     from django.utils import timezone
     from rest_framework.test import APIClient
-    from django.contrib.auth import get_user_model
-    from django.contrib.auth.models import Permission
     from inventory.models import ProductVariant
 
-    User = get_user_model()
-
-    staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local",
-        password="x",
-        first_name="S",
-        last_name="T",
-        is_active=True,
-    )
-    perms = Permission.objects.filter(
-        content_type__app_label__in=["marketplace", "inventory"]
-    )
-    staff.user_permissions.add(*perms)
-    staff.refresh_from_db()
-
-    mem_a = User.objects.create_user(
-        email=f"ma_{_uid()}@t.local",
-        password="x",
-        first_name="A",
-        last_name="M",
-        is_active=True,
-    )
-    mem_b = User.objects.create_user(
-        email=f"mb_{_uid()}@t.local",
-        password="x",
-        first_name="B",
-        last_name="M",
-        is_active=True,
-    )
+    staff = make_user_with_role("direction")
+    mem_a = make_user_with_role("student")
+    mem_b = make_user_with_role("student")
 
     cs = APIClient()
     cs.force_authenticate(user=staff)
@@ -777,50 +595,13 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
     from datetime import timedelta
     from django.utils import timezone
     from rest_framework.test import APIClient
-    from django.contrib.auth import get_user_model
-    from django.contrib.auth.models import Permission
     from inventory.models import ProductVariant
     from marketplace.models import Listing
 
-    User = get_user_model()
-
-    owner = User.objects.create_user(
-        email=f"owner_{_uid()}@t.local",
-        password="x",
-        first_name="O",
-        last_name="wner",
-        is_active=True,
-    )
-    inv_perms = Permission.objects.filter(content_type__app_label="inventory")
-    owner.user_permissions.add(*inv_perms)
-    owner.refresh_from_db()
-
-    renter = User.objects.create_user(
-        email=f"rent_{_uid()}@t.local",
-        password="x",
-        first_name="R",
-        last_name="ent",
-        is_active=True,
-    )
-    receiver = User.objects.create_user(
-        email=f"recv_{_uid()}@t.local",
-        password="x",
-        first_name="Rec",
-        last_name="eiver",
-        is_active=True,
-    )
-    staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local",
-        password="x",
-        first_name="S",
-        last_name="T",
-        is_active=True,
-    )
-    mkt_perms = Permission.objects.filter(
-        content_type__app_label__in=["marketplace", "inventory"]
-    )
-    staff.user_permissions.add(*mkt_perms)
-    staff.refresh_from_db()
+    owner = make_user_with_role("direction")
+    renter = make_user_with_role("student")
+    receiver = make_user_with_role("student")
+    staff = make_user_with_role("direction")
 
     co = APIClient()
     co.force_authenticate(user=owner)
@@ -973,47 +754,13 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     from datetime import timedelta
     from django.utils import timezone
     from rest_framework.test import APIClient
-    from django.contrib.auth import get_user_model
-    from django.contrib.auth.models import Permission
     from inventory.models import ProductVariant
     from marketplace.models import Listing
 
-    User = get_user_model()
-
-    staff = User.objects.create_user(
-        email=f"staff_{_uid()}@t.local",
-        password="x",
-        first_name="S",
-        last_name="T",
-        is_active=True,
-    )
-    perms = Permission.objects.filter(
-        content_type__app_label__in=["marketplace", "inventory"]
-    )
-    staff.user_permissions.add(*perms)
-    staff.refresh_from_db()
-
-    mem_a = User.objects.create_user(
-        email=f"ma_{_uid()}@t.local",
-        password="x",
-        first_name="MA",
-        last_name="U",
-        is_active=True,
-    )
-    mem_b = User.objects.create_user(
-        email=f"mb_{_uid()}@t.local",
-        password="x",
-        first_name="MB",
-        last_name="U",
-        is_active=True,
-    )
-    parent = User.objects.create_user(
-        email=f"par_{_uid()}@t.local",
-        password="x",
-        first_name="Par",
-        last_name="ent",
-        is_active=True,
-    )
+    staff = make_user_with_role("direction")
+    mem_a = make_user_with_role("student")
+    mem_b = make_user_with_role("student")
+    parent = make_user_with_role("parent")
 
     cs = APIClient()
     cs.force_authenticate(user=staff)

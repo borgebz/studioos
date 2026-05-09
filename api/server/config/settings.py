@@ -199,6 +199,7 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@studioos.dev")
 
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
+BACKEND_URL = config("BACKEND_URL", default="http://localhost:8000")
 
 
 # -----------------------------------------------------------------------------

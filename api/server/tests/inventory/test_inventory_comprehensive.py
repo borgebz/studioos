@@ -96,47 +96,21 @@ def _uid() -> str:
 
 
 def _make_member(*, extra_codenames: list[str] | None = None) -> User:
-    """Create a plain user with `add_product` permission (member role)."""
-    user = User.objects.create_user(
-        email=f"member_{_uid()}@inv.test",
-        password="test1234",
-    )
-    codenames = ["add_product", "view_product", "change_product", "delete_product"]
-    if extra_codenames:
-        codenames += extra_codenames
-    for codename in codenames:
-        perm = Permission.objects.filter(
-            codename=codename,
-            content_type__app_label="inventory",
-        ).first()
-        if perm:
-            user.user_permissions.add(perm)
-    user.refresh_from_db()
-    return user
+    """Direction user — needs inventory permissions for member-owned product CRUD."""
+    from tests.conftest import make_user_with_role
+    return make_user_with_role("direction")
 
 
 def _make_school_manager() -> User:
-    """Create a user with all school inventory permissions."""
-    user = User.objects.create_user(
-        email=f"school_mgr_{_uid()}@inv.test",
-        password="test1234",
-    )
-    school_codenames = [
-        "view_school_product",
-        "add_school_product",
-        "change_school_product",
-        "delete_school_product",
-        "manage_school_inventory",
-    ]
-    for codename in school_codenames:
-        perm = Permission.objects.filter(
-            codename=codename,
-            content_type__app_label="inventory",
-        ).first()
-        if perm:
-            user.user_permissions.add(perm)
-    user.refresh_from_db()
-    return user
+    """Direction user — has all inventory + school inventory permissions via seed."""
+    from tests.conftest import make_user_with_role
+    return make_user_with_role("direction")
+
+
+def _make_non_staff_user() -> User:
+    """Student user — has no inventory permissions. Used for negative permission tests."""
+    from tests.conftest import make_user_with_role
+    return make_user_with_role("student")
 
 
 def _make_no_perm_user() -> User:
@@ -729,7 +703,7 @@ class TestSchoolProductLifecycle:
     def test_member_cannot_create_school_product(
         self, name, inv_code, location, category_costumes
     ):
-        member = _make_member()
+        member = _make_non_staff_user()
         with pytest.raises(PermissionDenied):
             create_school_product(
                 user=member,
@@ -747,13 +721,13 @@ class TestSchoolProductLifecycle:
             name=f"{name}_{_uid()}",
             category_id=category_costumes.id,
         )
-        member = _make_member()
+        member = _make_non_staff_user()
         with pytest.raises(PermissionDenied):
             get_school_product(pk=p.id, user=member)
 
     @pytest.mark.django_db
     def test_list_school_products_requires_permission(self):
-        member = _make_member()
+        member = _make_non_staff_user()
         with pytest.raises(PermissionDenied):
             list_school_products(user=member)
 
@@ -961,7 +935,7 @@ class TestProductVariantLifecycle:
     def test_member_cannot_create_variant_on_school_product(
         self, school_product, size_m
     ):
-        member = _make_member()
+        member = _make_non_staff_user()
         with pytest.raises(PermissionDenied):
             create_variant(
                 product_id=school_product.id,
@@ -1400,7 +1374,7 @@ class TestSchoolVariantBookings:
             condition="excellent",
             acquisition_type="school_owned",
         )
-        member = _make_member()
+        member = _make_non_staff_user()
         now = timezone.now()
         with pytest.raises(PermissionDenied):
             create_booking(

@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     ActivateAccountView,
     BulkInviteCreateView,
+    EmailExportView,
     InviteCreateView,
     LoginView,
     LogoutView,
@@ -41,6 +42,8 @@ urlpatterns = [
     path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),
     path("users/", UserListView.as_view(), name="user-list"),
     path("teachers/", TeacherListView.as_view(), name="teacher-list"),
+    # Email export
+    path("emails/export/", EmailExportView.as_view(), name="email-export"),
     # Profile
     path("profile/me/", MyProfileView.as_view(), name="profile-me"),
     # Activate

@@ -54,6 +54,20 @@ def list_users():
     )
 
 
+def get_me_user(*, pk):
+    return (
+        User.objects.prefetch_related(
+            Prefetch(
+                "groups",
+                queryset=Group.objects.select_related("role").prefetch_related(
+                    "permissions"
+                ),
+            ),
+            "user_permissions",
+        ).get(pk=pk)
+    )
+
+
 def get_user_with_roles_prefetched(*, pk):
     """
     Return a non-deleted user by pk with ``groups`` + ``role`` prefetched
@@ -726,4 +740,52 @@ def resend_invite(*, user_pk, requesting_user):
         "Invite resent: user_id=%s requested_by=%s",
         user.pk,
         getattr(requesting_user, "email", requesting_user),
+    )
+
+
+def list_emails_for_export(*, role=None, classe_ids=None, modality_ids=None, is_active=None):
+    """
+    Return a queryset of users filtered by the given criteria, for email export.
+    Only returns users with a non-empty email.
+    """
+    qs = User.objects.exclude(email__isnull=True).exclude(email="")
+
+    if is_active is not None:
+        qs = qs.filter(is_active=is_active)
+
+    if role:
+        qs = qs.filter(groups__role__code=role)
+
+    if classe_ids:
+        from classes.models import ClasseMember
+
+        user_ids = (
+            ClasseMember.objects.filter(
+                classe_id__in=classe_ids,
+                deleted_at__isnull=True,
+            )
+            .values_list("student_id", flat=True)
+            .distinct()
+        )
+        qs = qs.filter(pk__in=user_ids)
+
+    if modality_ids:
+        from modality.models import UserModality
+
+        user_ids = (
+            UserModality.objects.filter(
+                modality_id__in=modality_ids,
+                deleted_at__isnull=True,
+            )
+            .values_list("user_id", flat=True)
+            .distinct()
+        )
+        qs = qs.filter(pk__in=user_ids)
+
+    return (
+        qs.prefetch_related(
+            Prefetch("groups", queryset=Group.objects.select_related("role"))
+        )
+        .distinct()
+        .order_by("email")
     )

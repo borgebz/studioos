@@ -2,8 +2,9 @@ import pytest
 
 from datetime import timedelta
 from django.utils import timezone
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+from rest_framework.exceptions import ValidationError
+
+from tests.conftest import make_user_with_role
 
 from inventory.services.category_services import create_category
 from inventory.services.size_system_services import create_size_system
@@ -11,7 +12,6 @@ from inventory.services.size_services import create_size
 from inventory.services.color_services import create_color
 
 from inventory.services.product_services import create_product
-from rest_framework.exceptions import ValidationError
 
 from inventory.services.product_variant_services import create_variant, delete_variant
 from inventory.services.variant_booking_services import create_booking
@@ -19,12 +19,7 @@ from inventory.services.variant_booking_services import create_booking
 
 @pytest.mark.django_db
 def test_create_complete_product_flow():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="flow1@test.com", password="1234")
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa Flow")
 
@@ -57,21 +52,7 @@ def test_create_complete_product_flow():
 
 @pytest.mark.django_db
 def test_booking_flow_blocks_variant():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="flow2@test.com", password="1234")
-
-    for codename, model in (
-        ("add_product", "product"),
-        ("delete_productvariant", "productvariant"),
-    ):
-        user.user_permissions.add(
-            Permission.objects.get(
-                codename=codename,
-                content_type__app_label="inventory",
-                content_type__model=model,
-            )
-        )
+    user = make_user_with_role("direction")
 
     category = create_category(name="Roupa Booking")
 
@@ -115,12 +96,7 @@ def test_booking_flow_blocks_variant():
 
 @pytest.mark.django_db
 def test_multiple_variants_same_product():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="flow3@test.com", password="1234")
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Calçado Flow")
 

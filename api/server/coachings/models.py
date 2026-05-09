@@ -289,7 +289,3 @@ class RecurringCoaching(BaseModel):
             raise DjangoValidationError(
                 {"occurrences_count": ["RecurringEndDateAndOccurrencesExclusive"]}
             )
-        if not self.end_date and not self.occurrences_count:
-            raise DjangoValidationError(
-                {"occurrences_count": ["RecurringEndConditionRequired"]}
-            )

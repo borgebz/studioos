@@ -1,6 +1,6 @@
 import pytest
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+
+from tests.conftest import make_user_with_role
 
 from inventory.models import Color, SizeSystem, Size, Category
 
@@ -31,12 +31,7 @@ def test_reference_data_can_be_created():
 
 @pytest.mark.django_db
 def test_reference_data_can_create_product_and_variant():
-    User = get_user_model()
-
-    user = User.objects.create_user(email="seed@test.com", password="1234")
-
-    permission = Permission.objects.get(codename="add_product")
-    user.user_permissions.add(permission)
+    user = make_user_with_role("direction")
 
     category = create_category(name="Categoria Seed")
 

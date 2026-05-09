@@ -42,7 +42,14 @@ class ConversationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Conversation
-        fields = ["id", "participant_ids", "last_message", "updated_at"]
+        fields = [
+            "id",
+            "participant_ids",
+            "coaching_id",
+            "recurring_coaching_id",
+            "last_message",
+            "updated_at",
+        ]
 
     @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
     def get_participant_ids(self, obj):
