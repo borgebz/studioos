@@ -5,6 +5,7 @@ import { AppRoutes } from '@/app/routes'
 import { paths } from '@/app/paths'
 import { useAuth } from '@/auth/useAuth'
 import { LogoLoader } from '@/components/shared/LogoLoader'
+import { ProfileSetupPrompt } from '@/components/shared/ProfileSetupPrompt'
 import { Toaster } from '@/components/ui/sonner'
 import './App.css'
 
@@ -38,6 +39,7 @@ function AppShell() {
       <SidebarInset className="grain overflow-hidden">
         <AppRoutes />
       </SidebarInset>
+      <ProfileSetupPrompt />
     </SidebarProvider>
   )
 }

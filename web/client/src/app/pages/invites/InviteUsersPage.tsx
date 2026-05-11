@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Mail, Upload, UserPlus, FileSpreadsheet, X, Check } from 'lucide-react'
+import {
+  Mail,
+  FileSpreadsheet,
+  Upload,
+  X,
+  ArrowRight,
+} from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import type { RoleList, UserResponse } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -14,18 +19,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { CardSection } from '@/components/shared/CardSection'
+import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function parseApiError(
+  err: unknown,
+  t: (key: string) => string,
+): string {
+  const httpErr = err as { error?: { errors?: Record<string, string[]> } }
+  const errors = httpErr?.error?.errors
+  if (!errors) return t('invites.inviteError')
+
+  const allMessages = Object.values(errors).flat()
+
+  for (const msg of allMessages) {
+    if (msg === 'CannotInviteRole') return t('invites.errorCannotInviteRole')
+    if (msg.toLowerCase().includes('valid email'))
+      return t('invites.errorInvalidEmail')
+    if (msg.toLowerCase().includes('already'))
+      return t('invites.errorAlreadyInvited')
+  }
+
+  return allMessages[0] ?? t('invites.inviteError')
+}
 
 export function InviteUsersPage() {
   const { t } = useTranslation()
@@ -34,16 +56,18 @@ export function InviteUsersPage() {
   const [roles, setRoles] = useState<RoleList[]>([])
   const rolesLoaded = useRef(false)
 
-  // Single invite state
   const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
   const [role, setRole] = useState('')
   const [sending, setSending] = useState(false)
   const [invitedUsers, setInvitedUsers] = useState<UserResponse[]>([])
 
-  // Bulk invite state
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [bulkResult, setBulkResult] = useState<{ users: UserResponse[]; count: number } | null>(null)
+  const [bulkResult, setBulkResult] = useState<{
+    users: UserResponse[]
+    count: number
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -54,9 +78,26 @@ export function InviteUsersPage() {
     })
   }, [])
 
+  const allInvited = [...invitedUsers, ...(bulkResult?.users ?? [])]
+
+  const validateEmail = (value: string) => {
+    if (!value) {
+      setEmailError('')
+      return false
+    }
+    if (!EMAIL_RE.test(value)) {
+      setEmailError(t('invites.errorInvalidEmail'))
+      return false
+    }
+    setEmailError('')
+    return true
+  }
+
+  const isFormValid = EMAIL_RE.test(email) && !!role
+
   const handleSingleInvite = async () => {
-    if (!email || !role) {
-      toast.error(t('invites.missingFields'))
+    if (!validateEmail(email) || !role) {
+      if (!role) toast.error(t('invites.missingFields'))
       return
     }
     setSending(true)
@@ -65,9 +106,10 @@ export function InviteUsersPage() {
       setInvitedUsers((prev) => [res.data, ...prev])
       setEmail('')
       setRole('')
+      setEmailError('')
       toast.success(t('invites.inviteSent', { email }))
-    } catch {
-      toast.error(t('invites.inviteError'))
+    } catch (err) {
+      toast.error(parseApiError(err, t))
     } finally {
       setSending(false)
     }
@@ -82,13 +124,24 @@ export function InviteUsersPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const baseUrl = import.meta.env.VITE_STUDIOOS_API_BASE_URL?.replace(/\/$/, '') ?? ''
+      const baseUrl =
+        import.meta.env.VITE_STUDIOOS_API_BASE_URL?.replace(/\/$/, '') ?? ''
       const res = await fetch(`${baseUrl}/api/accounts/invites/bulk/`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
       })
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        const errors = body?.errors as Record<string, string[]> | undefined
+        if (errors) {
+          const messages = Object.values(errors).flat()
+          toast.error(messages.join('. ') || t('invites.bulkError'))
+        } else {
+          toast.error(t('invites.bulkError'))
+        }
+        return
+      }
       const data = await res.json()
       setBulkResult(data.data)
       setFile(null)
@@ -121,186 +174,154 @@ export function InviteUsersPage() {
     }
   }
 
+  const hasInvites = allInvited.length > 0
+
   return (
-    <PageLayout
-      footer={
-        <div className="flex w-full items-center justify-between">
-          <Button variant="outline" onClick={() => navigate(paths.home)}>
-            {t('invites.back')}
-          </Button>
-          <div className="text-xs text-muted-foreground">
-            {invitedUsers.length > 0 &&
-              t('invites.invitedCount', { count: invitedUsers.length })}
-          </div>
-        </div>
-      }
-    >
+    <PageLayout>
       <PageHeader title={t('invites.title')} backTo={paths.home} />
 
-      <Tabs defaultValue="single" className="max-w-2xl">
-        <TabsList className="mb-6">
-          <TabsTrigger value="single">
-            <UserPlus className="mr-2 size-4" />
-            {t('invites.singleTab')}
-          </TabsTrigger>
-          <TabsTrigger value="bulk">
-            <FileSpreadsheet className="mr-2 size-4" />
-            {t('invites.bulkTab')}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="single">
-          <CardSection
-            title={t('invites.singleTitle')}
-            description={t('invites.singleDesc')}
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="email">{t('invites.email')}</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder={t('invites.emailPlaceholder')}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSingleInvite()
-                      }}
-                    />
-                  </div>
+      <div className="max-w-4xl space-y-4">
+        {/* ── Single invite ── */}
+        <CardSection
+          title={t('invites.singleTitle')}
+          description={t('invites.singleDesc')}
+        >
+          <div className="space-y-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <div className="flex-1">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    placeholder={t('invites.emailPlaceholder')}
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (emailError) validateEmail(e.target.value)
+                    }}
+                    onBlur={() => validateEmail(email)}
+                    className={`pl-10 ${emailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSingleInvite()
+                    }}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t('invites.role')}</Label>
-                  <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('invites.selectRole')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((r) => (
-                        <SelectItem key={r.code} value={r.code}>
-                          {r.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button onClick={handleSingleInvite} disabled={sending || !email || !role}>
-                {sending ? t('invites.sending') : t('invites.sendInvite')}
-              </Button>
-            </div>
-          </CardSection>
-
-          {invitedUsers.length > 0 && (
-            <CardSection title={t('invites.recentInvites')} className="mt-4">
-              <div className="space-y-2">
-                {invitedUsers.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center justify-between rounded-md border border-border px-4 py-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Check className="size-4 text-emerald-500" />
-                      <span className="text-sm">{u.email}</span>
-                    </div>
-                    <Badge variant="secondary">
-                      {u.role?.[0]?.name ?? '—'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardSection>
-          )}
-        </TabsContent>
-
-        <TabsContent value="bulk">
-          <CardSection
-            title={t('invites.bulkTitle')}
-            description={t('invites.bulkDesc')}
-          >
-            <div className="space-y-4">
-              <div
-                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleFileDrop}
-              >
-                <Upload className="mb-3 size-8 text-muted-foreground" />
-                {file ? (
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="size-4 text-emerald-500" />
-                    <span className="text-sm font-medium">{file.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({(file.size / 1024).toFixed(0)} KB)
-                    </span>
-                    <button
-                      onClick={() => {
-                        setFile(null)
-                        if (fileInputRef.current) fileInputRef.current.value = ''
-                      }}
-                      className="ml-1 rounded-full p-0.5 hover:bg-muted"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      {t('invites.dropzone')}
-                    </p>
-                    <button
-                      className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {t('invites.browse')}
-                    </button>
-                  </>
+                {emailError && (
+                  <p className="mt-1 text-sm text-destructive">{emailError}</p>
                 )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
               </div>
-              <p className="text-xs text-muted-foreground">
-                {t('invites.fileRequirements')}
-              </p>
-              <Button onClick={handleBulkInvite} disabled={uploading || !file}>
-                {uploading ? t('invites.uploading') : t('invites.uploadAndInvite')}
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue placeholder={t('invites.selectRole')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles.map((r) => (
+                    <SelectItem key={r.code} value={r.code}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={handleSingleInvite}
+                disabled={sending || !isFormValid}
+                className="gap-2"
+              >
+                {sending ? t('invites.sending') : t('invites.send')}
+                {!sending && <ArrowRight className="size-4" />}
               </Button>
             </div>
-          </CardSection>
+          </div>
+        </CardSection>
 
-          {bulkResult && (
-            <CardSection
-              title={t('invites.bulkResultTitle', { count: bulkResult.count })}
-              className="mt-4"
+        {/* ── OR divider ── */}
+        <div className="flex items-center gap-3 px-2">
+          <Separator className="flex-1" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+            {t('invites.orDivider')}
+          </span>
+          <Separator className="flex-1" />
+        </div>
+
+        {/* ── Bulk upload ── */}
+        <CardSection
+          title={t('invites.bulkTitle')}
+          description={t('invites.bulkDesc')}
+        >
+          <div className="space-y-4">
+            <div
+              className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleFileDrop}
             >
-              <div className="space-y-2">
-                {bulkResult.users.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center justify-between rounded-md border border-border px-4 py-2"
+              <Upload className="mb-3 size-8 text-muted-foreground" />
+              {file ? (
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium">{file.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({(file.size / 1024).toFixed(0)} KB)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFile(null)
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                    className="ml-1 flex items-center justify-center rounded-full p-2 hover:bg-muted min-h-[44px] min-w-[44px]"
                   >
-                    <div className="flex items-center gap-3">
-                      <Check className="size-4 text-emerald-500" />
-                      <span className="text-sm">{u.email}</span>
-                    </div>
-                    <Badge variant="secondary">
-                      {u.role?.[0]?.name ?? '—'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardSection>
-          )}
-        </TabsContent>
-      </Tabs>
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t('invites.dropzone')}
+                  </p>
+                  <button
+                    className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {t('invites.browse')}
+                  </button>
+                </>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('invites.fileRequirements')}
+            </p>
+            <Button onClick={handleBulkInvite} disabled={uploading || !file}>
+              {uploading ? t('invites.uploading') : t('invites.uploadAndInvite')}
+            </Button>
+          </div>
+        </CardSection>
+
+        {/* ── Invite list ── */}
+        {hasInvites && (
+          <div className="pt-2">
+            <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              {t('invites.listTitle')}
+            </p>
+            <div className="divide-y divide-border">
+              {allInvited.map((u) => (
+                <div key={u.id} className="flex items-center justify-between py-2.5">
+                  <span className="truncate text-sm">{u.email}</span>
+                  <span className="ml-4 shrink-0 text-xs text-muted-foreground">
+                    {u.role?.[0]?.name ?? '—'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </PageLayout>
   )
 }

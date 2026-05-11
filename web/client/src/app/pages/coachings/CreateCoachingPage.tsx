@@ -5,6 +5,10 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   CalendarCheck,
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
   Info,
   Repeat,
   Trash2,
@@ -16,6 +20,7 @@ import { apiClient } from '@/api/api-client'
 import type {
   Modality as ApiModality,
   Studio as ApiStudio,
+  TeacherAvailability,
   TeacherSummary,
   UserResponse,
 } from '@/api/studioos-api'
@@ -77,13 +82,13 @@ interface ClasseOption {
 }
 
 const DAYS_OF_WEEK = [
-  { value: 'MO', label: 'Seg' },
-  { value: 'TU', label: 'Ter' },
-  { value: 'WE', label: 'Qua' },
-  { value: 'TH', label: 'Qui' },
-  { value: 'FR', label: 'Sex' },
-  { value: 'SA', label: 'Sáb' },
-  { value: 'SU', label: 'Dom' },
+  { value: 'MO', labelKey: 'coachings.dayMon' },
+  { value: 'TU', labelKey: 'coachings.dayTue' },
+  { value: 'WE', labelKey: 'coachings.dayWed' },
+  { value: 'TH', labelKey: 'coachings.dayThu' },
+  { value: 'FR', labelKey: 'coachings.dayFri' },
+  { value: 'SA', labelKey: 'coachings.daySat' },
+  { value: 'SU', labelKey: 'coachings.daySun' },
 ]
 
 function getInitials(name: string) {
@@ -137,6 +142,7 @@ export function CreateCoachingPage() {
 
   const [participants, setParticipants] = useState<StudentOption[]>([])
   const [addParticipantOpen, setAddParticipantOpen] = useState(false)
+  const [availabilityOpen, setAvailabilityOpen] = useState(false)
   const [discardOpen, setDiscardOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -295,7 +301,10 @@ export function CreateCoachingPage() {
 
     if ((recurrenceType === 'weekly' || recurrenceType === 'biweekly') && selectedDays.length > 0) {
       const dayNames = selectedDays
-        .map((d) => DAYS_OF_WEEK.find((dw) => dw.value === d)?.label)
+        .map((d) => {
+          const key = DAYS_OF_WEEK.find((dw) => dw.value === d)?.labelKey
+          return key ? t(key) : d
+        })
         .join(', ')
       return `${t('coachings.every')} ${intervalText}, ${dayNames} — ${endText}`
     }
@@ -377,23 +386,35 @@ export function CreateCoachingPage() {
                   <Label htmlFor="teacher">
                     {t('coachings.teacher')}
                   </Label>
-                  <Select value={teacherId} onValueChange={setTeacherId}>
-                    <SelectTrigger id="teacher" className="mt-1.5">
-                      <SelectValue
-                        placeholder={t('coachings.selectTeacher')}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {teachers.map((teacher) => (
-                        <SelectItem
-                          key={teacher.id}
-                          value={String(teacher.id)}
-                        >
-                          {teacherName(teacher)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1.5 mt-1.5">
+                    <Select value={teacherId} onValueChange={setTeacherId}>
+                      <SelectTrigger id="teacher">
+                        <SelectValue
+                          placeholder={t('coachings.selectTeacher')}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teachers.map((teacher) => (
+                          <SelectItem
+                            key={teacher.id}
+                            value={String(teacher.id)}
+                          >
+                            {teacherName(teacher)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={!teacherId}
+                      onClick={() => setAvailabilityOpen(true)}
+                      title={t('coachings.viewAvailability')}
+                    >
+                      <CalendarClock className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div>
@@ -590,7 +611,7 @@ export function CreateCoachingPage() {
                               : 'border border-border bg-background text-foreground hover:bg-accent'
                           }`}
                         >
-                          {day.label}
+                          {t(day.labelKey)}
                         </button>
                       ))}
                     </div>
@@ -933,6 +954,16 @@ export function CreateCoachingPage() {
       availableStudents={availableStudents}
     />
 
+    {/* Teacher Availability */}
+    {teacherId && (
+      <TeacherAvailabilityDialog
+        open={availabilityOpen}
+        onClose={() => setAvailabilityOpen(false)}
+        teacherId={Number(teacherId)}
+        teacherLabel={teacherName(teachers.find((t) => t.id === Number(teacherId))!)}
+      />
+    )}
+
     {/* Discard Confirmation */}
     <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
       <AlertDialogContent>
@@ -1082,6 +1113,185 @@ function AddParticipantDialog({
             {t('coachings.addSelected', { count: selected.size })}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function TeacherAvailabilityDialog({
+  open,
+  onClose,
+  teacherId,
+  teacherLabel,
+}: {
+  open: boolean
+  onClose: () => void
+  teacherId: number
+  teacherLabel: string
+}) {
+  const { t } = useTranslation()
+  const [slots, setSlots] = useState<TeacherAvailability[]>([])
+  const [loading, setLoading] = useState(false)
+  const [weekStart, setWeekStart] = useState(() => {
+    const now = new Date()
+    const day = now.getDay()
+    const diff = day === 0 ? -6 : 1 - day
+    const monday = new Date(now)
+    monday.setDate(now.getDate() + diff)
+    monday.setHours(0, 0, 0, 0)
+    return monday
+  })
+
+  const weekEnd = useMemo(() => {
+    const end = new Date(weekStart)
+    end.setDate(weekStart.getDate() + 6)
+    end.setHours(23, 59, 59, 999)
+    return end
+  }, [weekStart])
+
+  const weekDays = useMemo(() => {
+    const days: Date[] = []
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart)
+      d.setDate(weekStart.getDate() + i)
+      days.push(d)
+    }
+    return days
+  }, [weekStart])
+
+  useEffect(() => {
+    if (!open) return
+    setLoading(true)
+    apiClient.api
+      .apiCoachingsTeachersAvailabilityList(teacherId, {
+        date_from: weekStart.toISOString(),
+        date_to: weekEnd.toISOString(),
+      })
+      .then((res) => setSlots(res.data))
+      .catch(() => setSlots([]))
+      .finally(() => setLoading(false))
+  }, [open, teacherId, weekStart, weekEnd])
+
+  const slotsByDay = useMemo(() => {
+    const map = new Map<string, TeacherAvailability[]>()
+    for (const day of weekDays) {
+      map.set(format(day, 'yyyy-MM-dd'), [])
+    }
+    for (const slot of slots) {
+      const key = slot.start_datetime.slice(0, 10)
+      const arr = map.get(key)
+      if (arr) arr.push(slot)
+    }
+    return map
+  }, [slots, weekDays])
+
+  const prevWeek = () => {
+    setWeekStart((prev) => {
+      const d = new Date(prev)
+      d.setDate(d.getDate() - 7)
+      return d
+    })
+  }
+
+  const nextWeek = () => {
+    setWeekStart((prev) => {
+      const d = new Date(prev)
+      d.setDate(d.getDate() + 7)
+      return d
+    })
+  }
+
+  const hasSlots = slots.length > 0
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5" />
+            {t('coachings.teacherAvailability')}
+          </DialogTitle>
+          <DialogDescription>
+            {teacherLabel} — {t('coachings.teacherAvailabilityDesc')}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex items-center justify-between py-2">
+          <Button variant="outline" size="icon-sm" onClick={prevWeek}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium">
+            {format(weekStart, 'dd MMM', { locale: pt })} — {format(weekEnd, 'dd MMM yyyy', { locale: pt })}
+          </span>
+          <Button variant="outline" size="icon-sm" onClick={nextWeek}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : !hasSlots ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <CalendarClock className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">
+              {t('coachings.noAvailability')}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-7 gap-1">
+            {weekDays.map((day) => {
+              const key = format(day, 'yyyy-MM-dd')
+              const daySlots = slotsByDay.get(key) ?? []
+              const isToday = format(new Date(), 'yyyy-MM-dd') === key
+              return (
+                <div key={key} className="min-h-[120px]">
+                  <div
+                    className={`text-center text-xs font-medium py-1 rounded-t-md ${
+                      isToday
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    <div>{format(day, 'EEE', { locale: pt })}</div>
+                    <div className="text-[11px]">{format(day, 'dd')}</div>
+                  </div>
+                  <div className="space-y-0.5 p-0.5">
+                    {daySlots.map((slot) => {
+                      const start = new Date(slot.start_datetime)
+                      const end = new Date(slot.end_datetime)
+                      return (
+                        <div
+                          key={slot.id}
+                          className="rounded bg-primary/10 border border-primary/20 px-1 py-0.5"
+                          title={slot.notes || undefined}
+                        >
+                          <div className="flex items-center gap-0.5">
+                            <Clock className="h-2.5 w-2.5 text-primary shrink-0" />
+                            <span className="text-[10px] font-medium text-primary">
+                              {format(start, 'HH:mm')}–{format(end, 'HH:mm')}
+                            </span>
+                          </div>
+                          {slot.modality && (
+                            <p className="text-[9px] text-muted-foreground truncate">
+                              {slot.modality.name}
+                            </p>
+                          )}
+                          {slot.notes && (
+                            <p className="text-[9px] text-muted-foreground truncate italic">
+                              {slot.notes}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

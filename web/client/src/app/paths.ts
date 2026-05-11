@@ -34,4 +34,5 @@ export const paths = {
   marketplaceCreate: '/marketplace/create',
   invites: '/invites',
   onboarding: '/onboarding/:token',
+  accountSettings: '/account',
 } as const

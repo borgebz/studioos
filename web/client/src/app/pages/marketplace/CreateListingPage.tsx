@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Trash2, Package, ImagePlus } from 'lucide-react'
+import { Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import type {
   Category,
@@ -35,8 +35,10 @@ import {
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { CardSection } from '@/components/shared/CardSection'
+import { MediaUpload, type MediaFile } from '@/components/shared/MediaUpload'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
+import { cn } from '@/lib/utils'
 
 const LISTING_TYPES: { value: ListingTypeEnum; labelKey: string }[] = [
   { value: 'sell' as ListingTypeEnum, labelKey: 'marketplace.typeSell' },
@@ -59,13 +61,40 @@ const GENDERS = [
   { value: 'unisex', labelKey: 'marketplace.genderUnisex' },
 ]
 
+interface VariantData {
+  id: string
+  condition: string
+  sku: string
+  sizeSystemId: string
+  sizeId: string
+  selectedColorIds: number[]
+  notes: string
+  isExpanded: boolean
+}
+
+let variantCounter = 0
+function createVariant(): VariantData {
+  return {
+    id: `variant-${Date.now()}-${variantCounter++}`,
+    condition: 'good',
+    sku: '',
+    sizeSystemId: '',
+    sizeId: '',
+    selectedColorIds: [],
+    notes: '',
+    isExpanded: true,
+  }
+}
+
 export function CreateListingPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
   const [categories, setCategories] = useState<Category[]>([])
   const [colors, setColors] = useState<Color[]>([])
-  const [sizeSystems, setSizeSystems] = useState<SizeSystem[]>([])
+
+  // Media
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
 
   // Listing fields
   const [listingType, setListingType] = useState<string>('sell')
@@ -74,7 +103,7 @@ export function CreateListingPage() {
   const [askingPrice, setAskingPrice] = useState('')
   const [isPublic, setIsPublic] = useState(false)
 
-  // Product fields (embedded)
+  // Product fields
   const [productName, setProductName] = useState('')
   const [productDescription, setProductDescription] = useState('')
   const [categoryId, setCategoryId] = useState<string>('')
@@ -82,13 +111,8 @@ export function CreateListingPage() {
   const [brand, setBrand] = useState('')
   const [material, setMaterial] = useState('')
 
-  // Variant fields (embedded in product)
-  const [condition, setCondition] = useState<string>('good')
-  const [sku, setSku] = useState('')
-  const [sizeSystemId, setSizeSystemId] = useState<string>('')
-  const [sizeId, setSizeId] = useState<string>('')
-  const [selectedColorIds, setSelectedColorIds] = useState<number[]>([])
-  const [variantNotes, setVariantNotes] = useState('')
+  // Variants (multiple)
+  const [variants, setVariants] = useState<VariantData[]>([createVariant()])
 
   // School details
   const [inventoryCode, setInventoryCode] = useState('')
@@ -103,30 +127,58 @@ export function CreateListingPage() {
     if (dataLoaded.current) return
     dataLoaded.current = true
     const load = async () => {
-      const [categoriesRes, colorsRes, sizeSystemsRes] = await Promise.all([
+      const [categoriesRes, colorsRes] = await Promise.all([
         apiClient.inventory.inventoryCategoriesList().catch(() => null),
         apiClient.inventory.inventoryColorsList().catch(() => null),
-        apiClient.inventory.inventorySizeSystemsList().catch(() => null),
       ])
       if (categoriesRes?.data) setCategories(categoriesRes.data)
       if (colorsRes?.data) setColors(colorsRes.data)
-      if (sizeSystemsRes?.data) setSizeSystems(sizeSystemsRes.data)
     }
     void load()
   }, [])
 
-  const selectedSizeSystem = sizeSystems.find(
-    (ss) => ss.id === Number(sizeSystemId),
+  const updateVariant = useCallback(
+    (id: string, updates: Partial<VariantData>) => {
+      setVariants((prev) =>
+        prev.map((v) => (v.id === id ? { ...v, ...updates } : v)),
+      )
+    },
+    [],
   )
-  const availableSizes = selectedSizeSystem?.sizes ?? []
 
-  const toggleColor = (colorId: number) => {
-    setSelectedColorIds((prev) =>
-      prev.includes(colorId)
-        ? prev.filter((id) => id !== colorId)
-        : [...prev, colorId],
+  const addVariant = useCallback(() => {
+    setVariants((prev) => {
+      const collapsed = prev.map((v) => ({ ...v, isExpanded: false }))
+      return [...collapsed, createVariant()]
+    })
+  }, [])
+
+  const removeVariant = useCallback((id: string) => {
+    setVariants((prev) => prev.filter((v) => v.id !== id))
+  }, [])
+
+  const toggleVariantExpand = useCallback((id: string) => {
+    setVariants((prev) =>
+      prev.map((v) =>
+        v.id === id ? { ...v, isExpanded: !v.isExpanded } : v,
+      ),
     )
-  }
+  }, [])
+
+  const toggleVariantColor = useCallback((variantId: string, colorId: number) => {
+    setVariants((prev) =>
+      prev.map((v) =>
+        v.id === variantId
+          ? {
+              ...v,
+              selectedColorIds: v.selectedColorIds.includes(colorId)
+                ? v.selectedColorIds.filter((c) => c !== colorId)
+                : [...v.selectedColorIds, colorId],
+            }
+          : v,
+      ),
+    )
+  }, [])
 
   const handleSave = async () => {
     const missing: string[] = []
@@ -156,15 +208,20 @@ export function CreateListingPage() {
           target_gender: targetGender || null,
           brand: brand || null,
           material: material || null,
-          variants: [
-            {
-              condition,
-              sku: sku || null,
-              size_id: sizeId ? Number(sizeId) : null,
-              color_ids: selectedColorIds,
-              notes: variantNotes || '',
-            },
-          ],
+          media: mediaFiles
+            .filter((f) => f.url)
+            .map((f, i) => ({
+              image: f.url,
+              is_primary: f.isPrimary,
+              sort_order: i,
+            })),
+          variants: variants.map((v) => ({
+            condition: v.condition,
+            sku: v.sku || null,
+            size_id: v.sizeId ? Number(v.sizeId) : null,
+            color_ids: v.selectedColorIds,
+            notes: v.notes || '',
+          })),
           ...(inventoryCode || storageLocation || schoolNotes
             ? {
                 school_details: {
@@ -182,7 +239,8 @@ export function CreateListingPage() {
       toast.success(t('marketplace.createSuccess'))
       navigate(paths.marketplace)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t('marketplace.createError')
+      const msg =
+        err instanceof Error ? err.message : t('marketplace.createError')
       toast.error(msg)
     } finally {
       setIsSaving(false)
@@ -249,7 +307,9 @@ export function CreateListingPage() {
                     id="productDescription"
                     value={productDescription}
                     onChange={(e) => setProductDescription(e.target.value)}
-                    placeholder={t('marketplace.productDescriptionPlaceholder')}
+                    placeholder={t(
+                      'marketplace.productDescriptionPlaceholder',
+                    )}
                     rows={3}
                     className="mt-1.5"
                   />
@@ -280,7 +340,10 @@ export function CreateListingPage() {
                     <Label htmlFor="gender">
                       {t('marketplace.targetGender')}
                     </Label>
-                    <Select value={targetGender} onValueChange={setTargetGender}>
+                    <Select
+                      value={targetGender}
+                      onValueChange={setTargetGender}
+                    >
                       <SelectTrigger id="gender" className="mt-1.5">
                         <SelectValue
                           placeholder={t('marketplace.selectGender')}
@@ -324,135 +387,63 @@ export function CreateListingPage() {
               </div>
             </CardSection>
 
-            {/* Variant / Item Details */}
+            {/* Media */}
             <CardSection
-              title={t('marketplace.variantDetails')}
-              description={t('marketplace.variantDetailsDesc')}
+              title={t('marketplace.media')}
+              description={t('marketplace.mediaDesc')}
             >
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="condition">
-                      {t('marketplace.condition')}
-                    </Label>
-                    <Select value={condition} onValueChange={setCondition}>
-                      <SelectTrigger id="condition" className="mt-1.5">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CONDITIONS.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {t(c.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <MediaUpload value={mediaFiles} onChange={setMediaFiles} />
+            </CardSection>
 
-                  <div>
-                    <Label htmlFor="sku">{t('marketplace.sku')}</Label>
-                    <Input
-                      id="sku"
-                      value={sku}
-                      onChange={(e) => setSku(e.target.value)}
-                      placeholder={t('marketplace.skuPlaceholder')}
-                      className="mt-1.5"
+            {/* Variants */}
+            <CardSection
+              title={t('marketplace.variants')}
+              description={t('marketplace.variantsDesc')}
+            >
+              <div className="space-y-3">
+                {variants.length === 0 ? (
+                  <div className="flex flex-col items-center py-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      {t('marketplace.noVariants')}
+                    </p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">
+                      {t('marketplace.noVariantsHint')}
+                    </p>
+                  </div>
+                ) : (
+                  variants.map((variant, index) => (
+                    <VariantCard
+                      key={variant.id}
+                      variant={variant}
+                      index={index}
+                      colors={colors}
+                      categorySizeSystems={
+                        categoryId
+                          ? (categories.find((c) => c.id === Number(categoryId))
+                              ?.size_systems as SizeSystem[]) ?? []
+                          : []
+                      }
+                      hasCategorySelected={!!categoryId}
+                      onUpdate={updateVariant}
+                      onRemove={removeVariant}
+                      onToggleExpand={toggleVariantExpand}
+                      onToggleColor={toggleVariantColor}
+                      canRemove={variants.length > 1}
+                      t={t}
                     />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="sizeSystem">
-                      {t('marketplace.sizeSystem')}
-                    </Label>
-                    <Select
-                      value={sizeSystemId}
-                      onValueChange={(v) => {
-                        setSizeSystemId(v)
-                        setSizeId('')
-                      }}
-                    >
-                      <SelectTrigger id="sizeSystem" className="mt-1.5">
-                        <SelectValue
-                          placeholder={t('marketplace.selectSizeSystem')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sizeSystems.map((ss) => (
-                          <SelectItem key={ss.id} value={String(ss.id)}>
-                            {ss.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="size">{t('marketplace.size')}</Label>
-                    <Select
-                      value={sizeId}
-                      onValueChange={setSizeId}
-                      disabled={!sizeSystemId}
-                    >
-                      <SelectTrigger id="size" className="mt-1.5">
-                        <SelectValue
-                          placeholder={t('marketplace.selectSize')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableSizes.map((s) => (
-                          <SelectItem key={s.id} value={String(s.id)}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Colors */}
-                {colors.length > 0 && (
-                  <div>
-                    <Label>{t('marketplace.colors')}</Label>
-                    <div className="flex flex-wrap gap-2 mt-1.5">
-                      {colors.map((color) => (
-                        <button
-                          key={color.id}
-                          type="button"
-                          onClick={() => toggleColor(color.id)}
-                          className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                            selectedColorIds.includes(color.id)
-                              ? 'border-primary bg-primary/5 text-primary'
-                              : 'border-border bg-background text-foreground hover:bg-accent'
-                          }`}
-                        >
-                          <span
-                            className="h-3 w-3 rounded-full border border-border"
-                            style={{ backgroundColor: color.hex_code }}
-                          />
-                          {color.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  ))
                 )}
 
-                <div>
-                  <Label htmlFor="variantNotes">
-                    {t('marketplace.variantNotes')}
-                  </Label>
-                  <Textarea
-                    id="variantNotes"
-                    value={variantNotes}
-                    onChange={(e) => setVariantNotes(e.target.value)}
-                    placeholder={t('marketplace.variantNotesPlaceholder')}
-                    rows={2}
-                    className="mt-1.5"
-                  />
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addVariant}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('marketplace.addVariant')}
+                </Button>
               </div>
             </CardSection>
 
@@ -483,7 +474,9 @@ export function CreateListingPage() {
                       id="storageLocation"
                       value={storageLocation}
                       onChange={(e) => setStorageLocation(e.target.value)}
-                      placeholder={t('marketplace.storageLocationPlaceholder')}
+                      placeholder={t(
+                        'marketplace.storageLocationPlaceholder',
+                      )}
                       className="mt-1.5"
                     />
                   </div>
@@ -530,7 +523,9 @@ export function CreateListingPage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="title">{t('marketplace.listingTitle')}</Label>
+                  <Label htmlFor="title">
+                    {t('marketplace.listingTitle')}
+                  </Label>
                   <Input
                     id="title"
                     value={title}
@@ -548,7 +543,9 @@ export function CreateListingPage() {
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder={t('marketplace.listingDescriptionPlaceholder')}
+                    placeholder={t(
+                      'marketplace.listingDescriptionPlaceholder',
+                    )}
                     rows={3}
                     className="mt-1.5"
                   />
@@ -570,6 +567,7 @@ export function CreateListingPage() {
                       min="0"
                       step="0.01"
                       placeholder="0.00"
+                      inputMode="decimal"
                       value={askingPrice}
                       onChange={(e) => setAskingPrice(e.target.value)}
                       className="pl-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -618,38 +616,20 @@ export function CreateListingPage() {
                       : undefined
                   }
                 />
+                <SummaryRow
+                  label={t('marketplace.media')}
+                  value={
+                    mediaFiles.length > 0
+                      ? t('marketplace.photoCount', { count: mediaFiles.length })
+                      : undefined
+                  }
+                />
                 <Separator />
                 <SummaryRow
-                  label={t('marketplace.condition')}
+                  label={t('marketplace.variants')}
                   value={
-                    condition
-                      ? t(
-                          CONDITIONS.find((c) => c.value === condition)
-                            ?.labelKey ?? '',
-                        )
-                      : undefined
-                  }
-                />
-                <SummaryRow
-                  label={t('marketplace.size')}
-                  value={
-                    sizeId
-                      ? availableSizes.find((s) => s.id === Number(sizeId))
-                          ?.name
-                      : undefined
-                  }
-                />
-                <SummaryRow
-                  label={t('marketplace.colors')}
-                  value={
-                    selectedColorIds.length > 0
-                      ? selectedColorIds
-                          .map(
-                            (id) =>
-                              colors.find((c) => c.id === id)?.name,
-                          )
-                          .filter(Boolean)
-                          .join(', ')
+                    variants.length > 0
+                      ? String(variants.length)
                       : undefined
                   }
                 />
@@ -687,6 +667,237 @@ export function CreateListingPage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageLayout>
+  )
+}
+
+function VariantCard({
+  variant,
+  index,
+  colors,
+  categorySizeSystems,
+  hasCategorySelected,
+  onUpdate,
+  onRemove,
+  onToggleExpand,
+  onToggleColor,
+  canRemove,
+  t,
+}: {
+  variant: VariantData
+  index: number
+  colors: Color[]
+  categorySizeSystems: SizeSystem[]
+  hasCategorySelected: boolean
+  onUpdate: (id: string, updates: Partial<VariantData>) => void
+  onRemove: (id: string) => void
+  onToggleExpand: (id: string) => void
+  onToggleColor: (variantId: string, colorId: number) => void
+  canRemove: boolean
+  t: (key: string, opts?: Record<string, unknown>) => string
+}) {
+  const selectedSizeSystem = categorySizeSystems.find(
+    (ss) => ss.id === Number(variant.sizeSystemId),
+  )
+  const availableSizes = selectedSizeSystem?.sizes ?? []
+
+  const conditionLabel = CONDITIONS.find(
+    (c) => c.value === variant.condition,
+  )
+  const sizeLabel = availableSizes.find(
+    (s) => s.id === Number(variant.sizeId),
+  )
+  const colorCount = variant.selectedColorIds.length
+
+  return (
+    <div className="rounded-lg border border-border bg-card">
+      {/* Header — always visible, acts as accordion toggle */}
+      <button
+        type="button"
+        onClick={() => onToggleExpand(variant.id)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-accent/50 transition-colors rounded-lg min-h-[48px]"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+            {index + 1}
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium truncate">
+              {t('marketplace.variant', { number: index + 1 })}
+            </p>
+            {!variant.isExpanded && (
+              <p className="text-xs text-muted-foreground truncate">
+                {conditionLabel && t(conditionLabel.labelKey)}
+                {sizeLabel && ` · ${sizeLabel.name}`}
+                {colorCount > 0 &&
+                  ` · ${t('marketplace.colorCount', { count: colorCount })}`}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {canRemove && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onRemove(variant.id)
+              }}
+              className="rounded p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+          {variant.isExpanded ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </button>
+
+      {/* Expanded content */}
+      {variant.isExpanded && (
+        <div className="border-t border-border px-4 py-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label>{t('marketplace.condition')}</Label>
+              <Select
+                value={variant.condition}
+                onValueChange={(v) =>
+                  onUpdate(variant.id, { condition: v })
+                }
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONDITIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {t(c.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>{t('marketplace.sku')}</Label>
+              <Input
+                value={variant.sku}
+                onChange={(e) =>
+                  onUpdate(variant.id, { sku: e.target.value })
+                }
+                placeholder={t('marketplace.skuPlaceholder')}
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+
+          <Separator />
+
+          {!hasCategorySelected ? (
+            <p className="text-sm text-muted-foreground">
+              {t('marketplace.selectCategoryForSize')}
+            </p>
+          ) : categorySizeSystems.length === 0 ? null : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>{t('marketplace.sizeSystem')}</Label>
+                <Select
+                  value={variant.sizeSystemId}
+                  onValueChange={(v) =>
+                    onUpdate(variant.id, {
+                      sizeSystemId: v,
+                      sizeId: '',
+                    })
+                  }
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue
+                      placeholder={t('marketplace.selectSizeSystem')}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorySizeSystems.map((ss) => (
+                      <SelectItem key={ss.id} value={String(ss.id)}>
+                        {ss.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>{t('marketplace.size')}</Label>
+                <Select
+                  value={variant.sizeId}
+                  onValueChange={(v) =>
+                    onUpdate(variant.id, { sizeId: v })
+                  }
+                  disabled={!variant.sizeSystemId}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue
+                      placeholder={t('marketplace.selectSize')}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSizes.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Colors */}
+          {colors.length > 0 && (
+            <div>
+              <Label>{t('marketplace.colors')}</Label>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {colors.map((color) => (
+                  <button
+                    key={color.id}
+                    type="button"
+                    onClick={() =>
+                      onToggleColor(variant.id, color.id)
+                    }
+                    className={cn(
+                      'flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors min-h-[36px]',
+                      variant.selectedColorIds.includes(color.id)
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border bg-background text-foreground hover:bg-accent',
+                    )}
+                  >
+                    <span
+                      className="h-3 w-3 rounded-full border border-border"
+                      style={{ backgroundColor: color.hex_code }}
+                    />
+                    {color.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <Label>{t('marketplace.variantNotes')}</Label>
+            <Textarea
+              value={variant.notes}
+              onChange={(e) =>
+                onUpdate(variant.id, { notes: e.target.value })
+              }
+              placeholder={t('marketplace.variantNotesPlaceholder')}
+              rows={2}
+              className="mt-1.5"
+            />
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

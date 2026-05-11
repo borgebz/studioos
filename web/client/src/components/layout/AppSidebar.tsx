@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -12,6 +13,10 @@ import {
   Moon,
   Monitor,
   LogOut,
+  ChevronRight,
+  Settings,
+  Tag,
+  School,
 } from 'lucide-react'
 import { paths } from '@/app/paths'
 import { useAuth } from '@/auth/useAuth'
@@ -37,17 +42,61 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
+import { cn } from '@/lib/utils'
 
-const navItems = [
+interface NavItem {
+  to: string
+  labelKey: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+interface NavGroup {
+  labelKey: string
+  icon: React.ComponentType<{ className?: string }>
+  children: NavItem[]
+}
+
+type NavEntry = NavItem | NavGroup
+
+function isGroup(entry: NavEntry): entry is NavGroup {
+  return 'children' in entry
+}
+
+const navEntries: NavEntry[] = [
   { to: paths.home, labelKey: 'nav.home', icon: Home },
-  { to: paths.calendar, labelKey: 'nav.calendar', icon: CalendarDays },
-  { to: paths.coachingsCreate, labelKey: 'nav.coachings', icon: GraduationCap },
-  { to: paths.marketplaceCreate, labelKey: 'nav.marketplace', icon: ShoppingBag },
-  { to: paths.invites, labelKey: 'nav.invites', icon: UserPlus },
+  {
+    labelKey: 'nav.studio',
+    icon: School,
+    children: [
+      { to: paths.calendar, labelKey: 'nav.calendar', icon: CalendarDays },
+      {
+        to: paths.coachingsCreate,
+        labelKey: 'nav.coachings',
+        icon: GraduationCap,
+      },
+    ],
+  },
+  {
+    labelKey: 'nav.catalog',
+    icon: Tag,
+    children: [
+      { to: paths.marketplace, labelKey: 'nav.marketplace', icon: ShoppingBag },
+    ],
+  },
+  {
+    labelKey: 'nav.configuration',
+    icon: Settings,
+    children: [
+      { to: paths.invites, labelKey: 'nav.invites', icon: UserPlus },
+    ],
+  },
   { to: paths.designSystem, labelKey: 'nav.designSystem', icon: Palette },
-] as const
+]
 
 const themes: { value: Theme; labelKey: string; icon: typeof Sun }[] = [
   { value: 'light', labelKey: 'theme.light', icon: Sun },
@@ -59,6 +108,59 @@ const languages = [
   { code: 'pt' as const, labelKey: 'lang.pt' },
   { code: 'en' as const, labelKey: 'lang.en' },
 ] as const
+
+function NavGroupItem({
+  group,
+  t,
+  location,
+}: {
+  group: NavGroup
+  t: (key: string) => string
+  location: ReturnType<typeof useLocation>
+}) {
+  const hasActiveChild = group.children.some((child) =>
+    location.pathname.startsWith(child.to)
+  )
+  const [open, setOpen] = useState(hasActiveChild)
+  const Icon = group.icon
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        onClick={() => setOpen((prev) => !prev)}
+        isActive={hasActiveChild && !open}
+        tooltip={t(group.labelKey)}
+        className="cursor-pointer"
+      >
+        <Icon />
+        <span className="flex-1">{t(group.labelKey)}</span>
+        <ChevronRight
+          className={cn(
+            'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+            open && 'rotate-90'
+          )}
+        />
+      </SidebarMenuButton>
+
+      {open && (
+        <SidebarMenuSub>
+          {group.children.map((child) => {
+            const isActive = location.pathname.startsWith(child.to)
+            return (
+              <SidebarMenuSubItem key={child.to}>
+                <SidebarMenuSubButton asChild isActive={isActive}>
+                  <NavLink to={child.to}>
+                    <span>{t(child.labelKey)}</span>
+                  </NavLink>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            )
+          })}
+        </SidebarMenuSub>
+      )}
+    </SidebarMenuItem>
+  )
+}
 
 export function AppSidebar() {
   const { t, i18n } = useTranslation()
@@ -100,21 +202,34 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map(({ to, labelKey, icon: Icon }) => {
+              {navEntries.map((entry) => {
+                if (isGroup(entry)) {
+                  return (
+                    <NavGroupItem
+                      key={entry.labelKey}
+                      group={entry}
+                      t={t}
+                      location={location}
+                    />
+                  )
+                }
+
                 const isActive =
-                  to === paths.home
+                  entry.to === paths.home
                     ? location.pathname === '/'
-                    : location.pathname.startsWith(to)
+                    : location.pathname.startsWith(entry.to)
+                const Icon = entry.icon
+
                 return (
-                  <SidebarMenuItem key={to}>
+                  <SidebarMenuItem key={entry.to}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      tooltip={t(labelKey)}
+                      tooltip={t(entry.labelKey)}
                     >
-                      <NavLink to={to}>
+                      <NavLink to={entry.to}>
                         <Icon />
-                        <span>{t(labelKey)}</span>
+                        <span>{t(entry.labelKey)}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -189,6 +304,10 @@ export function AppSidebar() {
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate(paths.accountSettings)}>
+              <Settings className="size-4" />
+              {t('account.title')}
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={async () => {

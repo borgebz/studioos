@@ -11,9 +11,19 @@ function Select({
 }
 
 function SelectGroup({
+  className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return <SelectPrimitive.Group data-slot="select-group" {...props} />
+  return (
+    <SelectPrimitive.Group
+      data-slot="select-group"
+      className={cn(
+        '[&_[data-slot=select-item]]:pl-5',
+        className
+      )}
+      {...props}
+    />
+  )
 }
 
 function SelectValue({
@@ -92,7 +102,10 @@ function SelectLabel({
   return (
     <SelectPrimitive.Label
       data-slot="select-label"
-      className={cn('text-muted-foreground px-2 py-1.5 text-xs', className)}
+      className={cn(
+        'text-foreground flex items-center gap-2 px-2 py-2 text-sm font-semibold',
+        className
+      )}
       {...props}
     />
   )

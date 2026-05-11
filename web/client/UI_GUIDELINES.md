@@ -104,7 +104,10 @@ The app uses a fixed layout inspired by Saleor:
 ### Content Area
 
 - Scrollable, with consistent padding: `p-6` on desktop, `p-4` on mobile.
-- Max content width: none (fluid), but card sections should not exceed `max-w-4xl` for form pages.
+- Max content width depends on page complexity:
+  - **Two-column pages** (create/edit with sidebar, calendar, etc.): use **`max-w-6xl`** — the sidebar column needs room.
+  - **Single-column pages** (simple forms, utility pages like Invite Users): use **`max-w-4xl`**.
+  - Never use `max-w-2xl` or other narrower widths — consistency across pages is mandatory.
 - Background: `bg-background` (the slightly off-white page background).
 
 ---
@@ -315,6 +318,8 @@ Use the system font stack (default Tailwind `font-sans`) for all UI text. The ex
 
 ## 7. Responsive Behavior
 
+**Mobile-first is mandatory.** Every page, component, and interaction must be fully usable on mobile devices. This is not optional — dance school staff and students will use the app primarily on their phones.
+
 | Breakpoint | Layout |
 |-----------|--------|
 | `< md` (mobile) | Sidebar collapsed to off-canvas sheet. Single-column content. `p-4`. |
@@ -323,11 +328,16 @@ Use the system font stack (default Tailwind `font-sans`) for all UI text. The ex
 
 ### Rules
 
-- All pages must work at mobile width.
+- All pages must work at mobile width — **test mobile first, desktop second**.
 - Tables on mobile: horizontal scroll with `overflow-x-auto`.
 - Two-column detail pages collapse to single column below `lg`.
 - Sticky footer actions bar remains visible at all breakpoints.
 - Use `hidden md:flex` / `flex md:hidden` for responsive element swaps.
+- Touch targets must be at least 44×44px on mobile (buttons, checkboxes, interactive elements).
+- File upload components must support both drag & drop (desktop) and tap-to-select / camera capture (mobile).
+- Forms should use appropriate mobile input types (`type="tel"`, `type="email"`, `inputmode="numeric"`, etc.).
+- Modals and sheets on mobile should be full-width or use `Sheet` sliding from bottom.
+- Avoid hover-only interactions — always provide a tap/click alternative.
 
 ---
 

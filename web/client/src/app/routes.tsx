@@ -31,9 +31,11 @@ import { LandingPage } from '@/app/pages/LandingPage'
 import { CalendarPage } from '@/app/pages/calendar/CalendarPage'
 import { CreateCoachingPage } from '@/app/pages/coachings/CreateCoachingPage'
 import { EnrollmentPage } from '@/app/pages/enrollments/EnrollmentPage'
+import { MarketplaceListPage } from '@/app/pages/marketplace/MarketplaceListPage'
 import { CreateListingPage } from '@/app/pages/marketplace/CreateListingPage'
 import { InviteUsersPage } from '@/app/pages/invites/InviteUsersPage'
 import { OnboardingPage } from '@/app/pages/onboarding/OnboardingPage'
+import { AccountSettingsPage } from '@/app/pages/account/AccountSettingsPage'
 
 export function AppRoutes() {
   return (
@@ -44,9 +46,11 @@ export function AppRoutes() {
       <Route path={paths.calendar} element={<CalendarPage />} />
       <Route path={paths.coachingsCreate} element={<CreateCoachingPage />} />
       <Route path={paths.enrollment} element={<EnrollmentPage />} />
+      <Route path={paths.marketplace} element={<MarketplaceListPage />} />
       <Route path={paths.marketplaceCreate} element={<CreateListingPage />} />
       <Route path={paths.invites} element={<InviteUsersPage />} />
       <Route path={paths.onboarding} element={<OnboardingPage />} />
+      <Route path={paths.accountSettings} element={<AccountSettingsPage />} />
       <Route
         path={paths.designSystem}
         element={
