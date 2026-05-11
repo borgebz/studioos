@@ -23,7 +23,6 @@ from coachings.models import (
     CoachingParticipantStatus,
     CoachingStatus,
     RecurringCoaching,
-    TeacherAvailability,
 )
 from modality.models import Modality
 from studios.models import Studio, StudioModality
@@ -437,20 +436,6 @@ def _validate_status_transition(coaching, target_status):
         raise ValidationError({"messages": ["InvalidStatusTransition"]})
 
 
-def _check_availability_overlap(
-    *, teacher_id, start_datetime, end_datetime, exclude_pk=None
-):
-    qs = TeacherAvailability.objects.filter(
-        teacher_id=teacher_id,
-        start_datetime__lt=end_datetime,
-        end_datetime__gt=start_datetime,
-    )
-    if exclude_pk:
-        qs = qs.exclude(pk=exclude_pk)
-    if qs.exists():
-        raise ValidationError({"messages": ["TeacherAvailabilityOverlap"]})
-
-
 def _assert_studio_modality_compatible(*, studio, modality):
     if not StudioModality.objects.filter(
         studio=studio,
@@ -643,108 +628,6 @@ def _generate_recurrence_dates(
             count += 1
 
     return dates
-
-
-def list_teacher_availability(*, teacher_id, date_from=None, date_to=None):
-    qs = TeacherAvailability.objects.select_related("modality").filter(
-        teacher_id=teacher_id
-    )
-    if date_from:
-        qs = qs.filter(end_datetime__gte=date_from)
-    if date_to:
-        qs = qs.filter(start_datetime__lte=date_to)
-    return qs
-
-
-@transaction.atomic
-def create_teacher_availability(*, teacher_id, requesting_user, **data):
-    start = data.get("start_datetime")
-    end = data.get("end_datetime")
-    _validate_datetime_range(start=start, end=end)
-    _get_teacher_user(teacher_id=teacher_id)
-
-    data = {**data}
-    modality_id = data.pop("modality_id", None)
-    modality = None
-    if modality_id is not None:
-        try:
-            modality = Modality.objects.get(pk=modality_id)
-        except Modality.DoesNotExist:
-            raise AppNotFound("ModalityNotFound")
-
-    notes = data.get("notes", "")
-    _check_availability_overlap(
-        teacher_id=teacher_id, start_datetime=start, end_datetime=end
-    )
-
-    block = TeacherAvailability(
-        teacher_id=teacher_id,
-        modality=modality,
-        start_datetime=start,
-        end_datetime=end,
-        notes=notes,
-        created_by=requesting_user,
-    )
-    block.full_clean()
-    block.save()
-    logger.info(
-        "TeacherAvailability created for teacher=%s by user=%s",
-        teacher_id,
-        requesting_user.id,
-    )
-    return block
-
-
-@transaction.atomic
-def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
-    _get_teacher_user(teacher_id=teacher_id)
-    try:
-        block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
-    except TeacherAvailability.DoesNotExist:
-        raise AppNotFound("TeacherAvailabilityNotFound")
-
-    modality_id = data.pop("modality_id", "__unset__")
-    if modality_id != "__unset__":
-        if modality_id is not None:
-            try:
-                block.modality = Modality.objects.get(pk=modality_id)
-            except Modality.DoesNotExist:
-                raise AppNotFound("ModalityNotFound")
-        else:
-            block.modality = None
-
-    if "start_datetime" in data:
-        block.start_datetime = data["start_datetime"]
-    if "end_datetime" in data:
-        block.end_datetime = data["end_datetime"]
-    if "notes" in data:
-        block.notes = data["notes"]
-
-    _validate_datetime_range(start=block.start_datetime, end=block.end_datetime)
-
-    _check_availability_overlap(
-        teacher_id=teacher_id,
-        start_datetime=block.start_datetime,
-        end_datetime=block.end_datetime,
-        exclude_pk=pk,
-    )
-
-    block.updated_by = requesting_user
-    block.full_clean()
-    block.save()
-    logger.info("TeacherAvailability %s updated by user=%s", pk, requesting_user.id)
-    return block
-
-
-@transaction.atomic
-def delete_teacher_availability(*, teacher_id, pk, requesting_user):
-    _get_teacher_user(teacher_id=teacher_id)
-    try:
-        block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
-    except TeacherAvailability.DoesNotExist:
-        raise AppNotFound("TeacherAvailabilityNotFound")
-    block.delete(deleted_by=requesting_user)
-    logger.info("TeacherAvailability %s deleted by user=%s", pk, requesting_user.id)
 
 
 def get_coaching(*, pk):

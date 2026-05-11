@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "studios",
     "enrollments",
     "coachings",
+    "availability",
     "inventory",
     "events",
     "billing",

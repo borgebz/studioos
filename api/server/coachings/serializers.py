@@ -14,31 +14,11 @@ from coachings.models import (
     CoachingStatus,
     RecurrenceType,
     RecurringCoaching,
-    TeacherAvailability,
 )
 from modality.serializers import ModalitySerializer
 from studios.serializers import StudioSerializer
 
 # --- Teacher availability (slots): filters, body payloads, read model ---
-
-
-class TeacherAvailabilityQuerySerializer(serializers.Serializer):
-    date_from = serializers.DateTimeField(required=False)
-    date_to = serializers.DateTimeField(required=False)
-
-
-class TeacherAvailabilitySubmitSerializer(serializers.Serializer):
-    start_datetime = serializers.DateTimeField()
-    end_datetime = serializers.DateTimeField()
-    modality_id = serializers.IntegerField(required=False, allow_null=True)
-    notes = serializers.CharField(required=False, allow_blank=True)
-
-
-class TeacherAvailabilityUpdateSerializer(serializers.Serializer):
-    start_datetime = serializers.DateTimeField(required=False)
-    end_datetime = serializers.DateTimeField(required=False)
-    modality_id = serializers.IntegerField(required=False, allow_null=True)
-    notes = serializers.CharField(required=False, allow_blank=True)
 
 
 # --- Coaching session: create, schedule, workflow actions, patch ---
@@ -184,21 +164,6 @@ class CoachingListQuerySerializer(serializers.Serializer):
 
 
 # --- Read models (nested resources for responses) ---
-
-
-class TeacherAvailabilitySerializer(serializers.ModelSerializer):
-    modality = ModalitySerializer(read_only=True)
-
-    class Meta:
-        model = TeacherAvailability
-        fields = [
-            "id",
-            "teacher_id",
-            "modality",
-            "start_datetime",
-            "end_datetime",
-            "notes",
-        ]
 
 
 class CoachingParticipantSerializer(serializers.ModelSerializer):

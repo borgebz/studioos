@@ -45,12 +45,19 @@ MESSAGING_PERMISSIONS = [
     "messaging.can_list_conversations",
 ]
 
+AVAILABILITY_PERMISSIONS = [
+    "availability.view_teacheravailability",
+    "availability.add_teacheravailability",
+    "availability.change_teacheravailability",
+    "availability.delete_teacheravailability",
+]
+
+AVAILABILITY_PERMISSIONS_MANAGEMENT = [
+    *AVAILABILITY_PERMISSIONS,
+    "availability.can_manage_teacher_availability_for_others",
+]
+
 COACHINGS_PERMISSIONS = [
-    "coachings.view_teacheravailability",
-    "coachings.add_teacheravailability",
-    "coachings.change_teacheravailability",
-    "coachings.delete_teacheravailability",
-    "coachings.can_manage_teacher_availability_for_others",
     "coachings.view_coachingclass",
     "coachings.add_coachingclass",
     "coachings.change_coachingclass",
@@ -191,6 +198,8 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
+        # availability
+        *AVAILABILITY_PERMISSIONS_MANAGEMENT,
         # coachings (full management + scheduling)
         *COACHINGS_PERMISSIONS,
         "coachings.can_schedule_coaching",
@@ -242,6 +251,8 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
+        # availability
+        *AVAILABILITY_PERMISSIONS_MANAGEMENT,
         # coachings (full management + scheduling)
         *COACHINGS_PERMISSIONS,
         "coachings.can_schedule_coaching",
@@ -264,6 +275,7 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "studios.view_studio",
         "modality.view_modality",
+        "availability.view_teacheravailability",
         "coachings.view_coachingclass",
         "coachings.view_coachingparticipant",
         "classes.view_classe",
@@ -278,10 +290,7 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         # own availability management
-        "coachings.view_teacheravailability",
-        "coachings.add_teacheravailability",
-        "coachings.change_teacheravailability",
-        "coachings.delete_teacheravailability",
+        *AVAILABILITY_PERMISSIONS,
         # coaching interaction
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
@@ -300,10 +309,7 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         # own availability management
-        "coachings.view_teacheravailability",
-        "coachings.add_teacheravailability",
-        "coachings.change_teacheravailability",
-        "coachings.delete_teacheravailability",
+        *AVAILABILITY_PERMISSIONS,
         # coaching interaction
         "coachings.view_coachingclass",
         "coachings.can_accept_coaching_as_teacher",
@@ -318,6 +324,8 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "studios.view_studio",
         "modality.view_modality",
+        # availability (read-only — see teacher availability)
+        "availability.view_teacheravailability",
         # coaching: request on behalf of dependents + confirm attendance
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
@@ -338,6 +346,8 @@ ROLE_PERMISSIONS = {
         "accounts.can_participate_in_coaching",
         "studios.view_studio",
         "modality.view_modality",
+        # availability (read-only — see teacher availability)
+        "availability.view_teacheravailability",
         # coaching: request + participate
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",

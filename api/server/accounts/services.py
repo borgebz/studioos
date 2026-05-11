@@ -342,7 +342,7 @@ def activate_account(*, uid, token, password):
 # --- Invites & onboarding ----------------------------------------------------
 
 INVITE_TARGETS_DIRECTION = frozenset(
-    {"coordination", "collaborator", "teacher", "parent", "student"}
+    {"direction", "coordination", "collaborator", "teacher", "parent", "student"}
 )
 INVITE_TARGETS_COORDINATION = frozenset(
     {"collaborator", "teacher", "parent", "student"}

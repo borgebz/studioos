@@ -5,6 +5,14 @@ from . import size_system_services  # noqa: F401
 from . import product_variant_services  # noqa: F401
 from . import variant_booking_services  # noqa: F401
 
+from .product_variant_services import (
+    create_variant,
+    delete_variant,
+    get_variant,
+    list_variants,
+    update_variant,
+)
+
 from .product_services import (
     create_product,
     create_school_product,
@@ -25,6 +33,11 @@ __all__ = [
     "size_system_services",
     "product_variant_services",
     "variant_booking_services",
+    "create_variant",
+    "delete_variant",
+    "get_variant",
+    "list_variants",
+    "update_variant",
     "create_product",
     "create_school_product",
     "delete_product",

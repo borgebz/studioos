@@ -23,100 +23,12 @@ from coachings.serializers import (
     CoachingRequestSerializer,
     CoachingUpdateSerializer,
     RecurringSeriesCancelSerializer,
-    TeacherAvailabilityQuerySerializer,
-    TeacherAvailabilitySerializer,
-    TeacherAvailabilitySubmitSerializer,
-    TeacherAvailabilityUpdateSerializer,
     TeacherConfirmCoachingSerializer,
 )
 from core.decorators import require_any_perm, require_perm
 from core.guardian import resolve_acting_student
 from core.pagination import paginated_response
 from core.schemas import DEFAULT_ERROR_RESPONSES
-
-
-def _ensure_availability_calendar_access(request, user_id):
-    if request.user.id == user_id:
-        return
-    if not request.user.has_perm(
-        "coachings.can_manage_teacher_availability_for_others"
-    ):
-        raise PermissionDenied()
-
-
-class TeacherAvailabilityListCreateView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        parameters=[TeacherAvailabilityQuerySerializer],
-        responses={
-            200: TeacherAvailabilitySerializer(many=True),
-            **DEFAULT_ERROR_RESPONSES,
-        },
-    )
-    @require_perm("coachings.view_teacheravailability")
-    def get(self, request, user_id):
-        _ensure_availability_calendar_access(request, user_id)
-        q = TeacherAvailabilityQuerySerializer(data=request.query_params)
-        q.is_valid(raise_exception=True)
-        blocks = services.list_teacher_availability(
-            teacher_id=user_id,
-            **q.validated_data,
-        )
-        return Response(TeacherAvailabilitySerializer(blocks, many=True).data)
-
-    @extend_schema(
-        request=TeacherAvailabilitySubmitSerializer,
-        responses={201: TeacherAvailabilitySerializer, **DEFAULT_ERROR_RESPONSES},
-    )
-    @require_perm("coachings.add_teacheravailability")
-    def post(self, request, user_id):
-        _ensure_availability_calendar_access(request, user_id)
-        serializer = TeacherAvailabilitySubmitSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        block = services.create_teacher_availability(
-            teacher_id=user_id,
-            requesting_user=request.user,
-            **serializer.validated_data,
-        )
-        return Response(
-            TeacherAvailabilitySerializer(block).data,
-            status=status.HTTP_201_CREATED,
-        )
-
-
-class TeacherAvailabilityDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    @extend_schema(
-        request=TeacherAvailabilityUpdateSerializer,
-        responses={200: TeacherAvailabilitySerializer, **DEFAULT_ERROR_RESPONSES},
-    )
-    @require_perm("coachings.change_teacheravailability")
-    def patch(self, request, user_id, pk):
-        _ensure_availability_calendar_access(request, user_id)
-        serializer = TeacherAvailabilityUpdateSerializer(
-            data=request.data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        block = services.update_teacher_availability(
-            teacher_id=user_id,
-            pk=pk,
-            requesting_user=request.user,
-            **serializer.validated_data,
-        )
-        return Response(TeacherAvailabilitySerializer(block).data)
-
-    @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
-    @require_perm("coachings.delete_teacheravailability")
-    def delete(self, request, user_id, pk):
-        _ensure_availability_calendar_access(request, user_id)
-        services.delete_teacher_availability(
-            teacher_id=user_id,
-            pk=pk,
-            requesting_user=request.user,
-        )
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CoachingCollectionView(APIView):

@@ -1,11 +1,11 @@
 info:
   name: edit-availability
   type: http
-  seq: 3
+  seq: 4
 
 http:
   method: PATCH
-  url: "{{base_url}}/api/coachings/teachers/6/availability/1/"
+  url: "{{base_url}}/api/availability/teachers/6/1/"
   body:
     type: json
     data: |-

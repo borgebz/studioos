@@ -1,11 +1,11 @@
 info:
-  name: availability
+  name: delete-availability
   type: http
-  seq: 4
+  seq: 7
 
 http:
   method: DELETE
-  url: "{{base_url}}/api/coachings/teachers/6/availability/1/"
+  url: "{{base_url}}/api/availability/teachers/6/1/"
   auth: inherit
 
 settings:
