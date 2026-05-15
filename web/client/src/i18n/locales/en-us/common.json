@@ -8,6 +8,7 @@
     "calendar": "Calendar",
     "coachings": "Coachings",
     "myRequests": "My Requests",
+    "requestCoaching": "Request Coaching",
     "reviewRequests": "Review Requests",
     "marketplace": "Marketplace",
     "browse": "Browse",
@@ -631,6 +632,19 @@
   "myCoachingRequests": {
     "title": "My Requests",
     "empty": "You have no coaching requests yet."
+  },
+  "requestCoaching": {
+    "title": "Request a Coaching",
+    "subtitle": "Choose a teacher, modality, and time for your coaching session.",
+    "sessionInfo": "Session Details",
+    "preferredTime": "Preferred Time",
+    "additionalNotes": "Additional Notes",
+    "notesPlaceholder": "Any preferences or details for the teacher…",
+    "studioOptional": "Studio (optional)",
+    "submit": "Send Request",
+    "submitting": "Sending…",
+    "success": "Coaching request sent! You'll be notified when the teacher responds.",
+    "summaryTitle": "Request Summary"
   },
   "myListings": {
     "title": "My Listings",

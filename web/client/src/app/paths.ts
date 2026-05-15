@@ -30,6 +30,7 @@ export const paths = {
   coachings: '/coachings',
   coachingsCreate: '/coachings/create',
   coachingsMyRequests: '/coachings/my-requests',
+  coachingsRequest: '/coachings/request',
   coachingsRequests: '/coachings/requests',
   enrollment: '/enrollment',
   enrollmentRequests: '/enrollment/requests',

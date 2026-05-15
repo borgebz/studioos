@@ -4,6 +4,7 @@ import {
   CreditCard,
   Home,
   Inbox,
+  MessageSquarePlus,
   Palette,
   Receipt,
   ShieldAlert,
@@ -80,6 +81,12 @@ export const navConfig: NavEntryConfig[] = [
           'accounts.can_participate_in_coaching',
           'accounts.can_teach',
         ],
+      },
+      {
+        to: paths.coachingsRequest,
+        labelKey: 'nav.requestCoaching',
+        icon: MessageSquarePlus,
+        permission: 'accounts.can_participate_in_coaching',
       },
       {
         to: paths.coachingsRequests,

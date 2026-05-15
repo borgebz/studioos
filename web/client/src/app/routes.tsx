@@ -32,6 +32,7 @@ import { LandingPage } from '@/app/pages/LandingPage'
 import { CalendarPage } from '@/app/pages/calendar/CalendarPage'
 import { CreateCoachingPage } from '@/app/pages/coachings/CreateCoachingPage'
 import { MyCoachingRequestsPage } from '@/app/pages/coachings/MyCoachingRequestsPage'
+import { RequestCoachingPage } from '@/app/pages/coachings/RequestCoachingPage'
 import { CoachingRequestsPage } from '@/app/pages/coachings/CoachingRequestsPage'
 import { EnrollmentPage } from '@/app/pages/enrollments/EnrollmentPage'
 import { EnrollmentRequestsPage } from '@/app/pages/enrollments/EnrollmentRequestsPage'
@@ -62,6 +63,7 @@ export function AppRoutes() {
       <Route path={paths.calendar} element={<ProtectedRoute permission="coachings.view_coachingclass"><CalendarPage /></ProtectedRoute>} />
       <Route path={paths.coachingsCreate} element={<ProtectedRoute permission="coachings.can_schedule_coaching"><CreateCoachingPage /></ProtectedRoute>} />
       <Route path={paths.coachingsMyRequests} element={<ProtectedRoute permission={['accounts.can_participate_in_coaching', 'accounts.can_teach']}><MyCoachingRequestsPage /></ProtectedRoute>} />
+      <Route path={paths.coachingsRequest} element={<ProtectedRoute permission="accounts.can_participate_in_coaching"><RequestCoachingPage /></ProtectedRoute>} />
       <Route path={paths.coachingsRequests} element={<ProtectedRoute permission="coachings.change_coachingclass"><CoachingRequestsPage /></ProtectedRoute>} />
       <Route path={paths.enrollment} element={<ProtectedRoute permission="enrollments.can_review_enrollment"><EnrollmentPage /></ProtectedRoute>} />
       <Route path={paths.enrollmentRequests} element={<ProtectedRoute permission="enrollments.can_review_enrollment"><EnrollmentRequestsPage /></ProtectedRoute>} />

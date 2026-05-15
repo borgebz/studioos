@@ -8,6 +8,7 @@
     "calendar": "Calendário",
     "coachings": "Coachings",
     "myRequests": "Os Meus Pedidos",
+    "requestCoaching": "Pedir Coaching",
     "reviewRequests": "Rever Pedidos",
     "marketplace": "Marketplace",
     "browse": "Explorar",
@@ -631,6 +632,19 @@
   "myCoachingRequests": {
     "title": "Os Meus Pedidos",
     "empty": "Ainda não tem pedidos de coaching."
+  },
+  "requestCoaching": {
+    "title": "Pedir um Coaching",
+    "subtitle": "Escolha o professor, modalidade e horário para a sua sessão de coaching.",
+    "sessionInfo": "Detalhes da Sessão",
+    "preferredTime": "Horário Pretendido",
+    "additionalNotes": "Notas Adicionais",
+    "notesPlaceholder": "Preferências ou detalhes para o professor…",
+    "studioOptional": "Estúdio (opcional)",
+    "submit": "Enviar Pedido",
+    "submitting": "A enviar…",
+    "success": "Pedido de coaching enviado! Será notificado quando o professor responder.",
+    "summaryTitle": "Resumo do Pedido"
   },
   "myListings": {
     "title": "Os Meus Anúncios",
