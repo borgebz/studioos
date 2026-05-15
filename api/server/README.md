@@ -48,6 +48,72 @@ Services:
 - RedisInsight: http://localhost:5540
 - Portainer (container monitor): http://localhost:9000
 
+## Seeding demo data
+
+Populates the database with multiple users (one per role) and minimum data for
+every page on the web client — studios, classes, modality links, an open
+enrollment period with submissions in different statuses, coachings (scheduled,
+requested, completed), billing entries and fines, events, school + member
+inventory, marketplace listings, and teacher availability.
+
+The seed command also runs every catalog seeder in the codebase
+(`seed_roles`, `seed_permissions`, `seed_modalities`, `seed_size_systems`,
+`seed_sizes`, `seed_colors`, `seed_categories`), so you do **not** need to
+invoke those separately.
+
+All seeded users share the same email host and password (defaults:
+`@studioos.dev` / `123456`).
+
+```bash
+# From the repo root, with docker compose up
+./scripts/seed_demo_data.sh
+
+# Custom email host or password
+./scripts/seed_demo_data.sh --host example.test --password mypwd
+```
+
+Or call the management command directly:
+
+```bash
+docker compose exec api uv run python manage.py seed_demo_data
+```
+
+The command is idempotent — re-running creates missing rows and refreshes
+passwords on existing ones.
+
+Seeded accounts:
+
+| Email                          | Role              |
+|--------------------------------|-------------------|
+| direction@studioos.dev         | direction         |
+| coordination@studioos.dev      | coordination      |
+| collaborator@studioos.dev      | collaborator      |
+| teacher1@studioos.dev          | teacher           |
+| teacher2@studioos.dev          | teacher           |
+| teacherext@studioos.dev        | teacher_external  |
+| parent1@studioos.dev           | parent            |
+| parent2@studioos.dev           | parent            |
+| student1@studioos.dev … 4      | student           |
+
+### Wiping the database
+
+To start from a clean slate (drops every row in every table by recreating the
+database inside the docker Postgres container):
+
+```bash
+./scripts/reset_db.sh           # prompts for confirmation
+./scripts/reset_db.sh --yes     # skip the confirmation prompt
+```
+
+After resetting, re-run the seed:
+
+```bash
+./scripts/seed_demo_data.sh
+```
+
+The reset script handles migrations on the next seed run automatically — the
+seed wrapper applies them before populating data.
+
 ## Tests
 
 ```bash
