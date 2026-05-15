@@ -64,6 +64,8 @@ invoke those separately.
 All seeded users share the same email host and password (defaults:
 `@studioos.dev` / `123456`).
 
+**macOS / Linux / WSL / Git Bash:**
+
 ```bash
 # From the repo root, with docker compose up
 ./scripts/seed_demo_data.sh
@@ -72,7 +74,16 @@ All seeded users share the same email host and password (defaults:
 ./scripts/seed_demo_data.sh --host example.test --password mypwd
 ```
 
-Or call the management command directly:
+**Windows (PowerShell):**
+
+```powershell
+.\scripts\seed_demo_data.ps1
+
+# Custom email host or password
+.\scripts\seed_demo_data.ps1 -EmailHost example.test -Password mypwd
+```
+
+Or call the management command directly (works on any OS):
 
 ```bash
 docker compose exec api uv run python manage.py seed_demo_data
@@ -100,19 +111,34 @@ Seeded accounts:
 To start from a clean slate (drops every row in every table by recreating the
 database inside the docker Postgres container):
 
+**macOS / Linux / WSL / Git Bash:**
+
 ```bash
 ./scripts/reset_db.sh           # prompts for confirmation
 ./scripts/reset_db.sh --yes     # skip the confirmation prompt
 ```
 
+**Windows (PowerShell):**
+
+```powershell
+.\scripts\reset_db.ps1
+.\scripts\reset_db.ps1 -Yes     # skip the confirmation prompt
+```
+
 After resetting, re-run the seed:
 
 ```bash
-./scripts/seed_demo_data.sh
+./scripts/seed_demo_data.sh      # or .\scripts\seed_demo_data.ps1 on Windows
 ```
 
 The reset script handles migrations on the next seed run automatically — the
 seed wrapper applies them before populating data.
+
+> **Windows note:** the `.ps1` scripts require Docker Desktop. If PowerShell
+> blocks execution, run them once with
+> `powershell -ExecutionPolicy Bypass -File .\scripts\seed_demo_data.ps1` or
+> set the policy with
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
 ## Tests
 
