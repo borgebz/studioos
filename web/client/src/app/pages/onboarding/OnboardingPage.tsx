@@ -67,7 +67,7 @@ export function OnboardingPage() {
     if (loaded.current || !token) return
     loaded.current = true
     apiClient.api
-      .apiAccountsOnboardRetrieve(token)
+      .accountsOnboardRetrieve(token)
       .then((res) => {
         setEmail(res.data.data.email)
         setRole(res.data.data.role)
@@ -94,7 +94,10 @@ export function OnboardingPage() {
       await refreshUser()
       setStep('success')
     } catch (err) {
-      setSubmitError(parseApiError(err, t, 'auth.onboarding.error') ?? t('auth.onboarding.error'))
+      setSubmitError(
+        parseApiError(err, t, 'auth.onboarding.error') ??
+          t('auth.onboarding.error')
+      )
       setStep('form')
     }
   }
@@ -107,9 +110,7 @@ export function OnboardingPage() {
     return (
       <main className="flex min-h-svh items-center justify-center bg-background p-6 text-foreground">
         <div className="max-w-md text-center">
-          <h1
-            className="auth-heading auth-heading-sm mb-4"
-          >
+          <h1 className="auth-heading auth-heading-sm mb-4">
             {t('auth.onboarding.invalidTitle')}
           </h1>
           <p className="mb-6 text-muted-foreground">
@@ -127,9 +128,7 @@ export function OnboardingPage() {
     return (
       <main className="flex min-h-svh items-center justify-center bg-background p-6 text-foreground">
         <div className="max-w-md text-center">
-          <h1
-            className="auth-heading auth-heading-sm mb-4"
-          >
+          <h1 className="auth-heading auth-heading-sm mb-4">
             {t('auth.onboarding.successTitle')}
           </h1>
           <p className="mb-6 text-muted-foreground">
@@ -236,7 +235,9 @@ export function OnboardingPage() {
                 onClick={toggleLang}
                 aria-label={t('nav.toggleLanguage')}
               >
-                <span className="text-[10px] font-medium uppercase">{currentLang}</span>
+                <span className="text-[10px] font-medium uppercase">
+                  {currentLang}
+                </span>
               </Button>
               <Button
                 type="button"
@@ -246,7 +247,11 @@ export function OnboardingPage() {
                 onClick={toggleTheme}
                 aria-label={t('nav.toggleTheme')}
               >
-                {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+                {theme === 'dark' ? (
+                  <Sun className="size-3.5" />
+                ) : (
+                  <Moon className="size-3.5" />
+                )}
               </Button>
             </div>
           </div>
@@ -257,9 +262,7 @@ export function OnboardingPage() {
               {/* Header */}
               <div className="mb-7">
                 <div className="mb-4 flex items-center gap-3 text-[10.5px] uppercase tracking-[0.28em] text-primary">
-                  <span
-                    className="auth-wordmark text-[17px] lowercase tracking-normal"
-                  >
+                  <span className="auth-wordmark text-[17px] lowercase tracking-normal">
                     01.
                   </span>
                   <span>{t('auth.onboarding.overline')}</span>
@@ -270,7 +273,9 @@ export function OnboardingPage() {
                   style={{ margin: 0 }}
                 >
                   {t('auth.onboarding.heroTitle_1')}
-                  <em className="text-primary">{t('auth.onboarding.heroTitle_em')}</em>
+                  <em className="text-primary">
+                    {t('auth.onboarding.heroTitle_em')}
+                  </em>
                   {t('auth.onboarding.heroTitle_2')}
                 </h2>
                 <p className="max-w-[38ch] text-[14.5px] leading-relaxed text-muted-foreground">
@@ -281,15 +286,21 @@ export function OnboardingPage() {
               {/* Mobile role badge */}
               <div className="mb-5 flex items-center gap-2 lg:hidden">
                 <span className="text-sm text-muted-foreground">{email}</span>
-                <Badge variant="outline" className="capitalize">{t(`roles.${role}`)}</Badge>
+                <Badge variant="outline" className="capitalize">
+                  {t(`roles.${role}`)}
+                </Badge>
               </div>
 
               {/* Form */}
-              <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)}>
+              <form
+                className="flex flex-col gap-5"
+                onSubmit={handleSubmit(onSubmit)}
+              >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="first_name">
-                      {t('auth.onboarding.firstName')} <span className="text-destructive">*</span>
+                      {t('auth.onboarding.firstName')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="first_name"
@@ -305,7 +316,8 @@ export function OnboardingPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="last_name">
-                      {t('auth.onboarding.lastName')} <span className="text-destructive">*</span>
+                      {t('auth.onboarding.lastName')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="last_name"
@@ -324,7 +336,8 @@ export function OnboardingPage() {
                 <div className="grid grid-cols-[100px_1fr] gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone_country_code">
-                      {t('auth.onboarding.phoneCode')} <span className="text-destructive">*</span>
+                      {t('auth.onboarding.phoneCode')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="phone_country_code"
@@ -340,7 +353,8 @@ export function OnboardingPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">
-                      {t('auth.onboarding.phone')} <span className="text-destructive">*</span>
+                      {t('auth.onboarding.phone')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="phone"
@@ -359,7 +373,8 @@ export function OnboardingPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="date_of_birth">
-                    {t('auth.onboarding.dateOfBirth')} <span className="text-destructive">*</span>
+                    {t('auth.onboarding.dateOfBirth')}{' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Controller
                     name="date_of_birth"
@@ -368,7 +383,9 @@ export function OnboardingPage() {
                       <DatePicker
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder={t('auth.onboarding.dateOfBirthPlaceholder')}
+                        placeholder={t(
+                          'auth.onboarding.dateOfBirthPlaceholder'
+                        )}
                       />
                     )}
                   />
@@ -381,7 +398,8 @@ export function OnboardingPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password">
-                    {t('auth.onboarding.password')} <span className="text-destructive">*</span>
+                    {t('auth.onboarding.password')}{' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <div className="relative">
                     <Input
@@ -399,7 +417,11 @@ export function OnboardingPage() {
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={t('auth.onboarding.togglePassword')}
                     >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </Button>
                   </div>
                   {errors.password ? (
@@ -440,7 +462,9 @@ export function OnboardingPage() {
             >
               — a small school for the moving body —
             </span>
-            <span className="normal-case tracking-normal">{t('auth.login.support')}</span>
+            <span className="normal-case tracking-normal">
+              {t('auth.login.support')}
+            </span>
           </div>
         </div>
       </div>
