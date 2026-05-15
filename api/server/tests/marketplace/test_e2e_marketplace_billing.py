@@ -17,6 +17,7 @@ Billing rules under test:
 from __future__ import annotations
 
 import config.pytest_db_host_env  # noqa: F401
+import json
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -116,7 +117,11 @@ def _publish_listing(staff_client, variant_id, listing_type, *, asking_price=Non
     }
     if asking_price is not None:
         payload["asking_price"] = str(asking_price)
-    r = staff_client.post("/api/marketplace/school/listings/", payload, format="json")
+    r = staff_client.post(
+        "/api/marketplace/school/listings/",
+        {"payload": json.dumps(payload)},
+        format="multipart",
+    )
     assert r.status_code == 201
     lid = r.data["id"]
     pub = staff_client.post(f"/api/marketplace/school/listings/{lid}/publish/")
