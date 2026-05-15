@@ -3,6 +3,7 @@ import uuid
 from functools import lru_cache
 
 from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
@@ -38,20 +39,37 @@ def get_user_by_pk(*, pk, app_not_found_code=None):
         raise AppNotFound(app_not_found_code or "UserNotFound")
 
 
-def list_users():
+def list_users(*, search=None, is_active=None, role_code=None):
     """
-    Return all active (non–soft-deleted) users with roles prefetched for listing.
+    Return non–soft-deleted users with roles prefetched for listing.
+
+    Optional filters:
+    - ``search``: case-insensitive match on email/first_name/last_name.
+    - ``is_active``: filter on the active flag.
+    - ``role_code``: filter to users whose group is bound to this role code.
     """
-    return (
+    qs = (
         User.objects.all()
+        .select_related("profile")
         .prefetch_related(
             Prefetch(
                 "groups",
                 queryset=Group.objects.select_related("role"),
-            )
+            ),
+            "user_permissions",
         )
-        .order_by("email")
     )
+    if search:
+        qs = qs.filter(
+            Q(email__icontains=search)
+            | Q(first_name__icontains=search)
+            | Q(last_name__icontains=search)
+        )
+    if is_active is not None:
+        qs = qs.filter(is_active=is_active)
+    if role_code:
+        qs = qs.filter(groups__role__code=role_code)
+    return qs.order_by("email").distinct()
 
 
 def get_me_user(*, pk):
@@ -70,17 +88,19 @@ def get_me_user(*, pk):
 
 def get_user_with_roles_prefetched(*, pk):
     """
-    Return a non-deleted user by pk with ``groups`` + ``role`` prefetched
-    (same shape as :func:`list_users` rows).
+    Return a non-deleted user by pk with ``groups`` + ``role``, profile, and
+    ``user_permissions`` prefetched (same shape as :func:`list_users` rows).
     """
     try:
         return (
             User.objects.all()
+            .select_related("profile")
             .prefetch_related(
                 Prefetch(
                     "groups",
                     queryset=Group.objects.select_related("role"),
-                )
+                ),
+                "user_permissions",
             )
             .get(pk=pk)
         )
@@ -283,11 +303,15 @@ ALLOWED_USER_UPDATE_FIELDS = {
 @transaction.atomic
 def update_user_core_fields(*, pk, updated_by, **updates):
     """
-    Partial update of principal user fields (name, contact, language, parent, address).
+    Partial update of principal user fields (name, contact, language, parent, address),
+    role memberships (multi), and per-user custom permissions.
 
     Intended for callers that hold ``accounts.change_user`` (direction).
     """
-    if not updates:
+    role_codes = updates.pop("role_codes", None)
+    permission_ids = updates.pop("permission_ids", None)
+
+    if not updates and role_codes is None and permission_ids is None:
         return get_user_with_roles_prefetched(pk=pk)
 
     invalid_keys = set(updates.keys()) - ALLOWED_USER_UPDATE_FIELDS
@@ -309,13 +333,127 @@ def update_user_core_fields(*, pk, updated_by, **updates):
     except IntegrityError as exc:
         raise ValidationError({"messages": ["EmailAlreadyExists"]}) from exc
 
+    if role_codes is not None:
+        _replace_user_roles(user=user, role_codes=role_codes)
+
+    if permission_ids is not None:
+        _replace_user_permissions(user=user, permission_ids=permission_ids)
+
     logger.info(
-        "User core fields updated: pk=%s updated_by=%s fields=%s",
+        "User updated: pk=%s by=%s fields=%s role_codes=%s perm_ids=%s",
         pk,
         getattr(updated_by, "email", updated_by),
         sorted(updates.keys()),
+        role_codes,
+        permission_ids,
     )
     return get_user_with_roles_prefetched(pk=user.pk)
+
+
+def _replace_user_roles(*, user, role_codes):
+    """
+    Replace the user's role-group memberships with the groups bound to ``role_codes``.
+
+    Non-role groups (if any) are left untouched.
+    """
+    codes = list(set(role_codes or []))
+    if codes:
+        roles = list(Role.objects.select_related("group").filter(code__in=codes))
+        if len(roles) != len(codes):
+            found = {r.code for r in roles}
+            missing = sorted(set(codes) - found)
+            raise ValidationError(
+                {"role_codes": [f"RoleNotFound:{c}" for c in missing]}
+            )
+        target_group_ids = [r.group_id for r in roles]
+    else:
+        target_group_ids = []
+
+    role_group_ids = list(
+        Group.objects.filter(role__isnull=False).values_list("id", flat=True)
+    )
+    user.groups.remove(*role_group_ids)
+    if target_group_ids:
+        user.groups.add(*target_group_ids)
+
+
+def _replace_user_permissions(*, user, permission_ids):
+    """
+    Replace the user's individual ``user_permissions`` set (independent of roles).
+    """
+    from django.contrib.auth.models import Permission
+
+    ids = list(set(permission_ids or []))
+    if ids:
+        perms = list(Permission.objects.filter(pk__in=ids))
+        if len(perms) != len(ids):
+            raise ValidationError(
+                {"permission_ids": ["InvalidPermissionIds"]}
+            )
+        user.user_permissions.set(perms)
+    else:
+        user.user_permissions.clear()
+
+
+@transaction.atomic
+def deactivate_user(*, pk, deactivated_by):
+    """
+    Set ``is_active=False`` on the user. Idempotent.
+
+    Re-activation is handled by re-issuing an invite (``resend_invite``) so the user
+    sets a fresh password through the onboarding flow.
+    """
+    user = get_user_by_pk(pk=pk)
+    if not user.is_active:
+        return get_user_with_roles_prefetched(pk=user.pk)
+
+    user.is_active = False
+    user.updated_by = deactivated_by
+    user.save(update_fields=["is_active", "updated_by", "updated_at"])
+
+    logger.info(
+        "User deactivated: pk=%s by=%s",
+        pk,
+        getattr(deactivated_by, "email", deactivated_by),
+    )
+    return get_user_with_roles_prefetched(pk=user.pk)
+
+
+def request_password_reset(*, email):
+    try:
+        user = User.objects.get(email__iexact=email, is_active=True)
+    except User.DoesNotExist:
+        return
+
+    from accounts.tasks import send_password_reset_email_task
+
+    send_password_reset_email_task.delay(user.pk)
+    logger.info("Password reset requested: %s", email)
+
+
+def complete_password_reset(*, uid, token, password):
+    try:
+        pk = force_str(urlsafe_base64_decode(uid))
+        user = User.objects.get(pk=pk)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        raise ValidationError({"messages": ["InvalidResetLink"]})
+
+    if not user.is_active:
+        raise ValidationError({"messages": ["InvalidResetLink"]})
+
+    if not account_activation_token.check_token(user, token):
+        raise ValidationError({"messages": ["InvalidOrExpiredToken"]})
+
+    try:
+        validate_password(password, user)
+    except DjangoValidationError as e:
+        raise ValidationError({"password": e.messages})
+
+    user.set_password(password)
+    user.save()
+
+    logger.info("Password reset completed: %s", user.email)
+    return user
 
 
 def activate_account(*, uid, token, password):
@@ -330,6 +468,11 @@ def activate_account(*, uid, token, password):
 
     if not account_activation_token.check_token(account_user, token):
         raise ValidationError({"messages": ["InvalidOrExpiredToken"]})
+
+    try:
+        validate_password(password, account_user)
+    except DjangoValidationError as e:
+        raise ValidationError({"password": e.messages})
 
     account_user.set_password(password)
     account_user.is_active = True
@@ -697,6 +840,12 @@ def complete_onboarding(
     user.phone = phone
     user.phone_country_code = phone_country_code
     user.date_of_birth = date_of_birth
+
+    try:
+        validate_password(password, user)
+    except DjangoValidationError as e:
+        raise ValidationError({"password": e.messages})
+
     user.set_password(password)
     user.is_active = True
     user.updated_by = user

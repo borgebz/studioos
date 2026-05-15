@@ -2,6 +2,7 @@ from pathlib import Path
 
 from drf_spectacular.utils import extend_schema_field, inline_serializer
 from rest_framework import serializers
+from rest_framework.fields import empty
 
 from accounts.auth_cookies import REFRESH_COOKIE_NAME
 from accounts.models import Language, Profile, User
@@ -40,6 +41,16 @@ class UserCoreUpdateSerializer(serializers.Serializer):
     parent_id = serializers.IntegerField(required=False, allow_null=True)
     address = serializers.CharField(required=False, allow_blank=True)
     postal_code = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    role_codes = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        required=False,
+        help_text="Replaces the user's role-group memberships (multi-role).",
+    )
+    permission_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        help_text="Replaces the user's individual permissions (independent of roles).",
+    )
 
     def validate_parent_id(self, value):
         if value is None:
@@ -76,6 +87,28 @@ class CreateUserSerializer(serializers.Serializer):
         return value.lower()
 
 
+class _OptionalBooleanField(serializers.BooleanField):
+    """``BooleanField`` that respects absence in QueryDict input.
+
+    DRF's default ``default_empty_html = False`` causes missing query params
+    to be coerced to ``False`` because QueryDict is treated as HTML form data.
+    Setting it to ``empty`` makes a missing key absent from ``validated_data``.
+    """
+
+    default_empty_html = empty
+
+
+class UserListQuerySerializer(serializers.Serializer):
+    """Query params for ``GET /api/accounts/users/``."""
+
+    search = serializers.CharField(
+        required=False,
+        help_text="Case-insensitive match on email, first_name, or last_name.",
+    )
+    is_active = _OptionalBooleanField(required=False)
+    role_code = serializers.CharField(max_length=50, required=False)
+
+
 class TeacherSummarySerializer(serializers.ModelSerializer):
     """Minimal teacher row for pickers (users with ``accounts.can_teach``)."""
 
@@ -95,6 +128,9 @@ class UserResponseSerializer(serializers.ModelSerializer):
     """Output serializer for user data in API responses."""
 
     role = serializers.SerializerMethodField(allow_null=True)
+    display_name = serializers.SerializerMethodField(allow_null=True)
+    photo_url = serializers.SerializerMethodField(allow_null=True)
+    user_permission_ids = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -105,8 +141,16 @@ class UserResponseSerializer(serializers.ModelSerializer):
             "last_name",
             "phone",
             "phone_country_code",
+            "address",
+            "postal_code",
+            "language",
+            "parent_id",
             "is_active",
             "role",
+            "display_name",
+            "photo_url",
+            "user_permission_ids",
+            "last_login",
             "created_at",
         ]
 
@@ -118,6 +162,25 @@ class UserResponseSerializer(serializers.ModelSerializer):
             if role:
                 roles.append({"code": role.code, "name": group.name})
         return roles
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_display_name(self, obj):
+        profile = getattr(obj, "profile", None)
+        return profile.display_name if profile else None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_photo_url(self, obj):
+        profile = getattr(obj, "profile", None)
+        if not profile or not profile.photo:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(profile.photo.url)
+        return profile.photo.url
+
+    @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
+    def get_user_permission_ids(self, obj):
+        return list(obj.user_permissions.values_list("id", flat=True))
 
 
 class LoginSerializer(serializers.Serializer):
@@ -225,6 +288,16 @@ class RefreshTokenSourceSerializer(serializers.Serializer):
 class ActivateAccountSerializer(serializers.Serializer):
     """Input for account activation — uid + token + new password."""
 
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(min_length=8)
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
     uid = serializers.CharField()
     token = serializers.CharField()
     password = serializers.CharField(min_length=8)

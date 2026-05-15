@@ -2,6 +2,7 @@
 from drf_spectacular.utils import inline_serializer
 from rest_framework import serializers
 
+
 ErrorResponseSerializer = inline_serializer(
     name="ErrorResponse",
     fields={

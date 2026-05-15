@@ -15,5 +15,5 @@ def paginated_response(*, request, items, serializer_class, many=True):
     """
     paginator = DefaultPageNumberPagination()
     page = paginator.paginate_queryset(items, request)
-    data = serializer_class(page, many=many).data
+    data = serializer_class(page, many=many, context={"request": request}).data
     return paginator.get_paginated_response(data)

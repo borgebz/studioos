@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     ActivateAccountView,
     BulkInviteCreateView,
+    DeactivateUserView,
     EmailExportView,
     InviteCreateView,
     LoginView,
@@ -10,6 +11,8 @@ from .views import (
     MeView,
     MyProfileView,
     OnboardingTokenView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     RefreshView,
     ResendInviteView,
     TeacherListView,
@@ -25,6 +28,11 @@ urlpatterns = [
         ResendInviteView.as_view(),
         name="user-resend-invite",
     ),
+    path(
+        "users/<int:pk>/deactivate/",
+        DeactivateUserView.as_view(),
+        name="user-deactivate",
+    ),
     # Invites & onboarding (bulk route before single ``invites/`` if we add slug later)
     path("invites/bulk/", BulkInviteCreateView.as_view(), name="invite-bulk"),
     path("invites/", InviteCreateView.as_view(), name="invite-create"),
@@ -37,6 +45,16 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="auth-login"),
     path("auth/refresh/", RefreshView.as_view(), name="auth-refresh"),
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
+    path(
+        "auth/password-reset/",
+        PasswordResetRequestView.as_view(),
+        name="password-reset-request",
+    ),
+    path(
+        "auth/password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password-reset-confirm",
+    ),
     path("me/", MeView.as_view(), name="auth-me"),
     # Users
     path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),

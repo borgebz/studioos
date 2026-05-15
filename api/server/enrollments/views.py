@@ -2,7 +2,7 @@ import json
 import logging
 
 from rest_framework import status
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -183,7 +183,7 @@ class EnrollmentSubmitView(APIView):
     """
 
     permission_classes = [AllowAny]
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         request=EnrollmentSubmitSerializer,
@@ -285,6 +285,8 @@ class EnrollmentListView(APIView):
             filters["period__academic_year"] = q.validated_data["academic_year"]
         if "enrollment_type" in q.validated_data:
             filters["enrollment_type"] = q.validated_data["enrollment_type"]
+        if "student_id" in q.validated_data:
+            filters["student_id"] = q.validated_data["student_id"]
 
         enrollments = services.list_enrollments(filters=filters or None)
         serializer = EnrollmentReadSerializer(enrollments, many=True)

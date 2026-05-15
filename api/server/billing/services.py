@@ -450,7 +450,7 @@ def list_fines(
         "coaching_class__teacher",
         "coaching_participant",
         "reviewed_by",
-    )
+    ).prefetch_related("billing_entries")
 
     if student_id is not None and not _staff_can_use_student_filters(
         user=requesting_user
@@ -475,14 +475,18 @@ def list_fines(
 
 def get_fine_for_request(*, pk, requesting_user):
     try:
-        fine = Fine.objects.select_related(
-            "student",
-            "coaching_class",
-            "coaching_class__modality",
-            "coaching_class__teacher",
-            "coaching_participant",
-            "reviewed_by",
-        ).get(pk=pk)
+        fine = (
+            Fine.objects.select_related(
+                "student",
+                "coaching_class",
+                "coaching_class__modality",
+                "coaching_class__teacher",
+                "coaching_participant",
+                "reviewed_by",
+            )
+            .prefetch_related("billing_entries")
+            .get(pk=pk)
+        )
     except Fine.DoesNotExist:
         raise AppNotFound("FineNotFound")
 

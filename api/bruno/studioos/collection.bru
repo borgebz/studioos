@@ -66,6 +66,12 @@ if (
   return;
 }
 if (
+  (pathStr && pathStr.indexOf("/auth/password-reset") !== -1) ||
+  (urlStr && urlStr.indexOf("/auth/password-reset") !== -1)
+) {
+  return;
+}
+if (
   (pathStr && pathStr.indexOf("/api/schema") !== -1) ||
   (urlStr && urlStr.indexOf("/api/schema") !== -1)
 ) {

@@ -28,7 +28,7 @@ from coachings.serializers import (
 from core.decorators import require_any_perm, require_perm
 from core.guardian import resolve_acting_student
 from core.pagination import paginated_response
-from core.schemas import DEFAULT_ERROR_RESPONSES
+from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
 
 
 class CoachingCollectionView(APIView):
@@ -41,8 +41,9 @@ class CoachingCollectionView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id="GetAllCoachings",
         parameters=[CoachingListQuerySerializer],
-        responses={200: CoachingClassSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
+        responses={200: paginated_list_schema(name="ListCoachingClasses", results_serializer=CoachingClassSerializer), **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("coachings.view_coachingclass")
     def get(self, request):

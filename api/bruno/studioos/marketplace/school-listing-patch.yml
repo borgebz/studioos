@@ -1,0 +1,21 @@
+info:
+  name: school-listing-patch
+  type: http
+  seq: 27
+
+http:
+  method: PATCH
+  url: "{{base_url}}/api/marketplace/school/listings/1/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "title": "School listing title (patched)"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

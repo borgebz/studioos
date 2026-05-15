@@ -115,10 +115,18 @@ class ListingDetailSerializer(serializers.ModelSerializer):
         if not owner:
             return {"type": "school"}
         profile = getattr(owner, "profile", None)
+        photo_url = None
+        if profile and profile.photo:
+            request = self.context.get("request")
+            photo_url = (
+                request.build_absolute_uri(profile.photo.url)
+                if request is not None
+                else profile.photo.url
+            )
         return {
             "type": "member",
             "display_name": profile.display_name if profile else None,
-            "photo_url": profile.photo_url if profile else None,
+            "photo_url": photo_url,
         }
 
     def get_is_favorited(self, obj):

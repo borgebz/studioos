@@ -87,6 +87,12 @@ class DirectCoordinationCoachingCreateSerializer(serializers.Serializer):
         help_text="true = participants added as ACTIVE; false = participants added as INVITED (must accept).",
     )
     classe_id = serializers.IntegerField(required=False, allow_null=True)
+    participant_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+        help_text="Explicit student user IDs to add as participants. Merged with classe members when classe_id is also provided; duplicates are removed automatically.",
+    )
     recurring_coaching = RecurringCoachingSubmitSerializer(
         required=False,
         allow_null=True,

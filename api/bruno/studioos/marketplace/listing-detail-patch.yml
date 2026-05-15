@@ -1,0 +1,21 @@
+info:
+  name: listing-detail-patch
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: "{{base_url}}/api/marketplace/listings/1/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "title": "Updated title"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

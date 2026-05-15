@@ -15,7 +15,7 @@ def send_invite_email(*, user, token):
     """
     Invite email with onboarding link (Redis UUID token, 7-day TTL managed by the caller/store).
     """
-    onboarding_url = f"{settings.FRONTEND_URL}/onboard/{token}/"
+    onboarding_url = f"{settings.FRONTEND_URL}/onboarding/{token}/"
 
     group = user.groups.select_related("role").first()
     role_display = group.name if group is not None else ""
@@ -53,5 +53,23 @@ def send_activation_email(user):
         context={
             "user": user,
             "activation_url": activation_url,
+        },
+    )
+
+
+def send_password_reset_email(user):
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = account_activation_token.make_token(user)
+
+    reset_url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
+
+    send_templated_email(
+        to=user.email,
+        subject="StudioOS",
+        template_name="password_reset",
+        language=user.language,
+        context={
+            "user": user,
+            "reset_url": reset_url,
         },
     )

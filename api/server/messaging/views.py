@@ -2,7 +2,7 @@ import logging
 
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -61,7 +61,7 @@ class ConversationListView(APIView):
 
 class MessageListView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         responses={200: MessageSerializer(many=True), **DEFAULT_ERROR_RESPONSES},

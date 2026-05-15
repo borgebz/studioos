@@ -1,0 +1,15 @@
+info:
+  name: listing-publish
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/listings/1/publish/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

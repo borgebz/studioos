@@ -150,21 +150,44 @@ def _student_ids_for_modality_roster(*, modality_id):
 
 
 def _bulk_roster_direct_coordination(
-    *, coaching, auto_confirm_participants, created_by, classe_id=None
+    *,
+    coaching,
+    auto_confirm_participants,
+    created_by,
+    classe_id=None,
+    participant_ids=None,
 ):
     """
-    Fill roster from approved enrollments for the coaching modality.
+    Fill roster from classe members and/or explicit participant IDs.
+
+    When both ``classe_id`` and ``participant_ids`` are provided the two sets are merged
+    and deduplicated — the frontend may send participants from the classe roster alongside
+    individually added students.
+
+    Falls back to modality-wide enrollment roster only when neither source is given.
 
     Validates every row before inserting any (no partial roster). All inserts run in the
     caller’s transaction — :func:`create_direct_coordination_coaching` is ``atomic``; any
     failure rolls back the coaching, recurrence row, and participants.
     """
-    if classe_id is not None:
-        from classes.services import get_student_ids_for_classe
+    has_classe = classe_id is not None
+    has_explicit = participant_ids is not None and len(participant_ids) > 0
 
-        student_ids = get_student_ids_for_classe(classe_id=classe_id)
-        if not student_ids:
-            raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+    if has_classe or has_explicit:
+        student_ids = set()
+
+        if has_classe:
+            from classes.services import get_student_ids_for_classe
+
+            classe_student_ids = get_student_ids_for_classe(classe_id=classe_id)
+            if not classe_student_ids and not has_explicit:
+                raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+            student_ids.update(classe_student_ids)
+
+        if has_explicit:
+            student_ids.update(participant_ids)
+
+        student_ids = list(student_ids)
     else:
         student_ids = _student_ids_for_modality_roster(modality_id=coaching.modality_id)
     max_cap = coaching.modality.max_capacity
@@ -917,6 +940,7 @@ def create_direct_coordination_coaching(
     recurring_data=None,
     classe_id=None,
     is_billable=True,
+    participant_ids=None,
 ):
     """
     Create a coordination-scheduled coaching and roster in one transaction.
@@ -1002,6 +1026,7 @@ def create_direct_coordination_coaching(
         auto_confirm_participants=auto_confirm_participants,
         created_by=requesting_user,
         classe_id=classe_id,
+        participant_ids=participant_ids,
     )
 
     if recurring_row:
@@ -1048,6 +1073,7 @@ def create_direct_coordination_coaching(
                 auto_confirm_participants=auto_confirm_participants,
                 created_by=requesting_user,
                 classe_id=classe_id,
+                participant_ids=participant_ids,
             )
 
         logger.info(

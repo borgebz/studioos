@@ -1,5 +1,9 @@
-from drf_spectacular.utils import extend_schema
-from rest_framework import status
+import json
+
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -208,6 +212,7 @@ class FavoriteListingsView(APIView):
 
 class SchoolListingListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         responses={
@@ -228,12 +233,55 @@ class SchoolListingListCreateView(APIView):
         )
 
     @extend_schema(
-        request=ListingCreateSerializer,
+        request={
+            "multipart/form-data": inline_serializer(
+                name="SchoolListingCreateMultipart",
+                fields={
+                    "payload": serializers.CharField(
+                        help_text=(
+                            "JSON-encoded ListingCreate payload. "
+                            "Files for product.media[i].image are sent as "
+                            "separate form fields named media_0, media_1, ..., "
+                            "matching the index of each media entry."
+                        ),
+                    ),
+                    "media_0": serializers.ImageField(required=False),
+                    "media_1": serializers.ImageField(required=False),
+                    "media_2": serializers.ImageField(required=False),
+                    "media_3": serializers.ImageField(required=False),
+                    "media_4": serializers.ImageField(required=False),
+                    "media_5": serializers.ImageField(required=False),
+                    "media_6": serializers.ImageField(required=False),
+                    "media_7": serializers.ImageField(required=False),
+                    "media_8": serializers.ImageField(required=False),
+                    "media_9": serializers.ImageField(required=False),
+                },
+            ),
+        },
         responses={201: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("marketplace.manage_school_listings")
     def post(self, request):
-        serializer = ListingCreateSerializer(data=request.data)
+        payload_raw = request.data.get("payload")
+        if not payload_raw:
+            raise ValidationError({"payload": ["This field is required."]})
+        try:
+            payload = json.loads(payload_raw)
+        except (TypeError, json.JSONDecodeError):
+            raise ValidationError({"payload": ["Invalid JSON."]})
+
+        product = payload.get("product")
+        if isinstance(product, dict) and isinstance(product.get("media"), list):
+            for i, media_item in enumerate(product["media"]):
+                if not isinstance(media_item, dict):
+                    continue
+                uploaded = request.FILES.get(f"media_{i}")
+                if uploaded is not None:
+                    media_item["image"] = uploaded
+                else:
+                    media_item.pop("image", None)
+
+        serializer = ListingCreateSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
         listing = services.create_listing(
             user=request.user, school_only=True, **serializer.validated_data

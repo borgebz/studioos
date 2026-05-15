@@ -166,6 +166,9 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "StudioOS API",
     "DESCRIPTION": "School dance management platform",
     "VERSION": "1.0.0",
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+    ],
 }
 
 # -----------------------------------------------------------------------------

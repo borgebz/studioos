@@ -173,6 +173,8 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "accounts.can_list_users",
         "accounts.can_invite_user",
+        "accounts.can_deactivate_user",
+        "accounts.can_have_profile",
         "accounts.delete_user",
         "accounts.view_role",
         "accounts.add_role",
@@ -232,6 +234,7 @@ ROLE_PERMISSIONS = {
         "accounts.view_role",
         "accounts.can_list_users",
         "accounts.can_invite_user",
+        "accounts.can_have_profile",
         # enrollments
         "enrollments.can_review_enrollment",
         "enrollments.can_approve_enrollment",
@@ -273,6 +276,7 @@ ROLE_PERMISSIONS = {
     ],
     "collaborator": [
         "accounts.view_user",
+        "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_modality",
         "availability.view_teacheravailability",
@@ -322,6 +326,7 @@ ROLE_PERMISSIONS = {
     ],
     "parent": [
         "accounts.view_user",
+        "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_modality",
         # availability (read-only — see teacher availability)
@@ -343,6 +348,7 @@ ROLE_PERMISSIONS = {
     ],
     "student": [
         "accounts.view_user",
+        "accounts.can_have_profile",
         "accounts.can_participate_in_coaching",
         "studios.view_studio",
         "modality.view_modality",

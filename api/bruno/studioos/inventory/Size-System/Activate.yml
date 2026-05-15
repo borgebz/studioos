@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{base_url}}/inventory/size-systems/1/activate/"
+  url: "{{base_url}}/api/inventory/size-systems/1/activate/"
   auth: inherit
 
 settings:

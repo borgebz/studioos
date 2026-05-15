@@ -26,6 +26,7 @@ class EnrollmentListQuerySerializer(serializers.Serializer):
     enrollment_type = serializers.ChoiceField(
         choices=EnrollmentType.choices, required=False
     )
+    student_id = serializers.IntegerField(required=False)
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +90,8 @@ class EnrollmentConsentReadSerializer(serializers.ModelSerializer):
             "consent_type",
             "accepted",
             "accepted_at",
+            "ip_address",
+            "user_agent",
         ]
         read_only_fields = fields
 

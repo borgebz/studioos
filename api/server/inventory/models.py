@@ -216,14 +216,6 @@ class ProductVariant(BaseModel):
     public_notes = models.TextField(blank=True, null=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["sku"],
-                condition=models.Q(deleted_at__isnull=True, sku__isnull=False)
-                & ~models.Q(sku=""),
-                name="inventory_productvariant_sku_active_uniq",
-            ),
-        ]
         permissions = [
             ("can_manage_variant_bookings", "Can manage variant bookings"),
         ]

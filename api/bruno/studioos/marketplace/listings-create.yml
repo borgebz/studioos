@@ -1,0 +1,26 @@
+info:
+  name: listings-create
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/listings/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "variant_id": 1,
+          "listing_type": "sell",
+          "title": "Bruno test listing",
+          "description": "",
+          "asking_price": "10.00",
+          "is_public": false
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

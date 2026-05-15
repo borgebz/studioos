@@ -1,0 +1,15 @@
+info:
+  name: school-transaction-reject
+  type: http
+  seq: 33
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/school/transactions/1/reject/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

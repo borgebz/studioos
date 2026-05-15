@@ -1,0 +1,15 @@
+info:
+  name: listing-unpublish
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/listings/1/unpublish/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
