@@ -19,9 +19,8 @@ interface MediaUploadProps {
   className?: string
 }
 
-let nextId = 0
 function generateId() {
-  return `media-${Date.now()}-${nextId++}`
+  return `media-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 }
 
 export function MediaUpload({
@@ -222,45 +221,39 @@ export function MediaUpload({
                 <img
                   src={media.url}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                   draggable={false}
                 />
 
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
-
-                <div className="absolute top-1 left-1 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
-                  <GripVertical className="h-4 w-4 text-white drop-shadow" />
+                <div className="absolute top-1.5 left-1.5 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                  <GripVertical className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
                 </div>
 
                 <button
                   type="button"
+                  aria-label={t('mediaUpload.remove')}
                   onClick={() => removeFile(media.id)}
-                  className="absolute top-1 right-1 rounded-full bg-black/60 p-1.5 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity hover:bg-black/80 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="absolute top-1.5 right-1.5 rounded-full bg-background/80 backdrop-blur-sm p-1 text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-destructive hover:text-white min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-6 md:w-6 flex items-center justify-center shadow-sm"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3 w-3" />
                 </button>
 
                 <button
                   type="button"
+                  aria-label={t('mediaUpload.setPrimary')}
                   onClick={() => setPrimary(media.id)}
                   className={cn(
-                    'absolute bottom-1 left-1 rounded-full p-1.5 transition-opacity min-h-[44px] min-w-[44px] flex items-center justify-center',
+                    'absolute bottom-1.5 left-1.5 rounded-full p-1 transition-all min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-6 md:w-6 flex items-center justify-center shadow-sm',
                     media.isPrimary
                       ? 'bg-primary text-white opacity-100'
-                      : 'bg-black/60 text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:bg-black/80',
+                      : 'bg-background/80 backdrop-blur-sm text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-primary',
                   )}
                 >
                   <Star
-                    className="h-3.5 w-3.5"
+                    className="h-3 w-3"
                     fill={media.isPrimary ? 'currentColor' : 'none'}
                   />
                 </button>
-
-                {media.isPrimary && (
-                  <span className="absolute bottom-1 right-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-white">
-                    {t('mediaUpload.primary')}
-                  </span>
-                )}
               </div>
             ))}
 

@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import { paths } from '@/app/paths'
+import { ProtectedRoute } from '@/auth/permissions'
 import { LoginPage } from '@/app/pages/LoginPage/LoginPage'
 import { DesignSystemLayout } from '@/app/pages/design-system/DesignSystemLayout'
 import { DesignSystemIndexPage } from '@/app/pages/design-system/DesignSystemIndexPage'
@@ -30,11 +31,26 @@ import { HomePage } from '@/app/pages/HomePage'
 import { LandingPage } from '@/app/pages/LandingPage'
 import { CalendarPage } from '@/app/pages/calendar/CalendarPage'
 import { CreateCoachingPage } from '@/app/pages/coachings/CreateCoachingPage'
+import { MyCoachingRequestsPage } from '@/app/pages/coachings/MyCoachingRequestsPage'
+import { CoachingRequestsPage } from '@/app/pages/coachings/CoachingRequestsPage'
 import { EnrollmentPage } from '@/app/pages/enrollments/EnrollmentPage'
+import { EnrollmentRequestsPage } from '@/app/pages/enrollments/EnrollmentRequestsPage'
+import { EnrollmentReviewPage } from '@/app/pages/enrollments/EnrollmentReviewPage'
 import { MarketplaceListPage } from '@/app/pages/marketplace/MarketplaceListPage'
 import { CreateListingPage } from '@/app/pages/marketplace/CreateListingPage'
+import { MyListingsPage } from '@/app/pages/marketplace/MyListingsPage'
+import { SchoolListingsPage } from '@/app/pages/marketplace/SchoolListingsPage'
+import { SchoolInventoryPage } from '@/app/pages/inventory/SchoolInventoryPage'
 import { InviteUsersPage } from '@/app/pages/invites/InviteUsersPage'
+import { UsersListPage } from '@/app/pages/users/UsersListPage'
+import { UserDetailPage } from '@/app/pages/users/UserDetailPage'
+import { UserEditPage } from '@/app/pages/users/UserEditPage'
+import { BillingEntriesPage } from '@/app/pages/billing/BillingEntriesPage'
+import { BillingFinesPage } from '@/app/pages/billing/BillingFinesPage'
+import { ActivateAccountPage } from '@/app/pages/activate/ActivateAccountPage'
 import { OnboardingPage } from '@/app/pages/onboarding/OnboardingPage'
+import { ForgotPasswordPage } from '@/app/pages/password-reset/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/app/pages/password-reset/ResetPasswordPage'
 import { AccountSettingsPage } from '@/app/pages/account/AccountSettingsPage'
 
 export function AppRoutes() {
@@ -43,13 +59,28 @@ export function AppRoutes() {
       <Route path={paths.landing} element={<LandingPage />} />
       <Route path={paths.login} element={<LoginPage />} />
       <Route path={paths.home} element={<HomePage />} />
-      <Route path={paths.calendar} element={<CalendarPage />} />
-      <Route path={paths.coachingsCreate} element={<CreateCoachingPage />} />
-      <Route path={paths.enrollment} element={<EnrollmentPage />} />
-      <Route path={paths.marketplace} element={<MarketplaceListPage />} />
-      <Route path={paths.marketplaceCreate} element={<CreateListingPage />} />
-      <Route path={paths.invites} element={<InviteUsersPage />} />
+      <Route path={paths.calendar} element={<ProtectedRoute permission="coachings.view_coachingclass"><CalendarPage /></ProtectedRoute>} />
+      <Route path={paths.coachingsCreate} element={<ProtectedRoute permission="coachings.can_schedule_coaching"><CreateCoachingPage /></ProtectedRoute>} />
+      <Route path={paths.coachingsMyRequests} element={<ProtectedRoute permission={['accounts.can_participate_in_coaching', 'accounts.can_teach']}><MyCoachingRequestsPage /></ProtectedRoute>} />
+      <Route path={paths.coachingsRequests} element={<ProtectedRoute permission="coachings.change_coachingclass"><CoachingRequestsPage /></ProtectedRoute>} />
+      <Route path={paths.enrollment} element={<ProtectedRoute permission="enrollments.can_review_enrollment"><EnrollmentPage /></ProtectedRoute>} />
+      <Route path={paths.enrollmentRequests} element={<ProtectedRoute permission="enrollments.can_review_enrollment"><EnrollmentRequestsPage /></ProtectedRoute>} />
+      <Route path={paths.enrollmentReview} element={<ProtectedRoute permission="enrollments.can_review_enrollment"><EnrollmentReviewPage /></ProtectedRoute>} />
+      <Route path={paths.marketplace} element={<ProtectedRoute permission="marketplace.view_productlisting"><MarketplaceListPage /></ProtectedRoute>} />
+      <Route path={paths.marketplaceCreate} element={<ProtectedRoute permission="marketplace.manage_school_listings"><CreateListingPage /></ProtectedRoute>} />
+      <Route path={paths.myListings} element={<ProtectedRoute permission="marketplace.view_own_listings"><MyListingsPage /></ProtectedRoute>} />
+      <Route path={paths.schoolInventory} element={<ProtectedRoute permission="inventory.view_school_product"><SchoolInventoryPage /></ProtectedRoute>} />
+      <Route path={paths.schoolListings} element={<ProtectedRoute permission="marketplace.manage_school_listings"><SchoolListingsPage /></ProtectedRoute>} />
+      <Route path={paths.invites} element={<ProtectedRoute permission="accounts.can_invite_user"><InviteUsersPage /></ProtectedRoute>} />
+      <Route path={paths.users} element={<ProtectedRoute permission="accounts.can_list_users"><UsersListPage /></ProtectedRoute>} />
+      <Route path={paths.userEdit} element={<ProtectedRoute permission="accounts.change_user"><UserEditPage /></ProtectedRoute>} />
+      <Route path={paths.userDetail} element={<ProtectedRoute permission="accounts.view_user"><UserDetailPage /></ProtectedRoute>} />
+      <Route path={paths.billingEntries} element={<ProtectedRoute permission="billing.view_billingentry"><BillingEntriesPage /></ProtectedRoute>} />
+      <Route path={paths.billingFines} element={<ProtectedRoute permission="billing.view_fine"><BillingFinesPage /></ProtectedRoute>} />
+      <Route path={paths.activate} element={<ActivateAccountPage />} />
       <Route path={paths.onboarding} element={<OnboardingPage />} />
+      <Route path={paths.forgotPassword} element={<ForgotPasswordPage />} />
+      <Route path={paths.resetPassword} element={<ResetPasswordPage />} />
       <Route path={paths.accountSettings} element={<AccountSettingsPage />} />
       <Route
         path={paths.designSystem}

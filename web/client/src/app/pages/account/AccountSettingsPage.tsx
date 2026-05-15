@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { Camera, User } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
+import { parseApiError } from '@/lib/api-errors'
 import type { Profile } from '@/api/studioos-api'
+import { ImageCropDialog } from '@/components/shared/ImageCropDialog'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,61 +18,76 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { CardSection } from '@/components/shared/CardSection'
+import { Skeleton } from '@/components/ui/skeleton'
+import { paths } from '@/app/paths'
 import { toast } from 'sonner'
+import {
+  accountSettingsSchema,
+  type AccountSettingsFormValues,
+} from './account-settings-schema'
 
 export function AccountSettingsPage() {
   const { t } = useTranslation()
   const { user, refreshUser } = useAuth()
 
-  const [displayName, setDisplayName] = useState('')
-  const [bio, setBio] = useState('')
-  const [isPublic, setIsPublic] = useState(true)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [hasProfile, setHasProfile] = useState(false)
-
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [phoneCountryCode, setPhoneCountryCode] = useState('+351')
-
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const dataLoaded = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+  } = useForm<AccountSettingsFormValues>({
+    resolver: zodResolver(accountSettingsSchema),
+    defaultValues: {
+      display_name: '',
+      bio: '',
+      is_public: true,
+    },
+  })
+
+  const displayName = watch('display_name')
+
+  // Derive account info from user — no need to copy into state
+  const firstName = user?.full_name.split(' ')[0] ?? ''
+  const lastName = user?.full_name.split(' ').slice(1).join(' ') ?? ''
 
   useEffect(() => {
     if (dataLoaded.current) return
     dataLoaded.current = true
 
     const load = async () => {
-      if (user) {
-        const nameParts = user.full_name.split(' ')
-        setFirstName(nameParts[0] || '')
-        setLastName(nameParts.slice(1).join(' ') || '')
-        setEmail(user.email)
-      }
-
       try {
-        const res = await apiClient.api.apiAccountsProfileMeRetrieve()
+        const res = await apiClient.api.accountsProfileMeRetrieve()
         const profile = res.data
-        setDisplayName(profile.display_name || '')
-        setBio(profile.bio || '')
-        setIsPublic(profile.is_public ?? true)
+        reset({
+          display_name: profile.display_name || '',
+          bio: profile.bio || '',
+          is_public: profile.is_public ?? true,
+        })
         setPhotoUrl(profile.photo_url || null)
         setHasProfile(true)
       } catch {
         setHasProfile(false)
-        if (user) {
-          setDisplayName(user.full_name || '')
-        }
+        reset({
+          display_name: user?.full_name || '',
+          bio: '',
+          is_public: true,
+        })
       }
 
       setIsLoading(false)
     }
     void load()
-  }, [user])
+  }, [user, reset])
 
   const handlePhotoChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,51 +106,51 @@ export function AccountSettingsPage() {
         return
       }
 
-      setPhotoFile(file)
-      setPhotoUrl(URL.createObjectURL(file))
+      // Open the crop dialog with the selected image
+      setCropSrc(URL.createObjectURL(file))
     },
     [t],
   )
 
-  const handleSave = async () => {
+  const handleCropComplete = useCallback((croppedFile: File) => {
+    setCropSrc(null)
+    setPhotoFile(croppedFile)
+    setPhotoUrl(URL.createObjectURL(croppedFile))
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [])
+
+  const handleCropCancel = useCallback(() => {
+    setCropSrc(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [])
+
+  const onSubmit = async (data: AccountSettingsFormValues) => {
     setIsSaving(true)
 
     try {
-      if (photoFile) {
-        const formData = new FormData()
-        formData.append('display_name', displayName)
-        formData.append('bio', bio)
-        formData.append('is_public', String(isPublic))
-        formData.append('photo', photoFile)
+      const payload = photoFile
+        ? (() => {
+            const fd = new FormData()
+            fd.append('display_name', data.display_name)
+            fd.append('bio', data.bio)
+            fd.append('is_public', String(data.is_public))
+            fd.append('photo', photoFile)
+            return fd as unknown as Profile
+          })()
+        : { display_name: data.display_name, bio: data.bio, is_public: data.is_public } as unknown as Profile
 
-        if (hasProfile) {
-          await apiClient.api.apiAccountsProfileMePartialUpdate(
-            formData as unknown as Profile,
-            { headers: { 'Content-Type': 'multipart/form-data' } },
-          )
-        } else {
-          await apiClient.api.apiAccountsProfileMeCreate(
-            formData as unknown as Profile,
-            { headers: { 'Content-Type': 'multipart/form-data' } },
-          )
-        }
+      if (hasProfile) {
+        await apiClient.api.accountsProfileMePartialUpdate(payload)
       } else {
-        const payload = { display_name: displayName, bio, is_public: isPublic }
-        if (hasProfile) {
-          await apiClient.api.apiAccountsProfileMePartialUpdate(payload)
-        } else {
-          await apiClient.api.apiAccountsProfileMeCreate(
-            payload as unknown as Profile,
-          )
-        }
+        await apiClient.api.accountsProfileMeCreate(payload)
       }
 
       setHasProfile(true)
       setPhotoFile(null)
       await refreshUser()
       toast.success(t('account.saved'))
-    } catch {
-      toast.error(t('account.saveError'))
+    } catch (err) {
+      toast.error(parseApiError(err, t, 'account.saveError') ?? t('account.saveError'))
     } finally {
       setIsSaving(false)
     }
@@ -147,10 +166,16 @@ export function AccountSettingsPage() {
   if (isLoading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-4xl">
-          <PageHeader title={t('account.title')} />
-          <div className="flex items-center justify-center py-24">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <PageHeader title={t('account.title')} backTo={paths.home} />
+        <div className="max-w-4xl">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+            <div className="flex flex-col gap-6">
+              <Skeleton className="h-[200px] rounded-lg" />
+              <Skeleton className="h-[280px] rounded-lg" />
+            </div>
+            <div>
+              <Skeleton className="h-[200px] rounded-lg" />
+            </div>
           </div>
         </div>
       </PageLayout>
@@ -160,7 +185,7 @@ export function AccountSettingsPage() {
   const footerContent = (
     <>
       <div />
-      <Button onClick={handleSave} disabled={isSaving}>
+      <Button onClick={handleSubmit(onSubmit)} disabled={isSaving}>
         {isSaving ? t('account.saving') : t('account.saveChanges')}
       </Button>
     </>
@@ -168,10 +193,10 @@ export function AccountSettingsPage() {
 
   return (
     <PageLayout footer={footerContent}>
-      <div className="mx-auto w-full max-w-4xl">
-        <PageHeader title={t('account.title')} />
+      <PageHeader title={t('account.title')} backTo={paths.home} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      <div className="max-w-4xl">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
           {/* Main Column */}
           <div className="flex flex-col gap-6">
             {/* Profile Section */}
@@ -181,13 +206,12 @@ export function AccountSettingsPage() {
             >
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="displayName">{t('account.displayName')}</Label>
+                  <Label htmlFor="display_name">{t('account.displayName')}</Label>
                   <Input
-                    id="displayName"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
+                    id="display_name"
                     placeholder={t('account.displayNamePlaceholder')}
                     className="mt-1.5"
+                    {...register('display_name')}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     {t('account.displayNameHelper')}
@@ -198,11 +222,10 @@ export function AccountSettingsPage() {
                   <Label htmlFor="bio">{t('account.bio')}</Label>
                   <Textarea
                     id="bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
                     placeholder={t('account.bioPlaceholder')}
                     rows={3}
                     className="mt-1.5"
+                    {...register('bio')}
                   />
                 </div>
 
@@ -210,14 +233,24 @@ export function AccountSettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium">
+                    <Label htmlFor="public-profile" className="text-sm font-medium">
                       {t('account.publicProfile')}
-                    </p>
+                    </Label>
                     <p className="text-xs text-muted-foreground">
                       {t('account.publicProfileDesc')}
                     </p>
                   </div>
-                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                  <Controller
+                    name="is_public"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        id="public-profile"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
                 </div>
               </div>
             </CardSection>
@@ -234,9 +267,9 @@ export function AccountSettingsPage() {
                     <Input
                       id="firstName"
                       value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
                       className="mt-1.5"
                       disabled
+                      readOnly
                     />
                   </div>
                   <div>
@@ -244,9 +277,9 @@ export function AccountSettingsPage() {
                     <Input
                       id="lastName"
                       value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
                       className="mt-1.5"
                       disabled
+                      readOnly
                     />
                   </div>
                 </div>
@@ -256,9 +289,10 @@ export function AccountSettingsPage() {
                   <Input
                     id="email"
                     type="email"
-                    value={email}
+                    value={user?.email ?? ''}
                     className="mt-1.5"
                     disabled
+                    readOnly
                   />
                 </div>
 
@@ -267,10 +301,10 @@ export function AccountSettingsPage() {
                     <Label htmlFor="phoneCode">{t('account.phoneCode')}</Label>
                     <Input
                       id="phoneCode"
-                      value={phoneCountryCode}
-                      onChange={(e) => setPhoneCountryCode(e.target.value)}
+                      defaultValue="+351"
                       className="mt-1.5"
                       disabled
+                      readOnly
                     />
                   </div>
                   <div>
@@ -278,10 +312,10 @@ export function AccountSettingsPage() {
                     <Input
                       id="phone"
                       type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      defaultValue=""
                       className="mt-1.5"
                       disabled
+                      readOnly
                     />
                   </div>
                 </div>
@@ -309,6 +343,7 @@ export function AccountSettingsPage() {
                   </Avatar>
                   <button
                     type="button"
+                    aria-label={t('account.changePhoto')}
                     onClick={() => fileInputRef.current?.click()}
                     className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
                   >
@@ -337,7 +372,7 @@ export function AccountSettingsPage() {
                       key={r}
                       className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm font-medium capitalize"
                     >
-                      {r}
+                      {t(`account.role.${r}`)}
                     </div>
                   ))}
                 </div>
@@ -346,6 +381,14 @@ export function AccountSettingsPage() {
           </div>
         </div>
       </div>
+
+      <ImageCropDialog
+        imageSrc={cropSrc}
+        onCropComplete={handleCropComplete}
+        onCancel={handleCropCancel}
+        outputSize={512}
+        cropShape="round"
+      />
     </PageLayout>
   )
 }

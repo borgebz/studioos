@@ -1,12 +1,17 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import { Trash2, Plus, Pencil, ImageIcon, Check, Info } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
+import { parseApiError } from '@/lib/api-errors'
 import type {
   Category,
   Color,
   SizeSystem,
+  SchoolListingCreateMultipart,
   ListingTypeEnum,
 } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
@@ -15,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -22,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { TreeSelect, type TreeSelectNode } from '@/components/ui/tree-select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,13 +39,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { CardSection } from '@/components/shared/CardSection'
 import { MediaUpload, type MediaFile } from '@/components/shared/MediaUpload'
+import { DatePicker } from '@/components/shared/DatePicker'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
 import { cn } from '@/lib/utils'
+import {
+  createListingSchema,
+  defaultListingValues,
+  type CreateListingFormValues,
+} from './create-listing-schema'
 
 const LISTING_TYPES: { value: ListingTypeEnum; labelKey: string }[] = [
   { value: 'sell' as ListingTypeEnum, labelKey: 'marketplace.typeSell' },
@@ -55,21 +76,42 @@ const CONDITIONS = [
   { value: 'damaged', labelKey: 'marketplace.conditionDamaged' },
 ]
 
+const ACQUISITION_TYPES = [
+  { value: 'purchased', labelKey: 'marketplace.acquisitionPurchased' },
+  { value: 'donated', labelKey: 'marketplace.acquisitionDonated' },
+  { value: 'school_owned', labelKey: 'marketplace.acquisitionSchoolOwned' },
+  { value: 'other', labelKey: 'marketplace.acquisitionOther' },
+]
+
 const GENDERS = [
   { value: 'female', labelKey: 'marketplace.genderFemale' },
   { value: 'male', labelKey: 'marketplace.genderMale' },
   { value: 'unisex', labelKey: 'marketplace.genderUnisex' },
 ]
 
+const VARIANT_STATUSES = [
+  { value: 'available', labelKey: 'marketplace.variantStatusAvailable' },
+  { value: 'maintenance', labelKey: 'marketplace.variantStatusMaintenance' },
+  { value: 'inactive', labelKey: 'marketplace.variantStatusInactive' },
+]
+
 interface VariantData {
   id: string
   condition: string
+  acquisitionType: string
+  status: string
+  acquiredAt: string
   sku: string
   sizeSystemId: string
   sizeId: string
   selectedColorIds: number[]
-  notes: string
-  isExpanded: boolean
+  selectedMediaIds: string[]
+  internalNotes: string
+  publicNotes: string
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
 }
 
 let variantCounter = 0
@@ -77,12 +119,16 @@ function createVariant(): VariantData {
   return {
     id: `variant-${Date.now()}-${variantCounter++}`,
     condition: 'good',
+    acquisitionType: '',
+    status: 'available',
+    acquiredAt: todayISO(),
     sku: '',
     sizeSystemId: '',
     sizeId: '',
     selectedColorIds: [],
-    notes: '',
-    isExpanded: true,
+    selectedMediaIds: [],
+    internalNotes: '',
+    publicNotes: '',
   }
 }
 
@@ -90,37 +136,80 @@ export function CreateListingPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
+  // Reference data
   const [categories, setCategories] = useState<Category[]>([])
   const [colors, setColors] = useState<Color[]>([])
 
-  // Media
+  // Non-form state (media, variants, UI)
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([])
-
-  // Listing fields
-  const [listingType, setListingType] = useState<string>('sell')
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [askingPrice, setAskingPrice] = useState('')
-  const [isPublic, setIsPublic] = useState(false)
-
-  // Product fields
-  const [productName, setProductName] = useState('')
-  const [productDescription, setProductDescription] = useState('')
-  const [categoryId, setCategoryId] = useState<string>('')
-  const [targetGender, setTargetGender] = useState<string>('')
-  const [brand, setBrand] = useState('')
-  const [material, setMaterial] = useState('')
-
-  // Variants (multiple)
-  const [variants, setVariants] = useState<VariantData[]>([createVariant()])
-
-  // School details
-  const [inventoryCode, setInventoryCode] = useState('')
-  const [storageLocation, setStorageLocation] = useState('')
-  const [schoolNotes, setSchoolNotes] = useState('')
-
+  const [variants, setVariants] = useState<VariantData[]>([])
   const [discardOpen, setDiscardOpen] = useState(false)
+  const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [editingVariant, setEditingVariant] = useState<VariantData | null>(null)
+  const [draft, setDraft] = useState<VariantData>(createVariant())
+
+  // Form
+  const { register, handleSubmit, control, watch, setValue } =
+    useForm<CreateListingFormValues>({
+      resolver: zodResolver(createListingSchema),
+      defaultValues: defaultListingValues,
+    })
+
+  const listingType = watch('listing_type')
+  const title = watch('title')
+  const description = watch('description')
+  const askingPrice = watch('asking_price')
+  const isPublic = watch('is_public')
+  const productName = watch('product_name')
+  const productDescription = watch('product_description')
+  const categoryId = watch('category_id')
+  const targetGender = watch('target_gender')
+  const brand = watch('brand')
+  const material = watch('material')
+  const inventoryCode = watch('inventory_code')
+  const storageLocation = watch('storage_location')
+  const schoolNotes = watch('school_notes')
+
+  const categoryTreeNodes: TreeSelectNode[] = React.useMemo(() => {
+    const roots = categories.filter((c) => !c.parent)
+    return roots.map((root) => ({
+      value: String(root.id),
+      label: root.name,
+      children: (root.subcategories as Category[]).map((sub) => ({
+        value: String(sub.id),
+        label: sub.name,
+      })),
+    }))
+  }, [categories])
+
+  const categorySizeSystems: SizeSystem[] = React.useMemo(() => {
+    if (!categoryId) return []
+    for (const c of categories) {
+      if (c.id === Number(categoryId))
+        return (c.size_systems as SizeSystem[]) ?? []
+      const sub = (c.subcategories as Category[]).find(
+        (s) => s.id === Number(categoryId),
+      )
+      if (sub) return (sub.size_systems as SizeSystem[]) ?? []
+    }
+    return []
+  }, [categoryId, categories])
+
+  const findCategoryName = useCallback(
+    (id: string): string | undefined => {
+      for (const c of categories) {
+        if (c.id === Number(id)) return c.name
+        const sub = (c.subcategories as Category[]).find(
+          (s) => s.id === Number(id),
+        )
+        if (sub) return sub.name
+      }
+      return undefined
+    },
+    [categories],
+  )
 
   const dataLoaded = useRef(false)
   useEffect(() => {
@@ -128,8 +217,8 @@ export function CreateListingPage() {
     dataLoaded.current = true
     const load = async () => {
       const [categoriesRes, colorsRes] = await Promise.all([
-        apiClient.inventory.inventoryCategoriesList().catch(() => null),
-        apiClient.inventory.inventoryColorsList().catch(() => null),
+        apiClient.api.inventoryCategoriesList().catch(() => null),
+        apiClient.api.inventoryColorsList().catch(() => null),
       ])
       if (categoriesRes?.data) setCategories(categoriesRes.data)
       if (colorsRes?.data) setColors(colorsRes.data)
@@ -137,111 +226,140 @@ export function CreateListingPage() {
     void load()
   }, [])
 
-  const updateVariant = useCallback(
-    (id: string, updates: Partial<VariantData>) => {
+  const openAddVariant = useCallback(() => {
+    setEditingVariant(null)
+    setDraft(createVariant())
+    setSheetOpen(true)
+  }, [])
+
+  const openEditVariant = useCallback((v: VariantData) => {
+    setEditingVariant(v)
+    setDraft({ ...v })
+    setSheetOpen(true)
+  }, [])
+
+  const saveVariant = useCallback(() => {
+    if (editingVariant) {
       setVariants((prev) =>
-        prev.map((v) => (v.id === id ? { ...v, ...updates } : v)),
+        prev.map((v) => (v.id === editingVariant.id ? { ...draft } : v)),
       )
+    } else {
+      setVariants((prev) => [...prev, { ...draft }])
+    }
+    setSheetOpen(false)
+  }, [editingVariant, draft])
+
+  const confirmDeleteVariant = useCallback(() => {
+    if (deleteVariantId) {
+      setVariants((prev) => prev.filter((v) => v.id !== deleteVariantId))
+      setDeleteVariantId(null)
+    }
+  }, [deleteVariantId])
+
+  const updateDraft = useCallback((updates: Partial<VariantData>) => {
+    setDraft((prev) => ({ ...prev, ...updates }))
+  }, [])
+
+  const toggleDraftColor = useCallback((colorId: number) => {
+    setDraft((prev) => ({
+      ...prev,
+      selectedColorIds: prev.selectedColorIds.includes(colorId)
+        ? prev.selectedColorIds.filter((c) => c !== colorId)
+        : [...prev.selectedColorIds, colorId],
+    }))
+  }, [])
+
+  const toggleDraftMedia = useCallback((mediaId: string) => {
+    setDraft((prev) => ({
+      ...prev,
+      selectedMediaIds: prev.selectedMediaIds.includes(mediaId)
+        ? prev.selectedMediaIds.filter((m) => m !== mediaId)
+        : [...prev.selectedMediaIds, mediaId],
+    }))
+  }, [])
+
+  const getVariantSummaryParts = useCallback(
+    (v: VariantData): string[] => {
+      const parts: string[] = []
+      const cond = CONDITIONS.find((c) => c.value === v.condition)
+      if (cond) parts.push(t(cond.labelKey))
+      if (v.sizeId) {
+        const ss = categorySizeSystems.find(
+          (s) => s.id === Number(v.sizeSystemId),
+        )
+        const size = ss?.sizes?.find((s) => s.id === Number(v.sizeId))
+        if (size) parts.push(size.name)
+      }
+      if (v.selectedColorIds.length > 0) {
+        parts.push(
+          t('marketplace.colorCount', { count: v.selectedColorIds.length }),
+        )
+      }
+      return parts
     },
-    [],
+    [t, categorySizeSystems],
   )
 
-  const addVariant = useCallback(() => {
-    setVariants((prev) => {
-      const collapsed = prev.map((v) => ({ ...v, isExpanded: false }))
-      return [...collapsed, createVariant()]
-    })
-  }, [])
-
-  const removeVariant = useCallback((id: string) => {
-    setVariants((prev) => prev.filter((v) => v.id !== id))
-  }, [])
-
-  const toggleVariantExpand = useCallback((id: string) => {
-    setVariants((prev) =>
-      prev.map((v) =>
-        v.id === id ? { ...v, isExpanded: !v.isExpanded } : v,
-      ),
-    )
-  }, [])
-
-  const toggleVariantColor = useCallback((variantId: string, colorId: number) => {
-    setVariants((prev) =>
-      prev.map((v) =>
-        v.id === variantId
-          ? {
-              ...v,
-              selectedColorIds: v.selectedColorIds.includes(colorId)
-                ? v.selectedColorIds.filter((c) => c !== colorId)
-                : [...v.selectedColorIds, colorId],
-            }
-          : v,
-      ),
-    )
-  }, [])
-
-  const handleSave = async () => {
-    const missing: string[] = []
-    if (!title) missing.push(t('marketplace.title'))
-    if (!listingType) missing.push(t('marketplace.listingType'))
-    if (!productName) missing.push(t('marketplace.productName'))
-    if (missing.length > 0) {
-      toast.warning(t('marketplace.missingFields'), {
-        description: missing.join(', '),
-      })
-      return
-    }
-
+  const onSubmit = async (data: CreateListingFormValues) => {
     setIsSaving(true)
 
     try {
+      const filesToUpload = mediaFiles.filter((f): f is MediaFile & { file: File } => !!f.file)
+
       const payload = {
-        listing_type: listingType as ListingTypeEnum,
-        title,
-        description,
-        asking_price: askingPrice || null,
-        is_public: isPublic,
+        listing_type: data.listing_type as ListingTypeEnum,
+        title: data.title,
+        description: data.description,
+        asking_price: data.asking_price || null,
+        is_public: data.is_public,
         product: {
-          name: productName,
-          description: productDescription,
-          category_id: categoryId ? Number(categoryId) : undefined,
-          target_gender: targetGender || null,
-          brand: brand || null,
-          material: material || null,
-          media: mediaFiles
-            .filter((f) => f.url)
-            .map((f, i) => ({
-              image: f.url,
-              is_primary: f.isPrimary,
-              sort_order: i,
-            })),
+          name: data.product_name,
+          description: data.product_description,
+          category_id: data.category_id ? Number(data.category_id) : undefined,
+          target_gender: data.target_gender || null,
+          brand: data.brand || null,
+          material: data.material || null,
+          media: filesToUpload.map((f, i) => ({
+            is_primary: f.isPrimary,
+            sort_order: i,
+          })),
           variants: variants.map((v) => ({
             condition: v.condition,
+            acquisition_type: v.acquisitionType || null,
+            status: v.status || 'available',
+            acquired_at: v.acquiredAt || null,
             sku: v.sku || null,
             size_id: v.sizeId ? Number(v.sizeId) : null,
             color_ids: v.selectedColorIds,
-            notes: v.notes || '',
+            notes: v.publicNotes || '',
+            internal_notes: v.internalNotes || '',
           })),
-          ...(inventoryCode || storageLocation || schoolNotes
+          ...(data.inventory_code || data.storage_location || data.school_notes
             ? {
                 school_details: {
-                  inventory_code: inventoryCode || undefined,
-                  storage_location: storageLocation || undefined,
-                  notes: schoolNotes || undefined,
+                  inventory_code: data.inventory_code || undefined,
+                  storage_location: data.storage_location || undefined,
+                  notes: data.school_notes || undefined,
                 },
               }
             : {}),
         },
       }
 
-      await apiClient.marketplace.marketplaceSchoolListingsCreate(payload)
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
+      filesToUpload.forEach((f, i) => {
+        fd.append(`media_${i}`, f.file)
+      })
+
+      await apiClient.api.marketplaceSchoolListingsCreate(
+        fd as unknown as SchoolListingCreateMultipart,
+      )
 
       toast.success(t('marketplace.createSuccess'))
       navigate(paths.marketplace)
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : t('marketplace.createError')
-      toast.error(msg)
+      toast.error(parseApiError(err, t, 'marketplace.createError') ?? t('marketplace.createError'))
     } finally {
       setIsSaving(false)
     }
@@ -265,12 +383,29 @@ export function CreateListingPage() {
         <Button variant="outline" onClick={() => navigate(paths.marketplace)}>
           {t('marketplace.back')}
         </Button>
-        <Button onClick={handleSave} disabled={isSaving}>
+        <Button onClick={handleSubmit(onSubmit)} disabled={isSaving}>
           {t('marketplace.createListing')}
         </Button>
       </div>
     </>
   )
+
+  const hasSingleSizeSystem = categorySizeSystems.length === 1
+
+  // Auto-select when only one size system exists
+  useEffect(() => {
+    if (hasSingleSizeSystem && !draft.sizeSystemId && sheetOpen) {
+      setDraft((prev) => ({
+        ...prev,
+        sizeSystemId: String(categorySizeSystems[0].id),
+      }))
+    }
+  }, [hasSingleSizeSystem, draft.sizeSystemId, sheetOpen, categorySizeSystems])
+
+  const draftSizeSystem = categorySizeSystems.find(
+    (ss) => ss.id === Number(draft.sizeSystemId),
+  )
+  const draftAvailableSizes = draftSizeSystem?.sizes ?? []
 
   return (
     <PageLayout footer={footerContent}>
@@ -287,31 +422,29 @@ export function CreateListingPage() {
             <CardSection title={t('marketplace.productInfo')}>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="productName">
+                  <Label htmlFor="product_name">
                     {t('marketplace.productName')}
                   </Label>
                   <Input
-                    id="productName"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
+                    id="product_name"
                     placeholder={t('marketplace.productNamePlaceholder')}
                     className="mt-1.5"
+                    {...register('product_name')}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="productDescription">
+                  <Label htmlFor="product_description">
                     {t('marketplace.productDescription')}
                   </Label>
                   <Textarea
-                    id="productDescription"
-                    value={productDescription}
-                    onChange={(e) => setProductDescription(e.target.value)}
+                    id="product_description"
                     placeholder={t(
                       'marketplace.productDescriptionPlaceholder',
                     )}
                     rows={3}
                     className="mt-1.5"
+                    {...register('product_description')}
                   />
                 </div>
 
@@ -320,43 +453,45 @@ export function CreateListingPage() {
                     <Label htmlFor="category">
                       {t('marketplace.category')}
                     </Label>
-                    <Select value={categoryId} onValueChange={setCategoryId}>
-                      <SelectTrigger id="category" className="mt-1.5">
-                        <SelectValue
+                    <Controller
+                      name="category_id"
+                      control={control}
+                      render={({ field }) => (
+                        <TreeSelect
+                          nodes={categoryTreeNodes}
+                          value={field.value}
+                          onValueChange={field.onChange}
                           placeholder={t('marketplace.selectCategory')}
+                          triggerClassName="mt-1.5 w-full"
                         />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={String(cat.id)}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      )}
+                    />
                   </div>
 
                   <div>
                     <Label htmlFor="gender">
                       {t('marketplace.targetGender')}
                     </Label>
-                    <Select
-                      value={targetGender}
-                      onValueChange={setTargetGender}
-                    >
-                      <SelectTrigger id="gender" className="mt-1.5">
-                        <SelectValue
-                          placeholder={t('marketplace.selectGender')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GENDERS.map((g) => (
-                          <SelectItem key={g.value} value={g.value}>
-                            {t(g.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      name="target_gender"
+                      control={control}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger id="gender" className="mt-1.5">
+                            <SelectValue
+                              placeholder={t('marketplace.selectGender')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GENDERS.map((g) => (
+                              <SelectItem key={g.value} value={g.value}>
+                                {t(g.labelKey)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                 </div>
 
@@ -365,10 +500,9 @@ export function CreateListingPage() {
                     <Label htmlFor="brand">{t('marketplace.brand')}</Label>
                     <Input
                       id="brand"
-                      value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
                       placeholder={t('marketplace.brandPlaceholder')}
                       className="mt-1.5"
+                      {...register('brand')}
                     />
                   </div>
                   <div>
@@ -377,10 +511,9 @@ export function CreateListingPage() {
                     </Label>
                     <Input
                       id="material"
-                      value={material}
-                      onChange={(e) => setMaterial(e.target.value)}
                       placeholder={t('marketplace.materialPlaceholder')}
                       className="mt-1.5"
+                      {...register('material')}
                     />
                   </div>
                 </div>
@@ -411,34 +544,98 @@ export function CreateListingPage() {
                     </p>
                   </div>
                 ) : (
-                  variants.map((variant, index) => (
-                    <VariantCard
-                      key={variant.id}
-                      variant={variant}
-                      index={index}
-                      colors={colors}
-                      categorySizeSystems={
-                        categoryId
-                          ? (categories.find((c) => c.id === Number(categoryId))
-                              ?.size_systems as SizeSystem[]) ?? []
-                          : []
-                      }
-                      hasCategorySelected={!!categoryId}
-                      onUpdate={updateVariant}
-                      onRemove={removeVariant}
-                      onToggleExpand={toggleVariantExpand}
-                      onToggleColor={toggleVariantColor}
-                      canRemove={variants.length > 1}
-                      t={t}
-                    />
-                  ))
+                  <div className="divide-y divide-border rounded-lg border border-border">
+                    {variants.map((variant, index) => {
+                      const parts = getVariantSummaryParts(variant)
+                      const variantMedia = mediaFiles.filter((m) =>
+                        variant.selectedMediaIds.includes(m.id),
+                      )
+                      const thumbUrl = variantMedia[0]?.url
+
+                      return (
+                        <div
+                          key={variant.id}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
+                        >
+                          {/* Thumbnail */}
+                          <div className="h-10 w-10 shrink-0 rounded-md border border-border bg-muted/30 overflow-hidden">
+                            {thumbUrl ? (
+                              <img
+                                src={thumbUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <ImageIcon className="h-4 w-4 text-muted-foreground/40" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {t('marketplace.variant', {
+                                number: index + 1,
+                              })}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                              {parts.map((part, i) => (
+                                <React.Fragment key={i}>
+                                  {i > 0 && (
+                                    <span className="text-xs text-muted-foreground/40">
+                                      ·
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-muted-foreground">
+                                    {part}
+                                  </span>
+                                </React.Fragment>
+                              ))}
+                              {variant.selectedMediaIds.length > 0 && (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0 ml-1"
+                                >
+                                  <ImageIcon className="h-3 w-3 mr-0.5" />
+                                  {variant.selectedMediaIds.length}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 min-h-11 min-w-11 md:min-h-0 md:min-w-0"
+                              aria-label={t('marketplace.editVariant')}
+                              onClick={() => openEditVariant(variant)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 min-h-11 min-w-11 md:min-h-0 md:min-w-0 text-muted-foreground hover:text-destructive"
+                              aria-label={t('marketplace.deleteVariant')}
+                              onClick={() => setDeleteVariantId(variant.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
 
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={addVariant}
+                  onClick={openAddVariant}
                   className="w-full"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -455,44 +652,41 @@ export function CreateListingPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="inventoryCode">
+                    <Label htmlFor="inventory_code">
                       {t('marketplace.inventoryCode')}
                     </Label>
                     <Input
-                      id="inventoryCode"
-                      value={inventoryCode}
-                      onChange={(e) => setInventoryCode(e.target.value)}
+                      id="inventory_code"
                       placeholder={t('marketplace.inventoryCodePlaceholder')}
                       className="mt-1.5"
+                      {...register('inventory_code')}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="storageLocation">
+                    <Label htmlFor="storage_location">
                       {t('marketplace.storageLocation')}
                     </Label>
                     <Input
-                      id="storageLocation"
-                      value={storageLocation}
-                      onChange={(e) => setStorageLocation(e.target.value)}
+                      id="storage_location"
                       placeholder={t(
                         'marketplace.storageLocationPlaceholder',
                       )}
                       className="mt-1.5"
+                      {...register('storage_location')}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="schoolNotes">
+                  <Label htmlFor="school_notes">
                     {t('marketplace.schoolNotes')}
                   </Label>
                   <Textarea
-                    id="schoolNotes"
-                    value={schoolNotes}
-                    onChange={(e) => setSchoolNotes(e.target.value)}
+                    id="school_notes"
                     placeholder={t('marketplace.schoolNotesPlaceholder')}
                     rows={2}
                     className="mt-1.5"
+                    {...register('school_notes')}
                   />
                 </div>
               </div>
@@ -505,21 +699,27 @@ export function CreateListingPage() {
             <CardSection title={t('marketplace.listingDetails')}>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="listingType">
+                  <Label htmlFor="listing_type">
                     {t('marketplace.listingType')}
                   </Label>
-                  <Select value={listingType} onValueChange={setListingType}>
-                    <SelectTrigger id="listingType" className="mt-1.5">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LISTING_TYPES.map((lt) => (
-                        <SelectItem key={lt.value} value={lt.value}>
-                          {t(lt.labelKey)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    name="listing_type"
+                    control={control}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger id="listing_type" className="mt-1.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LISTING_TYPES.map((lt) => (
+                            <SelectItem key={lt.value} value={lt.value}>
+                              {t(lt.labelKey)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
 
                 <div>
@@ -528,10 +728,9 @@ export function CreateListingPage() {
                   </Label>
                   <Input
                     id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
                     placeholder={t('marketplace.listingTitlePlaceholder')}
                     className="mt-1.5"
+                    {...register('title')}
                   />
                 </div>
 
@@ -541,36 +740,34 @@ export function CreateListingPage() {
                   </Label>
                   <Textarea
                     id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
                     placeholder={t(
                       'marketplace.listingDescriptionPlaceholder',
                     )}
                     rows={3}
                     className="mt-1.5"
+                    {...register('description')}
                   />
                 </div>
 
                 <Separator />
 
                 <div>
-                  <Label htmlFor="askingPrice">
+                  <Label htmlFor="asking_price">
                     {t('marketplace.askingPrice')}
                   </Label>
                   <div className="relative mt-1.5">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      €
+                      {t('common.currencySymbol')}
                     </span>
                     <Input
-                      id="askingPrice"
+                      id="asking_price"
                       type="number"
                       min="0"
                       step="0.01"
                       placeholder="0.00"
                       inputMode="decimal"
-                      value={askingPrice}
-                      onChange={(e) => setAskingPrice(e.target.value)}
                       className="pl-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      {...register('asking_price')}
                     />
                   </div>
                 </div>
@@ -584,7 +781,13 @@ export function CreateListingPage() {
                       {t('marketplace.publicDesc')}
                     </p>
                   </div>
-                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                  <Controller
+                    name="is_public"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    )}
+                  />
                 </div>
               </div>
             </CardSection>
@@ -609,18 +812,15 @@ export function CreateListingPage() {
                 />
                 <SummaryRow
                   label={t('marketplace.category')}
-                  value={
-                    categoryId
-                      ? categories.find((c) => c.id === Number(categoryId))
-                          ?.name
-                      : undefined
-                  }
+                  value={categoryId ? findCategoryName(categoryId) : undefined}
                 />
                 <SummaryRow
                   label={t('marketplace.media')}
                   value={
                     mediaFiles.length > 0
-                      ? t('marketplace.photoCount', { count: mediaFiles.length })
+                      ? t('marketplace.photoCount', {
+                          count: mediaFiles.length,
+                        })
                       : undefined
                   }
                 />
@@ -628,21 +828,351 @@ export function CreateListingPage() {
                 <SummaryRow
                   label={t('marketplace.variants')}
                   value={
-                    variants.length > 0
-                      ? String(variants.length)
-                      : undefined
+                    variants.length > 0 ? String(variants.length) : undefined
                   }
                 />
                 <Separator />
                 <SummaryRow
                   label={t('marketplace.askingPrice')}
-                  value={askingPrice ? `€${askingPrice}` : undefined}
+                  value={askingPrice ? `${t('common.currencySymbol')}${askingPrice}` : undefined}
                 />
               </div>
             </CardSection>
           </div>
         </div>
       </div>
+
+      {/* Variant Sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="sm:max-w-lg p-0 flex flex-col gap-0" showCloseButton={false}>
+          {/* Sticky header */}
+          <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
+            <SheetTitle>
+              {editingVariant
+                ? t('marketplace.editVariant')
+                : t('marketplace.addVariant')}
+            </SheetTitle>
+            <SheetDescription>
+              {t('marketplace.variantSheetDesc')}
+            </SheetDescription>
+          </SheetHeader>
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="px-6 py-6 space-y-6">
+              {/* ── Condition & Details ── */}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                  {t('marketplace.condition')} &amp; {t('marketplace.variantDetails')}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="variant-condition">{t('marketplace.condition')}</Label>
+                    <Select
+                      value={draft.condition}
+                      onValueChange={(v) => updateDraft({ condition: v })}
+                    >
+                      <SelectTrigger id="variant-condition" className="mt-1.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONDITIONS.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>
+                            {t(c.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="variant-status">{t('marketplace.variantStatus')}</Label>
+                    <Select
+                      value={draft.status}
+                      onValueChange={(v) => updateDraft({ status: v })}
+                    >
+                      <SelectTrigger id="variant-status" className="mt-1.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VARIANT_STATUSES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>
+                            {t(s.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <Label htmlFor="variant-acquisition-type">{t('marketplace.acquisitionType')}</Label>
+                    <Select
+                      value={draft.acquisitionType}
+                      onValueChange={(v) => updateDraft({ acquisitionType: v })}
+                    >
+                      <SelectTrigger id="variant-acquisition-type" className="mt-1.5">
+                        <SelectValue
+                          placeholder={t('marketplace.selectAcquisition')}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ACQUISITION_TYPES.map((a) => (
+                          <SelectItem key={a.value} value={a.value}>
+                            {t(a.labelKey)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="variant-acquired-at">{t('marketplace.acquiredAt')}</Label>
+                    <DatePicker
+                      value={draft.acquiredAt ? new Date(draft.acquiredAt) : undefined}
+                      onChange={(d) => updateDraft({ acquiredAt: d ? format(d, 'yyyy-MM-dd') : '' })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <Label htmlFor="variant-sku">{t('marketplace.sku')}</Label>
+                  <Input
+                    id="variant-sku"
+                    value={draft.sku}
+                    onChange={(e) => updateDraft({ sku: e.target.value })}
+                    placeholder={t('marketplace.skuPlaceholder')}
+                    className="mt-1.5"
+                  />
+                </div>
+              </div>
+
+              {/* ── Size ── */}
+              {(!categoryId || categorySizeSystems.length > 0) && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                      {t('marketplace.size')}
+                    </p>
+                    {!categoryId ? (
+                      <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-border p-4">
+                        <Info className="h-5 w-5 text-muted-foreground/50 shrink-0" />
+                        <p className="text-sm text-muted-foreground">
+                          {t('marketplace.selectCategoryForSize')}
+                        </p>
+                      </div>
+                    ) : hasSingleSizeSystem ? (
+                      <div>
+                        <Label htmlFor="variant-size">{t('marketplace.size')}</Label>
+                        <Select
+                          value={draft.sizeId}
+                          onValueChange={(v) => updateDraft({ sizeId: v })}
+                        >
+                          <SelectTrigger id="variant-size" className="mt-1.5">
+                            <SelectValue
+                              placeholder={t('marketplace.selectSize')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {draftAvailableSizes.map((s) => (
+                              <SelectItem key={s.id} value={String(s.id)}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="variant-size-system">{t('marketplace.sizeSystem')}</Label>
+                          <Select
+                            value={draft.sizeSystemId}
+                            onValueChange={(v) =>
+                              updateDraft({ sizeSystemId: v, sizeId: '' })
+                            }
+                          >
+                            <SelectTrigger id="variant-size-system" className="mt-1.5">
+                              <SelectValue
+                                placeholder={t('marketplace.selectSizeSystem')}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {categorySizeSystems.map((ss) => (
+                                <SelectItem key={ss.id} value={String(ss.id)}>
+                                  {ss.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="variant-size">{t('marketplace.size')}</Label>
+                          <Select
+                            value={draft.sizeId}
+                            onValueChange={(v) => updateDraft({ sizeId: v })}
+                            disabled={!draft.sizeSystemId}
+                          >
+                            <SelectTrigger id="variant-size" className="mt-1.5">
+                              <SelectValue
+                                placeholder={t('marketplace.selectSize')}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {draftAvailableSizes.map((s) => (
+                                <SelectItem key={s.id} value={String(s.id)}>
+                                  {s.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* ── Colors ── */}
+              {colors.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                      {t('marketplace.colors')}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {colors.map((color) => (
+                        <button
+                          key={color.id}
+                          type="button"
+                          onClick={() => toggleDraftColor(color.id)}
+                          className={cn(
+                            'flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors min-h-[36px]',
+                            draft.selectedColorIds.includes(color.id)
+                              ? 'border-primary bg-muted text-primary'
+                              : 'border-border bg-background text-foreground hover:bg-accent',
+                          )}
+                        >
+                          <span
+                            className="h-3 w-3 rounded-full border border-border"
+                            style={{ backgroundColor: color.hex_code }}
+                          />
+                          {color.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              {/* ── Photos ── */}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                  {t('marketplace.variantPhotos')}
+                </p>
+                {mediaFiles.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-6 text-center">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {t('marketplace.noPhotosForVariant')}
+                    </p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">
+                      {t('marketplace.noPhotosForVariantHint')}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {t('marketplace.variantPhotosDesc')}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {mediaFiles.map((media) => {
+                        const selected = draft.selectedMediaIds.includes(media.id)
+                        return (
+                          <button
+                            key={media.id}
+                            type="button"
+                            onClick={() => toggleDraftMedia(media.id)}
+                            className={cn(
+                              'relative aspect-square rounded-lg border-2 overflow-hidden transition-all',
+                              selected
+                                ? 'border-primary ring-1 ring-primary'
+                                : 'border-border hover:border-primary/50',
+                            )}
+                          >
+                            <img
+                              src={media.url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                            {selected && (
+                              <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                                <div className="rounded-full bg-primary p-1">
+                                  <Check className="h-3 w-3 text-white" />
+                                </div>
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* ── Notes ── */}
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                  {t('marketplace.publicNotes')}
+                </p>
+                <Textarea
+                  id="variant-public-notes"
+                  value={draft.publicNotes}
+                  onChange={(e) => updateDraft({ publicNotes: e.target.value })}
+                  placeholder={t('marketplace.publicNotesPlaceholder')}
+                  rows={2}
+                />
+              </div>
+
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                  {t('marketplace.internalNotes')}
+                </p>
+                <Textarea
+                  id="variant-internal-notes"
+                  value={draft.internalNotes}
+                  onChange={(e) =>
+                    updateDraft({ internalNotes: e.target.value })
+                  }
+                  placeholder={t('marketplace.internalNotesPlaceholder')}
+                  rows={2}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky footer */}
+          <div className="shrink-0 border-t border-border bg-background px-6 py-4 flex items-center justify-end gap-2">
+            <Button variant="outline" onClick={() => setSheetOpen(false)}>
+              {t('marketplace.cancel')}
+            </Button>
+            <Button onClick={saveVariant}>
+              {editingVariant
+                ? t('marketplace.saveVariant')
+                : t('marketplace.addVariant')}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Discard Confirmation */}
       <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
@@ -657,247 +1187,40 @@ export function CreateListingPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('marketplace.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDiscard}
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              {t('marketplace.discardConfirm')}
+            <AlertDialogAction asChild>
+              <Button variant="destructive" onClick={handleDiscard}>
+                {t('marketplace.discardConfirm')}
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Variant Confirmation */}
+      <AlertDialog
+        open={!!deleteVariantId}
+        onOpenChange={() => setDeleteVariantId(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('marketplace.removeVariant')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('marketplace.removeVariantDesc')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('marketplace.cancel')}</AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button variant="destructive" onClick={confirmDeleteVariant}>
+                {t('marketplace.removeVariant')}
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </PageLayout>
-  )
-}
-
-function VariantCard({
-  variant,
-  index,
-  colors,
-  categorySizeSystems,
-  hasCategorySelected,
-  onUpdate,
-  onRemove,
-  onToggleExpand,
-  onToggleColor,
-  canRemove,
-  t,
-}: {
-  variant: VariantData
-  index: number
-  colors: Color[]
-  categorySizeSystems: SizeSystem[]
-  hasCategorySelected: boolean
-  onUpdate: (id: string, updates: Partial<VariantData>) => void
-  onRemove: (id: string) => void
-  onToggleExpand: (id: string) => void
-  onToggleColor: (variantId: string, colorId: number) => void
-  canRemove: boolean
-  t: (key: string, opts?: Record<string, unknown>) => string
-}) {
-  const selectedSizeSystem = categorySizeSystems.find(
-    (ss) => ss.id === Number(variant.sizeSystemId),
-  )
-  const availableSizes = selectedSizeSystem?.sizes ?? []
-
-  const conditionLabel = CONDITIONS.find(
-    (c) => c.value === variant.condition,
-  )
-  const sizeLabel = availableSizes.find(
-    (s) => s.id === Number(variant.sizeId),
-  )
-  const colorCount = variant.selectedColorIds.length
-
-  return (
-    <div className="rounded-lg border border-border bg-card">
-      {/* Header — always visible, acts as accordion toggle */}
-      <button
-        type="button"
-        onClick={() => onToggleExpand(variant.id)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-accent/50 transition-colors rounded-lg min-h-[48px]"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-            {index + 1}
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-medium truncate">
-              {t('marketplace.variant', { number: index + 1 })}
-            </p>
-            {!variant.isExpanded && (
-              <p className="text-xs text-muted-foreground truncate">
-                {conditionLabel && t(conditionLabel.labelKey)}
-                {sizeLabel && ` · ${sizeLabel.name}`}
-                {colorCount > 0 &&
-                  ` · ${t('marketplace.colorCount', { count: colorCount })}`}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {canRemove && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                onRemove(variant.id)
-              }}
-              className="rounded p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
-          {variant.isExpanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
-        </div>
-      </button>
-
-      {/* Expanded content */}
-      {variant.isExpanded && (
-        <div className="border-t border-border px-4 py-4 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label>{t('marketplace.condition')}</Label>
-              <Select
-                value={variant.condition}
-                onValueChange={(v) =>
-                  onUpdate(variant.id, { condition: v })
-                }
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONDITIONS.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {t(c.labelKey)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>{t('marketplace.sku')}</Label>
-              <Input
-                value={variant.sku}
-                onChange={(e) =>
-                  onUpdate(variant.id, { sku: e.target.value })
-                }
-                placeholder={t('marketplace.skuPlaceholder')}
-                className="mt-1.5"
-              />
-            </div>
-          </div>
-
-          <Separator />
-
-          {!hasCategorySelected ? (
-            <p className="text-sm text-muted-foreground">
-              {t('marketplace.selectCategoryForSize')}
-            </p>
-          ) : categorySizeSystems.length === 0 ? null : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label>{t('marketplace.sizeSystem')}</Label>
-                <Select
-                  value={variant.sizeSystemId}
-                  onValueChange={(v) =>
-                    onUpdate(variant.id, {
-                      sizeSystemId: v,
-                      sizeId: '',
-                    })
-                  }
-                >
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue
-                      placeholder={t('marketplace.selectSizeSystem')}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categorySizeSystems.map((ss) => (
-                      <SelectItem key={ss.id} value={String(ss.id)}>
-                        {ss.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>{t('marketplace.size')}</Label>
-                <Select
-                  value={variant.sizeId}
-                  onValueChange={(v) =>
-                    onUpdate(variant.id, { sizeId: v })
-                  }
-                  disabled={!variant.sizeSystemId}
-                >
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue
-                      placeholder={t('marketplace.selectSize')}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSizes.map((s) => (
-                      <SelectItem key={s.id} value={String(s.id)}>
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {/* Colors */}
-          {colors.length > 0 && (
-            <div>
-              <Label>{t('marketplace.colors')}</Label>
-              <div className="flex flex-wrap gap-2 mt-1.5">
-                {colors.map((color) => (
-                  <button
-                    key={color.id}
-                    type="button"
-                    onClick={() =>
-                      onToggleColor(variant.id, color.id)
-                    }
-                    className={cn(
-                      'flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors min-h-[36px]',
-                      variant.selectedColorIds.includes(color.id)
-                        ? 'border-primary bg-primary/5 text-primary'
-                        : 'border-border bg-background text-foreground hover:bg-accent',
-                    )}
-                  >
-                    <span
-                      className="h-3 w-3 rounded-full border border-border"
-                      style={{ backgroundColor: color.hex_code }}
-                    />
-                    {color.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div>
-            <Label>{t('marketplace.variantNotes')}</Label>
-            <Textarea
-              value={variant.notes}
-              onChange={(e) =>
-                onUpdate(variant.id, { notes: e.target.value })
-              }
-              placeholder={t('marketplace.variantNotesPlaceholder')}
-              rows={2}
-              className="mt-1.5"
-            />
-          </div>
-        </div>
-      )}
-    </div>
   )
 }
 

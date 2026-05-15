@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { Sun, Moon, ExternalLink } from 'lucide-react'
 import { paths } from '@/app/paths'
+import { useTheme } from '@/theme/ThemeProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -125,7 +128,19 @@ function TreatmentDraw() {
 // ---------------------------------------------------------------------------
 // Nav
 // ---------------------------------------------------------------------------
-function LandingNav() {
+function LandingNav({
+  t,
+  toggleTheme,
+  toggleLang,
+  currentLang,
+  theme,
+}: {
+  t: (key: string) => string
+  toggleTheme: () => void
+  toggleLang: () => void
+  currentLang: string
+  theme: string
+}) {
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-border/40 bg-background/78 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 md:px-10">
@@ -137,16 +152,16 @@ function LandingNav() {
         </a>
         <div className="hidden items-center gap-7 text-[12.5px] tracking-wide text-muted-foreground md:flex">
           <a href="#modalidades" className="hover:text-foreground">
-            Modalidades
+            {t('landing.navModalities')}
           </a>
           <a href="#distincoes" className="hover:text-foreground">
-            Distinções
+            {t('landing.navAwards')}
           </a>
           <a href="#equipa" className="hover:text-foreground">
-            Equipa
+            {t('landing.navTeam')}
           </a>
           <a href="#projetos" className="hover:text-foreground">
-            Projetos
+            {t('landing.navProjects')}
           </a>
           <a
             href="#plataforma"
@@ -156,11 +171,35 @@ function LandingNav() {
           </a>
         </div>
         <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={toggleLang}
+            >
+              <span className="text-[10px] font-medium uppercase">
+                {currentLang}
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? (
+                <Sun className="size-3.5" />
+              ) : (
+                <Moon className="size-3.5" />
+              )}
+            </Button>
+          </div>
           <Button variant="outline" size="sm" asChild>
-            <a href="#enrol">Inscrever</a>
+            <a href="#enrol">{t('landing.navEnroll')}</a>
           </Button>
           <Button size="sm" asChild>
-            <Link to={paths.login}>Entrar →</Link>
+            <Link to={paths.login}>{t('landing.navLogin')} →</Link>
           </Button>
         </div>
       </div>
@@ -171,13 +210,13 @@ function LandingNav() {
 // ---------------------------------------------------------------------------
 // Hero
 // ---------------------------------------------------------------------------
-function Hero() {
+function Hero({ t }: { t: (key: string) => string }) {
   const stats = [
-    ['14+', 'Anos de excelência'],
-    ['900+', 'Distinções internacionais'],
-    ['RAD®', 'Certificação n.º 24116'],
-    ['2.5+', 'Idades · a partir de'],
-  ] as const
+    ['14+', t('landing.statYears')],
+    ['900+', t('landing.statAwards')],
+    ['RAD®', t('landing.statCertification')],
+    ['2.5+', t('landing.statAges')],
+  ]
 
   return (
     <section id="top" className="relative min-h-[112vh] pt-[88px]">
@@ -185,11 +224,17 @@ function Hero() {
         {/* Top labels */}
         <div className="flex justify-between pb-3 pt-2">
           <span className="landing-mono text-muted-foreground">
-            Escola de Dança · Braga
+            {t('landing.heroTopLabel')}
           </span>
-          <span className="landing-mono hidden text-muted-foreground sm:block">
-            41.55°N 8.42°W · Portugal
-          </span>
+          <a
+            href="https://maps.app.goo.gl/6KBV6hgekbpXoQaA9"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="landing-mono hidden items-center gap-1.5 text-muted-foreground hover:text-foreground sm:inline-flex"
+          >
+            <ExternalLink className="size-3" />
+            41.5575°N 8.4201°W · Braga, Portugal
+          </a>
         </div>
         <Separator />
 
@@ -201,7 +246,7 @@ function Hero() {
           <div className="pointer-events-none absolute inset-0 grid grid-rows-[auto_1fr_auto] p-6">
             <div className="flex justify-between">
               <span className="landing-eyebrow text-muted-foreground">
-                Escola de Dança · Desde 2011
+                {t('landing.heroEyebrowLeft')}
               </span>
               <span className="landing-eyebrow hidden text-muted-foreground sm:block">
                 RAD® Registered · N.º 24116
@@ -214,18 +259,17 @@ function Hero() {
                   <span className="text-primary">OS</span>
                 </h1>
                 <p className="landing-display mt-2 text-[clamp(18px,2.4vw,30px)] font-normal tracking-normal text-muted-foreground">
-                  Escola de Dança · Braga, Portugal
+                  {t('landing.heroSubtitle')}
                 </p>
               </div>
             </div>
             <div className="flex items-end justify-between">
               <p className="max-w-[280px] text-[13.5px] leading-relaxed text-muted-foreground">
-                Catorze anos a formar bailarinos em Braga. Mais de novecentas
-                distinções internacionais. Uma escola, em movimento contínuo.
+                {t('landing.heroDescription')}
               </p>
               <div className="hidden text-right sm:block">
                 <div className="landing-mono mb-1.5 text-muted-foreground">
-                  ↓ Continue
+                  ↓ {t('landing.heroContinue')}
                 </div>
               </div>
             </div>
@@ -234,7 +278,7 @@ function Hero() {
 
         {/* Stats strip */}
         <Separator className="mt-6" />
-        <div className="grid grid-cols-2 gap-6 py-5 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 py-5 sm:grid-cols-2 md:grid-cols-4">
           {stats.map(([n, l]) => (
             <div key={l}>
               <div className="landing-display text-4xl">{n}</div>
@@ -252,41 +296,41 @@ function Hero() {
 // ---------------------------------------------------------------------------
 // Modalidades – verified from studioos.dev Modalidades section
 // ---------------------------------------------------------------------------
-function Modalidades() {
+function Modalidades({ t }: { t: (key: string) => string }) {
   const list = [
     {
       n: '01',
-      name: 'Ballet Clássico',
-      desc: 'Royal Academy of Dance · do Pre-Primary ao Advanced 2',
+      name: t('landing.modBallet'),
+      desc: t('landing.modBalletDesc'),
     },
     {
       n: '02',
-      name: 'Contemporânea',
-      desc: 'Release, floor work, improvisação guiada.',
+      name: t('landing.modContemporary'),
+      desc: t('landing.modContemporaryDesc'),
     },
     { n: '03', name: 'Jazz', desc: 'Lyrical, Broadway, Commercial.' },
     { n: '04', name: 'Hip-Hop', desc: 'New School, House, Street.' },
     {
       n: '05',
-      name: 'Teatro Musical',
-      desc: 'Canto, representação e dança num formato integrado.',
+      name: t('landing.modMusicalTheatre'),
+      desc: t('landing.modMusicalTheatreDesc'),
     },
     {
       n: '06',
       name: 'Acrodance',
-      desc: 'Fusão de dança e acrobacia.',
+      desc: t('landing.modAcrodanceDesc'),
     },
     {
       n: '07',
       name: 'Body Balance',
-      desc: 'Pilates, força, mobilidade para bailarinos.',
+      desc: t('landing.modBodyBalanceDesc'),
     },
     {
       n: '08',
-      name: 'Comercial & Fusion',
-      desc: 'Estilos urbanos e comerciais de dança contemporânea.',
+      name: t('landing.modCommercial'),
+      desc: t('landing.modCommercialDesc'),
     },
-  ] as const
+  ]
 
   return (
     <section id="modalidades" className="py-20 md:py-28">
@@ -294,20 +338,17 @@ function Modalidades() {
         <div className="mb-14 flex flex-wrap items-end justify-between gap-10">
           <div>
             <span className="landing-eyebrow mb-4 block text-muted-foreground">
-              Capítulo I · O Repertório
+              {t('landing.modChapter')}
             </span>
             <h2 className="landing-display text-[clamp(44px,6vw,92px)]">
-              Oito formas
+              {t('landing.modHeadingLine1')}
               <br />
-              de{' '}
-              <span className="text-primary">dizer</span> o
-              mesmo.
+              {t('landing.modHeadingLine2Pre')}{' '}
+              <span className="text-primary">{t('landing.modHeadingLine2Highlight')}</span> {t('landing.modHeadingLine2Post')}
             </h2>
           </div>
           <p className="max-w-[360px] text-[15px] leading-relaxed text-muted-foreground">
-            Programas certificados pela Royal Academy of Dance e
-            estruturados por níveis de progressão. A partir dos 2 anos e
-            meio.
+            {t('landing.modDescription')}
           </p>
         </div>
 
@@ -337,7 +378,7 @@ function Modalidades() {
 // ---------------------------------------------------------------------------
 // Awards / Distinções – confirmed: 900+ distinções, competitions listed on site
 // ---------------------------------------------------------------------------
-function Awards() {
+function Awards({ t }: { t: (key: string) => string }) {
   const competitions = [
     'Youth America Grand Prix',
     'TanzOlymp',
@@ -366,24 +407,22 @@ function Awards() {
         <div className="grid items-start gap-10 md:grid-cols-2 md:gap-20">
           <div>
             <span className="landing-eyebrow mb-4 block text-background/60">
-              Capítulo II · O Palmarés
+              {t('landing.awardsChapter')}
             </span>
             <h2 className="landing-display text-[clamp(56px,8vw,132px)] text-background">
-              <span className="block">Novecentas</span>
+              <span className="block">{t('landing.awardsHeadingLine1')}</span>
               <span className="text-primary">
-                distinções.
+                {t('landing.awardsHeadingLine2')}
               </span>
             </h2>
             <p className="mt-8 max-w-[460px] text-base leading-relaxed text-background/70">
-              Em catorze anos, mais de 900 prémios em concursos nacionais
-              e internacionais. Bolsas de estudo conquistadas para
-              algumas das mais prestigiadas escolas de dança do mundo.
+              {t('landing.awardsDescription')}
             </p>
           </div>
           <div>
             <div className="mb-8">
               <h3 className="landing-mono mb-4 text-primary">
-                Competições
+                {t('landing.awardsCompetitions')}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {competitions.map((c) => (
@@ -400,7 +439,7 @@ function Awards() {
             <Separator className="bg-background/18" />
             <div className="mt-8">
               <h3 className="landing-mono mb-4 text-primary">
-                Bolsas de Estudo
+                {t('landing.awardsScholarships')}
               </h3>
               <ol className="list-none space-y-0">
                 {scholarships.map((s, i) => (
@@ -441,45 +480,45 @@ function Awards() {
 // ---------------------------------------------------------------------------
 // Team – confirmed from studioos.dev "Corpo Docente" / "A nossa história"
 // ---------------------------------------------------------------------------
-function Team() {
+function Team({ t }: { t: (key: string) => string }) {
   const team = [
     {
       name: 'Ana Ribeiro',
-      role: 'Direção',
-      cred: 'Professora de Ballet · RAD® Registered Teacher — TC',
+      role: t('landing.teamRoleDirection'),
+      cred: t('landing.teamCredDiana'),
       initials: 'DC',
     },
     {
       name: 'Rui Martins',
-      role: 'Direção',
-      cred: 'Pianista acompanhador · Professor de música',
+      role: t('landing.teamRoleDirection'),
+      cred: t('landing.teamCredPedro'),
       initials: 'PA',
     },
     {
       name: 'Sofia Costa',
-      role: 'Coordenação',
-      cred: 'Coordenação interdisciplinar',
+      role: t('landing.teamRoleCoordination'),
+      cred: t('landing.teamCredMaria'),
       initials: 'MB',
     },
-  ] as const
+  ]
 
   const support = [
-    { name: 'Teresa Lopes', role: 'Assistente administrativa', initials: 'CD' },
-    { name: 'Inês Ferreira', role: 'Comunicação · Redes sociais', initials: 'JG' },
-    { name: 'Marta Sousa', role: 'MD MsC · Saúde Mental', initials: 'FC' },
-  ] as const
+    { name: 'Teresa Lopes', role: t('landing.teamRoleClotilde'), initials: 'CD' },
+    { name: 'Inês Ferreira', role: t('landing.teamRoleJoana'), initials: 'JG' },
+    { name: 'Marta Sousa', role: t('landing.teamRoleFilipa'), initials: 'FC' },
+  ]
 
   return (
     <section id="equipa" className="py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <div className="mb-14">
           <span className="landing-eyebrow mb-4 block text-muted-foreground">
-            Capítulo III · Quem está na sala
+            {t('landing.teamChapter')}
           </span>
           <h2 className="landing-display text-[clamp(44px,6vw,92px)]">
-            A escola é
+            {t('landing.teamHeadingLine1')}
             <br />
-            <span className="text-primary">quem ensina.</span>
+            <span className="text-primary">{t('landing.teamHeadingLine2')}</span>
           </h2>
         </div>
 
@@ -533,29 +572,29 @@ function Team() {
 // ---------------------------------------------------------------------------
 // Projetos – confirmed from studioos.dev
 // ---------------------------------------------------------------------------
-function Projetos() {
+function Projetos({ t }: { t: (key: string) => string }) {
   const projects = [
     {
-      tag: 'Companhia',
+      tag: t('landing.projTagCompany'),
       title: 'Motus Dance Project',
-      desc: 'Companhia juvenil de criação coreográfica.',
+      desc: t('landing.projDescMotus'),
     },
     {
-      tag: 'Bolsas',
+      tag: t('landing.projTagScholarships'),
       title: 'Plataforma Ent\'Artes',
-      desc: 'Programa de apoio a alunos com mérito artístico.',
+      desc: t('landing.projDescPlatform'),
     },
     {
       tag: 'Festival',
       title: 'Soma das Artes',
-      desc: 'Festival anual interdisciplinar — dança, música, vídeo, palavra.',
+      desc: t('landing.projDescFestival'),
     },
     {
-      tag: 'Treino',
+      tag: t('landing.projTagTraining'),
       title: 'Studio Training',
-      desc: 'Aulas técnicas para bailarinos profissionais e ex-alunos em formação contínua.',
+      desc: t('landing.projDescTraining'),
     },
-  ] as const
+  ]
 
   return (
     <section
@@ -565,12 +604,12 @@ function Projetos() {
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <div className="mb-14">
           <span className="landing-eyebrow mb-4 block text-muted-foreground">
-            Capítulo IV · O que se faz fora da aula
+            {t('landing.projChapter')}
           </span>
           <h2 className="landing-display text-[clamp(40px,5vw,76px)]">
-            Quatro{' '}
-            <span className="text-primary">extensões</span>{' '}
-            da escola.
+            {t('landing.projHeadingPre')}{' '}
+            <span className="text-primary">{t('landing.projHeadingHighlight')}</span>{' '}
+            {t('landing.projHeadingPost')}
           </h2>
         </div>
 
@@ -973,13 +1012,14 @@ function AttendanceMock() {
 }
 
 function PlatformBento() {
+  const { t } = useTranslation()
   return (
     <section id="plataforma" className="py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <div className="mb-14 flex flex-wrap items-end justify-between gap-10">
           <div>
             <span className="landing-eyebrow mb-4 block text-muted-foreground">
-              Intermezzo · O que move a casa
+              {t('landing.bentoChapter')}
             </span>
             <h2 className="landing-display text-[clamp(44px,6.5vw,100px)]">
               <span className="font-normal italic">Powered by</span>
@@ -987,15 +1027,12 @@ function PlatformBento() {
               StudioOS<span className="text-primary">.</span>
             </h2>
             <p className="mt-6 max-w-[520px] text-base leading-relaxed text-muted-foreground">
-              Por trás de cada inscrição, cada aula privada, cada
-              espetáculo, há uma plataforma que organiza o quotidiano da
-              escola.
+              {t('landing.bentoDescription')}
             </p>
           </div>
           <div className="min-w-[240px]">
             <span className="landing-mono text-muted-foreground">
-              10 módulos · uma única base de dados · acesso por papel
-              (aluno, professor, encarregado, direção)
+              {t('landing.bentoSubtitle')}
             </span>
           </div>
         </div>
@@ -1091,6 +1128,7 @@ function PlatformBento() {
 // CTA
 // ---------------------------------------------------------------------------
 function CTA() {
+  const { t } = useTranslation()
   return (
     <section
       id="enrol"
@@ -1098,26 +1136,25 @@ function CTA() {
     >
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <span className="landing-eyebrow mb-6 block text-background/55">
-          Próxima época · Setembro 2026
+          {t('landing.ctaEyebrow')}
         </span>
         <h2 className="landing-display text-[clamp(64px,11vw,180px)] leading-[0.92]">
-          <span className="block">Venha</span>
+          <span className="block">{t('landing.ctaHeadingLine1')}</span>
           <span className="block text-primary">
-            dançar.
+            {t('landing.ctaHeadingLine2')}
           </span>
         </h2>
         <p className="mx-auto mt-8 mb-12 max-w-[520px] text-[17px] leading-relaxed text-background/72">
-          Inscrições abertas. Aulas experimentais sem compromisso.
-          Atendimento direto no estúdio em Braga, ou através da
-          plataforma StudioOS.
+          {t('landing.ctaDescription')}
         </p>
         <div className="inline-flex flex-wrap justify-center gap-3.5">
           <Button
             size="lg"
             variant="outline"
-            className="border-background bg-background text-foreground hover:bg-background/90 hover:text-foreground"
+            className="border-background bg-background text-foreground hover:bg-background/90 hover:text-foreground dark:bg-background dark:hover:bg-background/90 dark:border-background"
+            asChild
           >
-            Inscrever aluno →
+            <Link to={paths.enrollment}>{t('landing.ctaEnroll')}</Link>
           </Button>
           <Button
             size="lg"
@@ -1125,7 +1162,7 @@ function CTA() {
             className="border border-background/50 text-background hover:bg-background/10 hover:text-background"
             asChild
           >
-            <Link to={paths.login}>Entrar na plataforma</Link>
+            <Link to={paths.login}>{t('landing.ctaLogin')}</Link>
           </Button>
         </div>
       </div>
@@ -1160,6 +1197,7 @@ function FooterCol({
 }
 
 function Footer() {
+  const { t } = useTranslation()
   return (
     <footer className="border-t border-border py-16 pb-10">
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
@@ -1172,33 +1210,29 @@ function Footer() {
               </span>
             </div>
             <p className="max-w-[320px] text-[13px] leading-relaxed text-muted-foreground">
-              Escola de Dança · Braga, Portugal.
-              <br />
-              Royal Academy of Dance Registered.
-              <br />
-              Apoio da Câmara Municipal de Braga.
+              {t('landing.footerDesc')}
             </p>
           </div>
           <FooterCol
-            title="Escola"
+            title={t('landing.footerSchool')}
             links={[
-              'Modalidades',
-              'Equipa',
-              'Projetos',
-              'Inscrições',
+              t('landing.navModalities'),
+              t('landing.navTeam'),
+              t('landing.navProjects'),
+              t('landing.navEnroll'),
             ]}
           />
           <FooterCol
-            title="Plataforma"
+            title={t('landing.footerPlatform')}
             links={[
-              'Entrar',
-              'Inscrição online',
-              'Calendário',
-              'Mensagens',
+              t('landing.navLogin'),
+              t('landing.footerOnlineEnroll'),
+              t('landing.footerCalendar'),
+              t('landing.footerMessages'),
             ]}
           />
           <FooterCol
-            title="Contacto"
+            title={t('landing.footerContact')}
             links={[
               'Rua Dr. Manuel de Oliveira Machado, 21-23',
               '4700-054 Braga',
@@ -1226,15 +1260,30 @@ function Footer() {
 // Page
 // ---------------------------------------------------------------------------
 export function LandingPage() {
+  const { t, i18n } = useTranslation()
+  const { theme, setTheme } = useTheme()
+
+  const currentLang = i18n.language?.startsWith('pt') ? 'pt' : 'en'
+  const toggleLang = () =>
+    i18n.changeLanguage(i18n.language?.startsWith('pt') ? 'en-US' : 'pt-PT')
+  const toggleTheme = () =>
+    setTheme(theme === 'dark' ? 'light' : 'dark')
+
   return (
     <div className="landing-body min-h-screen overflow-x-hidden bg-background text-foreground">
-      <LandingNav />
-      <Hero />
+      <LandingNav
+        t={t}
+        toggleTheme={toggleTheme}
+        toggleLang={toggleLang}
+        currentLang={currentLang}
+        theme={theme}
+      />
+      <Hero t={t} />
       <Separator className="mx-auto max-w-[1440px]" />
-      <Modalidades />
-      <Awards />
-      <Team />
-      <Projetos />
+      <Modalidades t={t} />
+      <Awards t={t} />
+      <Team t={t} />
+      <Projetos t={t} />
       <PlatformBento />
       <CTA />
       <Footer />

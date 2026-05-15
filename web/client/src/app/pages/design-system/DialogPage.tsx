@@ -137,6 +137,7 @@ export function DialogPage() {
             </DialogContent>
           </Dialog>
         </div>
+
       </section>
     </div>
   )

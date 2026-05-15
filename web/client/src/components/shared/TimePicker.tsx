@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,6 +27,7 @@ export function TimePicker({
   placeholder = '--:--',
   disabled,
 }: TimePickerProps) {
+  const { t } = useTranslation()
   const [selectedHour, selectedMinute] = value
     ? value.split(':')
     : ['', '']
@@ -57,11 +59,12 @@ export function TimePicker({
                 <button
                   key={h}
                   type="button"
+                  aria-label={t('timePicker.selectHour', { hour: h })}
                   onClick={() =>
                     selectTime(h, selectedMinute || '00')
                   }
                   className={cn(
-                    'rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent',
+                    'min-h-11 min-w-11 md:min-h-0 md:min-w-0 rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent',
                     selectedHour === h &&
                       'bg-primary text-primary-foreground hover:bg-primary/90',
                   )}
@@ -77,11 +80,12 @@ export function TimePicker({
                 <button
                   key={m}
                   type="button"
+                  aria-label={t('timePicker.selectMinute', { minute: m })}
                   onClick={() =>
                     selectTime(selectedHour || '09', m)
                   }
                   className={cn(
-                    'rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent',
+                    'min-h-11 min-w-11 md:min-h-0 md:min-w-0 rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-accent',
                     selectedMinute === m &&
                       'bg-primary text-primary-foreground hover:bg-primary/90',
                   )}

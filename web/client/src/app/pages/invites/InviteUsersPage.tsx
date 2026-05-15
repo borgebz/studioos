@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -8,10 +10,12 @@ import {
   X,
   ArrowRight,
 } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { apiClient } from '@/api/api-client'
-import type { RoleList, UserResponse } from '@/api/studioos-api'
+import type { BulkInviteFile, RoleList, UserResponse } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -25,29 +29,11 @@ import { CardSection } from '@/components/shared/CardSection'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function parseApiError(
-  err: unknown,
-  t: (key: string) => string,
-): string {
-  const httpErr = err as { error?: { errors?: Record<string, string[]> } }
-  const errors = httpErr?.error?.errors
-  if (!errors) return t('invites.inviteError')
-
-  const allMessages = Object.values(errors).flat()
-
-  for (const msg of allMessages) {
-    if (msg === 'CannotInviteRole') return t('invites.errorCannotInviteRole')
-    if (msg.toLowerCase().includes('valid email'))
-      return t('invites.errorInvalidEmail')
-    if (msg.toLowerCase().includes('already'))
-      return t('invites.errorAlreadyInvited')
-  }
-
-  return allMessages[0] ?? t('invites.inviteError')
-}
+import { parseApiError } from '@/lib/api-errors'
+import {
+  singleInviteSchema,
+  type SingleInviteFormValues,
+} from './invite-schema'
 
 export function InviteUsersPage() {
   const { t } = useTranslation()
@@ -56,9 +42,6 @@ export function InviteUsersPage() {
   const [roles, setRoles] = useState<RoleList[]>([])
   const rolesLoaded = useRef(false)
 
-  const [email, setEmail] = useState('')
-  const [emailError, setEmailError] = useState('')
-  const [role, setRole] = useState('')
   const [sending, setSending] = useState(false)
   const [invitedUsers, setInvitedUsers] = useState<UserResponse[]>([])
 
@@ -70,46 +53,40 @@ export function InviteUsersPage() {
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<SingleInviteFormValues>({
+    resolver: zodResolver(singleInviteSchema),
+    defaultValues: { email: '', role: '' },
+    mode: 'onBlur',
+  })
+
   useEffect(() => {
     if (rolesLoaded.current) return
     rolesLoaded.current = true
-    apiClient.api.apiRolesList().then((res) => {
+    apiClient.api.rolesList().then((res) => {
       setRoles(res.data)
-    })
+    }).catch(() => null)
   }, [])
 
   const allInvited = [...invitedUsers, ...(bulkResult?.users ?? [])]
 
-  const validateEmail = (value: string) => {
-    if (!value) {
-      setEmailError('')
-      return false
-    }
-    if (!EMAIL_RE.test(value)) {
-      setEmailError(t('invites.errorInvalidEmail'))
-      return false
-    }
-    setEmailError('')
-    return true
-  }
-
-  const isFormValid = EMAIL_RE.test(email) && !!role
-
-  const handleSingleInvite = async () => {
-    if (!validateEmail(email) || !role) {
-      if (!role) toast.error(t('invites.missingFields'))
-      return
-    }
+  const onSingleInvite = async (data: SingleInviteFormValues) => {
     setSending(true)
     try {
-      const res = await apiClient.api.apiAccountsInvitesCreate({ email, role })
+      const res = await apiClient.api.accountsInvitesCreate({
+        email: data.email,
+        role: data.role,
+      })
       setInvitedUsers((prev) => [res.data, ...prev])
-      setEmail('')
-      setRole('')
-      setEmailError('')
-      toast.success(t('invites.inviteSent', { email }))
+      reset()
+      toast.success(t('invites.inviteSent', { email: data.email }))
     } catch (err) {
-      toast.error(parseApiError(err, t))
+      toast.error(parseApiError(err, t, 'invites.inviteError') ?? t('invites.inviteError'))
     } finally {
       setSending(false)
     }
@@ -124,31 +101,16 @@ export function InviteUsersPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const baseUrl =
-        import.meta.env.VITE_STUDIOOS_API_BASE_URL?.replace(/\/$/, '') ?? ''
-      const res = await fetch(`${baseUrl}/api/accounts/invites/bulk/`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        const errors = body?.errors as Record<string, string[]> | undefined
-        if (errors) {
-          const messages = Object.values(errors).flat()
-          toast.error(messages.join('. ') || t('invites.bulkError'))
-        } else {
-          toast.error(t('invites.bulkError'))
-        }
-        return
-      }
-      const data = await res.json()
-      setBulkResult(data.data)
+      const res = await apiClient.api.accountsInvitesBulkCreate(
+        formData as unknown as BulkInviteFile,
+      )
+      const bulkData = res.data.data
+      setBulkResult(bulkData)
       setFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
-      toast.success(t('invites.bulkSuccess', { count: data.data.count }))
-    } catch {
-      toast.error(t('invites.bulkError'))
+      toast.success(t('invites.bulkSuccess', { count: bulkData.count }))
+    } catch (err) {
+      toast.error(parseApiError(err, t, 'invites.bulkError') ?? t('invites.bulkError'))
     } finally {
       setUploading(false)
     }
@@ -186,52 +148,55 @@ export function InviteUsersPage() {
           title={t('invites.singleTitle')}
           description={t('invites.singleDesc')}
         >
-          <div className="space-y-2">
+          <form onSubmit={handleSubmit(onSingleInvite)} className="space-y-2">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
               <div className="flex-1">
+                <Label htmlFor="invite-email" className="sr-only">{t('invites.emailLabel')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
+                    id="invite-email"
                     type="email"
                     placeholder={t('invites.emailPlaceholder')}
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value)
-                      if (emailError) validateEmail(e.target.value)
-                    }}
-                    onBlur={() => validateEmail(email)}
-                    className={`pl-10 ${emailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSingleInvite()
-                    }}
+                    className={`pl-10 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    {...register('email')}
                   />
                 </div>
-                {emailError && (
-                  <p className="mt-1 text-sm text-destructive">{emailError}</p>
+                {errors.email && (
+                  <p className="mt-1 text-sm text-destructive">
+                    {t(errors.email.message ?? '')}
+                  </p>
                 )}
               </div>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue placeholder={t('invites.selectRole')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((r) => (
-                    <SelectItem key={r.code} value={r.code}>
-                      {r.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="invite-role" className="sr-only">{t('invites.roleLabel')}</Label>
+              <Controller
+                name="role"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="invite-role" className="w-full sm:w-[160px]">
+                      <SelectValue placeholder={t('invites.selectRole')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((r) => (
+                        <SelectItem key={r.code} value={r.code}>
+                          {r.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               <Button
-                onClick={handleSingleInvite}
-                disabled={sending || !isFormValid}
+                type="submit"
+                disabled={sending || !isValid}
                 className="gap-2"
               >
                 {sending ? t('invites.sending') : t('invites.send')}
                 {!sending && <ArrowRight className="size-4" />}
               </Button>
             </div>
-          </div>
+          </form>
         </CardSection>
 
         {/* ── OR divider ── */}
@@ -264,6 +229,7 @@ export function InviteUsersPage() {
                   </span>
                   <button
                     type="button"
+                    aria-label={t('invites.removeFile')}
                     onClick={() => {
                       setFile(null)
                       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -305,21 +271,34 @@ export function InviteUsersPage() {
 
         {/* ── Invite list ── */}
         {hasInvites && (
-          <div className="pt-2">
-            <p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              {t('invites.listTitle')}
-            </p>
-            <div className="divide-y divide-border">
-              {allInvited.map((u) => (
-                <div key={u.id} className="flex items-center justify-between py-2.5">
-                  <span className="truncate text-sm">{u.email}</span>
-                  <span className="ml-4 shrink-0 text-xs text-muted-foreground">
-                    {u.role?.[0]?.name ?? '—'}
-                  </span>
-                </div>
-              ))}
+          <CardSection title={t('invites.listTitle')}>
+            <div className="-mx-6 -mb-6">
+              {allInvited.map((u, i) => {
+                const initial = (u.email?.[0] ?? '?').toUpperCase()
+                const roleName = u.role?.[0]?.name ?? '—'
+                return (
+                  <div
+                    key={u.id}
+                    className={`flex items-center gap-4 px-6 py-4 ${i < allInvited.length - 1 ? 'border-b border-border' : ''}`}
+                  >
+                    <Avatar size="sm">
+                      <AvatarFallback>{initial}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{u.email}</p>
+                      <p className="text-xs text-muted-foreground">{roleName}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      <span className="text-xs text-muted-foreground">
+                        {t('invites.sent')}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          </div>
+          </CardSection>
         )}
       </div>
     </PageLayout>

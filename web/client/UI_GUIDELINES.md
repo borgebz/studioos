@@ -197,6 +197,20 @@ Content:      Stacked card sections, each with a heading + description + control
 
 **Sizes:** Use `default` for page-level actions, `sm` for table/card-level actions, `icon` for icon-only buttons.
 
+### Icons
+
+- **All icons MUST come from [Lucide React](https://lucide.dev/)** (`lucide-react`). Never create inline `<svg>` elements for icons.
+- Import icons by name: `import { Plus, Trash2, ChevronLeft } from 'lucide-react'`.
+- Size: icons inside buttons inherit size via the button variant. Standalone icons use `className="size-4"` (16px) or `size-5` (20px).
+- When a design requires a custom decorative SVG that has no Lucide equivalent (e.g., brand illustrations, data visualization charts, complex silhouettes), extract it into a shared component in `src/components/shared/` — never inline it repeatedly. Example: `SubmitArrow.tsx`, `DancerSilhouette.tsx`.
+
+### Date & Time Inputs
+
+- **Never use native `<Input type="date">`, `<Input type="time">`, or `<Input type="datetime-local">`**. These render inconsistently across browsers and don't match the design system.
+- For dates: use the custom `DatePicker` component (`@/components/shared/DatePicker`).
+- For times: use the custom `TimePicker` component (`@/components/shared/TimePicker`).
+- Both components are styled to match the design system, support dark mode, and meet accessibility requirements.
+
 ### Inputs & Forms
 
 - Always use floating labels or top-aligned labels (label above input, like Saleor).
@@ -210,13 +224,14 @@ Content:      Stacked card sections, each with a heading + description + control
 
 ### Tables
 
-- Use the shadcn `Table` component.
-- Header row: `text-sm font-medium text-muted-foreground`, uppercase or sentence case.
+- Use the `DataTable` component backed by TanStack React Table.
+- Header row: `text-xs font-medium text-muted-foreground`, sentence case (no uppercase).
 - Body rows: `text-sm`, hover state `hover:bg-muted/50`.
 - Clickable rows: `cursor-pointer` + navigate on click.
-- Checkbox column: first column, `w-[40px]`.
-- Actions column: last column, right-aligned, icon buttons (`ghost` variant, `icon-sm` size).
-- Pagination: below table, right-aligned, "No. of rows" select + page arrows.
+- Checkbox column: first column, `w-[40px]`, use `getSelectionColumn<T>()`.
+- **Actions column:** last column, `size: 48`, sr-only header. Use a single `MoreHorizontal` (⋯) icon inside a `ghost` `icon` Button as `DropdownMenuTrigger`. Menu items use icon + label; destructive items get `className="text-destructive"`. Gate the entire dropdown behind a permission check (`usePermissions().can(…)`), and conditionally render individual items based on domain state.
+- Pagination: prefer infinite scroll via `usePaginatedList` + `useInfiniteScroll`. `DataTable` accepts `hasNextPage`, `isFetchingNextPage`, and `onLoadMore` props.
+- Fill-height layout: pass `fillHeight` to pin the header and scroll the body within the parent.
 
 ### Cards (Content Sections)
 
@@ -228,8 +243,9 @@ Content:      Stacked card sections, each with a heading + description + control
 
 ### Badges / Status
 
-- Use `Badge` for status indicators (active, pending, cancelled, etc.).
-- Status colors: define a consistent mapping:
+- **One colored badge per row, max.** Status is the column that earns color and shape. Other enums (type, kind, role, source, category) render as plain `text-sm text-muted-foreground` — never as colored badges. Multiple colored badges on the same row creates visual noise.
+- Use `Badge` only for **status** indicators (active, pending, cancelled, etc.).
+- Status colors — consistent mapping:
   - **Active / Published / Completed**: `bg-emerald-100 text-emerald-800` (light) / `bg-emerald-900/30 text-emerald-400` (dark)
   - **Pending / Scheduled / Draft**: `bg-amber-100 text-amber-800` (light) / `bg-amber-900/30 text-amber-400` (dark)
   - **Cancelled / Rejected / Error**: `bg-red-100 text-red-800` (light) / `bg-red-900/30 text-red-400` (dark)
@@ -256,13 +272,24 @@ Content:      Stacked card sections, each with a heading + description + control
 - Keep content to one short line.
 - Side: `top` by default, adjust to avoid viewport clipping.
 
-### Skeletons (Loading States)
+### Loading States
 
-- Every page must have a loading state using `Skeleton`.
+Two patterns, depending on context:
+
+| Situation | Component | Example |
+|-----------|-----------|---------|
+| **Loading data into a component** (list, form, card) | `Skeleton` shaped to match expected content | Fetching users → skeleton table rows |
+| **Full-page transition** (redirect, big reload, submission) | `FullPageLoader` (the animated SVG) | Submitting enrollment, auth redirect |
+
+**Skeleton rules:**
 - Match the skeleton shape to the expected content layout.
 - Table loading: skeleton rows with column widths matching the real data.
 - Card loading: skeleton lines for heading + 2-3 content lines.
-- Never show a blank page or a raw spinner.
+- Never show a blank page or a raw `animate-spin` spinner — those are not acceptable substitutes for Skeleton.
+
+**FullPageLoader rules:**
+- Use for transitions where the entire page is replaced (navigation after form submit, auth loading, onboarding completion).
+- Not for partial data loading within a visible page.
 
 ### Separators
 
@@ -371,12 +398,9 @@ The app uses a subtle dot grain texture on the main content area (not the sideba
 - Group keys by domain: `nav.*`, `coachings.*`, `enrollments.*`, `billing.*`, `events.*`, etc.
 - Pluralization: use i18next plural syntax when needed (`_one`, `_other` suffixes).
 
-### Brand Elements (English-only)
+### Brand Elements (not translated)
 
-Some elements are part of the brand identity and must remain in English regardless of locale. These are **not** translated via i18n:
-- The login page chip text: `"ADMIT ONE · STAGE DOOR"`
-- The login page footer tagline: `"— a small school for the moving body —"`
-- The brand name: `"StudioOS"`
+Some elements are part of the brand identity and are **not** translated via i18n. See §22 for the full list. Key examples: `"StudioOS"`, `"ADMIT ONE · STAGE DOOR"`, `"— a small school for the moving body —"`, `"◐ EST. MMXIV"`, `"BRAGA"`, `"PORTUGAL"`.
 
 ### Design System Pages (exempt from i18n)
 
@@ -386,11 +410,37 @@ Design system showcase pages (`src/app/pages/design-system/`) are **dev-facing o
 
 ## 10. API Integration & Data Fetching
 
-Pages use the auto-generated API client (`src/api/studioos-api.ts`) via `apiClient.api.*` methods. Pages that don't have their API endpoints ready yet may use temporary mock data in `src/mocks/` with realistic Portuguese names — never "test123" or "Lorem ipsum".
+**All API communication MUST go through the auto-generated API client** (`src/api/studioos-api.ts`). This is non-negotiable.
+
+### The Golden Rule
+
+- **NEVER use raw `fetch()`, `axios`, `XMLHttpRequest`, or any other HTTP client directly.** Every request — GET, POST, PUT, PATCH, DELETE — must use `apiClient.*` methods.
+- The API client handles base URL configuration, cookie-based authentication (httpOnly cookies), automatic session refresh, and typed request/response contracts. Bypassing it means losing all of that.
+- If the generated client is missing an endpoint, **regenerate the client** (`npm run generate-client`) — do not work around it with raw `fetch`.
+- If the endpoint exists but the generated method signature is wrong (e.g., missing body type, wrong return type), fix the `@extend_schema` decorator in the API repo and regenerate — do not patch it with raw requests.
+- **File uploads** that require `multipart/form-data` also go through the API client. The generated client supports this via its `RequestParams` options. Use `apiClient.api.someUploadEndpoint(data, { headers: { 'Content-Type': 'multipart/form-data' } })` or pass a `FormData` body directly.
+
+### API Client Namespace
+
+All endpoints live under a single `apiClient.api` namespace. Method names are prefixed by domain:
+
+| Domain | Method prefix | Examples |
+|--------|--------------|----------|
+| Core | `api*` | `apiCoachingsCreate()`, `apiAccountsUsersList()`, `apiRolesList()` |
+| Inventory | `inventory*` | `inventoryCategoriesList()`, `inventoryColorsCreate()`, `inventoryProductsRetrieve()` |
+| Marketplace | `marketplace*` | `marketplaceSchoolListingsCreate()`, `marketplaceListingsRetrieve()` |
+
+```tsx
+await apiClient.api.apiCoachingsCreate(payload)
+await apiClient.api.inventoryCategoriesList()
+await apiClient.api.marketplaceSchoolListingsCreate(payload)
+```
+
+Pages that don't have their API endpoints ready yet may use temporary mock data in `src/mocks/` with realistic Portuguese names — never "test123" or "Lorem ipsum".
 
 ### Data Fetching Rules
 
-- Use `apiClient.api.*` methods directly in page components via `useEffect`.
+- Use `apiClient.*` methods directly in page components via `useEffect`.
 - **Prevent duplicate requests from React StrictMode:** Use a `useRef` guard to ensure the effect only runs once:
 
 ```tsx
@@ -400,8 +450,8 @@ useEffect(() => {
   dataLoaded.current = true
   const load = async () => {
     const [res1, res2] = await Promise.all([
-      apiClient.api.modalitiesList().catch(() => null),
-      apiClient.api.studiosList().catch(() => null),
+      apiClient.api.apiModalitiesList().catch(() => null),
+      apiClient.api.apiStudiosList().catch(() => null),
     ])
     if (res1?.data) setModalities(res1.data)
     if (res2?.data) setStudios(res2.data)
@@ -473,8 +523,15 @@ src/
 │       ├── DataTable.tsx    # Reusable table wrapper
 │       ├── StatusBadge.tsx  # Status → badge color mapping
 │       ├── EmptyState.tsx   # Empty list placeholder
-│       ├── CardSection.tsx  # Card with heading + children
+│       ├── CardSection.tsx   # Card with heading + children
+│       ├── ImageCropDialog.tsx # Reusable image crop modal
 │       └── ...
+├── auth/                   # Authentication & authorization
+│   ├── auth-context.ts     # AuthContextValue type + React context
+│   ├── AuthContext.tsx      # AuthProvider (token refresh, login/logout)
+│   ├── useAuth.ts           # useAuth() hook
+│   ├── permissions.ts       # usePermissions(), <Authorized>, <ProtectedRoute>
+│   └── nav-config.ts        # Sidebar navigation map with permission declarations
 ├── hooks/                  # Custom hooks (useMock*, useDebounce, etc.)
 ├── mocks/                  # Mock data files
 ├── api/                    # Auto-generated API client (do not edit)
@@ -682,8 +739,566 @@ Public pages use a full-width `<main>` with grain, structured as sibling childre
 
 - All interactive elements must be keyboard navigable.
 - Focus rings use `ring` color variable — visible in both themes.
-- Icon-only buttons must have `aria-label` or a wrapping `Tooltip`.
-- Form inputs must have associated `Label` components (using `htmlFor`).
+- Icon-only buttons must have `aria-label` (not `title`) or a wrapping `Tooltip`. The `aria-label` is the required accessible name — `title` is unreliable for screen readers.
+- **`aria-label` values must use `t()`** — they are screen-reader-facing text and follow the same i18n rules as visible text. Never hardcode English strings in aria attributes.
+- Form inputs must have associated `Label` components (using `htmlFor`/`id`). This applies equally to `Input`, `Select`, `Switch`, `Checkbox`, and `RadioGroup`.
+- Custom picker components (TimePicker, DatePicker, color pickers) must provide `aria-label` on all selectable items (e.g., `t('timePicker.selectHour', { hour })`).
 - Status badges must not rely on color alone — include text labels.
 - Tables must use proper `<thead>`, `<tbody>`, `<th scope="col">` structure (shadcn Table handles this).
 - Modals must trap focus and be dismissible with `Escape`.
+
+---
+
+## 20. Destructive Action Dialogs
+
+Destructive `AlertDialogAction` buttons must use the `asChild` + `Button variant="destructive"` pattern. Never hardcode `bg-destructive text-white`:
+
+```tsx
+// ✅ Correct
+<AlertDialogAction asChild>
+  <Button variant="destructive">{t('common.delete')}</Button>
+</AlertDialogAction>
+
+// ❌ Wrong — hardcoded colors bypass theme
+<AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90">
+  {t('common.delete')}
+</AlertDialogAction>
+```
+
+---
+
+## 21. Toast Notifications
+
+We use **Sonner** (`toast` from `sonner`) for all toast notifications. The `<Toaster>` is mounted once in `App.tsx` with `position="top-right"`.
+
+### Import
+
+```tsx
+import { toast } from 'sonner'
+```
+
+### Variants and when to use them
+
+| Variant | When | Example |
+|---|---|---|
+| `toast.success(msg)` | API mutation succeeded | `toast.success(t('account.saved'))` |
+| `toast.error(msg)` | API call failed | `toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))` |
+| `toast.warning(msg)` | Client-side validation (not form errors) | `toast.warning(t('account.photoTooLarge'))` |
+
+### Rules
+
+- **Always use i18n keys** — never hardcode English strings in toasts.
+- **API errors go through `parseApiError`** — it translates PascalCase codes and passes DRF strings through. Always provide a fallback: `parseApiError(err, t) ?? t('common.unexpectedError')`.
+- **Client-side validation** (file size, file type, etc.) uses `toast.warning`, not `toast.error`. Reserve `error` for actual failures.
+- **Form field errors use `form.setError()`**, not toasts. Use `parseApiFieldErrors` for API field errors. Only use `toast.error` for non-field errors (general messages).
+- **Success toasts are brief** — one short sentence: `t('coachings.createSuccess')`. No description needed for simple confirmations.
+
+```tsx
+// ✅ Correct — API error with parseApiError + fallback
+catch (err) {
+  toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+}
+
+// ✅ Correct — client-side validation with warning
+if (file.size > maxSize) {
+  toast.warning(t('account.photoTooLarge'))
+  return
+}
+
+// ✅ Correct — success after mutation
+toast.success(t('account.saved'))
+
+// ❌ Wrong — hardcoded English
+toast.error('Something went wrong')
+
+// ❌ Wrong — using toast for form field errors
+toast.error('Email is required')  // → use form.setError('email', ...)
+```
+
+---
+
+## 22. Currency & Locale
+
+### Currency Display
+
+Always use `t('common.currencySymbol')` for currency symbols. Never hardcode `€`, `$`, or any currency character in JSX.
+
+### Date Formatting
+
+All date formatting uses **Portuguese locale** (`pt` from `date-fns/locale/pt`). This is a business decision — the platform operates in Portugal and dates must always display in Portuguese format (e.g., "14 de maio de 2026"), regardless of the user's UI language setting.
+
+```tsx
+import { format } from 'date-fns'
+import { pt } from 'date-fns/locale/pt'
+
+format(date, 'dd/MM/yyyy', { locale: pt })
+format(date, "d 'de' MMMM", { locale: pt })
+```
+
+---
+
+## 22. Auth Page Patterns
+
+### Shared CSS Classes
+
+Auth pages (Login, Onboarding, Password Reset, Enrollment) share brand typography defined in `index.css`:
+
+| Class | Usage |
+|-------|-------|
+| `.auth-heading` | Base: Georgia serif, weight 500, line-height 1.0, letter-spacing -0.012em |
+| `.auth-heading-xl` | Hero: `clamp(56px, 8vw, 96px)` |
+| `.auth-heading-lg` | Large: `clamp(42px, 5.5vw, 64px)` |
+| `.auth-heading-md` | Medium: `clamp(36px, 4vw, 48px)` |
+| `.auth-heading-sm` | Small: `clamp(32px, 4vw, 48px)` |
+| `.auth-heading-xs` | Extra small: `clamp(28px, 3.5vw, 40px)` |
+| `.auth-wordmark` | Italic Georgia for "StudioOS" wordmark |
+
+**Never use inline `style={{}}` for brand heading typography.** Use the CSS classes:
+
+```tsx
+// ✅ Correct
+<h1 className="auth-heading auth-heading-xl text-foreground">Welcome</h1>
+<span className="auth-wordmark text-primary">StudioOS</span>
+
+// ❌ Wrong — duplicated inline styles
+<h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 500, fontSize: 'clamp(56px, 8vw, 96px)', lineHeight: 1.1 }}>
+```
+
+### Brand Decorative Elements
+
+These elements are part of brand identity and are NOT translated via i18n:
+- `"ADMIT ONE · STAGE DOOR"` — login page chip
+- `"— a small school for the moving body —"` — login page tagline
+- `"StudioOS"` — brand name
+- `"◐ EST. MMXIV"` — establishment mark
+- `"BRAGA"`, `"PORTUGAL"` — location identifiers
+- `"SEASON  XXIV — XXV"` — season mark
+
+---
+
+## 23. Code Quality Rules
+
+### Shared Utility Extraction
+
+When the same logic appears in 2+ files, extract it to `src/lib/`. Common examples:
+
+| Utility | File | Usage |
+|---------|------|-------|
+| `getInitials(name)` | `src/lib/user-utils.ts` | Avatar fallback initials |
+| `formatCurrency(amount)` | `src/lib/format-utils.ts` | Price display |
+| `resizeImageFile(file)` | `src/lib/image-resize.ts` | Client-side image resizing |
+| `getCroppedImageFile(src, crop)` | `src/lib/image-resize.ts` | Extract cropped region as JPEG |
+
+Never copy-paste utility functions between components.
+
+### Module-Level Mutable State
+
+Never use module-level `let` variables as counters or ID generators (e.g., `let nextId = 0`). They persist across hot reloads and can cause ID collisions. Use `crypto.randomUUID()`, `useId()`, or `useRef` instead.
+
+### Non-Null Assertions
+
+Avoid TypeScript `!` non-null assertions on `.find()` results. Use optional chaining with fallbacks:
+
+```tsx
+// ✅ Correct
+const teacher = teachers.find((t) => t.id === id)
+if (!teacher) return
+
+// ❌ Wrong — crashes if not found
+const teacher = teachers.find((t) => t.id === id)!
+```
+
+### File Naming Convention
+
+| Type | Convention | Example |
+|------|-----------|---------|
+| React components | PascalCase `.tsx` | `PageHeader.tsx`, `AuthContext.tsx` |
+| Hooks | camelCase starting with `use` `.ts` | `useAuth.ts`, `useDateLocale.ts` |
+| Utilities, configs, non-component | kebab-case `.ts` | `api-client.ts`, `user-utils.ts` |
+
+---
+
+## 24. Routing
+
+### Catch-All Route
+
+The router must include a `<Route path="*">` catch-all. Unmatched URLs must never render a blank page.
+
+### Layout Groups
+
+Use React Router nested routes with `<Outlet>` for pages sharing a layout. Never wrap each route individually in the same layout component:
+
+```tsx
+// ✅ Correct — nested route with outlet
+<Route element={<DesignSystemLayout />}>
+  <Route path={paths.dsButtons} element={<ButtonsPage />} />
+  <Route path={paths.dsBadges} element={<BadgePage />} />
+</Route>
+
+// ❌ Wrong — repeated wrapper
+<Route path={paths.dsButtons} element={<DesignSystemLayout><ButtonsPage /></DesignSystemLayout>} />
+<Route path={paths.dsBadges} element={<DesignSystemLayout><BadgePage /></DesignSystemLayout>} />
+```
+
+---
+
+## 25. Form & Request Handling
+
+### When to Use react-hook-form + zod
+
+Any form that **submits data to the API** must use `react-hook-form` with a `zod` schema for validation. This includes create, update, login, password reset, onboarding, and enrollment flows.
+
+Use plain `useState` only for **UI-only state**: filters, search queries, toggles, modal open/close, tab selection, pagination — anything that never leaves the browser.
+
+```tsx
+// ✅ Correct — form submitting to API uses react-hook-form + zod
+const schema = z.object({
+  name: z.string().min(1, t('validation.required')),
+  email: z.string().email(t('validation.invalidEmail')),
+  password: z.string().min(8, t('validation.passwordMin')),
+})
+type FormData = z.infer<typeof schema>
+
+const form = useForm<FormData>({ resolver: zodResolver(schema) })
+
+const onSubmit = form.handleSubmit(async (data) => {
+  // data is fully typed and validated
+  await apiClient.api.apiSomeEndpoint(data)
+})
+
+// ❌ Wrong — manual useState for form fields
+const [name, setName] = useState('')
+const [email, setEmail] = useState('')
+// ... 20 more useState calls
+```
+
+### Schema File Convention
+
+Each form page has a co-located schema file: `page-name-schema.ts`. The schema exports the zod object, the inferred type, and (for complex forms) default values:
+
+```
+pages/
+  LoginPage/
+    LoginPage.tsx
+    login-schema.ts          ← z.object + type
+  coachings/
+    CreateCoachingPage.tsx
+    create-coaching-schema.ts ← z.object + type + defaults
+```
+
+### Controller vs register
+
+- **`register()`** — for native HTML inputs: `<Input>`, `<Textarea>`. Directly spread: `{...register('field')}`.
+- **`Controller`** — for non-native components: `<Select>`, `<Switch>`, `<DatePicker>`, `<TimePicker>`, `<RadioGroup>`, `<TreeSelect>`, `<Checkbox>`. Wire via `field.value`/`field.onChange`.
+
+```tsx
+// register for Input
+<Input id="name" {...register('name')} />
+
+// Controller for Select
+<Controller
+  name="role"
+  control={control}
+  render={({ field }) => (
+    <Select value={field.value} onValueChange={field.onChange}>
+      <SelectTrigger id="role"><SelectValue /></SelectTrigger>
+      <SelectContent>...</SelectContent>
+    </Select>
+  )}
+/>
+```
+
+### File Uploads with FormData
+
+When a form includes a file upload, use RHF+zod for all **text fields** and keep the `File` object in a separate `useState`. On submit, build `FormData` from the RHF data + file state.
+
+The generated API client already uses `ContentType.FormData` for all file-upload endpoints — no manual `Content-Type` header needed. This is guaranteed by the API's `parser_classes = [MultiPartParser]` on views with file fields, which makes drf-spectacular advertise only `multipart/form-data` in the OpenAPI schema.
+
+```tsx
+const [photoFile, setPhotoFile] = useState<File | null>(null)
+const { register, handleSubmit } = useForm<FormValues>({...})
+
+const onSubmit = async (data: FormValues) => {
+  if (photoFile) {
+    const fd = new FormData()
+    fd.append('display_name', data.display_name)
+    fd.append('photo', photoFile)
+    // Cast FormData to the generated type — the client handles it correctly
+    await apiClient.api.someEndpoint(fd as unknown as Payload)
+  } else {
+    await apiClient.api.someEndpoint(data as unknown as Payload)
+  }
+}
+```
+
+**API-side rule:** Any DRF view that accepts file uploads must set `parser_classes = [MultiPartParser]` (not the default `[JSONParser, FormParser, MultiPartParser]`). This ensures drf-spectacular only emits `multipart/form-data` in the OpenAPI schema, so `swagger-typescript-api` generates `ContentType.FormData` instead of `ContentType.Json`. Without this, the generated client calls `JSON.stringify()` on the body, which destroys `FormData` objects.
+
+### Image Cropping
+
+For image uploads where the user should choose the best framing (profile photos, cover images), use the `ImageCropDialog` component (`@/components/shared/ImageCropDialog`). It provides a pan-and-zoom crop modal powered by `react-easy-crop`.
+
+**Flow:** file input → validation → open crop dialog → user adjusts → confirm → receive cropped `File`.
+
+```tsx
+import { ImageCropDialog } from '@/components/shared/ImageCropDialog'
+
+const [cropSrc, setCropSrc] = useState<string | null>(null)
+const [photoFile, setPhotoFile] = useState<File | null>(null)
+const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+
+// 1. On file select — validate, then open the crop dialog
+const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  // ... validate size/type ...
+  setCropSrc(URL.createObjectURL(file))
+}
+
+// 2. On crop confirm — receive the cropped File
+const handleCropComplete = useCallback((croppedFile: File) => {
+  setCropSrc(null)
+  setPhotoFile(croppedFile)
+  setPhotoUrl(URL.createObjectURL(croppedFile))
+}, [])
+
+// 3. On cancel — close dialog
+const handleCropCancel = useCallback(() => {
+  setCropSrc(null)
+}, [])
+
+// 4. Render the dialog (opens when cropSrc is non-null)
+<ImageCropDialog
+  imageSrc={cropSrc}
+  onCropComplete={handleCropComplete}
+  onCancel={handleCropCancel}
+  outputSize={512}       // output square size in px
+  cropShape="round"      // "round" for avatars, "rect" for covers
+  aspect={1}             // width/height ratio (1 = square)
+/>
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `imageSrc` | `string \| null` | — | Object URL to crop. Dialog opens when non-null. |
+| `onCropComplete` | `(file: File) => void` | — | Called with the cropped JPEG `File`. |
+| `onCancel` | `() => void` | — | Called when dismissed. |
+| `outputSize` | `number` | `512` | Output square dimension in pixels. |
+| `cropShape` | `"round" \| "rect"` | `"round"` | Circular mask for avatars, rectangular for general. |
+| `aspect` | `number` | `1` | Aspect ratio (e.g., `16/9` for wide crops). |
+| `title` | `string` | `t('imageCrop.title')` | Dialog title override. |
+
+**Utilities** in `src/lib/image-resize.ts`:
+- `resizeImageFile(file, options)` — shrink an image to fit within `maxSize` px (no crop, preserves ratio). For non-interactive resizing.
+- `getCroppedImageFile(src, crop, outputSize)` — extract a pixel region from an image and return a JPEG `File`. Used internally by `ImageCropDialog`.
+```
+
+### Disabled / Read-Only Fields
+
+Fields that display data but aren't editable (e.g., email, name from the user object) should **read directly from the source** — never copy them into useState or RHF. Use `value={user?.email}` with `disabled readOnly`:
+
+```tsx
+// ✅ Read from source
+<Input value={user?.email ?? ''} disabled readOnly />
+
+// ❌ Wrong — copied into state
+const [email, setEmail] = useState(user?.email ?? '')
+<Input value={email} disabled />
+```
+
+### No Native HTML Validation
+
+Never use native HTML validation attributes: `required`, `minLength`, `maxLength`, `pattern`, `min`, `max` on `<Input>`. All validation must live in the zod schema. Native validation produces browser-default tooltips that are inconsistent, not translatable, and bypass our error UX.
+
+```tsx
+// ✅ Correct — validation in zod schema
+const schema = z.object({
+  password: z.string().min(8, t('validation.passwordMin')),
+})
+<Input {...form.register('password')} />
+
+// ❌ Wrong — native HTML validation
+<Input name="password" required minLength={8} />
+```
+
+### API Error Handling
+
+Use the shared utilities from `src/lib/api-errors.ts` to handle API errors. **Never show raw API error strings to the user** — they may be untranslated English from DRF field validation.
+
+#### API error structure
+
+The API returns all errors through a centralized exception handler. The generated client throws on non-OK responses, producing this shape:
+
+```
+thrown error → { error: { errors: { messages?: string[], [field]: string[] } } }
+```
+
+All **custom API error codes are PascalCase** (e.g., `"ParticipantAlreadyEnrolled"`, `"TokenExpired"`). These are i18n keys, not human strings. DRF may also produce **raw English strings** for built-in field validation (e.g., `"This field is required."`, `"Ensure this field has no more than 255 characters."`).
+
+#### Translation strategy
+
+Every PascalCase error code must have a corresponding translation key under `apiErrors.*`:
+
+```json
+{
+  "apiErrors": {
+    "InvalidCredentials": "Email or password incorrect.",
+    "ParticipantAlreadyEnrolled": "This student is already enrolled.",
+    "TokenExpired": "Your session has expired. Please sign in again."
+  }
+}
+```
+
+The `parseApiError` utility automatically detects PascalCase codes and translates them via `t('apiErrors.${code}')`. For raw DRF validation strings (e.g., `"This password is entirely numeric."`), it passes them through as-is — they are specific, actionable, and more useful than a generic fallback.
+
+#### Error handling pattern
+
+```tsx
+// ✅ Correct — use parseApiError with translation function
+catch (err) {
+  // 1. Try to map field errors to form fields
+  const fieldErrors = parseApiFieldErrors(err, t)
+  if (fieldErrors) {
+    for (const [field, message] of Object.entries(fieldErrors)) {
+      form.setError(field as keyof FormData, { message })
+    }
+    return
+  }
+
+  // 2. Show translated toast for non-field errors
+  toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+}
+
+// ❌ Wrong — generic catch-all
+catch {
+  toast.error(t('marketplace.createError'))
+}
+
+// ❌ Wrong — manually digging into the error structure
+catch (err) {
+  toast.error(err.error?.errors?.messages?.[0] ?? 'Something went wrong')
+}
+```
+
+#### What happens with unknown errors
+
+| Error type | Example | Frontend behavior |
+|---|---|---|
+| PascalCase code in `messages` | `"CannotInviteRole"` | `t('apiErrors.CannotInviteRole')` — specific translated message |
+| PascalCase code on field | `{"email": ["EmailAlreadyInUse"]}` | `form.setError('email', { message: t('apiErrors.EmailAlreadyInUse') })` |
+| Raw DRF on field | `{"password": ["This password is entirely numeric."]}` | `form.setError('password', { message: "This password is entirely numeric." })` — shown as-is, specific and actionable |
+| Raw DRF in `messages` | `{"messages": ["Some unexpected error."]}` | Shown as-is — still more useful than a generic fallback |
+| No parseable structure | Network error, timeout | `t('common.unexpectedError')` — generic fallback |
+
+#### Shared utility
+
+The utilities live in `src/lib/api-errors.ts`. Pages must import from there — never duplicate error parsing logic:
+
+- `parseApiError(err, t, fallbackKey?)` — returns the first error message (translated if PascalCase, as-is if raw DRF), or `null` if unparseable
+- `parseApiFieldErrors(err, t)` — returns `{ field: message }` map for `form.setError()` (translated if PascalCase, as-is if raw DRF)
+- `apiErrorContains(err, code)` — checks for a specific PascalCase code
+- `extractApiErrors(err)` — returns the raw errors map (for advanced cases)
+- `getApiErrorStatus(err)` — returns the HTTP status code
+
+---
+
+## 27. Permissions & RBAC
+
+The backend enforces permissions via `require_perm('app.codename')` decorators. The `GET /auth/me/` endpoint returns `permissions: string[]` in `app_label.codename` format. The frontend mirrors this with a thin permission layer that controls **what the user sees**, not what they can do (the API is the authority).
+
+### Core rule: check permissions, never roles
+
+```tsx
+// ✅ Correct — permission-based
+const { can } = usePermissions()
+if (can('coachings.can_schedule_coaching')) { ... }
+
+// ❌ Wrong — role-based
+if (user.role.includes('direction')) { ... }
+```
+
+Roles change; permissions are the contract.
+
+### `usePermissions()` hook
+
+Available from `@/auth/permissions`. Returns three checkers:
+
+```tsx
+const { can, canAny, canAll } = usePermissions()
+
+can('accounts.can_invite_user')                     // single check
+canAny('accounts.can_invite_user', 'accounts.can_list_users')  // OR
+canAll('enrollments.can_review_enrollment', 'enrollments.can_approve_enrollment')  // AND
+```
+
+### `<Authorized>` component
+
+Renders children only when the user holds the required permission. When an array is passed, **any** match suffices (OR logic):
+
+```tsx
+<Authorized permission="coachings.can_schedule_coaching">
+  <Button onClick={handleCreate}>Create coaching</Button>
+</Authorized>
+
+<Authorized permission={['marketplace.manage_school_listings', 'marketplace.view_productlisting']}>
+  <MarketplaceActions />
+</Authorized>
+```
+
+Use for buttons, cards, table columns, action menus — any UI element that should be hidden from unauthorized users.
+
+### `<ProtectedRoute>` component
+
+Route-level guard. Redirects to `/home` when the user lacks the permission:
+
+```tsx
+<Route
+  path={paths.invites}
+  element={
+    <ProtectedRoute permission="accounts.can_invite_user">
+      <InviteUsersPage />
+    </ProtectedRoute>
+  }
+/>
+```
+
+Every page behind a permission **must** have both:
+1. `<ProtectedRoute>` in `routes.tsx` (prevents direct URL access)
+2. Permission on the nav item in `nav-config.ts` (hides the sidebar link)
+
+### Navigation config (`nav-config.ts`)
+
+Single source of truth for sidebar structure. Each item can declare a `permission`:
+
+```ts
+{
+  to: paths.invites,
+  labelKey: 'nav.invites',
+  icon: UserPlus,
+  permission: 'accounts.can_invite_user',  // hidden if user lacks this
+}
+```
+
+Items without `permission` are always visible. Groups with zero visible children are hidden entirely. To add a new page to the sidebar, add an entry here — don't touch `AppSidebar.tsx`.
+
+### Adding a new protected page
+
+1. Add the route in `routes.tsx` wrapped in `<ProtectedRoute permission="...">`.
+2. Add the nav item in `nav-config.ts` with the matching `permission`.
+3. Use `<Authorized>` for any action buttons within the page that need finer-grained checks.
+
+### Current permission mapping
+
+| Page | Permission | Visible to |
+|---|---|---|
+| Home | *(none)* | everyone |
+| Calendar | `coachings.view_coachingclass` | direction, coordination, collaborator, teacher |
+| Create Coaching | `coachings.can_schedule_coaching` | direction, coordination |
+| Coaching Requests | `coachings.view_coachingclass` | direction, coordination, collaborator, teacher |
+| Enrollment | `enrollments.can_review_enrollment` | direction, coordination |
+| Marketplace | `marketplace.view_productlisting` | direction, coordination |
+| Create Listing | `marketplace.manage_school_listings` | direction, coordination |
+| Invites | `accounts.can_invite_user` | direction, coordination |
+| Account Settings | *(none)* | everyone |
+| Design System | *(none)* | everyone (dev tool) |

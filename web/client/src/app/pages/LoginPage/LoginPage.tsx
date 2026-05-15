@@ -1,9 +1,12 @@
-import { useId, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { paths } from '@/app/paths'
+import { SubmitArrow } from '@/components/shared/SubmitArrow'
 import { Sun, Moon } from 'lucide-react'
+import { parseApiError } from '@/lib/api-errors'
 import { useAuth } from '@/auth/useAuth'
 import { useTheme } from '@/theme/ThemeProvider'
 import { Button } from '@/components/ui/button'
@@ -11,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { FullPageLoader } from '@/components/shared/LogoLoader'
+import { loginSchema, type LoginFormValues } from './login-schema'
 import './LoginPage.css'
 
 type LoginLocationState = {
@@ -92,8 +96,6 @@ function Dancer({
 
 export function LoginPage() {
   const { t, i18n } = useTranslation()
-  const emailId = useId()
-  const passwordId = useId()
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, login } = useAuth()
@@ -111,8 +113,16 @@ export function LoginPage() {
     localStorage.setItem('i18nextLng', next)
   }
 
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
 
   const locationState = location.state as LoginLocationState | null
   const redirectTo = locationState?.from?.pathname ?? paths.home
@@ -123,22 +133,14 @@ export function LoginPage() {
     return <Navigate to={redirectTo} replace />
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError(null)
-    setIsSubmitting(true)
-
-    const formData = new FormData(event.currentTarget)
-    const email = String(formData.get('email') ?? '')
-    const password = String(formData.get('password') ?? '')
+  const onSubmit = async (data: LoginFormValues) => {
+    setSubmitError(null)
 
     try {
-      await login({ email, password })
+      await login({ email: data.email, password: data.password })
       navigate(redirectTo, { replace: true })
-    } catch {
-      setError(t('auth.login.error'))
-    } finally {
-      setIsSubmitting(false)
+    } catch (err) {
+      setSubmitError(parseApiError(err, t, 'auth.login.error') ?? t('auth.login.error'))
     }
   }
 
@@ -177,7 +179,10 @@ export function LoginPage() {
             </div>
 
             {/* Side text */}
-            <div className="login-side-text text-[10.5px] uppercase tracking-[0.32em]" style={{ color: 'var(--login-panel-text)', opacity: 0.5}}>
+            <div
+              className="login-side-text text-[10.5px] uppercase tracking-[0.32em]"
+              style={{ color: 'var(--login-panel-text)', opacity: 0.5 }}
+            >
               SEASON&nbsp;&nbsp;XXIV — XXV
             </div>
 
@@ -206,24 +211,28 @@ export function LoginPage() {
 
             {/* Wordmark */}
             <div className="flex flex-col items-center gap-2.5 text-center">
-              <span className="text-[10.5px] uppercase tracking-[0.42em]" style={{ color: 'var(--login-panel-text)', opacity: 0.65 }}>
+              <span
+                className="text-[10.5px] uppercase tracking-[0.42em]"
+                style={{ color: 'var(--login-panel-text)', opacity: 0.65 }}
+              >
                 {t('auth.login.brandSubtitle')}
               </span>
               <h1
+                className="auth-heading auth-heading-xl"
                 style={{
-                  fontFamily: "Georgia, 'Times New Roman', serif",
-                  fontStyle: 'italic',
-                  fontWeight: 500,
-                  fontSize: 'clamp(56px, 8vw, 96px)',
                   lineHeight: 0.95,
                   letterSpacing: '-0.01em',
                   margin: 0,
                   color: 'var(--primary)',
+                  fontStyle: 'italic',
                 }}
               >
                 StudioOS
               </h1>
-              <div className="flex items-center gap-3.5 text-[11px] uppercase tracking-[0.36em]" style={{ color: 'var(--login-panel-text)', opacity: 0.7 }}>
+              <div
+                className="flex items-center gap-3.5 text-[11px] uppercase tracking-[0.36em]"
+                style={{ color: 'var(--login-panel-text)', opacity: 0.7 }}
+              >
                 <span>BRAGA</span>
                 <span className="inline-block h-1 w-1 rounded-full bg-current" />
                 <span>PORTUGAL</span>
@@ -231,7 +240,10 @@ export function LoginPage() {
             </div>
 
             {/* Bottom meta */}
-            <div className="mt-8 flex justify-between text-[10.5px] uppercase tracking-[0.18em]" style={{ color: 'var(--login-panel-text)' }}>
+            <div
+              className="mt-8 flex justify-between text-[10.5px] uppercase tracking-[0.18em]"
+              style={{ color: 'var(--login-panel-text)' }}
+            >
               <span>{t('auth.login.marqueeHours')}</span>
               <span>{t('auth.login.marqueeAddress')}</span>
             </div>
@@ -251,19 +263,27 @@ export function LoginPage() {
                 type="button"
                 variant="ghost"
                 size="icon-xs"
+                className="min-h-11 min-w-11 md:min-h-0 md:min-w-0"
                 onClick={toggleLang}
-                aria-label="Toggle language"
+                aria-label={t('nav.toggleLanguage')}
               >
-                <span className="text-[10px] font-medium uppercase">{currentLang}</span>
+                <span className="text-[10px] font-medium uppercase">
+                  {currentLang}
+                </span>
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-xs"
+                className="min-h-11 min-w-11 md:min-h-0 md:min-w-0"
                 onClick={toggleTheme}
-                aria-label="Toggle theme"
+                aria-label={t('nav.toggleTheme')}
               >
-                {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+                {theme === 'dark' ? (
+                  <Sun className="size-3.5" />
+                ) : (
+                  <Moon className="size-3.5" />
+                )}
               </Button>
             </div>
           </div>
@@ -274,28 +294,15 @@ export function LoginPage() {
               {/* Header */}
               <div className="mb-7">
                 <div className="mb-4 flex items-center gap-3 text-[10.5px] uppercase tracking-[0.28em] text-primary">
-                  <span
-                    className="text-[17px] lowercase tracking-normal"
-                    style={{
-                      fontFamily: 'Georgia, serif',
-                      fontStyle: 'italic',
-                    }}
-                  >
+                  <span className="auth-wordmark text-[17px] lowercase tracking-normal">
                     01.
                   </span>
                   <span>{t('auth.login.overline')}</span>
                   <span className="h-px flex-1 bg-border" />
                 </div>
                 <h2
-                  className="mb-3.5"
-                  style={{
-                    fontFamily: "Georgia, 'Times New Roman', serif",
-                    fontWeight: 500,
-                    fontSize: 'clamp(40px, 4.4vw, 56px)',
-                    lineHeight: 1.0,
-                    letterSpacing: '-0.012em',
-                    margin: 0,
-                  }}
+                  className="auth-heading auth-heading-md mb-3.5"
+                  style={{ margin: 0 }}
                 >
                   {t('auth.login.heroTitle_1')}
                   {t('auth.login.heroTitle_em') && (
@@ -315,81 +322,93 @@ export function LoginPage() {
               {/* Form */}
               <form
                 className="flex flex-col gap-5"
-                method="post"
-                action="/login"
-                onSubmit={handleSubmit}
+                onSubmit={handleSubmit(onSubmit)}
               >
-                <input type="hidden" name="username" autoComplete="username" aria-hidden="true" />
+                <input
+                  type="hidden"
+                  name="username"
+                  autoComplete="username"
+                  aria-hidden="true"
+                />
                 <div className="space-y-2">
-                  <Label htmlFor={emailId}>Email</Label>
+                  <Label htmlFor="email">{t('auth.login.emailLabel')}</Label>
                   <Input
-                    id={emailId}
-                    name="email"
+                    id="email"
                     type="email"
                     placeholder="matilde@studioos.dev"
                     autoComplete="username email"
-                    required
+                    className="bg-background dark:bg-background"
+                    {...register('email')}
                   />
+                  {errors.email && (
+                    <p className="text-sm text-destructive">
+                      {t(errors.email.message ?? '')}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={passwordId}>Password</Label>
+                  <Label htmlFor="password">
+                    {t('auth.login.passwordLabel')}
+                  </Label>
                   <Input
-                    id={passwordId}
-                    name="password"
+                    id="password"
                     type="password"
                     placeholder="••••••••"
                     autoComplete="current-password"
-                    required
+                    className="bg-background dark:bg-background"
+                    {...register('password')}
                   />
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto p-0"
+                      onClick={() => navigate(paths.forgotPassword)}
+                    >
+                      {t('auth.login.forgotPassword')}
+                    </Button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-sm text-destructive">
+                      {t(errors.password.message ?? '')}
+                    </p>
+                  )}
                 </div>
 
-                {error && (
+                {submitError && (
                   <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {error}
+                    {submitError}
                   </p>
                 )}
-
-                <div className="flex justify-end">
-                  <Button type="button" variant="link">
-                    {t('auth.login.forgotPassword')}
-                  </Button>
-                </div>
 
                 <Button type="submit" size="lg" disabled={isSubmitting}>
                   {isSubmitting
                     ? t('auth.login.submitting')
                     : t('auth.login.submit')}
-                  {!isSubmitting && (
-                    <svg
-                      className="ml-2 h-3 w-6"
-                      viewBox="0 0 24 12"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M0 6 H22 M16 1 L22 6 L16 11"
-                        stroke="currentColor"
-                        strokeWidth="1.25"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
+                  {!isSubmitting && <SubmitArrow />}
                 </Button>
 
-                <Separator />
-
-                <div className="text-[13.5px] text-muted-foreground">
-                  <p>
-                    {t('auth.login.newUser')}{' '}
-                    <Button type="button" variant="link" className="px-0">
-                      {t('auth.login.requestAccess')}
-                    </Button>
-                  </p>
+                <div className="-mt-2 flex flex-col gap-2">
                   <p className="text-[11px] text-muted-foreground/60">
                     {t('auth.login.footNote')}
                   </p>
+
+                  <Separator />
+
+                  <div className="text-[13.5px] text-muted-foreground">
+                    <p>
+                      {t('auth.login.newUser')}{' '}
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="px-0"
+                        onClick={() => navigate(paths.enrollment)}
+                      >
+                        {t('auth.login.requestAccess')}
+                      </Button>
+                    </p>
+                  </div>
                 </div>
               </form>
             </div>
@@ -399,10 +418,8 @@ export function LoginPage() {
           <div className="flex items-center justify-between border-t border-dashed border-border pt-4 text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
             <span>{t('auth.login.copyright')}</span>
             <span
-              className="hidden sm:inline"
+              className="auth-wordmark hidden sm:inline"
               style={{
-                fontFamily: 'Georgia, serif',
-                fontStyle: 'italic',
                 textTransform: 'none',
                 letterSpacing: 0,
                 fontSize: '13px',
@@ -410,7 +427,9 @@ export function LoginPage() {
             >
               — a small school for the moving body —
             </span>
-            <span className="normal-case tracking-normal">{t('auth.login.support')}</span>
+            <span className="normal-case tracking-normal">
+              {t('auth.login.support')}
+            </span>
           </div>
         </div>
       </div>

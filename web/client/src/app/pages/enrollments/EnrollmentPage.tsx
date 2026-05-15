@@ -3,10 +3,12 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import { SubmitArrow } from '@/components/shared/SubmitArrow'
 import { format, differenceInCalendarDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import { Upload, X, CheckCircle2, Sun, Moon, Phone, Mail } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
+import { parseApiError } from '@/lib/api-errors'
 import type {
   EnrollmentPeriod,
   Modality as ApiModality,
@@ -98,7 +100,6 @@ export function EnrollmentPage() {
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<EnrollmentFormValues>({
@@ -112,8 +113,8 @@ export function EnrollmentPage() {
     const load = async () => {
       try {
         const [periodsRes, modalitiesRes] = await Promise.all([
-          apiClient.api.apiEnrollmentsPeriodsList().catch(() => null),
-          apiClient.api.apiModalitiesList().catch(() => null),
+          apiClient.api.enrollmentsPeriodsList().catch(() => null),
+          apiClient.api.modalitiesList().catch(() => null),
         ])
         if (periodsRes?.data) {
           const openPeriod = periodsRes.data.find((p) => p.is_open)
@@ -163,11 +164,9 @@ export function EnrollmentPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const selectedModalities = watch('modality_ids')
-
   const onSubmit = async (data: EnrollmentFormValues) => {
     try {
-      const res = await apiClient.api.apiEnrollmentsCreate({
+      const res = await apiClient.api.enrollmentsCreate({
         ...data,
         period_id: period?.id ?? undefined,
         consent_rgpd: true,
@@ -176,8 +175,7 @@ export function EnrollmentPage() {
       setSubmitted(res.data)
       toast.success(t('enrollments.successTitle'))
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Submission failed'
-      toast.error(msg)
+      toast.error(parseApiError(err, t, 'enrollments.submissionFailed') ?? t('enrollments.submissionFailed'))
     }
   }
 
@@ -198,15 +196,7 @@ export function EnrollmentPage() {
       <main className="grain min-h-svh bg-background text-foreground">
         <div className="mx-auto flex min-h-svh max-w-xl flex-col items-center justify-center px-6 text-center">
           <CheckCircle2 className="h-16 w-16 text-primary mb-6" />
-          <h1
-            className="mb-3 text-primary"
-            style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontWeight: 500,
-              fontSize: 'clamp(32px, 4vw, 48px)',
-              lineHeight: 1.1,
-            }}
-          >
+          <h1 className="auth-heading auth-heading-sm mb-3 text-primary">
             {t('enrollments.successTitle')}
           </h1>
           <p className="text-sm text-muted-foreground mb-2">
@@ -229,15 +219,7 @@ export function EnrollmentPage() {
     return (
       <main className="grain min-h-svh bg-background text-foreground">
         <div className="mx-auto flex min-h-svh max-w-xl flex-col items-center justify-center px-6 text-center">
-          <h1
-            className="mb-4"
-            style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontWeight: 500,
-              fontSize: 'clamp(28px, 3.5vw, 40px)',
-              lineHeight: 1.1,
-            }}
-          >
+          <h1 className="auth-heading auth-heading-xs mb-4">
             {t('enrollments.periodClosedTitle')}
           </h1>
           <p className="text-muted-foreground mb-8 max-w-md">
@@ -255,7 +237,7 @@ export function EnrollmentPage() {
     <main className="grain min-h-svh bg-background text-foreground">
       {isSubmitting && <FullPageLoader />}
       {/* Top bar */}
-      <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-2">
             <span className="text-primary text-3xl font-bold">
@@ -305,24 +287,14 @@ export function EnrollmentPage() {
         {/* Hero */}
         <div className="mb-10">
           <div className="mb-4 flex items-center gap-3 text-[10.5px] uppercase tracking-[0.28em] text-primary">
-            <span
-              className="text-[17px] lowercase tracking-normal"
-              style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}
-            >
+            <span className="auth-wordmark text-[17px] lowercase tracking-normal">
               01.
             </span>
             <span>{t('enrollments.overline')}</span>
             <span className="h-px flex-1 bg-border" />
           </div>
           <h1
-            className="mb-3.5"
-            style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontWeight: 500,
-              fontSize: 'clamp(42px, 5.5vw, 64px)',
-              lineHeight: 1.0,
-              letterSpacing: '-0.012em',
-            }}
+            className="auth-heading auth-heading-lg mb-3.5"
           >
             {t('enrollments.heroTitle')}
             <em className="text-primary">{t('enrollments.heroTitleEm')}</em>
@@ -984,28 +956,13 @@ export function EnrollmentPage() {
             {isSubmitting
               ? t('enrollments.submitting')
               : t('enrollments.submit')}
-            {!isSubmitting && (
-              <svg
-                className="ml-2 h-3 w-6"
-                viewBox="0 0 24 12"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M0 6 H22 M16 1 L22 6 L16 11"
-                  stroke="currentColor"
-                  strokeWidth="1.25"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
+            {!isSubmitting && <SubmitArrow />}
           </Button>
         </div>
       </div>
 
       {/* Copyright */}
-      <div className="border-t border-border bg-white px-6 py-3 text-center text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="border-t border-border bg-background px-6 py-3 text-center text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
         &copy; {new Date().getFullYear()} StudioOS &middot; Braga
       </div>
     </main>

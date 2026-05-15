@@ -67,3 +67,11 @@ export const createApiClient = (config: StudioOSApiClientConfig = {}) => {
 export const apiClient = createApiClient()
 
 export type ApiClient = ReturnType<typeof createApiClient>
+
+/**
+ * Auth-aware fetch that handles 401 refresh automatically.
+ * Use for paginated `next` URLs returned by list endpoints.
+ */
+export const authFetch = createAuthFetch(
+  normalizeBaseUrl(API_BASE_URL),
+)

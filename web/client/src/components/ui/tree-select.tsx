@@ -81,10 +81,8 @@ function TreeNode({
     <div>
       <div
         className={cn(
-          'flex w-full items-center rounded-sm text-sm transition-colors',
-          isSelected
-            ? 'bg-accent text-accent-foreground font-medium'
-            : 'hover:bg-accent/50'
+          'flex w-full items-center rounded-sm text-sm transition-colors hover:bg-accent/50',
+          isSelected && 'font-medium'
         )}
       >
         {hasChildren ? (
@@ -93,7 +91,7 @@ function TreeNode({
             aria-expanded={isExpanded}
             aria-label={isExpanded ? 'Collapse' : 'Expand'}
             onClick={() => onToggle(node.value)}
-            className="flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="flex size-8 min-h-11 min-w-11 md:min-h-0 md:min-w-0 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             {isExpanded ? (
               <ChevronDownIcon className="size-3.5" />
@@ -108,7 +106,7 @@ function TreeNode({
         <button
           type="button"
           onClick={() => onSelect(node.value)}
-          className="flex min-h-[36px] flex-1 items-center gap-2 rounded-sm py-1.5 pr-2 outline-none"
+          className="flex min-h-11 md:min-h-[36px] flex-1 items-center gap-2 rounded-sm py-1.5 pr-2 outline-none"
         >
           {node.icon && (
             <node.icon className={cn('size-4 shrink-0', isSelected ? 'text-foreground' : 'text-muted-foreground')} />
@@ -176,7 +174,7 @@ function TreeSelect({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "border-input [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+            "border-input [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
             size === 'default' ? 'h-9' : 'h-8',
             triggerClassName
           )}
@@ -191,18 +189,21 @@ function TreeSelect({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className={cn('w-[--radix-popover-trigger-width] min-w-[200px] p-1', className)}
+        sideOffset={-36}
+        className={cn('w-[--radix-popover-trigger-width] min-w-[200px] overflow-hidden p-0', className)}
       >
-        {nodes.map((node) => (
-          <TreeNode
-            key={node.value}
-            node={node}
-            value={value}
-            onSelect={handleSelect}
-            expandedNodes={expandedNodes}
-            onToggle={handleToggle}
-          />
-        ))}
+        <div className="max-h-[min(300px,var(--radix-popover-content-available-height,300px))] overflow-y-auto overscroll-contain p-1">
+          {nodes.map((node) => (
+            <TreeNode
+              key={node.value}
+              node={node}
+              value={value}
+              onSelect={handleSelect}
+              expandedNodes={expandedNodes}
+              onToggle={handleToggle}
+            />
+          ))}
+        </div>
       </PopoverContent>
     </Popover>
   )

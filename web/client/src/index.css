@@ -138,6 +138,23 @@
   }
 }
 
+/* Auth page brand headings — shared across Login, Onboarding, Password Reset, Enrollment */
+.auth-heading {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 500;
+  line-height: 1.0;
+  letter-spacing: -0.012em;
+}
+.auth-heading-xl { font-size: clamp(56px, 8vw, 96px); }
+.auth-heading-lg { font-size: clamp(42px, 5.5vw, 64px); }
+.auth-heading-md { font-size: clamp(36px, 4vw, 48px); }
+.auth-heading-sm { font-size: clamp(32px, 4vw, 48px); }
+.auth-heading-xs { font-size: clamp(28px, 3.5vw, 40px); }
+.auth-wordmark {
+  font-family: Georgia, serif;
+  font-style: italic;
+}
+
 /* Landing page typography — condensed pairing */
 .landing-display {
   font-family: 'Archivo Narrow', 'Helvetica Neue', sans-serif;
