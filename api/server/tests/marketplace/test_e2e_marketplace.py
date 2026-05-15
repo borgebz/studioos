@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import config.pytest_db_host_env  # noqa: F401
 
+import json
 import uuid
 import pytest
 
@@ -20,24 +21,24 @@ def _uid() -> str:
 def _create_school_variant(staff_client, *, sku_prefix="SCH"):
     """Creates a school product + variant and returns (product_id, variant_id)."""
     cat = staff_client.post(
-        "/inventory/categories/", {"name": f"Cat-{_uid()}"}, format="json"
+        "/api/inventory/categories/", {"name": f"Cat-{_uid()}"}, format="json"
     )
     assert cat.status_code == 201
 
     ss = staff_client.post(
-        "/inventory/size-systems/", {"name": f"SS-{_uid()}"}, format="json"
+        "/api/inventory/size-systems/", {"name": f"SS-{_uid()}"}, format="json"
     )
     assert ss.status_code == 201
 
     sz = staff_client.post(
-        "/inventory/sizes/",
+        "/api/inventory/sizes/",
         {"name": "M", "size_system_id": ss.data["id"]},
         format="json",
     )
     assert sz.status_code == 201
 
     product = staff_client.post(
-        "/inventory/school/products/",
+        "/api/inventory/school/products/",
         {
             "name": f"Costume-{_uid()}",
             "description": "school costume",
@@ -52,7 +53,7 @@ def _create_school_variant(staff_client, *, sku_prefix="SCH"):
     assert product.status_code == 201
 
     variant = staff_client.post(
-        f"/inventory/products/{product.data['id']}/variants/",
+        f"/api/inventory/products/{product.data['id']}/variants/",
         {
             "sku": f"{sku_prefix}-{_uid()}",
             "size_id": sz.data["id"],
@@ -69,12 +70,12 @@ def _create_school_variant(staff_client, *, sku_prefix="SCH"):
 def _create_member_variant(owner_client, *, sku_prefix="MBR"):
     """Creates a member-owned product + variant and returns (product_id, variant_id)."""
     cat = owner_client.post(
-        "/inventory/categories/", {"name": f"MCat-{_uid()}"}, format="json"
+        "/api/inventory/categories/", {"name": f"MCat-{_uid()}"}, format="json"
     )
     assert cat.status_code == 201
 
     product = owner_client.post(
-        "/inventory/products/",
+        "/api/inventory/products/",
         {
             "name": f"MemberItem-{_uid()}",
             "description": "my item",
@@ -86,7 +87,7 @@ def _create_member_variant(owner_client, *, sku_prefix="MBR"):
     assert product.status_code == 201
 
     variant = owner_client.post(
-        f"/inventory/products/{product.data['id']}/variants/",
+        f"/api/inventory/products/{product.data['id']}/variants/",
         {
             "sku": f"{sku_prefix}-{_uid()}",
             "condition": "excellent",
@@ -144,41 +145,41 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
 
     # staff creates listing (draft)
     listing_resp = sc.post(
-        "/marketplace/school/listings/",
-        {
+        "/api/marketplace/school/listings/",
+        {"payload": json.dumps({
             "variant_id": variant_id,
             "listing_type": "rent",
             "title": "Ballet tutu — rent",
             "description": "Available for weekend shows",
             "asking_price": "5.00",
             "is_public": False,
-        },
-        format="json",
+        })},
+        format="multipart",
     )
     assert listing_resp.status_code == 201
     listing_id = listing_resp.data["id"]
     assert listing_resp.data["status"] == "draft"
 
     # staff publishes
-    pub = sc.post(f"/marketplace/school/listings/{listing_id}/publish/")
+    pub = sc.post(f"/api/marketplace/school/listings/{listing_id}/publish/")
     assert pub.status_code == 200
     assert pub.data["status"] == "active"
 
     # member_a browses and favorites
-    browse = ca.get("/marketplace/listings/")
+    browse = ca.get("/api/marketplace/listings/")
     assert browse.status_code == 200
     listing_ids = [row["id"] for row in browse.data["results"]]
     assert listing_id in listing_ids
 
-    fav = ca.post(f"/marketplace/listings/{listing_id}/favorite/")
+    fav = ca.post(f"/api/marketplace/listings/{listing_id}/favorite/")
     assert fav.status_code == 201
 
     # member_b views detail + availability
-    detail = cb.get(f"/marketplace/listings/{listing_id}/")
+    detail = cb.get(f"/api/marketplace/listings/{listing_id}/")
     assert detail.status_code == 200
     assert detail.data["listing_type"] == "rent"
 
-    avail = cb.get(f"/marketplace/listings/{listing_id}/availability/")
+    avail = cb.get(f"/api/marketplace/listings/{listing_id}/availability/")
     assert avail.status_code == 200
     assert detail.data["is_favorited"] is False
 
@@ -187,7 +188,7 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     week1_start = now + timedelta(days=1)
     week1_end = now + timedelta(days=8)
     req_a = ca.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {
             "start_at": week1_start.isoformat(),
             "end_at": week1_end.isoformat(),
@@ -200,7 +201,7 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     assert req_a.data["status"] == "pending"
 
     # availability now shows week 1 blocked
-    avail2 = cb.get(f"/marketplace/listings/{listing_id}/availability/")
+    avail2 = cb.get(f"/api/marketplace/listings/{listing_id}/availability/")
     assert avail2.status_code == 200
     assert len(avail2.data["data"]) == 1
 
@@ -208,7 +209,7 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     week2_start = now + timedelta(days=10)
     week2_end = now + timedelta(days=17)
     req_b = cb.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {
             "start_at": week2_start.isoformat(),
             "end_at": week2_end.isoformat(),
@@ -220,35 +221,35 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     txn_b_id = req_b.data["id"]
 
     # two bookings now in availability
-    avail3 = sc.get(f"/marketplace/listings/{listing_id}/availability/")
+    avail3 = sc.get(f"/api/marketplace/listings/{listing_id}/availability/")
     assert len(avail3.data["data"]) == 2
 
     # staff accepts both
-    accept_a = sc.post(f"/marketplace/school/transactions/{txn_a_id}/accept/")
+    accept_a = sc.post(f"/api/marketplace/school/transactions/{txn_a_id}/accept/")
     assert accept_a.status_code == 200
     assert accept_a.data["status"] == "accepted"
 
-    accept_b = sc.post(f"/marketplace/school/transactions/{txn_b_id}/accept/")
+    accept_b = sc.post(f"/api/marketplace/school/transactions/{txn_b_id}/accept/")
     assert accept_b.status_code == 200
     assert accept_b.data["status"] == "accepted"
 
     # member_a checks their own transaction list
-    my_txns = ca.get("/marketplace/transactions/mine/")
+    my_txns = ca.get("/api/marketplace/transactions/mine/")
     assert my_txns.status_code == 200
     assert any(t["id"] == txn_a_id for t in my_txns.data["results"])
 
     # member_a views detail
-    txn_a_detail = ca.get(f"/marketplace/transactions/{txn_a_id}/")
+    txn_a_detail = ca.get(f"/api/marketplace/transactions/{txn_a_id}/")
     assert txn_a_detail.status_code == 200
     assert txn_a_detail.data["status"] == "accepted"
 
     # staff completes member_a first
-    complete_a = sc.post(f"/marketplace/school/transactions/{txn_a_id}/complete/")
+    complete_a = sc.post(f"/api/marketplace/school/transactions/{txn_a_id}/complete/")
     assert complete_a.status_code == 200
     assert complete_a.data["status"] == "completed"
 
     # staff completes member_b
-    complete_b = sc.post(f"/marketplace/school/transactions/{txn_b_id}/complete/")
+    complete_b = sc.post(f"/api/marketplace/school/transactions/{txn_b_id}/complete/")
     assert complete_b.status_code == 200
     assert complete_b.data["status"] == "completed"
 
@@ -259,10 +260,10 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     assert variant.status == ProductVariant.Status.AVAILABLE
 
     # member_a removes favorite
-    unfav = ca.delete(f"/marketplace/listings/{listing_id}/favorite/")
+    unfav = ca.delete(f"/api/marketplace/listings/{listing_id}/favorite/")
     assert unfav.status_code == 204
 
-    favorites = ca.get("/marketplace/listings/favorites/")
+    favorites = ca.get("/api/marketplace/listings/favorites/")
     assert favorites.status_code == 200
     assert not any(row["id"] == listing_id for row in favorites.data["results"])
 
@@ -314,7 +315,7 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
 
     # owner creates SELL listing
     listing_resp = co.post(
-        "/marketplace/listings/",
+        "/api/marketplace/listings/",
         {
             "variant_id": variant_id,
             "listing_type": "sell",
@@ -329,12 +330,12 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     listing_id = listing_resp.data["id"]
 
     # owner publishes
-    pub = co.post(f"/marketplace/listings/{listing_id}/publish/")
+    pub = co.post(f"/api/marketplace/listings/{listing_id}/publish/")
     assert pub.status_code == 200
 
     # owner updates listing description inline
     upd = co.patch(
-        f"/marketplace/listings/{listing_id}/",
+        f"/api/marketplace/listings/{listing_id}/",
         {"description": "Used but very clean, barely worn", "asking_price": "12.00"},
         format="json",
     )
@@ -342,16 +343,16 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     assert upd.data["asking_price"] == "12.00"
 
     # buyer_a browses, views detail, requests
-    browse = ca.get("/marketplace/listings/")
+    browse = ca.get("/api/marketplace/listings/")
     assert browse.status_code == 200
     assert any(row["id"] == listing_id for row in browse.data["results"])
 
-    detail_a = ca.get(f"/marketplace/listings/{listing_id}/")
+    detail_a = ca.get(f"/api/marketplace/listings/{listing_id}/")
     assert detail_a.status_code == 200
     assert detail_a.data["listing_type"] == "sell"
 
     req_a = ca.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {"notes": "I want to buy these shoes"},
         format="json",
     )
@@ -361,7 +362,7 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
 
     # buyer_b also requests (queued after buyer_a since sell schedules from max end_at)
     req_b = cb.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {"notes": "I also want them"},
         format="json",
     )
@@ -369,19 +370,19 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     txn_b_id = req_b.data["id"]
 
     # owner sees both in their transactions
-    mine = co.get("/marketplace/transactions/mine/")
+    mine = co.get("/api/marketplace/transactions/mine/")
     assert mine.status_code == 200
     mine_ids = [t["id"] for t in mine.data["results"]]
     assert txn_a_id in mine_ids
     assert txn_b_id in mine_ids
 
     # owner rejects buyer_b first
-    reject_b = co.post(f"/marketplace/transactions/{txn_b_id}/cancel/")
+    reject_b = co.post(f"/api/marketplace/transactions/{txn_b_id}/cancel/")
     assert reject_b.status_code == 200
     assert reject_b.data["status"] == "cancelled"
 
     # owner accepts buyer_a
-    accept_a = co.post(f"/marketplace/school/transactions/{txn_a_id}/accept/")
+    accept_a = co.post(f"/api/marketplace/school/transactions/{txn_a_id}/accept/")
     # member-owned → service checks owner_id, not school perm → use member endpoint
     # correction: accept for member-owned goes through the same school endpoint
     # but permission check is owner-based in service, not perm-based
@@ -417,7 +418,7 @@ def test_e2e_02_member_sell_one_accepted_one_rejected(db):
     assert listing.status == Listing.ListingStatus.CLOSED
 
     # staff sees all transactions
-    all_txns = cs.get("/marketplace/school/transactions/")
+    all_txns = cs.get("/api/marketplace/school/transactions/")
     assert all_txns.status_code == 200
 
 
@@ -467,34 +468,34 @@ def test_e2e_03_school_lend_block_unblock_then_complete(db):
 
     # staff creates LEND listing
     listing_resp = cs.post(
-        "/marketplace/school/listings/",
-        {
+        "/api/marketplace/school/listings/",
+        {"payload": json.dumps({
             "variant_id": variant_id,
             "listing_type": "lend",
             "title": "Tap shoes — borrow",
             "description": "School tap shoes available for loan",
             "is_public": False,
-        },
-        format="json",
+        })},
+        format="multipart",
     )
     assert listing_resp.status_code == 201
     listing_id = listing_resp.data["id"]
 
     # staff publishes
-    pub = cs.post(f"/marketplace/school/listings/{listing_id}/publish/")
+    pub = cs.post(f"/api/marketplace/school/listings/{listing_id}/publish/")
     assert pub.status_code == 200
 
     # member_a views listing and availability (empty)
-    detail = ca.get(f"/marketplace/listings/{listing_id}/")
+    detail = ca.get(f"/api/marketplace/listings/{listing_id}/")
     assert detail.status_code == 200
-    avail_before = ca.get(f"/marketplace/listings/{listing_id}/availability/")
+    avail_before = ca.get(f"/api/marketplace/listings/{listing_id}/availability/")
     assert avail_before.status_code == 200
     assert len(avail_before.data["data"]) == 0
 
     # member_a requests week 1–2
     now = timezone.now()
     req_a = ca.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {
             "start_at": (now + timedelta(days=1)).isoformat(),
             "end_at": (now + timedelta(days=14)).isoformat(),
@@ -507,7 +508,7 @@ def test_e2e_03_school_lend_block_unblock_then_complete(db):
 
     # member_b requests week 3–4
     req_b = cb.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {
             "start_at": (now + timedelta(days=16)).isoformat(),
             "end_at": (now + timedelta(days=28)).isoformat(),
@@ -519,46 +520,46 @@ def test_e2e_03_school_lend_block_unblock_then_complete(db):
     txn_b_id = req_b.data["id"]
 
     # staff sees both in school transactions
-    all_txns = cs.get("/marketplace/school/transactions/")
+    all_txns = cs.get("/api/marketplace/school/transactions/")
     assert all_txns.status_code == 200
     ids = [t["id"] for t in all_txns.data["results"]]
     assert txn_a_id in ids
     assert txn_b_id in ids
 
     # staff accepts both
-    acc_a = cs.post(f"/marketplace/school/transactions/{txn_a_id}/accept/")
+    acc_a = cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/accept/")
     assert acc_a.status_code == 200
     assert acc_a.data["status"] == "accepted"
 
-    acc_b = cs.post(f"/marketplace/school/transactions/{txn_b_id}/accept/")
+    acc_b = cs.post(f"/api/marketplace/school/transactions/{txn_b_id}/accept/")
     assert acc_b.status_code == 200
 
     # availability now shows 2 windows
-    avail_after = cs.get(f"/marketplace/listings/{listing_id}/availability/")
+    avail_after = cs.get(f"/api/marketplace/listings/{listing_id}/availability/")
     assert len(avail_after.data["data"]) == 2
 
     # member_a doesn't return on time → staff blocks
-    block_a = cs.post(f"/marketplace/school/transactions/{txn_a_id}/block/")
+    block_a = cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/block/")
     assert block_a.status_code == 200
     assert block_a.data["status"] == "blocked"
 
     # member_a views own transaction — sees blocked
-    txn_a_view = ca.get(f"/marketplace/transactions/{txn_a_id}/")
+    txn_a_view = ca.get(f"/api/marketplace/transactions/{txn_a_id}/")
     assert txn_a_view.status_code == 200
     assert txn_a_view.data["status"] == "blocked"
 
     # issue resolved — staff unblocks
-    unblock_a = cs.post(f"/marketplace/school/transactions/{txn_a_id}/unblock/")
+    unblock_a = cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/unblock/")
     assert unblock_a.status_code == 200
     assert unblock_a.data["status"] == "accepted"
 
     # staff completes member_a
-    comp_a = cs.post(f"/marketplace/school/transactions/{txn_a_id}/complete/")
+    comp_a = cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/complete/")
     assert comp_a.status_code == 200
     assert comp_a.data["status"] == "completed"
 
     # staff completes member_b
-    comp_b = cs.post(f"/marketplace/school/transactions/{txn_b_id}/complete/")
+    comp_b = cs.post(f"/api/marketplace/school/transactions/{txn_b_id}/complete/")
     assert comp_b.status_code == 200
     assert comp_b.data["status"] == "completed"
 
@@ -616,7 +617,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
 
     # owner creates a LEND listing
     lend_resp = co.post(
-        "/marketplace/listings/",
+        "/api/marketplace/listings/",
         {
             "variant_id": variant_id,
             "listing_type": "lend",
@@ -627,11 +628,11 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
     )
     assert lend_resp.status_code == 201
     lend_listing_id = lend_resp.data["id"]
-    co.post(f"/marketplace/listings/{lend_listing_id}/publish/")
+    co.post(f"/api/marketplace/listings/{lend_listing_id}/publish/")
 
     # owner also creates a DONATE listing for same variant
     donate_resp = co.post(
-        "/marketplace/listings/",
+        "/api/marketplace/listings/",
         {
             "variant_id": variant_id,
             "listing_type": "donate",
@@ -642,14 +643,14 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
     )
     assert donate_resp.status_code == 201
     donate_listing_id = donate_resp.data["id"]
-    co.post(f"/marketplace/listings/{donate_listing_id}/publish/")
+    co.post(f"/api/marketplace/listings/{donate_listing_id}/publish/")
 
     # renter requests loan for 2 weeks
     now = timezone.now()
     loan_start = now + timedelta(days=1)
     loan_end = now + timedelta(days=14)
     loan_req = cr.post(
-        f"/marketplace/listings/{lend_listing_id}/request/",
+        f"/api/marketplace/listings/{lend_listing_id}/request/",
         {
             "start_at": loan_start.isoformat(),
             "end_at": loan_end.isoformat(),
@@ -662,7 +663,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
 
     # receiver requests donation (no dates needed — queued automatically)
     donate_req = cv.post(
-        f"/marketplace/listings/{donate_listing_id}/request/",
+        f"/api/marketplace/listings/{donate_listing_id}/request/",
         {"notes": "I would love to give this dress a new home"},
         format="json",
     )
@@ -676,7 +677,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
     assert donate_txn.start_at >= loan_end
 
     # availability shows 2 windows
-    avail = cv.get(f"/marketplace/listings/{lend_listing_id}/availability/")
+    avail = cv.get(f"/api/marketplace/listings/{lend_listing_id}/availability/")
     assert len(avail.data["data"]) >= 1
 
     # owner accepts both using service layer (member-owned)
@@ -686,7 +687,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
     mkt_svc.accept_transaction(transaction_id=donate_txn_id, user=owner)
 
     # staff can see all transactions
-    all_txns = cs.get("/marketplace/school/transactions/")
+    all_txns = cs.get("/api/marketplace/school/transactions/")
     assert all_txns.status_code == 200
 
     # owner completes loan first — variant stays AVAILABLE
@@ -705,7 +706,7 @@ def test_e2e_04_member_donate_queued_after_active_loan(db):
 
     # owner cannot create a new listing on a DONATED variant
     blocked = co.post(
-        "/marketplace/listings/",
+        "/api/marketplace/listings/",
         {
             "variant_id": variant_id,
             "listing_type": "sell",
@@ -778,18 +779,18 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
 
     def _publish_listing(client, variant_id, listing_type, title):
         r = client.post(
-            "/marketplace/school/listings/",
-            {
+            "/api/marketplace/school/listings/",
+            {"payload": json.dumps({
                 "variant_id": variant_id,
                 "listing_type": listing_type,
                 "title": title,
                 "asking_price": "3.00",
-            },
-            format="json",
+            })},
+            format="multipart",
         )
         assert r.status_code == 201
         lid = r.data["id"]
-        pub = client.post(f"/marketplace/school/listings/{lid}/publish/")
+        pub = client.post(f"/api/marketplace/school/listings/{lid}/publish/")
         assert pub.status_code == 200
         return lid
 
@@ -798,7 +799,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     sell1_id = _publish_listing(cs, v3_id, "sell", "Costume sell 1")
 
     # member_a browses all — expects at least 3 results
-    browse_all = ca.get("/marketplace/listings/")
+    browse_all = ca.get("/api/marketplace/listings/")
     assert browse_all.status_code == 200
     all_ids = [row["id"] for row in browse_all.data["results"]]
     assert rent1_id in all_ids
@@ -806,7 +807,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     assert sell1_id in all_ids
 
     # member_a filters rent listings
-    browse_rent = ca.get("/marketplace/listings/?listing_type=rent")
+    browse_rent = ca.get("/api/marketplace/listings/?listing_type=rent")
     assert browse_rent.status_code == 200
     rent_ids = [row["id"] for row in browse_rent.data["results"]]
     assert rent1_id in rent_ids
@@ -814,36 +815,36 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     assert sell1_id not in rent_ids
 
     # member_b filters sell
-    browse_sell = cb.get("/marketplace/listings/?listing_type=sell")
+    browse_sell = cb.get("/api/marketplace/listings/?listing_type=sell")
     assert browse_sell.status_code == 200
     sell_ids = [row["id"] for row in browse_sell.data["results"]]
     assert sell1_id in sell_ids
     assert rent1_id not in sell_ids
 
     # parent views rent1 detail + availability (empty)
-    rent1_detail = cp.get(f"/marketplace/listings/{rent1_id}/")
+    rent1_detail = cp.get(f"/api/marketplace/listings/{rent1_id}/")
     assert rent1_detail.status_code == 200
-    avail_empty = cp.get(f"/marketplace/listings/{rent1_id}/availability/")
+    avail_empty = cp.get(f"/api/marketplace/listings/{rent1_id}/availability/")
     assert len(avail_empty.data["data"]) == 0
 
     # member_a favorites two listings
-    ca.post(f"/marketplace/listings/{rent1_id}/favorite/")
-    ca.post(f"/marketplace/listings/{sell1_id}/favorite/")
-    fav_list = ca.get("/marketplace/listings/favorites/")
+    ca.post(f"/api/marketplace/listings/{rent1_id}/favorite/")
+    ca.post(f"/api/marketplace/listings/{sell1_id}/favorite/")
+    fav_list = ca.get("/api/marketplace/listings/favorites/")
     assert fav_list.status_code == 200
     fav_ids = [row["id"] for row in fav_list.data["results"]]
     assert rent1_id in fav_ids
     assert sell1_id in fav_ids
 
     # member_b favorites rent1
-    cb.post(f"/marketplace/listings/{rent1_id}/favorite/")
+    cb.post(f"/api/marketplace/listings/{rent1_id}/favorite/")
 
     # parent requests rent1 week 1
     now = timezone.now()
     week1_start = now + timedelta(days=2)
     week1_end = now + timedelta(days=9)
     parent_req = cp.post(
-        f"/marketplace/listings/{rent1_id}/request/",
+        f"/api/marketplace/listings/{rent1_id}/request/",
         {"start_at": week1_start.isoformat(), "end_at": week1_end.isoformat()},
         format="json",
     )
@@ -852,7 +853,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
 
     # member_a tries same week 1 → overlap rejection
     overlap_req = ca.post(
-        f"/marketplace/listings/{rent1_id}/request/",
+        f"/api/marketplace/listings/{rent1_id}/request/",
         {
             "start_at": (week1_start + timedelta(days=1)).isoformat(),
             "end_at": (week1_end + timedelta(days=1)).isoformat(),
@@ -866,7 +867,7 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     week2_start = now + timedelta(days=11)
     week2_end = now + timedelta(days=18)
     ma_req = ca.post(
-        f"/marketplace/listings/{rent1_id}/request/",
+        f"/api/marketplace/listings/{rent1_id}/request/",
         {
             "start_at": week2_start.isoformat(),
             "end_at": week2_end.isoformat(),
@@ -878,16 +879,16 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     ma_txn_id = ma_req.data["id"]
 
     # staff accepts parent transaction
-    cs.post(f"/marketplace/school/transactions/{parent_txn_id}/accept/")
+    cs.post(f"/api/marketplace/school/transactions/{parent_txn_id}/accept/")
 
     # member_a cancels their week 2 request (frees up that slot)
-    cancel_ma = ca.post(f"/marketplace/transactions/{ma_txn_id}/cancel/")
+    cancel_ma = ca.post(f"/api/marketplace/transactions/{ma_txn_id}/cancel/")
     assert cancel_ma.status_code == 200
     assert cancel_ma.data["status"] == "cancelled"
 
     # member_b requests freed week 2 slot
     mb_req = cb.post(
-        f"/marketplace/listings/{rent1_id}/request/",
+        f"/api/marketplace/listings/{rent1_id}/request/",
         {"start_at": week2_start.isoformat(), "end_at": week2_end.isoformat()},
         format="json",
     )
@@ -895,11 +896,11 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     mb_rent_txn_id = mb_req.data["id"]
 
     # staff accepts member_b rent
-    cs.post(f"/marketplace/school/transactions/{mb_rent_txn_id}/accept/")
+    cs.post(f"/api/marketplace/school/transactions/{mb_rent_txn_id}/accept/")
 
     # member_b also requests SELL listing
     mb_sell_req = cb.post(
-        f"/marketplace/listings/{sell1_id}/request/",
+        f"/api/marketplace/listings/{sell1_id}/request/",
         {"notes": "I want to buy this"},
         format="json",
     )
@@ -907,9 +908,9 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     mb_sell_txn_id = mb_sell_req.data["id"]
 
     # staff accepts + completes the SELL
-    cs.post(f"/marketplace/school/transactions/{mb_sell_txn_id}/accept/")
+    cs.post(f"/api/marketplace/school/transactions/{mb_sell_txn_id}/accept/")
     sell_complete = cs.post(
-        f"/marketplace/school/transactions/{mb_sell_txn_id}/complete/"
+        f"/api/marketplace/school/transactions/{mb_sell_txn_id}/complete/"
     )
     assert sell_complete.status_code == 200
     assert sell_complete.data["status"] == "completed"
@@ -923,17 +924,17 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     assert sell_listing.status == Listing.ListingStatus.CLOSED
 
     # staff unpublishes rent2
-    unpub = cs.post(f"/marketplace/school/listings/{rent2_id}/unpublish/")
+    unpub = cs.post(f"/api/marketplace/school/listings/{rent2_id}/unpublish/")
     assert unpub.status_code == 200
     assert unpub.data["status"] == "draft"
 
     # unpublished listing no longer in browse
-    browse_after = cp.get("/marketplace/listings/")
+    browse_after = cp.get("/api/marketplace/listings/")
     active_ids = [row["id"] for row in browse_after.data["results"]]
     assert rent2_id not in active_ids
 
     # member_a still has rent1 favorited after rent2 unpublish
-    ma_favs = ca.get("/marketplace/listings/favorites/")
+    ma_favs = ca.get("/api/marketplace/listings/favorites/")
     assert ma_favs.status_code == 200
     fav_ids_after = [row["id"] for row in ma_favs.data["results"]]
     assert rent1_id in fav_ids_after

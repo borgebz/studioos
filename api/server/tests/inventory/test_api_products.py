@@ -12,7 +12,7 @@ from inventory.services.category_services import create_category
 def test_products_endpoint_requires_authentication():
     client = APIClient()
 
-    response = client.get("/inventory/products/")
+    response = client.get("/api/inventory/products/")
 
     assert response.status_code in [401, 403]
 
@@ -21,7 +21,7 @@ def test_products_endpoint_requires_authentication():
 def test_product_detail_requires_authentication():
     client = APIClient()
 
-    response = client.get("/inventory/products/1/")
+    response = client.get("/api/inventory/products/1/")
 
     assert response.status_code in [401, 403]
 
@@ -30,7 +30,7 @@ def test_product_detail_requires_authentication():
 def test_school_products_requires_authentication():
     client = APIClient()
 
-    response = client.get("/inventory/school/products/")
+    response = client.get("/api/inventory/school/products/")
 
     assert response.status_code in [401, 403]
 
@@ -41,7 +41,7 @@ def test_authenticated_user_can_get_products():
 
     client = APIClient()
     client.force_authenticate(user=user)
-    response = client.get("/inventory/products/")
+    response = client.get("/api/inventory/products/")
 
     assert response.status_code == 200
     assert response.data is not None
@@ -60,7 +60,7 @@ def test_authenticated_user_can_create_product():
         "category_id": category.id,
     }
 
-    response = client.post("/inventory/products/", payload, format="json")
+    response = client.post("/api/inventory/products/", payload, format="json")
 
     assert response.status_code in [200, 201]
     assert Product.objects.filter(name="Produto API").exists()
@@ -81,7 +81,7 @@ def test_user_without_school_permission_cannot_create_school_product():
         "category_id": category.id,
     }
 
-    response = client.post("/inventory/school/products/", payload, format="json")
+    response = client.post("/api/inventory/school/products/", payload, format="json")
 
     assert response.status_code in [401, 403]
 
@@ -96,7 +96,7 @@ def test_authenticated_user_can_get_product_detail():
     client.force_authenticate(user=user)
 
     create_response = client.post(
-        "/inventory/products/",
+        "/api/inventory/products/",
         {
             "name": "Produto Detail",
             "description": "Teste",
@@ -109,7 +109,7 @@ def test_authenticated_user_can_get_product_detail():
 
     product = Product.objects.get(name="Produto Detail")
 
-    response = client.get(f"/inventory/products/{product.id}/")
+    response = client.get(f"/api/inventory/products/{product.id}/")
 
     assert response.status_code == 200
     assert response.data["name"] == "Produto Detail"

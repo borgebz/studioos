@@ -36,7 +36,7 @@ def test_product_delete_returns_204_empty_body():
 
     client = APIClient()
     client.force_authenticate(user=user)
-    url = f"/inventory/products/{product.pk}/"
+    url = f"/api/inventory/products/{product.pk}/"
     response = client.delete(url)
 
     assert response.status_code == 204
@@ -64,7 +64,7 @@ def test_validation_error_response_has_errors_messages():
     client = APIClient()
     client.force_authenticate(user=user)
     response = client.post(
-        "/inventory/colors/",
+        "/api/inventory/colors/",
         {"name": "Dup", "hex_code": "#020202"},
         format="json",
     )

@@ -61,25 +61,25 @@ def _client(user) -> APIClient:
 def _create_school_variant(staff_client, *, sku_prefix="B"):
     """Bootstrap a school product + variant. Returns variant_id."""
     cat = staff_client.post(
-        "/inventory/categories/",
+        "/api/inventory/categories/",
         {"name": f"C-{_uid()}"},
         format="json",
     )
     assert cat.status_code == 201
     ss = staff_client.post(
-        "/inventory/size-systems/",
+        "/api/inventory/size-systems/",
         {"name": f"SS-{_uid()}"},
         format="json",
     )
     assert ss.status_code == 201
     sz = staff_client.post(
-        "/inventory/sizes/",
+        "/api/inventory/sizes/",
         {"name": "M", "size_system_id": ss.data["id"]},
         format="json",
     )
     assert sz.status_code == 201
     prod = staff_client.post(
-        "/inventory/school/products/",
+        "/api/inventory/school/products/",
         {
             "name": f"Item-{_uid()}",
             "category_id": cat.data["id"],
@@ -92,7 +92,7 @@ def _create_school_variant(staff_client, *, sku_prefix="B"):
     )
     assert prod.status_code == 201
     var = staff_client.post(
-        f"/inventory/products/{prod.data['id']}/variants/",
+        f"/api/inventory/products/{prod.data['id']}/variants/",
         {
             "sku": f"{sku_prefix}-{_uid()}",
             "size_id": sz.data["id"],
@@ -116,10 +116,10 @@ def _publish_listing(staff_client, variant_id, listing_type, *, asking_price=Non
     }
     if asking_price is not None:
         payload["asking_price"] = str(asking_price)
-    r = staff_client.post("/marketplace/school/listings/", payload, format="json")
+    r = staff_client.post("/api/marketplace/school/listings/", payload, format="json")
     assert r.status_code == 201
     lid = r.data["id"]
-    pub = staff_client.post(f"/marketplace/school/listings/{lid}/publish/")
+    pub = staff_client.post(f"/api/marketplace/school/listings/{lid}/publish/")
     assert pub.status_code == 200
     return lid
 
@@ -138,17 +138,17 @@ def _full_flow(
         payload["end_at"] = end_at.isoformat()
 
     req = requester_client.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         payload,
         format="json",
     )
     assert req.status_code == 201
     txn_id = req.data["id"]
 
-    acc = staff_client.post(f"/marketplace/school/transactions/{txn_id}/accept/")
+    acc = staff_client.post(f"/api/marketplace/school/transactions/{txn_id}/accept/")
     assert acc.status_code == 200
 
-    comp = staff_client.post(f"/marketplace/school/transactions/{txn_id}/complete/")
+    comp = staff_client.post(f"/api/marketplace/school/transactions/{txn_id}/complete/")
     assert comp.status_code == 200
 
     entry = BillingEntry.objects.filter(
@@ -197,20 +197,20 @@ def test_billing_01_sell_asking_price_entry_created_rejected_buyer_not_billed(db
     listing_id = _publish_listing(cs, variant_id, "sell", asking_price="20.00")
 
     # member_a browses and views detail
-    browse = ca.get("/marketplace/listings/")
+    browse = ca.get("/api/marketplace/listings/")
     assert browse.status_code == 200
     assert any(row["id"] == listing_id for row in browse.data["results"])
 
-    detail = ca.get(f"/marketplace/listings/{listing_id}/")
+    detail = ca.get(f"/api/marketplace/listings/{listing_id}/")
     assert detail.status_code == 200
     assert detail.data["listing_type"] == "sell"
 
     # both request
-    req_a = ca.post(f"/marketplace/listings/{listing_id}/request/", {}, format="json")
+    req_a = ca.post(f"/api/marketplace/listings/{listing_id}/request/", {}, format="json")
     assert req_a.status_code == 201
     txn_a_id = req_a.data["id"]
 
-    req_b = cb.post(f"/marketplace/listings/{listing_id}/request/", {}, format="json")
+    req_b = cb.post(f"/api/marketplace/listings/{listing_id}/request/", {}, format="json")
     assert req_b.status_code == 201
     txn_b_id = req_b.data["id"]
 
@@ -221,13 +221,13 @@ def test_billing_01_sell_asking_price_entry_created_rejected_buyer_not_billed(db
     assert not any(True for _ in pre_ids)  # empty
 
     # reject member_b
-    reject_b = cb.post(f"/marketplace/transactions/{txn_b_id}/cancel/")
+    reject_b = cb.post(f"/api/marketplace/transactions/{txn_b_id}/cancel/")
     assert reject_b.status_code == 200
     assert reject_b.data["status"] == "cancelled"
 
     # accept + complete member_a
-    cs.post(f"/marketplace/school/transactions/{txn_a_id}/accept/")
-    comp = cs.post(f"/marketplace/school/transactions/{txn_a_id}/complete/")
+    cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/accept/")
+    comp = cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/complete/")
     assert comp.status_code == 200
     assert comp.data["status"] == "completed"
 
@@ -315,7 +315,7 @@ def test_billing_02_rent_agreed_price_overrides_asking_variant_stays_available(d
 
     # member_a requests week 1
     req_a = ca.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {"start_at": week1_start.isoformat(), "end_at": week1_end.isoformat()},
         format="json",
     )
@@ -324,7 +324,7 @@ def test_billing_02_rent_agreed_price_overrides_asking_variant_stays_available(d
 
     # member_b requests week 2
     req_b = cb.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {"start_at": week2_start.isoformat(), "end_at": week2_end.isoformat()},
         format="json",
     )
@@ -332,16 +332,16 @@ def test_billing_02_rent_agreed_price_overrides_asking_variant_stays_available(d
     txn_b_id = req_b.data["id"]
 
     # accept member_a
-    cs.post(f"/marketplace/school/transactions/{txn_a_id}/accept/")
+    cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/accept/")
 
     # negotiate: set agreed_price=8.50 directly on the transaction
     ProductTransaction.objects.filter(id=txn_a_id).update(agreed_price="8.50")
 
     # accept member_b (no negotiation, uses asking_price)
-    cs.post(f"/marketplace/school/transactions/{txn_b_id}/accept/")
+    cs.post(f"/api/marketplace/school/transactions/{txn_b_id}/accept/")
 
     # complete member_a
-    comp_a = cs.post(f"/marketplace/school/transactions/{txn_a_id}/complete/")
+    comp_a = cs.post(f"/api/marketplace/school/transactions/{txn_a_id}/complete/")
     assert comp_a.status_code == 200
 
     entry_a = BillingEntry.objects.get(
@@ -353,7 +353,7 @@ def test_billing_02_rent_agreed_price_overrides_asking_variant_stays_available(d
     assert "Aluguer" in entry_a.description
 
     # complete member_b
-    comp_b = cs.post(f"/marketplace/school/transactions/{txn_b_id}/complete/")
+    comp_b = cs.post(f"/api/marketplace/school/transactions/{txn_b_id}/complete/")
     assert comp_b.status_code == 200
 
     entry_b = BillingEntry.objects.get(
@@ -449,7 +449,7 @@ def test_billing_03_donate_no_entry_lend_no_price_no_entry_lend_with_price_entry
 
     # --- LEND with price flow ---
     req_c = cc.post(
-        f"/marketplace/listings/{lend_pr_lid}/request/",
+        f"/api/marketplace/listings/{lend_pr_lid}/request/",
         {
             "start_at": (now + timedelta(days=1)).isoformat(),
             "end_at": (now + timedelta(days=7)).isoformat(),
@@ -459,8 +459,8 @@ def test_billing_03_donate_no_entry_lend_no_price_no_entry_lend_with_price_entry
     assert req_c.status_code == 201
     txn_c_id = req_c.data["id"]
 
-    cs.post(f"/marketplace/school/transactions/{txn_c_id}/accept/")
-    comp_c = cs.post(f"/marketplace/school/transactions/{txn_c_id}/complete/")
+    cs.post(f"/api/marketplace/school/transactions/{txn_c_id}/accept/")
+    comp_c = cs.post(f"/api/marketplace/school/transactions/{txn_c_id}/complete/")
     assert comp_c.status_code == 200
 
     entry_c = BillingEntry.objects.get(
@@ -628,14 +628,14 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
 
     # owner creates product + variant
     cat = co.post(
-        "/inventory/categories/",
+        "/api/inventory/categories/",
         {"name": f"Cat-{_uid()}"},
         format="json",
     )
     assert cat.status_code == 201
 
     prod = co.post(
-        "/inventory/products/",
+        "/api/inventory/products/",
         {
             "name": f"MyDress-{_uid()}",
             "description": "Ballet dress in great condition",
@@ -648,7 +648,7 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
     prod_id = prod.data["id"]
 
     var = co.post(
-        f"/inventory/products/{prod_id}/variants/",
+        f"/api/inventory/products/{prod_id}/variants/",
         {
             "condition": "excellent",
             "status": "available",
@@ -661,7 +661,7 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
 
     # owner creates + publishes listing
     listing_resp = co.post(
-        "/marketplace/listings/",
+        "/api/marketplace/listings/",
         {
             "variant_id": variant_id,
             "listing_type": "sell",
@@ -675,24 +675,24 @@ def test_billing_05_member_sell_requester_is_payer_source_type_isolation(db):
     listing_id = listing_resp.data["id"]
     listing_title = listing_resp.data["title"]
 
-    pub = co.post(f"/marketplace/listings/{listing_id}/publish/")
+    pub = co.post(f"/api/marketplace/listings/{listing_id}/publish/")
     assert pub.status_code == 200
 
     # buyer browses, views detail, favorites
-    browse = cb.get("/marketplace/listings/")
+    browse = cb.get("/api/marketplace/listings/")
     assert browse.status_code == 200
     assert any(row["id"] == listing_id for row in browse.data["results"])
 
-    detail = cb.get(f"/marketplace/listings/{listing_id}/")
+    detail = cb.get(f"/api/marketplace/listings/{listing_id}/")
     assert detail.status_code == 200
     assert detail.data["asking_price"] == "25.00"
 
-    fav = cb.post(f"/marketplace/listings/{listing_id}/favorite/")
+    fav = cb.post(f"/api/marketplace/listings/{listing_id}/favorite/")
     assert fav.status_code == 201
 
     # buyer requests
     req = cb.post(
-        f"/marketplace/listings/{listing_id}/request/",
+        f"/api/marketplace/listings/{listing_id}/request/",
         {"notes": "I would love to buy this dress"},
         format="json",
     )
