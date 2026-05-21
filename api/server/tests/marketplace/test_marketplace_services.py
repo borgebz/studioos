@@ -77,16 +77,16 @@ request_transaction
 accept_transaction
 ├─ txn not found → TransactionNotFound
 ├─ user cannot accept → PermissionDenied (school/member checks)
-├─ txn not PENDING → TransactionNotPending
+├─ invalid transition → InvalidStatusTransition
 └─ happy path → ACCEPTED, booking → CONFIRMED
 
 reject_transaction
-├─ txn not PENDING → TransactionNotPending
+├─ invalid transition → InvalidStatusTransition
 ├─ user cannot accept → PermissionDenied
 └─ happy path → REJECTED, booking → CANCELLED
 
 complete_transaction
-├─ txn not ACCEPTED → TransactionNotAccepted
+├─ invalid transition → InvalidStatusTransition
 ├─ SELL → variant SOLD, listing CLOSED
 ├─ DONATE → variant DONATED, listing CLOSED
 ├─ RENT/LEND → variant stays AVAILABLE, listing stays ACTIVE
@@ -95,7 +95,7 @@ complete_transaction
 └─ DONATE txn → no billing entry regardless of price
 
 cancel_transaction
-├─ wrong status → TransactionCannotBeCancelled
+├─ invalid transition → InvalidStatusTransition
 ├─ requester can cancel
 ├─ owner can cancel (member items)
 ├─ staff can cancel (school items)
@@ -104,8 +104,7 @@ cancel_transaction
 └─ cancel ACCEPTED → booking CANCELLED
 
 block_transaction / unblock_transaction
-├─ not ACCEPTED → TransactionNotAccepted (for block)
-├─ not BLOCKED → TransactionNotBlocked (for unblock)
+├─ invalid transition → InvalidStatusTransition (for both)
 ├─ happy block → BLOCKED, booking BLOCKED
 └─ happy unblock → ACCEPTED, booking CONFIRMED
 """
@@ -585,7 +584,8 @@ class TestListListings:
 @pytest.mark.django_db
 class TestListMyListings:
 
-    def test_returns_own_excludes_stale(self):
+    def test_returns_own_includes_all_statuses(self):
+        """My listings shows everything — including sold/donated — for history."""
         from marketplace.services import list_my_listings
         owner = _member_user()
         other = _member_user()
@@ -593,21 +593,22 @@ class TestListMyListings:
         v_ok = _make_variant(product)
         v_sold = _make_variant(product, status=ProductVariant.Status.SOLD)
         listing_ok = _make_listing(v_ok, owner)
-        listing_stale = _make_listing(v_sold, owner)
+        listing_sold = _make_listing(v_sold, owner)
         listing_other_product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=other)
         listing_other = _make_listing(_make_variant(listing_other_product), other)
 
         results = list(list_my_listings(user=owner))
         ids = [r.id for r in results]
         assert listing_ok.id in ids
-        assert listing_stale.id not in ids
+        assert listing_sold.id in ids  # sold items visible in own history
         assert listing_other.id not in ids
 
 
 @pytest.mark.django_db
 class TestListFavoritedListings:
 
-    def test_returns_favorited_excludes_stale(self):
+    def test_returns_favorited_includes_all_statuses(self):
+        """Favorites shows everything — user should see items even after sold."""
         from marketplace.services import list_favorited_listings, add_favorite
         owner = _member_user()
         user = _member_user()
@@ -615,33 +616,34 @@ class TestListFavoritedListings:
         v_ok = _make_variant(product)
         v_sold = _make_variant(product, status=ProductVariant.Status.SOLD)
         listing_ok = _make_active_listing(v_ok, owner)
-        listing_stale = _make_active_listing(v_sold, owner)
+        listing_sold = _make_active_listing(v_sold, owner)
 
         add_favorite(listing_id=listing_ok.id, user=user)
-        ListingFavorite.objects.create(listing=listing_stale, user=user, created_by=user)
+        ListingFavorite.objects.create(listing=listing_sold, user=user, created_by=user)
 
         results = list(list_favorited_listings(user=user))
         ids = [r.id for r in results]
         assert listing_ok.id in ids
-        assert listing_stale.id not in ids
+        assert listing_sold.id in ids  # sold items still visible in favorites
 
 
 @pytest.mark.django_db
 class TestListSchoolListings:
 
-    def test_excludes_stale_school_variants(self):
+    def test_returns_all_school_listings(self):
+        """Admin endpoint returns everything — no status filtering."""
         from marketplace.services import list_school_listings
         staff = _staff_user()
         product = _make_product(owner_type=Product.OwnerType.SCHOOL)
         v_ok = _make_variant(product)
         v_sold = _make_variant(product, status=ProductVariant.Status.SOLD)
         listing_ok = _make_listing(v_ok, staff)
-        listing_stale = _make_listing(v_sold, staff)
+        listing_sold = _make_listing(v_sold, staff)
 
-        results = list(list_school_listings())
+        results = list(list_school_listings(user=staff))
         ids = [r.id for r in results]
         assert listing_ok.id in ids
-        assert listing_stale.id not in ids
+        assert listing_sold.id in ids  # admin sees all statuses
 
 
 @pytest.mark.django_db
@@ -850,7 +852,7 @@ class TestAcceptTransaction:
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
         accept_transaction(transaction_id=txn.id, user=owner)
-        with pytest.raises(ValidationError, match="TransactionNotPending"):
+        with pytest.raises(ValidationError, match="InvalidStatusTransition"):
             accept_transaction(transaction_id=txn.id, user=owner)
 
     def test_happy_path_member(self):
@@ -881,7 +883,7 @@ class TestRejectTransaction:
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
         accept_transaction(transaction_id=txn.id, user=owner)
-        with pytest.raises(ValidationError, match="TransactionNotPending"):
+        with pytest.raises(ValidationError, match="InvalidStatusTransition"):
             reject_transaction(transaction_id=txn.id, user=owner)
 
     def test_happy_path(self):
@@ -903,7 +905,7 @@ class TestCompleteTransaction:
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
-        with pytest.raises(ValidationError, match="TransactionNotAccepted"):
+        with pytest.raises(ValidationError, match="InvalidStatusTransition"):
             complete_transaction(transaction_id=txn.id, user=owner)
 
     def test_sell_marks_variant_sold_and_listing_closed(self):
@@ -1079,7 +1081,7 @@ class TestCancelTransaction:
         txn = request_transaction(user=requester, listing_id=listing.id)
         accept_transaction(transaction_id=txn.id, user=owner)
         complete_transaction(transaction_id=txn.id, user=owner)
-        with pytest.raises(ValidationError, match="TransactionCannotBeCancelled"):
+        with pytest.raises(ValidationError, match="InvalidStatusTransition"):
             cancel_transaction(transaction_id=txn.id, user=requester)
 
     def test_cannot_cancel_rejected(self):
@@ -1088,7 +1090,7 @@ class TestCancelTransaction:
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
         reject_transaction(transaction_id=txn.id, user=owner)
-        with pytest.raises(ValidationError, match="TransactionCannotBeCancelled"):
+        with pytest.raises(ValidationError, match="InvalidStatusTransition"):
             cancel_transaction(transaction_id=txn.id, user=requester)
 
 
@@ -1100,7 +1102,7 @@ class TestBlockUnblockTransaction:
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
-        with pytest.raises(ValidationError, match="TransactionNotAccepted"):
+        with pytest.raises(ValidationError, match="InvalidStatusTransition"):
             block_transaction(transaction_id=txn.id, user=owner)
 
     def test_block_happy_path(self):
@@ -1120,7 +1122,7 @@ class TestBlockUnblockTransaction:
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
         accept_transaction(transaction_id=txn.id, user=owner)
-        with pytest.raises(ValidationError, match="TransactionNotBlocked"):
+        with pytest.raises(ValidationError, match="InvalidStatusTransition"):
             unblock_transaction(transaction_id=txn.id, user=owner)
 
     def test_unblock_happy_path(self):
@@ -1358,34 +1360,34 @@ class TestListingTransactionQueries:
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
 
-        pending = list(list_transactions(user=owner, filters={"status": "pending"}))
+        pending = list(list_transactions(filters={"status": "pending"}))
         assert txn.id in [t.id for t in pending]
 
         accept_transaction(transaction_id=txn.id, user=owner)
-        accepted = list(list_transactions(user=owner, filters={"status": "accepted"}))
+        accepted = list(list_transactions(filters={"status": "accepted"}))
         assert txn.id in [t.id for t in accepted]
 
-        still_pending = list(list_transactions(user=owner, filters={"status": "pending"}))
+        still_pending = list(list_transactions(filters={"status": "pending"}))
         assert txn.id not in [t.id for t in still_pending]
 
-    def test_get_transaction_with_filter(self):
-        from marketplace.services import request_transaction, get_transaction
-        from django.db.models import Q
+    def test_get_my_transaction_scoped_to_user(self):
+        from marketplace.services import request_transaction, get_my_transaction
+        from rest_framework.exceptions import PermissionDenied
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
 
-        found = get_transaction(
-            transaction_id=txn.id,
-            qs_filter=Q(requester=requester),
-        )
+        # Requester can access
+        found = get_my_transaction(transaction_id=txn.id, user=requester)
         assert found.id == txn.id
 
-        with pytest.raises(AppNotFound):
-            get_transaction(
-                transaction_id=txn.id,
-                qs_filter=Q(requester=_member_user()),
-            )
+        # Owner can access
+        found = get_my_transaction(transaction_id=txn.id, user=owner)
+        assert found.id == txn.id
+
+        # Random user cannot
+        with pytest.raises(PermissionDenied):
+            get_my_transaction(transaction_id=txn.id, user=_member_user())
 
 
 @pytest.mark.django_db

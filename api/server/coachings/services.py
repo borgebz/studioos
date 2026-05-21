@@ -135,6 +135,7 @@ def _student_ids_for_modality_roster(*, modality_id):
             status=EnrollmentStatus.APPROVED,
             student_id__isnull=False,
             enrollment_modalities__modality_id=modality_id,
+            enrollment_modalities__deleted_at__isnull=True,
         )
         .values_list("student_id", flat=True)
         .distinct()
@@ -398,6 +399,9 @@ def _coaching_detail_queryset():
             _recurring_sessions_count=Count(
                 "recurring_coaching__sessions",
                 distinct=True,
+                filter=models.Q(
+                    recurring_coaching__sessions__deleted_at__isnull=True,
+                ),
             ),
         )
     )
@@ -794,6 +798,7 @@ def list_coachings(
     teacher_id=None,
     status=None,
     studio_id=None,
+    modality_id=None,
     requested_by_id=None,
     participant_id=None,
     recurring_coaching_id=None,
@@ -801,16 +806,21 @@ def list_coachings(
     date_to=None,
 ):
     qs = _coaching_detail_queryset()
-    if teacher_id is not None:
-        qs = qs.filter(teacher_id=teacher_id)
-    if status is not None:
-        qs = qs.filter(status=status)
-    if studio_id is not None:
-        qs = qs.filter(studio_id=studio_id)
+    if teacher_id:
+        qs = qs.filter(teacher_id__in=teacher_id)
+    if status:
+        qs = qs.filter(status__in=status)
+    if studio_id:
+        qs = qs.filter(studio_id__in=studio_id)
+    if modality_id:
+        qs = qs.filter(modality_id__in=modality_id)
     if requested_by_id is not None:
         qs = qs.filter(requested_by_id=requested_by_id)
     if participant_id is not None:
-        qs = qs.filter(participants__student_id=participant_id)
+        qs = qs.filter(
+            participants__student_id=participant_id,
+            participants__deleted_at__isnull=True,
+        )
     if recurring_coaching_id is not None:
         qs = qs.filter(recurring_coaching_id=recurring_coaching_id)
     if date_from is not None:

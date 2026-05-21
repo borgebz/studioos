@@ -41,12 +41,12 @@ docker compose exec api uv run python manage.py bootstrap_user --email dev@test.
 
 Services:
 
-- API: http://localhost:8000
-- Mailpit UI: http://localhost:8025
+- API: [http://localhost:8000](http://localhost:8000)
+- Mailpit UI: [http://localhost:8025](http://localhost:8025)
 - Postgres: localhost:5433
-- Flower (Celery monitor): http://localhost:5555
-- RedisInsight: http://localhost:5540
-- Portainer (container monitor): http://localhost:9000
+- Flower (Celery monitor): [http://localhost:5555](http://localhost:5555)
+- RedisInsight: [http://localhost:5540](http://localhost:5540)
+- Portainer (container monitor): [http://localhost:9000](http://localhost:9000)
 
 ## Seeding demo data
 
@@ -56,89 +56,64 @@ enrollment period with submissions in different statuses, coachings (scheduled,
 requested, completed), billing entries and fines, events, school + member
 inventory, marketplace listings, and teacher availability.
 
-The seed command also runs every catalog seeder in the codebase
-(`seed_roles`, `seed_permissions`, `seed_modalities`, `seed_size_systems`,
-`seed_sizes`, `seed_colors`, `seed_categories`), so you do **not** need to
-invoke those separately.
+The command also applies migrations and runs every catalog seeder in the
+codebase (`seed_roles`, `seed_permissions`, `seed_modalities`,
+`seed_size_systems`, `seed_sizes`, `seed_colors`, `seed_categories`), so a
+single invocation is enough.
 
 All seeded users share the same email host and password (defaults:
 `@studioos.dev` / `123456`).
 
-**macOS / Linux / WSL / Git Bash:**
-
-```bash
-# From the repo root, with docker compose up
-./scripts/seed_demo_data.sh
-
-# Custom email host or password
-./scripts/seed_demo_data.sh --host example.test --password mypwd
-```
-
-**Windows (PowerShell):**
-
-```powershell
-.\scripts\seed_demo_data.ps1
-
-# Custom email host or password
-.\scripts\seed_demo_data.ps1 -EmailHost example.test -Password mypwd
-```
-
-Or call the management command directly (works on any OS):
+With `docker compose up` running:
 
 ```bash
 docker compose exec api uv run python manage.py seed_demo_data
 ```
+
+Optional flags for a custom email host or password:
+
+```bash
+docker compose exec api uv run python manage.py seed_demo_data \
+  --host example.test --password mypwd
+```
+
+Works identically on macOS, Linux and Windows (PowerShell or cmd) — no shell
+wrapper required.
 
 The command is idempotent — re-running creates missing rows and refreshes
 passwords on existing ones.
 
 Seeded accounts:
 
-| Email                          | Role              |
-|--------------------------------|-------------------|
-| direction@studioos.dev         | direction         |
-| coordination@studioos.dev      | coordination      |
-| collaborator@studioos.dev      | collaborator      |
-| teacher1@studioos.dev          | teacher           |
-| teacher2@studioos.dev          | teacher           |
-| teacherext@studioos.dev        | teacher_external  |
-| parent1@studioos.dev           | parent            |
-| parent2@studioos.dev           | parent            |
-| student1@studioos.dev … 4      | student           |
+
+| Email                                                         | Role             |
+| ------------------------------------------------------------- | ---------------- |
+| [direction@studioos.dev](mailto:direction@studioos.dev)       | direction        |
+| [coordination@studioos.dev](mailto:coordination@studioos.dev) | coordination     |
+| [collaborator@studioos.dev](mailto:collaborator@studioos.dev) | collaborator     |
+| [teacher1@studioos.dev](mailto:teacher1@studioos.dev)         | teacher          |
+| [teacher2@studioos.dev](mailto:teacher2@studioos.dev)         | teacher          |
+| [teacherext@studioos.dev](mailto:teacherext@studioos.dev)     | teacher_external |
+| [parent1@studioos.dev](mailto:parent1@studioos.dev)           | parent           |
+| [parent2@studioos.dev](mailto:parent2@studioos.dev)           | parent           |
+| [student1@studioos.dev](mailto:student1@studioos.dev) … 4     | student          |
+
 
 ### Wiping the database
 
-To start from a clean slate (drops every row in every table by recreating the
-database inside the docker Postgres container):
-
-**macOS / Linux / WSL / Git Bash:**
-
-```bash
-./scripts/reset_db.sh           # prompts for confirmation
-./scripts/reset_db.sh --yes     # skip the confirmation prompt
-```
-
-**Windows (PowerShell):**
-
-```powershell
-.\scripts\reset_db.ps1
-.\scripts\reset_db.ps1 -Yes     # skip the confirmation prompt
-```
-
-After resetting, re-run the seed:
+To start from a clean slate (drops every row by recreating the database inside
+the docker Postgres container), stop the apps, drop & recreate the DB, then
+re-seed:
 
 ```bash
-./scripts/seed_demo_data.sh      # or .\scripts\seed_demo_data.ps1 on Windows
+docker compose stop api worker beat flower
+docker compose exec db psql -U studioos -d postgres -c "DROP DATABASE studioos;"
+docker compose exec db psql -U studioos -d postgres -c "CREATE DATABASE studioos OWNER studioos;"
+docker compose up -d api worker beat
+docker compose exec api uv run python manage.py seed_demo_data
 ```
 
-The reset script handles migrations on the next seed run automatically — the
-seed wrapper applies them before populating data.
-
-> **Windows note:** the `.ps1` scripts require Docker Desktop. If PowerShell
-> blocks execution, run them once with
-> `powershell -ExecutionPolicy Bypass -File .\scripts\seed_demo_data.ps1` or
-> set the policy with
-> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+The seed command takes care of migrations and catalog data on its own.
 
 ## Tests
 
@@ -169,3 +144,4 @@ Paste the following prompt to review your changes:
 Review against .github/studioos-backend-rules-full.md (repository root). Violations only; by severity (blocker, should-fix, nit); cite files and lines where useful. No code rewrites.
 Optional focus — commit(s): [...]
 ```
+

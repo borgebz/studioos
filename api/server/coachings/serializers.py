@@ -156,9 +156,28 @@ class ParticipantCancelSerializer(serializers.Serializer):
 
 
 class CoachingListQuerySerializer(serializers.Serializer):
-    teacher_id = serializers.IntegerField(required=False)
-    status = serializers.ChoiceField(choices=CoachingStatus.choices, required=False)
-    studio_id = serializers.IntegerField(required=False)
+    """Query params for ``GET /api/coachings/``.
+
+    ``teacher_id``, ``studio_id``, ``modality_id`` and ``status`` accept
+    multiple values (repeat the param, e.g. ``?status=scheduled&status=requested``)
+    and are translated into ``__in`` lookups by the service.
+    """
+
+    _MULTI_FIELDS = ("teacher_id", "studio_id", "modality_id", "status")
+
+    teacher_id = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    studio_id = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    modality_id = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=CoachingStatus.choices),
+        required=False,
+    )
     requested_by_id = serializers.IntegerField(required=False)
     participant_id = serializers.IntegerField(
         required=False,
@@ -167,6 +186,19 @@ class CoachingListQuerySerializer(serializers.Serializer):
     recurring_coaching_id = serializers.IntegerField(required=False)
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
+
+    def to_internal_value(self, data):
+        # QueryDict collapses repeated keys to the last value when iterated;
+        # use getlist() so multi-value filters survive.
+        if hasattr(data, "getlist"):
+            normalized = {}
+            for key in data.keys():
+                if key in self._MULTI_FIELDS:
+                    normalized[key] = data.getlist(key)
+                else:
+                    normalized[key] = data.get(key)
+            data = normalized
+        return super().to_internal_value(data)
 
 
 # --- Read models (nested resources for responses) ---

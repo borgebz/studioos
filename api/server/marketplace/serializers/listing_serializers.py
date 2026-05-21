@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from inventory.serializers.product_serializers import ProductDetailSerializer
@@ -36,6 +37,7 @@ class ListingListSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+    @extend_schema_field(serializers.URLField(allow_null=True))
     def get_primary_media_url(self, obj):
         primary = (
             obj.variant.product.media.filter(is_primary=True).first()
@@ -50,6 +52,7 @@ class ListingListSerializer(serializers.ModelSerializer):
             )
         return None
 
+    @extend_schema_field(serializers.DateTimeField(allow_null=True))
     def get_available_from(self, obj):
         from django.utils import timezone
         from inventory.models import VariantBooking
@@ -95,12 +98,15 @@ class ListingDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @extend_schema_field(ProductDetailSerializer)
     def get_product(self, obj):
         return ProductDetailSerializer(obj.variant.product, context=self.context).data
 
+    @extend_schema_field(ProductVariantSerializer)
     def get_variant(self, obj):
         return ProductVariantSerializer(obj.variant, context=self.context).data
 
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_active_booking_windows(self, obj):
         from inventory.models import VariantBooking
 
@@ -110,6 +116,7 @@ class ListingDetailSerializer(serializers.ModelSerializer):
         ).values("start_at", "end_at")
         return list(bookings)
 
+    @extend_schema_field(serializers.DictField())
     def get_owner_display(self, obj):
         owner = obj.variant.product.owner
         if not owner:
@@ -129,14 +136,41 @@ class ListingDetailSerializer(serializers.ModelSerializer):
             "photo_url": photo_url,
         }
 
+    @extend_schema_field(serializers.BooleanField())
     def get_is_favorited(self, obj):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
         return obj.favorites.filter(user=request.user, deleted_at__isnull=True).exists()
 
+    @extend_schema_field(serializers.IntegerField())
     def get_favorites_count(self, obj):
         return obj.favorites.filter(deleted_at__isnull=True).count()
+
+
+_LISTING_ORDERING_CHOICES = [
+    ("-created_at", "Newest first"),
+    ("created_at", "Oldest first"),
+    ("asking_price", "Price ascending"),
+    ("-asking_price", "Price descending"),
+]
+
+
+class ListingListQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(required=False)
+    listing_type = serializers.ChoiceField(
+        choices=Listing.ListingType.choices, required=False
+    )
+    status = serializers.ChoiceField(
+        choices=Listing.ListingStatus.choices, required=False
+    )
+    category_id = serializers.IntegerField(required=False)
+    size_id = serializers.IntegerField(required=False)
+    color_id = serializers.IntegerField(required=False)
+    condition = serializers.CharField(required=False)
+    ordering = serializers.ChoiceField(
+        choices=_LISTING_ORDERING_CHOICES, required=False
+    )
 
 
 class ListingCreateSerializer(serializers.Serializer):

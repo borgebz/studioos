@@ -54,11 +54,17 @@ def _full_clean_product(*, product):
         raise_drf_from_model_validation(exc)
 
 
+_PRODUCT_ALLOWED_ORDERING = {
+    "-updated_at", "updated_at", "name", "-name",
+}
+
+
 def list_products(*, user, filters=None):
     queryset = Product.objects.filter(
         owner_type=Product.OwnerType.MEMBER, owner_id=user.id
     ).select_related("category", "owner")
 
+    ordering = "-updated_at"
     if filters:
         if filters.get("category_id"):
             queryset = queryset.filter(category_id=filters["category_id"])
@@ -69,7 +75,10 @@ def list_products(*, user, filters=None):
         if filters.get("name"):
             queryset = queryset.filter(name__icontains=filters["name"])
 
-    return queryset.order_by("-id")
+        if filters.get("ordering") and filters["ordering"] in _PRODUCT_ALLOWED_ORDERING:
+            ordering = filters["ordering"]
+
+    return queryset.order_by(ordering)
 
 
 def list_school_products(*, user, filters=None):
@@ -80,6 +89,7 @@ def list_school_products(*, user, filters=None):
         owner_type=Product.OwnerType.SCHOOL
     ).select_related("category")
 
+    ordering = "-updated_at"
     if filters:
         if filters.get("category_id"):
             queryset = queryset.filter(category_id=filters["category_id"])
@@ -90,7 +100,10 @@ def list_school_products(*, user, filters=None):
         if filters.get("name"):
             queryset = queryset.filter(name__icontains=filters["name"])
 
-    return queryset.order_by("-id")
+        if filters.get("ordering") and filters["ordering"] in _PRODUCT_ALLOWED_ORDERING:
+            ordering = filters["ordering"]
+
+    return queryset.order_by(ordering)
 
 
 def get_product(*, pk, user):

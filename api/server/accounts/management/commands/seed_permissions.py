@@ -57,16 +57,19 @@ AVAILABILITY_PERMISSIONS_MANAGEMENT = [
     "availability.can_manage_teacher_availability_for_others",
 ]
 
-COACHINGS_PERMISSIONS = [
+COACHINGS_PERMISSIONS_MANAGEMENT = [
     "coachings.view_coachingclass",
     "coachings.add_coachingclass",
     "coachings.change_coachingclass",
     "coachings.delete_coachingclass",
-    "coachings.can_accept_coaching_as_teacher",
-    "coachings.can_reject_coaching_as_teacher",
     "coachings.view_coachingparticipant",
     "coachings.add_coachingparticipant",
     "coachings.change_coachingparticipant",
+]
+
+COACHINGS_PERMISSIONS_TEACHER = [
+    "coachings.can_accept_coaching_as_teacher",
+    "coachings.can_reject_coaching_as_teacher",
 ]
 
 CLASSES_PERMISSIONS = [
@@ -202,8 +205,8 @@ ROLE_PERMISSIONS = {
         "modality.view_usermodality",
         # availability
         *AVAILABILITY_PERMISSIONS_MANAGEMENT,
-        # coachings (full management + scheduling)
-        *COACHINGS_PERMISSIONS,
+        # coachings (full management + scheduling — no teacher-identity perms)
+        *COACHINGS_PERMISSIONS_MANAGEMENT,
         "coachings.can_schedule_coaching",
         # events
         *EVENTS_PERMISSIONS_MANAGEMENT,
@@ -256,8 +259,8 @@ ROLE_PERMISSIONS = {
         "modality.view_usermodality",
         # availability
         *AVAILABILITY_PERMISSIONS_MANAGEMENT,
-        # coachings (full management + scheduling)
-        *COACHINGS_PERMISSIONS,
+        # coachings (full management + scheduling — no teacher-identity perms)
+        *COACHINGS_PERMISSIONS_MANAGEMENT,
         "coachings.can_schedule_coaching",
         # events
         *EVENTS_PERMISSIONS_MANAGEMENT,
@@ -297,8 +300,7 @@ ROLE_PERMISSIONS = {
         *AVAILABILITY_PERMISSIONS,
         # coaching interaction
         "coachings.view_coachingclass",
-        "coachings.can_accept_coaching_as_teacher",
-        "coachings.can_reject_coaching_as_teacher",
+        *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
         # classes (read-only)
         "classes.view_classe",
@@ -316,8 +318,7 @@ ROLE_PERMISSIONS = {
         *AVAILABILITY_PERMISSIONS,
         # coaching interaction
         "coachings.view_coachingclass",
-        "coachings.can_accept_coaching_as_teacher",
-        "coachings.can_reject_coaching_as_teacher",
+        *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
         # classes (read-only)
         "classes.view_classe",

@@ -15,18 +15,18 @@ from marketplace import services
 from marketplace.serializers import (
     ListingCreateSerializer,
     ListingDetailSerializer,
+    ListingListQuerySerializer,
     ListingListSerializer,
     ListingUpdateSerializer,
 )
 
 
-def _listing_filters(request):
-    q = request.query_params
-    out = {}
-    for key in ["search", "listing_type", "category_id", "size_id", "color_id", "condition"]:
-        if q.get(key):
-            out[key] = q.get(key)
-    return out or None
+def _validated_listing_filters(request):
+    """Parse and validate listing query params via serializer."""
+    q = ListingListQuerySerializer(data=request.query_params)
+    q.is_valid(raise_exception=True)
+    vd = q.validated_data
+    return vd or None
 
 
 class ListingListCreateView(APIView):
@@ -35,6 +35,7 @@ class ListingListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        parameters=[ListingListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="MarketplaceListingList",
@@ -45,7 +46,7 @@ class ListingListCreateView(APIView):
     )
     def get(self, request):
         listings = services.list_listings(
-            user=request.user, filters=_listing_filters(request)
+            user=request.user, filters=_validated_listing_filters(request)
         )
         return paginated_response(
             request=request,
@@ -77,20 +78,7 @@ class ListingDetailView(APIView):
 
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request, listing_id):
-        listing = services.get_listing(listing_id=listing_id)
-        # Public + active listings are visible to any authenticated user
-        if not (
-            listing.status == "active" and listing.is_public
-        ):
-            # Not public — must be owner or have admin perm
-            is_owner = listing.created_by_id == request.user.id
-            has_admin_perm = request.user.has_perm(
-                "marketplace.view_productlisting"
-            )
-            if not is_owner and not has_admin_perm:
-                from rest_framework.exceptions import PermissionDenied
-
-                raise PermissionDenied()
+        listing = services.get_listing(listing_id=listing_id, user=request.user)
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data
         )
@@ -166,6 +154,7 @@ class MyListingsView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        parameters=[ListingListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="MyListingsList",
@@ -176,7 +165,9 @@ class MyListingsView(APIView):
     )
     @require_perm("marketplace.view_own_listings")
     def get(self, request):
-        listings = services.list_my_listings(user=request.user)
+        listings = services.list_my_listings(
+            user=request.user, filters=_validated_listing_filters(request)
+        )
         return paginated_response(
             request=request,
             items=listings,
@@ -215,6 +206,7 @@ class SchoolListingListCreateView(APIView):
     parser_classes = [MultiPartParser]
 
     @extend_schema(
+        parameters=[ListingListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="SchoolListingList",
@@ -225,7 +217,9 @@ class SchoolListingListCreateView(APIView):
     )
     @require_perm("marketplace.manage_school_listings")
     def get(self, request):
-        qs = services.list_school_listings()
+        qs = services.list_school_listings(
+            user=request.user, filters=_validated_listing_filters(request)
+        )
         return paginated_response(
             request=request,
             items=qs,
@@ -298,7 +292,7 @@ class SchoolListingDetailView(APIView):
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     @require_perm("marketplace.manage_school_listings")
     def get(self, request, listing_id):
-        listing = services.get_listing(listing_id=listing_id)
+        listing = services.get_listing(listing_id=listing_id, user=request.user)
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data
         )

@@ -127,6 +127,9 @@ class Command(BaseCommand):
         host = opts["host"]
         password = opts["password"]
 
+        self.stdout.write(self.style.MIGRATE_HEADING("→ Applying migrations"))
+        call_command("migrate", verbosity=0, interactive=False)
+
         self.stdout.write(self.style.MIGRATE_HEADING("→ Pre-seeding catalog data"))
         # These commands are already idempotent and live in the codebase.
         for cmd in (

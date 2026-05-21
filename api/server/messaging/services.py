@@ -25,8 +25,14 @@ def get_or_create_direct_conversation(*, user_a, user_b, created_by=None):
         )
 
         existing = (
-            Conversation.objects.filter(conversation_participants__user=user_a)
-            .filter(conversation_participants__user=user_b)
+            Conversation.objects.filter(
+                conversation_participants__user=user_a,
+                conversation_participants__deleted_at__isnull=True,
+            )
+            .filter(
+                conversation_participants__user=user_b,
+                conversation_participants__deleted_at__isnull=True,
+            )
             .first()
         )
         if existing:
