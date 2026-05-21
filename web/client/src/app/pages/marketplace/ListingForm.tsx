@@ -7,12 +7,21 @@ import { useTranslation } from 'react-i18next'
 import { Trash2, Plus, Pencil, ImageIcon, Check, Info } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
+import { enumOptions } from '@/lib/enum-options'
+import {
+  AcquisitionTypeEnum,
+  ConditionEnum,
+  ListingTypeEnum,
+  Status7B2Enum,
+} from '@/api/studioos-api'
 import type {
   Category,
   Color,
+  ListingDetail,
+  ProductDetail,
+  ProductVariantRead,
   SizeSystem,
   SchoolListingCreateMultipart,
-  ListingTypeEnum,
   PatchedListingUpdate,
 } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
@@ -69,99 +78,35 @@ import {
 
 type ListingFormMode = 'create' | 'edit'
 
-/** Runtime shape of nested product in listing detail (generated type says `string`). */
-interface ListingProductData {
-  id: number
-  name: string
-  description: string
-  category: number | null
-  target_gender: string | null
-  brand: string | null
-  material: string | null
-  media: Array<{
-    id: number
-    image: string
-    is_primary: boolean
-    sort_order: number
-  }>
-  school_details?: {
-    inventory_code: string
-    storage_location: string
-    notes: string
-  } | null
-}
-
-/** Runtime shape of nested variant in listing detail. */
-interface ListingVariantData {
-  id: number
-  sku: string | null
-  condition: string
-  status: string
-  acquisition_type: string | null
-  acquired_at: string | null
-  internal_notes: string | null
-  public_notes: string | null
-  size: { id: number; name: string } | null
-  colors: Array<{ id: number; name: string; hex_code: string }>
-  media: Array<{ id: number; image: string; is_primary: boolean; sort_order: number }>
-}
-
-/** Runtime listing detail — product/variant are objects, not strings. */
-export interface ListingDetailRuntime {
-  id: number
-  listing_type: string
-  status: string
-  title: string
-  description: string
-  asking_price: string | null
-  is_public: boolean
-  product: ListingProductData
-  variant: ListingVariantData
-}
-
 export interface ListingFormProps {
   mode: ListingFormMode
   /** Existing listing data when editing. Required in edit mode. */
-  listing?: ListingDetailRuntime
+  listing?: ListingDetail
 }
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constants — sourced from the generated API client.
+// Never hand-roll these arrays; if a value is missing, fix @extend_schema on
+// the API side and regenerate. See §10 of UI_GUIDELINES.md.
 // ---------------------------------------------------------------------------
 
-const LISTING_TYPES: { value: ListingTypeEnum; labelKey: string }[] = [
-  { value: 'sell' as ListingTypeEnum, labelKey: 'marketplace.typeSell' },
-  { value: 'rent' as ListingTypeEnum, labelKey: 'marketplace.typeRent' },
-  { value: 'lend' as ListingTypeEnum, labelKey: 'marketplace.typeLend' },
-  { value: 'donate' as ListingTypeEnum, labelKey: 'marketplace.typeDonate' },
-]
+const LISTING_TYPES = enumOptions(ListingTypeEnum, 'marketplace.type')
+const CONDITIONS = enumOptions(ConditionEnum, 'marketplace.condition')
+const ACQUISITION_TYPES = enumOptions(AcquisitionTypeEnum, 'marketplace.acquisition')
 
-const CONDITIONS = [
-  { value: 'new', labelKey: 'marketplace.conditionNew' },
-  { value: 'excellent', labelKey: 'marketplace.conditionExcellent' },
-  { value: 'good', labelKey: 'marketplace.conditionGood' },
-  { value: 'fair', labelKey: 'marketplace.conditionFair' },
-  { value: 'damaged', labelKey: 'marketplace.conditionDamaged' },
-]
+// Variant status has more values in the API than the form exposes — listing
+// authors should only set `available`, `maintenance`, or `inactive` from the
+// UI; `sold`, `donated`, `archived` are reached by domain events.
+const VARIANT_STATUSES = enumOptions(Status7B2Enum, 'marketplace.variantStatus')
+  .filter((o) => o.value === 'available' || o.value === 'maintenance' || o.value === 'inactive')
 
-const ACQUISITION_TYPES = [
-  { value: 'purchased', labelKey: 'marketplace.acquisitionPurchased' },
-  { value: 'donated', labelKey: 'marketplace.acquisitionDonated' },
-  { value: 'school_owned', labelKey: 'marketplace.acquisitionSchoolOwned' },
-  { value: 'other', labelKey: 'marketplace.acquisitionOther' },
-]
-
+// `target_gender` is `string` in the API schema (no choices serialized via
+// @extend_schema). Keep this list local until the backend exposes an enum.
 const GENDERS = [
   { value: 'female', labelKey: 'marketplace.genderFemale' },
   { value: 'male', labelKey: 'marketplace.genderMale' },
   { value: 'unisex', labelKey: 'marketplace.genderUnisex' },
-]
-
-const VARIANT_STATUSES = [
-  { value: 'available', labelKey: 'marketplace.variantStatusAvailable' },
-  { value: 'maintenance', labelKey: 'marketplace.variantStatusMaintenance' },
-  { value: 'inactive', labelKey: 'marketplace.variantStatusInactive' },
-]
+] as const
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -186,10 +131,9 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
-let variantCounter = 0
 function createVariant(): VariantData {
   return {
-    id: `variant-${Date.now()}-${variantCounter++}`,
+    id: `variant-${crypto.randomUUID()}`,
     condition: 'good',
     acquisitionType: '',
     status: 'available',
@@ -204,7 +148,7 @@ function createVariant(): VariantData {
   }
 }
 
-function buildEditDefaults(listing: ListingDetailRuntime): CreateListingFormValues {
+function buildEditDefaults(listing: ListingDetail): CreateListingFormValues {
   const product = listing.product
   const sd = product.school_details
   return {
@@ -225,7 +169,7 @@ function buildEditDefaults(listing: ListingDetailRuntime): CreateListingFormValu
   }
 }
 
-function buildEditVariant(v: ListingVariantData): VariantData {
+function buildEditVariant(v: ProductVariantRead): VariantData {
   return {
     id: String(v.id),
     condition: v.condition ?? 'good',
@@ -242,13 +186,14 @@ function buildEditVariant(v: ListingVariantData): VariantData {
   }
 }
 
-function buildEditMedia(product: ListingProductData): MediaFile[] {
+function buildEditMedia(product: ProductDetail): MediaFile[] {
   return (product.media ?? [])
-    .sort((a, b) => a.sort_order - b.sort_order)
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map((m) => ({
       id: String(m.id),
       url: m.image,
-      isPrimary: m.is_primary,
+      isPrimary: m.is_primary ?? false,
     }))
 }
 

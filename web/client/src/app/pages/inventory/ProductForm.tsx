@@ -6,6 +6,12 @@ import { useTranslation } from 'react-i18next'
 import { Trash2, Plus, Pencil, Info } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
+import { enumOptions } from '@/lib/enum-options'
+import {
+  AcquisitionTypeEnum,
+  ConditionEnum,
+  StatusDc4Enum,
+} from '@/api/studioos-api'
 import type {
   Category,
   Color,
@@ -68,35 +74,22 @@ export interface ProductFormProps {
 }
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constants — sourced from the generated API client.
+// Never hand-roll these arrays; if a value is missing, fix @extend_schema on
+// the API side and regenerate. See §10 of UI_GUIDELINES.md.
 // ---------------------------------------------------------------------------
 
-const CONDITIONS = [
-  { value: 'new', labelKey: 'marketplace.conditionNew' },
-  { value: 'excellent', labelKey: 'marketplace.conditionExcellent' },
-  { value: 'good', labelKey: 'marketplace.conditionGood' },
-  { value: 'fair', labelKey: 'marketplace.conditionFair' },
-  { value: 'damaged', labelKey: 'marketplace.conditionDamaged' },
-]
+const CONDITIONS = enumOptions(ConditionEnum, 'marketplace.condition')
+const ACQUISITION_TYPES = enumOptions(AcquisitionTypeEnum, 'marketplace.acquisition')
+const PRODUCT_STATUSES = enumOptions(StatusDc4Enum, 'schoolInventory.status')
 
-const ACQUISITION_TYPES = [
-  { value: 'purchased', labelKey: 'marketplace.acquisitionPurchased' },
-  { value: 'donated', labelKey: 'marketplace.acquisitionDonated' },
-  { value: 'school_owned', labelKey: 'marketplace.acquisitionSchoolOwned' },
-  { value: 'other', labelKey: 'marketplace.acquisitionOther' },
-]
-
+// `target_gender` is `string` in the API schema (no choices serialized via
+// @extend_schema). Keep this list local until the backend exposes an enum.
 const GENDERS = [
   { value: 'female', labelKey: 'marketplace.genderFemale' },
   { value: 'male', labelKey: 'marketplace.genderMale' },
   { value: 'unisex', labelKey: 'marketplace.genderUnisex' },
-]
-
-const PRODUCT_STATUSES = [
-  { value: 'active', labelKey: 'schoolInventory.statusActive' },
-  { value: 'inactive', labelKey: 'schoolInventory.statusInactive' },
-  { value: 'archived', labelKey: 'schoolInventory.statusArchived' },
-]
+] as const
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -113,10 +106,9 @@ interface VariantData {
   notes: string
 }
 
-let variantCounter = 0
 function createVariant(): VariantData {
   return {
-    id: `variant-${Date.now()}-${variantCounter++}`,
+    id: `variant-${crypto.randomUUID()}`,
     condition: 'good',
     acquisitionType: '',
     sku: '',

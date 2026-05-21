@@ -4,17 +4,18 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
+import type { ListingDetail } from '@/api/studioos-api'
 import { parseApiError } from '@/lib/api-errors'
 import { paths } from '@/app/paths'
 import { FullPageLoader } from '@/components/shared/LogoLoader'
 
-import { ListingForm, type ListingDetailRuntime } from './ListingForm'
+import { ListingForm } from './ListingForm'
 
 export function EditListingPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const [listing, setListing] = useState<ListingDetailRuntime | null>(null)
+  const [listing, setListing] = useState<ListingDetail | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,9 +26,7 @@ export function EditListingPage() {
     }
     apiClient.api
       .marketplaceSchoolListingsRetrieve2(listingId)
-      .then((res) =>
-        setListing(res.data as unknown as ListingDetailRuntime),
-      )
+      .then((res) => setListing(res.data))
       .catch((err) => {
         toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
         navigate(paths.schoolListings)

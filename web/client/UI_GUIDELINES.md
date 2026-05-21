@@ -540,6 +540,57 @@ This runs: `swagger-typescript-api generate --path http://127.0.0.1:8000/api/sch
 3. Regenerate: `npm run generate-client` (from the `client/` directory).
 4. Update frontend call sites if method signatures changed.
 
+### Never Duplicate Generated Enums or Response Shapes
+
+The generated client (`@/api/studioos-api`) is the single source of truth for **every** API-defined value set and response shape. Pages must not redefine them.
+
+This means **never** hand-roll:
+
+```tsx
+// ❌ Wrong — duplicates ConditionEnum / AcquisitionTypeEnum / Status7B2Enum.
+const CONDITIONS = [
+  { value: 'new', labelKey: 'marketplace.conditionNew' },
+  { value: 'excellent', labelKey: 'marketplace.conditionExcellent' },
+  // …
+]
+
+// ❌ Wrong — duplicates the generated ListingDetail / ProductDetail.
+interface ListingDetailRuntime {
+  id: number
+  listing_type: string
+  product: { id: number; name: string; /* … */ }
+  // …
+}
+```
+
+Use the generated types directly, and convert enums to `{ value, labelKey }` arrays with the shared helper `enumOptions()` (`src/lib/enum-options.ts`):
+
+```tsx
+// ✅ Correct
+import { ConditionEnum, type ListingDetail } from '@/api/studioos-api'
+import { enumOptions } from '@/lib/enum-options'
+
+const CONDITIONS = enumOptions(ConditionEnum, 'marketplace.condition')
+// → [{ value: 'new', labelKey: 'marketplace.conditionNew' }, …]
+
+function buildEditDefaults(listing: ListingDetail) { /* … */ }
+```
+
+**Translation keys follow the convention `${prefix}${PascalCase(value)}`** — e.g. `marketplace.condition` + `new` → `marketplace.conditionNew`. Add the matching keys to both locale files; the helper produces them deterministically so a missing key is a clear failure.
+
+#### When the generated client looks wrong
+
+If the generated client's enum or type doesn't match what the API actually returns at runtime, **do not paper over it** with a hand-rolled type. The schema is wrong. Fix the source:
+
+1. Add or correct the `@extend_schema(responses=…)` decorator on the API view (see [docs/architecture-overview.md](../../studioos-product.api/docs/architecture-overview.md)).
+2. Verify with `curl http://127.0.0.1:8000/api/schema/` that the path now describes the correct response.
+3. Regenerate the client: `npm run generate-client`.
+4. Remove any old work-around types and casts.
+
+#### Exception: API field has no choices
+
+Some fields are `string` in the schema because the backend has not (yet) declared choices for them — e.g. `target_gender`. In that single case, keep a local `{ value, labelKey }` array, but add a code comment naming the field and noting that it's pending an API enum.
+
 ### Mock Data (Temporary)
 
 - Mock data lives in `src/mocks/` for pages whose API endpoints are not yet ready.
