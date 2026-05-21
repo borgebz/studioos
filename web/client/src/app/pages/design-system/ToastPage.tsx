@@ -17,7 +17,7 @@ export function ToastPage() {
       <section className="space-y-8">
         {/* Variants */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('toasts.variants')}
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -56,7 +56,7 @@ export function ToastPage() {
 
         {/* With action */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('toasts.withAction')}
           </h2>
           <Button
@@ -77,7 +77,7 @@ export function ToastPage() {
 
         {/* Promise */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('toasts.promise')}
           </h2>
           <Button
@@ -99,7 +99,7 @@ export function ToastPage() {
 
         {/* Duration */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('toasts.customDuration')}
           </h2>
           <div className="flex flex-wrap gap-3">

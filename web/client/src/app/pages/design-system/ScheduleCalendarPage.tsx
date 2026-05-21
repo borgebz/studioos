@@ -101,7 +101,7 @@ export function ScheduleCalendarPage() {
 
       <section className="space-y-8">
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scheduleCalendarFull')}
           </h2>
           <ScheduleCalendar
@@ -118,7 +118,7 @@ export function ScheduleCalendarPage() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scheduleCalendarMinimal')}
           </h2>
           <ScheduleCalendar
@@ -131,7 +131,7 @@ export function ScheduleCalendarPage() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scheduleCalendarEmpty')}
           </h2>
           <ScheduleCalendar

@@ -14,7 +14,7 @@ import { apiClient } from '@/api/api-client'
 import { usePermissions } from '@/auth/permissions'
 import {
   SourceTypeEnum,
-  StatusB62Enum,
+  BillingEntryStatusEnum,
   type BillingEntryDetail,
   type BillingEntryList,
 } from '@/api/studioos-api'
@@ -25,19 +25,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { paths } from '@/app/paths'
@@ -45,24 +39,21 @@ import { cn } from '@/lib/utils'
 
 import { CancelBillingEntryDialog } from './CancelBillingEntryDialog'
 
-type StatusFilter = StatusB62Enum | 'all'
-type SourceFilter = SourceTypeEnum | 'all'
-
 function studentName(student: BillingEntryList['student']): string {
   if (!student) return ''
   const full = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim()
   return full || student.email
 }
 
-function StatusPill({ status }: { status: StatusB62Enum }) {
+function StatusPill({ status }: { status: BillingEntryStatusEnum }) {
   const { t } = useTranslation()
 
-  const styles: Record<StatusB62Enum, string> = {
-    [StatusB62Enum.Pending]:
+  const styles: Record<BillingEntryStatusEnum, string> = {
+    [BillingEntryStatusEnum.Pending]:
       'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-    [StatusB62Enum.Exported]:
+    [BillingEntryStatusEnum.Exported]:
       'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-    [StatusB62Enum.Cancelled]: 'bg-muted text-muted-foreground',
+    [BillingEntryStatusEnum.Cancelled]: 'bg-muted text-muted-foreground',
   }
 
   return (
@@ -84,74 +75,8 @@ export function BillingEntriesPage() {
   const canCancel = can('billing.can_cancel_billingentry')
   const currency = t('common.currencySymbol')
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
-    StatusB62Enum.Pending,
-  )
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
   const [cancelTarget, setCancelTarget] = useState<BillingEntryList | null>(
     null,
-  )
-
-  const fetchPage = useCallback(async (): Promise<
-    PaginatedResponse<BillingEntryList>
-  > => {
-    const res = await apiClient.api.billingEntriesList({
-      ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
-      ...(sourceFilter !== 'all' ? { source_type: sourceFilter } : {}),
-    })
-    // Endpoint returns a raw array, not a paginated envelope.
-    const items = (res.data ?? []) as unknown as BillingEntryList[]
-    return {
-      count: items.length,
-      next: null,
-      previous: null,
-      results: items,
-    }
-  }, [statusFilter, sourceFilter])
-
-  const {
-    items: rows,
-    count,
-    loading,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    refresh,
-    setItems: setRows,
-  } = usePaginatedList<BillingEntryList>({
-    fetchPage,
-    resetDeps: [statusFilter, sourceFilter],
-  })
-
-  const handleCancelled = useCallback(
-    (updated: BillingEntryDetail) => {
-      setRows((prev) => {
-        // Replace the row in-place with the slim list shape derived from the detail
-        const slim: BillingEntryList = {
-          id: updated.id,
-          source_type: updated.source_type,
-          student: updated.student,
-          amount_due: updated.amount_due,
-          description: updated.description,
-          status: updated.status,
-          coaching_class: updated.coaching_class
-            ? {
-                id: updated.coaching_class.id,
-                start_datetime: updated.coaching_class.start_datetime,
-                end_datetime: updated.coaching_class.end_datetime,
-                modality: updated.coaching_class.modality,
-              }
-            : null,
-          fine: updated.fine,
-          created_at: updated.created_at,
-        }
-        const next = prev.map((r) => (r.id === slim.id ? slim : r))
-        if (statusFilter === 'all') return next
-        return next.filter((r) => r.status === statusFilter)
-      })
-      toast.success(t('billing.cancelSuccess'))
-    },
-    [statusFilter, t, setRows],
   )
 
   const columnHelper = useMemo(
@@ -213,6 +138,18 @@ export function BillingEntriesPage() {
       }),
       columnHelper.accessor('source_type', {
         header: () => t('billing.col.source'),
+        meta: {
+          filter: {
+            type: 'select',
+            label: t('billing.col.source'),
+            anyLabel: t('billing.filter.allSources'),
+            options: [
+              { value: SourceTypeEnum.Coaching, label: t('billing.source.coaching') },
+              { value: SourceTypeEnum.Fine, label: t('billing.source.fine') },
+              { value: SourceTypeEnum.Marketplace, label: t('billing.source.marketplace') },
+            ],
+          },
+        },
         cell: (info) => (
           <span className="text-foreground">
             {t(`billing.source.${info.getValue()}`)}
@@ -232,6 +169,18 @@ export function BillingEntriesPage() {
       }),
       columnHelper.accessor('status', {
         header: () => t('billing.col.status'),
+        meta: {
+          filter: {
+            type: 'select',
+            label: t('billing.col.status'),
+            anyLabel: t('billing.filter.allStatuses'),
+            options: [
+              { value: BillingEntryStatusEnum.Pending, label: t('billing.status.pending') },
+              { value: BillingEntryStatusEnum.Exported, label: t('billing.status.exported') },
+              { value: BillingEntryStatusEnum.Cancelled, label: t('billing.status.cancelled') },
+            ],
+          },
+        },
         cell: (info) => (
           <TooltipProvider delayDuration={200}>
             <StatusPill status={info.getValue()} />
@@ -245,7 +194,7 @@ export function BillingEntriesPage() {
         ),
         cell: (info) => {
           const row = info.row.original
-          const isPending = row.status === StatusB62Enum.Pending
+          const isPending = row.status === BillingEntryStatusEnum.Pending
           if (!isPending || !canCancel) {
             return (
               <span className="text-xs text-muted-foreground">
@@ -279,9 +228,87 @@ export function BillingEntriesPage() {
     [columnHelper, t, canCancel, currency],
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<BillingEntryList>({
+    columns,
+    syncToUrl: true,
+    defaultFilters: [{ id: 'status', value: BillingEntryStatusEnum.Pending }],
+  })
+
+  const statusFilter =
+    (columnFilters.find((f) => f.id === 'status')?.value as
+      | BillingEntryStatusEnum
+      | undefined) ?? null
+  const sourceFilter =
+    (columnFilters.find((f) => f.id === 'source_type')?.value as
+      | SourceTypeEnum
+      | undefined) ?? null
+
+  const fetchPage = useCallback(async (): Promise<
+    PaginatedResponse<BillingEntryList>
+  > => {
+    const res = await apiClient.api.billingEntriesList({
+      ...(statusFilter ? { status: statusFilter } : {}),
+      ...(sourceFilter ? { source_type: sourceFilter } : {}),
+    })
+    const items = (res.data ?? []) as unknown as BillingEntryList[]
+    return {
+      count: items.length,
+      next: null,
+      previous: null,
+      results: items,
+    }
+  }, [statusFilter, sourceFilter])
+
+  const {
+    items: rows,
+    count,
+    loading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refresh,
+    setItems: setRows,
+  } = usePaginatedList<BillingEntryList>({
+    fetchPage,
+    resetDeps: [statusFilter, sourceFilter],
+  })
+
+  const handleCancelled = useCallback(
+    (updated: BillingEntryDetail) => {
+      setRows((prev) => {
+        const slim: BillingEntryList = {
+          id: updated.id,
+          source_type: updated.source_type,
+          student: updated.student,
+          amount_due: updated.amount_due,
+          description: updated.description,
+          status: updated.status,
+          coaching_class: updated.coaching_class
+            ? {
+                id: updated.coaching_class.id,
+                start_datetime: updated.coaching_class.start_datetime,
+                end_datetime: updated.coaching_class.end_datetime,
+                modality: updated.coaching_class.modality,
+              }
+            : null,
+          fine: updated.fine,
+          created_at: updated.created_at,
+        }
+        const next = prev.map((r) => (r.id === slim.id ? slim : r))
+        if (!statusFilter) return next
+        return next.filter((r) => r.status === statusFilter)
+      })
+      toast.success(t('billing.cancelSuccess'))
+    },
+    [statusFilter, t, setRows],
+  )
+
   const table = useReactTable({
     data: rows,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getCoreRowModel: getCoreRowModel(),
   })
 
@@ -293,51 +320,6 @@ export function BillingEntriesPage() {
         <p className="-mt-4 mb-6 text-sm text-muted-foreground shrink-0">
           {t('billing.subtitle')}
         </p>
-
-        <div className="mb-4 flex flex-wrap items-center gap-3 shrink-0">
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={StatusB62Enum.Pending}>
-                {t('billing.status.pending')}
-              </SelectItem>
-              <SelectItem value={StatusB62Enum.Exported}>
-                {t('billing.status.exported')}
-              </SelectItem>
-              <SelectItem value={StatusB62Enum.Cancelled}>
-                {t('billing.status.cancelled')}
-              </SelectItem>
-              <SelectItem value="all">
-                {t('billing.filter.allStatuses')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={sourceFilter}
-            onValueChange={(v) => setSourceFilter(v as SourceFilter)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t('billing.filter.allSources')}
-              </SelectItem>
-              <SelectItem value={SourceTypeEnum.Coaching}>
-                {t('billing.source.coaching')}
-              </SelectItem>
-              <SelectItem value={SourceTypeEnum.Fine}>
-                {t('billing.source.fine')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         <DataTable
           table={table}

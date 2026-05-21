@@ -113,7 +113,7 @@ function EventBlock({
             </span>
             {!isTiny && (
               <span
-                className="text-[10px] font-medium uppercase tracking-wider"
+                className="text-[10px] font-medium"
                 style={{ color: event.categoryColor }}
               >
                 {event.subtitle}
@@ -507,7 +507,7 @@ function DayRoulette({
             >
               <span
                 className={cn(
-                  'text-[10px] font-medium uppercase tracking-wider',
+                  'text-[10px] font-medium',
                   isDaySelected
                     ? 'text-background/70'
                     : isFirstOfMonth
@@ -564,7 +564,7 @@ function EventDrawer({
       <SheetContent className="flex flex-col sm:max-w-[400px]">
         <SheetHeader>
           <div
-            className="text-[10px] font-medium uppercase tracking-[0.2em]"
+            className="text-[10px] font-medium tracking-wide"
             style={{ color: event.categoryColor }}
           >
             {event.subtitle}
@@ -575,7 +575,7 @@ function EventDrawer({
 
         <div className="flex flex-col gap-4 py-4">
           <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <Clock className="h-3 w-3" /> {t('scheduleCalendar.time')}
             </span>
             <span className="text-sm">
@@ -591,7 +591,7 @@ function EventDrawer({
           {resource && (
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <MapPin className="h-3 w-3" /> {t('scheduleCalendar.studio')}
                 </span>
                 <span className="text-sm">
@@ -610,7 +610,7 @@ function EventDrawer({
           {event.teacher && (
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <User className="h-3 w-3" /> {t('scheduleCalendar.teacher')}
                 </span>
                 <span className="text-sm">{event.teacher}</span>
@@ -622,7 +622,7 @@ function EventDrawer({
           {event.enrolled != null && (
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <Users className="h-3 w-3" /> {t('scheduleCalendar.enrolled')}
                 </span>
                 <span className="text-sm">
@@ -640,7 +640,7 @@ function EventDrawer({
           )}
 
           <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="text-xs font-medium text-muted-foreground">
               {t('scheduleCalendar.category')}
             </span>
             <Badge
@@ -742,7 +742,7 @@ export function ScheduleCalendar({
                 className="sticky left-0 z-10 shrink-0 border-r border-border bg-card px-3 py-2.5"
                 style={{ width: GUTTER_WIDTH }}
               >
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="text-[10px] font-medium text-muted-foreground">
                   {t('scheduleCalendar.time')}
                 </span>
               </div>

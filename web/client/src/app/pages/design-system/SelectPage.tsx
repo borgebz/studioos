@@ -110,7 +110,7 @@ export function SelectPage() {
       <section className="space-y-8">
         {/* Basic */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.selectBasic')}
           </h2>
           <Select value={value} onValueChange={setValue}>
@@ -129,7 +129,7 @@ export function SelectPage() {
 
         {/* Size sm */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             size="sm"
           </h2>
           <Select value={value} onValueChange={setValue}>
@@ -148,7 +148,7 @@ export function SelectPage() {
 
         {/* With groups and labels */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.selectWithGroups')}
           </h2>
           <Select value={valueGrouped} onValueChange={setValueGrouped}>
@@ -174,7 +174,7 @@ export function SelectPage() {
 
         {/* Grouped with icons (Saleor-style) */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             Grouped with icons
           </h2>
           <Select value={valueModality} onValueChange={setValueModality}>
@@ -204,7 +204,7 @@ export function SelectPage() {
 
         {/* Tree Select (collapsible parents) */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             Tree Select (collapsible parents)
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -222,7 +222,7 @@ export function SelectPage() {
 
         {/* With icons */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.selectWithIcons')}
           </h2>
           <Select value={valueWithIcons} onValueChange={setValueWithIcons}>
@@ -242,7 +242,7 @@ export function SelectPage() {
 
         {/* Disabled item */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.selectDisabledItem')}
           </h2>
           <Select value={value} onValueChange={setValue}>
@@ -261,7 +261,7 @@ export function SelectPage() {
 
         {/* Content position */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.selectPosition')}
           </h2>
           <div className="flex gap-8">

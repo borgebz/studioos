@@ -25,7 +25,7 @@ export function PopoverPage() {
       <section className="space-y-8">
         {/* Basic */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.popoverBasic')}
           </h2>
           <Popover>
@@ -45,7 +45,7 @@ export function PopoverPage() {
 
         {/* With form */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.popoverWithForm')}
           </h2>
           <Popover>
@@ -72,7 +72,7 @@ export function PopoverPage() {
 
         {/* Placement */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.popoverPlacement')}
           </h2>
           <div className="flex flex-wrap gap-4">

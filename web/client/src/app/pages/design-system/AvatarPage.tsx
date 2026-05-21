@@ -18,7 +18,7 @@ export function AvatarPage() {
       <section className="space-y-8">
         {/* With image */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.avatarWithImage')}
           </h2>
           <div className="flex items-center gap-4">
@@ -39,7 +39,7 @@ export function AvatarPage() {
 
         {/* Fallback initials */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.avatarFallback')}
           </h2>
           <div className="flex items-center gap-4">
@@ -60,7 +60,7 @@ export function AvatarPage() {
 
         {/* Sizes */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.sizes')}
           </h2>
           <div className="flex items-end gap-4">
@@ -83,7 +83,7 @@ export function AvatarPage() {
 
         {/* Group */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.avatarGroup')}
           </h2>
           <div className="flex -space-x-3">

@@ -272,6 +272,61 @@ This pattern is identical for public pages (§16) — only the surrounding shell
 - Pagination: prefer infinite scroll via `usePaginatedList` + `useInfiniteScroll`. `DataTable` accepts `hasNextPage`, `isFetchingNextPage`, and `onLoadMore` props.
 - Fill-height layout: pass `fillHeight` to pin the header and scroll the body within the parent.
 
+#### Column-header filters
+
+Filters live on the column they affect — not in a separate filter bar above the table. Declare a filter on a column by setting `meta.filter`; `DataTable` renders a `ListFilter` icon next to the header label that opens a popover. The icon is muted by default and turns `text-primary` with a small dot when the filter is active.
+
+```ts
+columnHelper.accessor('status', {
+  header: () => t('billing.col.status'),
+  meta: {
+    filter: {
+      type: 'select',
+      label: t('billing.col.status'),
+      anyLabel: t('billing.filter.allStatuses'),
+      options: [
+        { value: StatusEnum.Pending, label: t('billing.status.pending') },
+        { value: StatusEnum.Exported, label: t('billing.status.exported') },
+      ],
+    },
+  },
+  cell: ...
+})
+```
+
+Supported `type` values:
+- **`text`** — debounced text input (`contains`-style match).
+- **`select`** — radio list with an "Any" reset row. Pair with `anyLabel` for a custom label like "All statuses".
+- **`multi-select`** — checkbox list. Value is `string[]`.
+- **`boolean`** — three-state Any / Yes / No. Value is `boolean | undefined`.
+
+**State handling.** Use the `useColumnFilters` hook (from `@/components/ui/data-table-filters`) to manage `columnFilters` state. Wire it into `useReactTable` with `state.columnFilters` + `onColumnFiltersChange`, and set `manualFiltering: true` because filtering happens on the server (see §Data fetching).
+
+```ts
+const { columnFilters, setColumnFilters } = useColumnFilters({
+  columns,
+  syncToUrl: true,
+  defaultFilters: [{ id: 'status', value: 'pending' }],
+})
+
+const statusFilter = columnFilters.find((f) => f.id === 'status')?.value as MyEnum | undefined
+
+const table = useReactTable({
+  data, columns,
+  state: { columnFilters },
+  onColumnFiltersChange: setColumnFilters,
+  manualFiltering: true,
+  getCoreRowModel: getCoreRowModel(),
+})
+```
+
+**URL persistence (`syncToUrl: true`).** Filters round-trip through `useSearchParams`:
+- Initial state is parsed from the URL and validated against each column's filter def — unknown values are dropped silently.
+- Writes use `setSearchParams(..., { replace: true })`, so changing filters doesn't pollute browser history.
+- URL param key defaults to the column id; override per-column via `meta.filter.urlKey` when the API expects a different name.
+- `defaultFilters` are written to the URL on first mount only. Clearing a default filter resolves to "no filter", not back to the default.
+- Sensitive text filters (PII, ID lookups) should stay out of the URL — leave `syncToUrl` off for those pages, or omit `meta.filter` and use a dedicated dialog instead.
+
 ### Cards (Content Sections)
 
 - Every content group is a card: `bg-card rounded-lg border border-border p-6`.
@@ -382,6 +437,26 @@ Three patterns, depending on context:
 ### Font
 
 Use the system font stack (default Tailwind `font-sans`) for all UI text. The exception is **brand identity elements** — the "StudioOS" wordmark and editorial headings (hero titles on public pages) use `Georgia, 'Times New Roman', serif` in italic. This is a deliberate brand choice, not a custom font import.
+
+### Case: never uppercase app labels
+
+In-app UI labels — **column headers, filter titles, section labels inside cards, form field labels, dropdown headings** — render in **sentence case**. Do not use `uppercase` (or `text-transform: uppercase`) and do not pair `tracking-wider` with small caps-style text. That styling reads as generic AI-template aesthetic and undermines the Saleor-clean visual we're targeting.
+
+```tsx
+// ❌ Wrong
+<th className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Name</th>
+<p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">General information</p>
+
+// ✅ Correct — sentence-case label, no tracking quirks
+<th className="text-xs font-medium text-muted-foreground">Name</th>
+<p className="text-xs font-medium text-muted-foreground">General information</p>
+```
+
+**Exceptions where uppercase is intentional** (and stays):
+- Brand decorative elements on public/auth pages — `ADMIT ONE · STAGE DOOR`, `BRAGA · PORTUGAL`, `EST. MMXIV`, `SEASON XXIV — XXV`, the dashed step labels (`PASSO 1 DE 3`), the footer copyright line. These are listed in §24 and are part of the printed-ticket aesthetic.
+- The brand wordmark `StudioOS` itself is mixed case — never force it to upper.
+
+If you're tempted to write `uppercase tracking-wider` on app chrome, ask whether you actually want a brand decorative element. If not, drop both classes.
 
 ---
 
@@ -511,9 +586,9 @@ useEffect(() => {
 
 The TypeScript API client is **auto-generated** from the Django API's OpenAPI schema. Never edit `src/api/studioos-api.ts` manually.
 
-**Prerequisites:** The API server must be running locally at `http://127.0.0.1:8000` (via Docker Compose in the `studioos-product.api` repo).
+**Prerequisites:** The API server must be reachable at `http://127.0.0.1:8000`. It normally runs via Docker Compose from the `studioos-product.api` repo (`docker compose up`).
 
-**Command:**
+**Command (from `client/`):**
 
 ```bash
 npm run generate-client
@@ -521,24 +596,45 @@ npm run generate-client
 
 This runs: `swagger-typescript-api generate --path http://127.0.0.1:8000/api/schema/ --output ./src/api --name studioos-api.ts`
 
+**Docker workflow — the part people forget.** Python edits inside the API repo are not picked up by a long-running Docker container until it reloads. After **any** API-side change that affects the schema (new/changed `@extend_schema`, new serializer fields, model `choices`, new endpoints, `SPECTACULAR_SETTINGS` tweaks), do this in order:
+
+```bash
+# from studioos-product.api/
+docker compose restart api                                       # reload Python code
+docker compose exec -T api uv run python manage.py migrate       # only if a migration was added
+curl -s -o /dev/null -w "HTTP %{http_code}\n" \
+  http://127.0.0.1:8000/api/schema/                              # sanity: must be 200
+
+# then from studioos-product.web/client/
+npm run generate-client
+```
+
+Skipping the restart means the regenerated client mirrors *the previous* schema — symptoms include "missing method", "stale enum names", or "field still typed as `string` after I added choices". Always restart, then regenerate.
+
+If you only changed `SPECTACULAR_SETTINGS` (e.g. `ENUM_NAME_OVERRIDES`), the restart alone is enough — no migration needed.
+
 **When to regenerate:**
 
 - After adding or modifying `@extend_schema` decorators in the API views.
 - After adding new endpoints or changing serializers.
 - After fixing incorrect/missing OpenAPI documentation.
+- After tweaking `SPECTACULAR_SETTINGS` (e.g. adding an `ENUM_NAME_OVERRIDES` entry).
+- After model field changes that surface through serializers (e.g. adding `choices=` to a `CharField`).
 
 **Common issues:**
 
 - **Methods return `void`:** The API view is missing `@extend_schema(responses={...})`. Add the decorator with the correct serializer in the API repo, then regenerate.
 - **Method names change:** All generated methods are prefixed with `api` (e.g., `apiCoachingsList`, `apiModalitiesList`). If the API path or operation ID changes, method names change too — update all frontend call sites.
 - **Paginated responses typed as arrays:** If a view uses `paginated_response()` but `@extend_schema` declares `Serializer(many=True)`, the generated type says `T[]` but the runtime returns `{count, next, previous, results: T[]}`. The frontend must handle both shapes: `const items = Array.isArray(data) ? data : data?.results ?? []`.
+- **Enums named `StatusXxxEnum` / `Status0B2Enum`:** drf-spectacular couldn't infer a stable name (typically because multiple models declare the same inner `class Status(TextChoices)`). Fix by adding an `ENUM_NAME_OVERRIDES` entry in `server/config/settings.py` mapping the desired name to either a dotted path (`billing.models.FineStatus.choices`) for top-level `TextChoices`, or a literal `[("value", "Label"), …]` for inner-class `TextChoices` that `import_string` can't load.
 
 **Workflow for adding/fixing API documentation:**
 
 1. Edit the view in `studioos-product.api/server/<app>/views.py` — add/fix `@extend_schema` decorators.
-2. Verify the schema: `curl http://127.0.0.1:8000/api/schema/` and check the relevant path.
-3. Regenerate: `npm run generate-client` (from the `client/` directory).
-4. Update frontend call sites if method signatures changed.
+2. `docker compose restart api` (and `docker compose exec -T api uv run python manage.py migrate` if applicable).
+3. Verify the schema: `curl http://127.0.0.1:8000/api/schema/` and check the relevant path.
+4. Regenerate: `npm run generate-client` (from the `client/` directory).
+5. Update frontend call sites if method signatures changed.
 
 ### Never Duplicate Generated Enums or Response Shapes
 

@@ -202,7 +202,7 @@ export function InviteUsersPage() {
         {/* ── OR divider ── */}
         <div className="flex items-center gap-3 px-2">
           <Separator className="flex-1" />
-          <span className="text-[11px] font-medium uppercase tracking-[0.15em] text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground">
             {t('invites.orDivider')}
           </span>
           <Separator className="flex-1" />

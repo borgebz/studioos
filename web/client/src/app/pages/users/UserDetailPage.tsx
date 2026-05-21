@@ -752,7 +752,7 @@ function PermissionsTab({ user }: { user: UserResponse }) {
           <div className="space-y-4">
             {groupedPerms.map(([app, perms]) => (
               <div key={app}>
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                <div className="text-xs font-semibold text-muted-foreground mb-2">
                   {app}
                 </div>
                 <ul className="space-y-1">

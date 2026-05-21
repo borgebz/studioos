@@ -20,7 +20,7 @@ export function InputPage() {
       <section className="space-y-8">
         {/* Input types */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.types')}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -41,7 +41,7 @@ export function InputPage() {
 
         {/* Disabled */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.disabled')}
           </h2>
           <div className="flex flex-wrap gap-4">
@@ -55,7 +55,7 @@ export function InputPage() {
 
         {/* With value */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.withValue')}
           </h2>
           <Input

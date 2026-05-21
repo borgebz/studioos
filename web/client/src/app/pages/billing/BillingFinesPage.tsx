@@ -14,8 +14,8 @@ import { apiClient } from '@/api/api-client'
 import { usePermissions } from '@/auth/permissions'
 import {
   ReasonEnum,
-  Status782Enum,
-  StatusB62Enum,
+  FineStatusEnum,
+  BillingEntryStatusEnum,
   type FineDetail,
   type FineList,
 } from '@/api/studioos-api'
@@ -47,7 +47,7 @@ import { cn } from '@/lib/utils'
 import { ApproveFineDialog } from './ApproveFineDialog'
 import { WaiveFineDialog } from './WaiveFineDialog'
 
-type StatusFilter = Status782Enum | 'all'
+type StatusFilter = FineStatusEnum | 'all'
 type ReasonFilter = ReasonEnum | 'all'
 
 function studentName(student: FineList['student']): string {
@@ -62,8 +62,8 @@ function studentName(student: FineList['student']): string {
  */
 function effectiveStatusKey(fine: FineList): string {
   if (
-    fine.status === Status782Enum.Approved &&
-    fine.billing_entry?.status === StatusB62Enum.Cancelled
+    fine.status === FineStatusEnum.Approved &&
+    fine.billing_entry?.status === BillingEntryStatusEnum.Cancelled
   ) {
     return 'approvedAndCancelled'
   }
@@ -108,7 +108,7 @@ export function BillingFinesPage() {
   const currency = t('common.currencySymbol')
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(
-    Status782Enum.PendingReview,
+    FineStatusEnum.PendingReview,
   )
   const [reasonFilter, setReasonFilter] = useState<ReasonFilter>('all')
   const [approveTarget, setApproveTarget] = useState<FineList | null>(null)
@@ -297,7 +297,7 @@ export function BillingFinesPage() {
         ),
         cell: (info) => {
           const row = info.row.original
-          const isPending = row.status === Status782Enum.PendingReview
+          const isPending = row.status === FineStatusEnum.PendingReview
           if (!isPending || !canReview) {
             return (
               <span className="text-xs text-muted-foreground">
@@ -372,13 +372,13 @@ export function BillingFinesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={Status782Enum.PendingReview}>
+              <SelectItem value={FineStatusEnum.PendingReview}>
                 {t('billingFines.status.pending_review')}
               </SelectItem>
-              <SelectItem value={Status782Enum.Approved}>
+              <SelectItem value={FineStatusEnum.Approved}>
                 {t('billingFines.status.approved')}
               </SelectItem>
-              <SelectItem value={Status782Enum.Waived}>
+              <SelectItem value={FineStatusEnum.Waived}>
                 {t('billingFines.status.waived')}
               </SelectItem>
               <SelectItem value="all">

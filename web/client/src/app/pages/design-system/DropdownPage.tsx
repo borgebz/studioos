@@ -50,7 +50,7 @@ export function DropdownPage() {
       <section className="space-y-8">
         {/* Items with icons */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dropdownWithIcons')}
           </h2>
           <DropdownMenu>
@@ -78,7 +78,7 @@ export function DropdownPage() {
 
         {/* Destructive variant */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             variant=&quot;destructive&quot;
           </h2>
           <DropdownMenu>
@@ -103,7 +103,7 @@ export function DropdownPage() {
 
         {/* Inset items (pl-8) */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             inset items
           </h2>
           <DropdownMenu>
@@ -136,7 +136,7 @@ export function DropdownPage() {
 
         {/* Shortcuts */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dropdownShortcuts')}
           </h2>
           <DropdownMenu>
@@ -164,7 +164,7 @@ export function DropdownPage() {
 
         {/* Checkbox items */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dropdownCheckbox')}
           </h2>
           <DropdownMenu>
@@ -200,7 +200,7 @@ export function DropdownPage() {
 
         {/* Radio items */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dropdownRadio')}
           </h2>
           <DropdownMenu>
@@ -237,7 +237,7 @@ export function DropdownPage() {
 
         {/* Submenu */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dropdownSubmenu')}
           </h2>
           <DropdownMenu>

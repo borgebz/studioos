@@ -24,7 +24,7 @@ export function CalendarPage() {
       <section className="space-y-8">
         {/* Single date */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.calendarSingle')}
           </h2>
           <Calendar
@@ -37,7 +37,7 @@ export function CalendarPage() {
 
         {/* Range */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.calendarRange')}
           </h2>
           <Calendar
@@ -51,7 +51,7 @@ export function CalendarPage() {
 
         {/* Disabled */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.disabled')}
           </h2>
           <Calendar
@@ -64,7 +64,7 @@ export function CalendarPage() {
 
         {/* Disabled dates */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.calendarDisabledDates')}
           </h2>
           <Calendar

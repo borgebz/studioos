@@ -18,7 +18,7 @@ export function SkeletonPage() {
       <section className="space-y-8">
         {/* Basic shapes */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.skeletonShapes')}
           </h2>
           <div className="flex flex-wrap gap-6">
@@ -43,7 +43,7 @@ export function SkeletonPage() {
 
         {/* Card skeleton */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.skeletonCard')}
           </h2>
           <div className="rounded-lg border border-border p-6 w-full max-w-sm">
@@ -56,7 +56,7 @@ export function SkeletonPage() {
 
         {/* Avatar skeleton */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.skeletonAvatar')}
           </h2>
           <div className="flex items-center gap-4">

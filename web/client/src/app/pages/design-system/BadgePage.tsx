@@ -20,7 +20,7 @@ export function BadgePage() {
       <section className="space-y-8">
         {/* Variants */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeVariants')}
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -37,7 +37,7 @@ export function BadgePage() {
 
         {/* Status examples */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeStatus')}
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -58,7 +58,7 @@ export function BadgePage() {
 
         {/* With count */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeWithCount')}
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -71,7 +71,7 @@ export function BadgePage() {
 
         {/* In context */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeInContext')}
           </h2>
           <div className="space-y-3 max-w-md">

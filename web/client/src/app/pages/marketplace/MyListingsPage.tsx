@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
-import type { ListingList, Status421Enum } from '@/api/studioos-api'
+import type { ListingList, ListingStatusEnum } from '@/api/studioos-api'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { usePaginatedList } from '@/hooks/usePaginatedList'
 import { Button } from '@/components/ui/button'
@@ -123,7 +123,7 @@ export function MyListingsPage() {
     if (!deleteTarget) return
     try {
       await apiClient.api.marketplaceListingsPartialUpdate(deleteTarget.id, {
-        status: 'closed' as Status421Enum,
+        status: 'closed' as ListingStatusEnum,
       })
       setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
       toast.success(t('marketplace.deleteSuccess'))

@@ -18,7 +18,7 @@ export function SeparatorPage() {
       <section className="space-y-8">
         {/* Horizontal */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             orientation=&quot;horizontal&quot; (default)
           </h2>
           <div className="space-y-2">
@@ -34,7 +34,7 @@ export function SeparatorPage() {
 
         {/* Vertical */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             orientation=&quot;vertical&quot;
           </h2>
           <div className="flex items-center gap-4 h-24">
@@ -48,7 +48,7 @@ export function SeparatorPage() {
 
         {/* In content */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.separatorInContent')}
           </h2>
           <div className="rounded-lg border border-border p-4 w-full max-w-md">

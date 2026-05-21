@@ -1575,7 +1575,14 @@
     "currencySymbol": "€",
     "refresh": "Atualizar",
     "resultCount_one": "{{count}} resultado",
-    "resultCount_other": "{{count}} resultados"
+    "resultCount_other": "{{count}} resultados",
+    "filter": {
+      "clear": "Limpar",
+      "search": "Pesquisar…",
+      "any": "Qualquer",
+      "yes": "Sim",
+      "no": "Não"
+    }
   },
   "validation": {
     "required": "Este campo é obrigatório.",

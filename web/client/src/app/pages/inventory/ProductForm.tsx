@@ -10,7 +10,8 @@ import { enumOptions } from '@/lib/enum-options'
 import {
   AcquisitionTypeEnum,
   ConditionEnum,
-  StatusDc4Enum,
+  ProductStatusEnum,
+  TargetGenderEnum,
 } from '@/api/studioos-api'
 import type {
   Category,
@@ -81,15 +82,9 @@ export interface ProductFormProps {
 
 const CONDITIONS = enumOptions(ConditionEnum, 'marketplace.condition')
 const ACQUISITION_TYPES = enumOptions(AcquisitionTypeEnum, 'marketplace.acquisition')
-const PRODUCT_STATUSES = enumOptions(StatusDc4Enum, 'schoolInventory.status')
+const PRODUCT_STATUSES = enumOptions(ProductStatusEnum, 'schoolInventory.status')
 
-// `target_gender` is `string` in the API schema (no choices serialized via
-// @extend_schema). Keep this list local until the backend exposes an enum.
-const GENDERS = [
-  { value: 'female', labelKey: 'marketplace.genderFemale' },
-  { value: 'male', labelKey: 'marketplace.genderMale' },
-  { value: 'unisex', labelKey: 'marketplace.genderUnisex' },
-] as const
+const GENDERS = enumOptions(TargetGenderEnum, 'marketplace.gender')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -698,7 +693,7 @@ export function ProductForm({ context }: ProductFormProps) {
             <div className="px-6 py-6 space-y-6">
               {/* ── Condition & Details ── */}
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
                   {t('marketplace.condition')} &amp;{' '}
                   {t('marketplace.variantDetails')}
                 </p>
@@ -768,7 +763,7 @@ export function ProductForm({ context }: ProductFormProps) {
                 <>
                   <Separator />
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-3">
                       {t('marketplace.size')}
                     </p>
                     {!categoryId ? (
@@ -865,7 +860,7 @@ export function ProductForm({ context }: ProductFormProps) {
                 <>
                   <Separator />
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-3">
                       {t('marketplace.colors')}
                     </p>
                     <ColorSwatchPicker
@@ -881,7 +876,7 @@ export function ProductForm({ context }: ProductFormProps) {
 
               {/* ── Notes ── */}
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
                   {t('marketplace.variantNotes')}
                 </p>
                 <Textarea

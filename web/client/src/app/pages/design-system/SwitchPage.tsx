@@ -21,7 +21,7 @@ export function SwitchPage() {
       <section className="space-y-8">
         {/* States */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.switchStates')}
           </h2>
           <div className="space-y-4">
@@ -38,7 +38,7 @@ export function SwitchPage() {
 
         {/* Disabled */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.disabled')}
           </h2>
           <div className="space-y-4">
@@ -59,7 +59,7 @@ export function SwitchPage() {
 
         {/* With label */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.switchWithLabel')}
           </h2>
           <div className="space-y-6">

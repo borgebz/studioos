@@ -22,7 +22,7 @@ export function ScrollAreaPage() {
       <section className="space-y-8">
         {/* Vertical */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scrollAreaVertical')}
           </h2>
           <ScrollArea className="h-72 w-48 rounded-md border border-border">
@@ -40,7 +40,7 @@ export function ScrollAreaPage() {
 
         {/* Horizontal */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scrollAreaHorizontal')}
           </h2>
           <ScrollArea className="w-96 whitespace-nowrap rounded-md border border-border">
@@ -60,7 +60,7 @@ export function ScrollAreaPage() {
 
         {/* Both directions */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scrollAreaBoth')}
           </h2>
           <ScrollArea className="h-48 w-72 rounded-md border border-border">

@@ -12,7 +12,8 @@ import {
   AcquisitionTypeEnum,
   ConditionEnum,
   ListingTypeEnum,
-  Status7B2Enum,
+  ProductVariantStatusEnum,
+  TargetGenderEnum,
 } from '@/api/studioos-api'
 import type {
   Category,
@@ -97,16 +98,10 @@ const ACQUISITION_TYPES = enumOptions(AcquisitionTypeEnum, 'marketplace.acquisit
 // Variant status has more values in the API than the form exposes — listing
 // authors should only set `available`, `maintenance`, or `inactive` from the
 // UI; `sold`, `donated`, `archived` are reached by domain events.
-const VARIANT_STATUSES = enumOptions(Status7B2Enum, 'marketplace.variantStatus')
+const VARIANT_STATUSES = enumOptions(ProductVariantStatusEnum, 'marketplace.variantStatus')
   .filter((o) => o.value === 'available' || o.value === 'maintenance' || o.value === 'inactive')
 
-// `target_gender` is `string` in the API schema (no choices serialized via
-// @extend_schema). Keep this list local until the backend exposes an enum.
-const GENDERS = [
-  { value: 'female', labelKey: 'marketplace.genderFemale' },
-  { value: 'male', labelKey: 'marketplace.genderMale' },
-  { value: 'unisex', labelKey: 'marketplace.genderUnisex' },
-] as const
+const GENDERS = enumOptions(TargetGenderEnum, 'marketplace.gender')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1030,7 +1025,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
             <div className="px-6 py-6 space-y-6">
               {/* ── Condition & Details ── */}
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
                   {t('marketplace.condition')} &amp; {t('marketplace.variantDetails')}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1122,7 +1117,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                 <>
                   <Separator />
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-3">
                       {t('marketplace.size')}
                     </p>
                     {!categoryId ? (
@@ -1210,7 +1205,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                 <>
                   <Separator />
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-3">
                       {t('marketplace.colors')}
                     </p>
                     <ColorSwatchPicker
@@ -1226,7 +1221,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
               {/* ── Photos ── */}
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
                   {t('marketplace.variantPhotos')}
                 </p>
                 {mediaFiles.length === 0 ? (
@@ -1283,7 +1278,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
               {/* ── Notes ── */}
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
                   {t('marketplace.publicNotes')}
                 </p>
                 <Textarea
@@ -1296,7 +1291,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
               </div>
 
               <div>
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
+                <p className="text-xs font-medium text-muted-foreground mb-3">
                   {t('marketplace.internalNotes')}
                 </p>
                 <Textarea

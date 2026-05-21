@@ -24,6 +24,21 @@ export enum VisibilityStateEnum {
 }
 
 /**
+ * * `pending` - Pending
+ * * `confirmed` - Confirmed
+ * * `completed` - Completed
+ * * `blocked` - Blocked
+ * * `cancelled` - Cancelled
+ */
+export enum VariantBookingStatusEnum {
+  Pending = "pending",
+  Confirmed = "confirmed",
+  Completed = "completed",
+  Blocked = "blocked",
+  Cancelled = "cancelled",
+}
+
+/**
  * * `rent` - Rent
  * * `sell` - Sell
  * * `lend` - Lend
@@ -44,7 +59,7 @@ export enum TransactionTypeEnum {
  * * `cancelled` - Cancelled
  * * `blocked` - Blocked
  */
-export enum TransactionDetailStatusEnum {
+export enum TransactionStatusEnum {
   Pending = "pending",
   Accepted = "accepted",
   Completed = "completed",
@@ -54,100 +69,14 @@ export enum TransactionDetailStatusEnum {
 }
 
 /**
- * * `active` - Active
- * * `inactive` - Inactive
- * * `archived` - Archived
+ * * `female` - Female
+ * * `male` - Male
+ * * `unisex` - Unisex
  */
-export enum StatusDc4Enum {
-  Active = "active",
-  Inactive = "inactive",
-  Archived = "archived",
-}
-
-/**
- * * `pending` - Pending
- * * `exported` - Exported
- * * `cancelled` - Cancelled
- */
-export enum StatusB62Enum {
-  Pending = "pending",
-  Exported = "exported",
-  Cancelled = "cancelled",
-}
-
-/**
- * * `invited` - Invited
- * * `pending` - Pending
- * * `active` - Active
- * * `pending_completion` - Pending Completion
- * * `attended` - Attended
- * * `absent` - Absent
- * * `cancelled` - Cancelled
- * * `late_cancelled` - Late Cancelled
- */
-export enum StatusA03Enum {
-  Invited = "invited",
-  Pending = "pending",
-  Active = "active",
-  PendingCompletion = "pending_completion",
-  Attended = "attended",
-  Absent = "absent",
-  Cancelled = "cancelled",
-  LateCancelled = "late_cancelled",
-}
-
-/**
- * * `available` - Available
- * * `maintenance` - Maintenance
- * * `inactive` - Inactive
- * * `sold` - Sold
- * * `donated` - Donated
- * * `archived` - Archived
- */
-export enum Status7B2Enum {
-  Available = "available",
-  Maintenance = "maintenance",
-  Inactive = "inactive",
-  Sold = "sold",
-  Donated = "donated",
-  Archived = "archived",
-}
-
-/**
- * * `pending_review` - Pending review
- * * `approved` - Approved
- * * `waived` - Waived
- */
-export enum Status782Enum {
-  PendingReview = "pending_review",
-  Approved = "approved",
-  Waived = "waived",
-}
-
-/**
- * * `draft` - Draft
- * * `active` - Active
- * * `closed` - Closed
- */
-export enum Status421Enum {
-  Draft = "draft",
-  Active = "active",
-  Closed = "closed",
-}
-
-/**
- * * `pending` - Pending
- * * `confirmed` - Confirmed
- * * `completed` - Completed
- * * `blocked` - Blocked
- * * `cancelled` - Cancelled
- */
-export enum Status32EEnum {
-  Pending = "pending",
-  Confirmed = "confirmed",
-  Completed = "completed",
-  Blocked = "blocked",
-  Cancelled = "cancelled",
+export enum TargetGenderEnum {
+  Female = "female",
+  Male = "male",
+  Unisex = "unisex",
 }
 
 /**
@@ -184,6 +113,34 @@ export enum ReasonEnum {
 }
 
 /**
+ * * `available` - Available
+ * * `maintenance` - Maintenance
+ * * `inactive` - Inactive
+ * * `sold` - Sold
+ * * `donated` - Donated
+ * * `archived` - Archived
+ */
+export enum ProductVariantStatusEnum {
+  Available = "available",
+  Maintenance = "maintenance",
+  Inactive = "inactive",
+  Sold = "sold",
+  Donated = "donated",
+  Archived = "archived",
+}
+
+/**
+ * * `active` - Active
+ * * `inactive` - Inactive
+ * * `archived` - Archived
+ */
+export enum ProductStatusEnum {
+  Active = "active",
+  Inactive = "inactive",
+  Archived = "archived",
+}
+
+/**
  * * `new` - New Enrollments
  * * `renewal` - Renewals
  * * `both` - New & Renewals
@@ -211,6 +168,8 @@ export enum OwnerTypeEnum {
   School = "school",
   Member = "member",
 }
+
+export type NullEnum = null;
 
 /**
  * * `all` - All
@@ -246,12 +205,34 @@ export enum ListingTypeEnum {
 }
 
 /**
+ * * `draft` - Draft
+ * * `active` - Active
+ * * `closed` - Closed
+ */
+export enum ListingStatusEnum {
+  Draft = "draft",
+  Active = "active",
+  Closed = "closed",
+}
+
+/**
  * * `pt` - Português
  * * `en` - English
  */
 export enum LanguageEnum {
   Pt = "pt",
   En = "en",
+}
+
+/**
+ * * `pending_review` - Pending review
+ * * `approved` - Approved
+ * * `waived` - Waived
+ */
+export enum FineStatusEnum {
+  PendingReview = "pending_review",
+  Approved = "approved",
+  Waived = "waived",
 }
 
 /**
@@ -325,6 +306,27 @@ export enum ConditionEnum {
 }
 
 /**
+ * * `invited` - Invited
+ * * `pending` - Pending
+ * * `active` - Active
+ * * `pending_completion` - Pending Completion
+ * * `attended` - Attended
+ * * `absent` - Absent
+ * * `cancelled` - Cancelled
+ * * `late_cancelled` - Late Cancelled
+ */
+export enum CoachingParticipantStatusEnum {
+  Invited = "invited",
+  Pending = "pending",
+  Active = "active",
+  PendingCompletion = "pending_completion",
+  Attended = "attended",
+  Absent = "absent",
+  Cancelled = "cancelled",
+  LateCancelled = "late_cancelled",
+}
+
+/**
  * * `requested` - Requested
  * * `pending_approval` - Pending Approval
  * * `scheduled` - Scheduled
@@ -364,6 +366,21 @@ export enum BookingTypeEnum {
   SchoolUse = "school_use",
   Maintenance = "maintenance",
   Blocked = "blocked",
+}
+
+export enum BlankEnum {
+  Value = "",
+}
+
+/**
+ * * `pending` - Pending
+ * * `exported` - Exported
+ * * `cancelled` - Cancelled
+ */
+export enum BillingEntryStatusEnum {
+  Pending = "pending",
+  Exported = "exported",
+  Cancelled = "cancelled",
 }
 
 /**
@@ -433,7 +450,7 @@ export interface BillingEntryDetail {
   amount_due: string;
   /** Single-line, human-readable description shown to the student and on accounting exports. Generated at creation time, not editable afterwards. */
   description: string;
-  status: StatusB62Enum;
+  status: BillingEntryStatusEnum;
   /** @format date-time */
   exported_at: string | null;
   /** @format date-time */
@@ -459,7 +476,7 @@ export interface BillingEntryList {
   amount_due: string;
   /** Single-line, human-readable description shown to the student and on accounting exports. Generated at creation time, not editable afterwards. */
   description: string;
-  status: StatusB62Enum;
+  status: BillingEntryStatusEnum;
   coaching_class: CoachingClassBillingSummary | null;
   fine: FineBillingSummary | null;
   /** @format date-time */
@@ -652,7 +669,7 @@ export interface CoachingParticipant {
    * * `cancelled` - Cancelled
    * * `late_cancelled` - Late Cancelled
    */
-  status?: StatusA03Enum;
+  status?: CoachingParticipantStatusEnum;
   /** True when a coordination/direction user invited this student (invite → accept becomes active without a pending approval step). */
   invited_by_staff?: boolean;
   /** @format date-time */
@@ -672,7 +689,7 @@ export interface CoachingParticipantBilling {
    * * `cancelled` - Cancelled
    * * `late_cancelled` - Late Cancelled
    */
-  status?: StatusA03Enum;
+  status?: CoachingParticipantStatusEnum;
 }
 
 export interface CoachingReject {
@@ -1281,7 +1298,7 @@ export interface FineApprove {
 export interface FineBillingSummary {
   id: number;
   reason: ReasonEnum;
-  status: Status782Enum;
+  status: FineStatusEnum;
   /**
    * Set on approval. Null while pending review or when waived.
    * @format decimal
@@ -1293,7 +1310,7 @@ export interface FineBillingSummary {
 export interface FineDetail {
   id: number;
   reason: ReasonEnum;
-  status: Status782Enum;
+  status: FineStatusEnum;
   /**
    * Set on approval. Null while pending review or when waived.
    * @format decimal
@@ -1327,7 +1344,7 @@ export interface FineDetail {
  */
 export interface FineLinkedBillingEntry {
   id: number;
-  status: StatusB62Enum;
+  status: BillingEntryStatusEnum;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
@@ -1338,7 +1355,7 @@ export interface FineLinkedBillingEntry {
 export interface FineList {
   id: number;
   reason: ReasonEnum;
-  status: Status782Enum;
+  status: FineStatusEnum;
   /**
    * Set on approval. Null while pending review or when waived.
    * @format decimal
@@ -1480,7 +1497,7 @@ export interface ListingDetail {
    * * `active` - Active
    * * `closed` - Closed
    */
-  status?: Status421Enum;
+  status?: ListingStatusEnum;
   /** @maxLength 255 */
   title: string;
   description?: string;
@@ -1516,7 +1533,7 @@ export interface ListingList {
    * * `active` - Active
    * * `closed` - Closed
    */
-  status?: Status421Enum;
+  status?: ListingStatusEnum;
   /** @maxLength 255 */
   title: string;
   /**
@@ -1848,7 +1865,7 @@ export interface PatchedProductUpdate {
    * * `inactive` - Inactive
    * * `archived` - Archived
    */
-  status?: StatusDc4Enum;
+  status?: ProductStatusEnum;
   media?: ProductMediaInput[];
 }
 
@@ -1872,7 +1889,7 @@ export interface PatchedProductVariantWrite {
    * * `donated` - Donated
    * * `archived` - Archived
    */
-  status?: Status7B2Enum;
+  status?: ProductVariantStatusEnum;
   /**
    * * `purchased` - Purchased
    * * `donated` - Donated
@@ -1910,7 +1927,7 @@ export interface PatchedSchoolProductUpdate {
    * * `inactive` - Inactive
    * * `archived` - Archived
    */
-  status?: StatusDc4Enum;
+  status?: ProductStatusEnum;
   media?: ProductMediaInput[];
   school_details?: SchoolProductDetails;
 }
@@ -1987,7 +2004,7 @@ export interface PatchedVariantBookingWrite {
    * * `blocked` - Blocked
    * * `cancelled` - Cancelled
    */
-  status?: Status32EEnum;
+  status?: VariantBookingStatusEnum;
   /** @format date-time */
   start_at?: string;
   /** @format date-time */
@@ -2019,7 +2036,7 @@ export interface ProductCreate {
   brand?: string | null;
   material?: string | null;
   /** @default "active" */
-  status?: StatusDc4Enum;
+  status?: ProductStatusEnum;
   media?: ProductMediaInput[];
   variants?: InlineVariant[];
 }
@@ -2032,13 +2049,12 @@ export interface ProductDetail {
   /** @maxLength 255 */
   name: string;
   description?: string;
-  /** @maxLength 50 */
-  target_gender?: string | null;
+  target_gender?: TargetGenderEnum | BlankEnum | NullEnum | null;
   /** @maxLength 255 */
   brand?: string | null;
   /** @maxLength 255 */
   material?: string | null;
-  status: StatusDc4Enum;
+  status: ProductStatusEnum;
   media: ProductMedia[];
   school_details: SchoolProductDetails;
   /** @format date-time */
@@ -2074,7 +2090,7 @@ export interface ProductVariantRead {
   /** @maxLength 100 */
   sku?: string | null;
   condition: ConditionEnum;
-  status: Status7B2Enum;
+  status: ProductVariantStatusEnum;
   acquisition_type: AcquisitionTypeEnum;
   /** @format date-time */
   acquired_at?: string | null;
@@ -2110,7 +2126,7 @@ export interface ProductVariantWrite {
    * * `donated` - Donated
    * * `archived` - Archived
    */
-  status?: Status7B2Enum;
+  status?: ProductVariantStatusEnum;
   /**
    * * `purchased` - Purchased
    * * `donated` - Donated
@@ -2283,7 +2299,7 @@ export interface SchoolProductCreate {
   brand?: string | null;
   material?: string | null;
   /** @default "active" */
-  status?: StatusDc4Enum;
+  status?: ProductStatusEnum;
   media?: ProductMediaInput[];
   variants?: InlineVariant[];
   school_details?: SchoolProductDetails;
@@ -2427,7 +2443,7 @@ export interface TransactionDetail {
    * * `cancelled` - Cancelled
    * * `blocked` - Blocked
    */
-  status?: TransactionDetailStatusEnum;
+  status?: TransactionStatusEnum;
   requester_display: Record<string, any>;
   owner_display: Record<string, any>;
   /**
@@ -2543,7 +2559,7 @@ export interface VariantBooking {
    * * `blocked` - Blocked
    * * `cancelled` - Cancelled
    */
-  status: Status32EEnum;
+  status: VariantBookingStatusEnum;
   listing_id: number;
   /** @format date-time */
   start_at: string;
@@ -2584,7 +2600,7 @@ export interface VariantBookingWrite {
    * * `blocked` - Blocked
    * * `cancelled` - Cancelled
    */
-  status?: Status32EEnum;
+  status?: VariantBookingStatusEnum;
   /** @format date-time */
   start_at: string;
   /** @format date-time */

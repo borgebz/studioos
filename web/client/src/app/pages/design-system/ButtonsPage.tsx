@@ -38,7 +38,7 @@ export function ButtonsPage() {
       <section className="space-y-8">
         {/* Sizes */}
         <div className="space-y-6">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.sizes')}
           </h2>
           <div className="flex flex-wrap items-end gap-4">
@@ -61,7 +61,7 @@ export function ButtonsPage() {
 
         {/* Variants × Sizes matrix */}
         <div className="space-y-6">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.matrixTitle')}
           </h2>
           <div className="space-y-4">

@@ -19,7 +19,7 @@ export function TextareaPage() {
       <section className="space-y-8">
         {/* Default */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.default')}
           </h2>
           <Textarea
@@ -30,7 +30,7 @@ export function TextareaPage() {
 
         {/* With label */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.textareaWithLabel')}
           </h2>
           <div className="space-y-2 max-w-md">
@@ -47,7 +47,7 @@ export function TextareaPage() {
 
         {/* Disabled */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.disabled')}
           </h2>
           <Textarea
@@ -59,7 +59,7 @@ export function TextareaPage() {
 
         {/* With value */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.withValue')}
           </h2>
           <Textarea
@@ -71,7 +71,7 @@ export function TextareaPage() {
 
         {/* Rows */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.textareaRows')}
           </h2>
           <div className="flex flex-wrap gap-4">

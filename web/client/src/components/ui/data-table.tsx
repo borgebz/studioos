@@ -3,6 +3,7 @@ import { RefreshCcw, Loader2 } from 'lucide-react'
 import {
   flexRender,
   type ColumnDef,
+  type Header,
   type Table as TanstackTable,
 } from '@tanstack/react-table'
 
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
+import { ColumnHeaderFilter } from '@/components/ui/data-table-filters'
 
 // ---------------------------------------------------------------------------
 // Selection column helper
@@ -66,6 +68,39 @@ const TH_CLASS =
 
 const TD_CLASS =
   'p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
+
+/**
+ * Renders a header cell's label alongside its filter icon (when
+ * `meta.filter` is declared). The filter icon flips side for right-aligned
+ * columns so it stays visible against the column edge.
+ */
+function HeaderCellContent<TData>({
+  header,
+}: {
+  header: Header<TData, unknown>
+}) {
+  if (header.isPlaceholder) return null
+  const content = flexRender(
+    header.column.columnDef.header,
+    header.getContext(),
+  )
+  const meta = header.column.columnDef.meta
+  if (!meta?.filter) return <>{content}</>
+
+  const align = meta.align ?? 'left'
+  return (
+    <div
+      className={cn(
+        'group/header flex items-center gap-1.5',
+        align === 'right' && 'flex-row-reverse justify-end',
+        align === 'center' && 'justify-center',
+      )}
+    >
+      <span className="min-w-0 truncate">{content}</span>
+      <ColumnHeaderFilter column={header.column} align={align} />
+    </div>
+  )
+}
 
 /** Build a <colgroup> from TanStack column sizes. */
 function ColGroup<TData>({ table }: { table: TanstackTable<TData> }) {
@@ -246,9 +281,7 @@ export function DataTable<TData>({
                 <tr key={hg.id}>
                   {hg.headers.map((header) => (
                     <th key={header.id} colSpan={header.colSpan} className={TH_CLASS}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      <HeaderCellContent header={header} />
                     </th>
                   ))}
                 </tr>
@@ -298,12 +331,7 @@ export function DataTable<TData>({
                       header.getSize() !== 150 ? header.getSize() : undefined,
                   }}
                 >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
+                  <HeaderCellContent header={header} />
                 </TableHead>
               ))}
             </TableRow>

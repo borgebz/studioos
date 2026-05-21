@@ -31,7 +31,7 @@ export function DialogPage() {
       <section className="space-y-8">
         {/* Basic with form */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dialogWithForm')}
           </h2>
           <Dialog>
@@ -68,7 +68,7 @@ export function DialogPage() {
 
         {/* Settings dialog */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dialogSettings')}
           </h2>
           <Dialog>
@@ -104,7 +104,7 @@ export function DialogPage() {
 
         {/* Add participant dialog */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dialogComplex')}
           </h2>
           <Dialog>

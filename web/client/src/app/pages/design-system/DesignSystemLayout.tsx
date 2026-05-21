@@ -115,7 +115,7 @@ export function DesignSystemLayout({
             </div>
             {designSystemGroups.map((group) => (
               <div key={group.labelKey}>
-                <h3 className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <h3 className="mb-1 px-3 text-xs font-semibold text-muted-foreground">
                   {t(group.labelKey)}
                 </h3>
                 <ul className="space-y-0.5">

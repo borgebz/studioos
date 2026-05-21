@@ -22,7 +22,7 @@ export function RadioGroupPage() {
       <section className="space-y-8">
         {/* Basic */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.radioGroupBasic')}
           </h2>
           <RadioGroup value={plan} onValueChange={setPlan}>
@@ -43,7 +43,7 @@ export function RadioGroupPage() {
 
         {/* Disabled */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.disabled')}
           </h2>
           <RadioGroup value="a" disabled>
@@ -60,7 +60,7 @@ export function RadioGroupPage() {
 
         {/* With descriptions */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.radioGroupWithDesc')}
           </h2>
           <RadioGroup value={size} onValueChange={setSize} className="space-y-3">
@@ -82,7 +82,7 @@ export function RadioGroupPage() {
 
         {/* Horizontal */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.radioGroupHorizontal')}
           </h2>
           <RadioGroup value={plan} onValueChange={setPlan} className="flex gap-4">

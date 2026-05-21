@@ -25,7 +25,7 @@ export function CheckboxPage() {
       <section className="space-y-8">
         {/* States */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.checkboxStates')}
           </h2>
           <div className="space-y-4">
@@ -46,7 +46,7 @@ export function CheckboxPage() {
 
         {/* Disabled */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.disabled')}
           </h2>
           <div className="space-y-4">
@@ -67,7 +67,7 @@ export function CheckboxPage() {
 
         {/* With labels */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.checkboxWithLabels')}
           </h2>
           <div className="space-y-4 max-w-md">
