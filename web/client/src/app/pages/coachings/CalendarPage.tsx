@@ -1,24 +1,130 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Check, ChevronDown, MapPin, Plus, Tag, User, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Authorized } from '@/auth/permissions'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from '@/components/ui/combobox'
+
+interface FilterOption<T extends string | number = number> {
+  value: T
+  label: string
+  swatch?: string
+}
+
+const MAX_VISIBLE_CHIPS = 1
+
+function FilterCombobox<T extends string | number>({
+  items,
+  value,
+  onValueChange,
+  placeholder,
+  emptyText,
+}: {
+  items: FilterOption<T>[]
+  value: T[]
+  onValueChange: (next: T[]) => void
+  placeholder: string
+  emptyText: string
+}) {
+  const anchor = useComboboxAnchor()
+  return (
+    <Combobox
+      multiple
+      autoHighlight
+      items={items}
+      value={value}
+      onValueChange={(next) => onValueChange(next as T[])}
+      itemToStringLabel={(item: FilterOption<T>) => item.label}
+      itemToStringValue={(item: FilterOption<T>) => String(item.value)}
+    >
+      <ComboboxChips
+        ref={anchor}
+        className="h-9 min-h-9 w-[200px] flex-nowrap overflow-hidden"
+      >
+        <ComboboxValue>
+          {(values: T[]) => {
+            const visible = values.slice(0, MAX_VISIBLE_CHIPS)
+            const overflow = values.length - visible.length
+            return (
+              <Fragment>
+                {visible.map((v) => {
+                  const item = items.find((i) => i.value === v)
+                  return (
+                    <ComboboxChip
+                      key={String(v)}
+                      value={v}
+                      className="max-w-[110px]"
+                    >
+                      {item?.swatch && (
+                        <span
+                          className="size-2 shrink-0 rounded-sm"
+                          style={{ backgroundColor: item.swatch }}
+                        />
+                      )}
+                      <span className="truncate">
+                        {item?.label ?? String(v)}
+                      </span>
+                    </ComboboxChip>
+                  )
+                })}
+                {overflow > 0 && (
+                  <span
+                    className="flex h-[calc(--spacing(5.5))] shrink-0 items-center rounded-sm bg-muted px-1.5 text-xs font-medium text-muted-foreground"
+                    aria-label={`+${overflow}`}
+                  >
+                    +{overflow}
+                  </span>
+                )}
+                <ComboboxChipsInput
+                  className="min-w-0 flex-1"
+                  placeholder={values.length === 0 ? placeholder : ''}
+                />
+              </Fragment>
+            )
+          }}
+        </ComboboxValue>
+      </ComboboxChips>
+      <ComboboxContent anchor={anchor}>
+        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxList>
+          {(item: FilterOption<T>) => (
+            <ComboboxItem key={String(item.value)} value={item.value}>
+              {item.swatch && (
+                <span
+                  className="size-2.5 shrink-0 rounded-sm"
+                  style={{ backgroundColor: item.swatch }}
+                />
+              )}
+              <span>{item.label}</span>
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
 import { apiClient } from '@/api/api-client'
-import type {
-  CoachingClass,
-  Studio,
-  Modality,
-  TeacherSummary,
+import {
+  CoachingClassStatusEnum,
+  type CoachingClass,
+  type Studio,
+  type Modality,
+  type TeacherSummary,
 } from '@/api/studioos-api'
 import { paths } from '@/app/paths'
 import {
@@ -74,6 +180,9 @@ function toCalendarEvents(
 ): CalendarEvent[] {
   return coachings
     .filter((c) => {
+      // Studio is nullable on the server (e.g. unassigned requests) —
+      // the calendar groups by studio, so those rows can't be rendered.
+      if (!c.studio || !c.modality) return false
       const start = new Date(c.start_datetime)
       return (
         start.getDate() === selectedDate.getDate() &&
@@ -104,7 +213,7 @@ function toCalendarEvents(
         category: String(c.modality.id),
         categoryColor:
           modalityColorMap.get(c.modality.id) ?? 'oklch(0.5 0.09 190)',
-        teacher: getTeacherName(c.teacher),
+        teacher: c.teacher ? getTeacherName(c.teacher) : undefined,
         enrolled: activeParticipants?.length,
         status: c.status,
       }
@@ -128,6 +237,7 @@ function computeDayHourRange(
   let latest = 0
 
   for (const c of coachings) {
+    if (!c.studio) continue
     const start = new Date(c.start_datetime)
     const end = new Date(c.end_datetime)
     if (
@@ -161,135 +271,6 @@ function toDateKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
 }
 
-interface FilterOption {
-  value: number
-  label: string
-  swatch?: string
-}
-
-function MultiSelectFilter({
-  icon: Icon,
-  label,
-  options,
-  selected,
-  onChange,
-  emptyText,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  options: FilterOption[]
-  selected: Set<number>
-  onChange: (next: Set<number>) => void
-  emptyText: string
-}) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const count = selected.size
-
-  const summary =
-    count === 0
-      ? t('calendar.filters.all')
-      : count === 1
-        ? (options.find((o) => o.value === Array.from(selected)[0])?.label ??
-          t('calendar.filters.allSelected', { count }))
-        : t('calendar.filters.nSelected', { count })
-
-  const toggle = (value: number) => {
-    const next = new Set(selected)
-    if (next.has(value)) next.delete(value)
-    else next.add(value)
-    onChange(next)
-  }
-
-  const clear = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onChange(new Set())
-  }
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            'inline-flex h-10 min-w-[240px] flex-1 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm transition-colors hover:bg-accent',
-            count > 0 && 'border-primary/50'
-          )}
-        >
-          <Icon className="size-4 text-muted-foreground shrink-0" />
-          <div className="flex min-w-0 flex-1 flex-col items-start text-left leading-tight">
-            <span className="text-[11px] font-medium text-muted-foreground">
-              {label}
-            </span>
-            <span
-              className={cn(
-                'truncate text-sm font-medium',
-                count > 0 ? 'text-foreground' : 'text-muted-foreground'
-              )}
-            >
-              {summary}
-            </span>
-          </div>
-          {count > 0 ? (
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label={t('calendar.filters.clear')}
-              className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-              onClick={clear}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  onChange(new Set())
-                }
-              }}
-            >
-              <X className="size-3.5" />
-            </span>
-          ) : (
-            <ChevronDown className="size-4 text-muted-foreground shrink-0" />
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-1">
-        {options.length === 0 ? (
-          <div className="p-3 text-xs text-muted-foreground">{emptyText}</div>
-        ) : (
-          <div className="max-h-64 overflow-y-auto">
-            {options.map((opt) => {
-              const isChecked = selected.has(opt.value)
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                  onClick={() => toggle(opt.value)}
-                >
-                  <span
-                    className={cn(
-                      'flex size-4 items-center justify-center rounded-sm border border-border shrink-0',
-                      isChecked && 'border-primary bg-primary text-primary-foreground'
-                    )}
-                  >
-                    {isChecked && <Check className="size-3" />}
-                  </span>
-                  {opt.swatch && (
-                    <span
-                      className="size-2.5 rounded-sm shrink-0"
-                      style={{ backgroundColor: opt.swatch }}
-                    />
-                  )}
-                  <span className="flex-1 truncate">{opt.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
-  )
-}
-
 export function CalendarPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -305,6 +286,9 @@ export function CalendarPage() {
   const [studioFilter, setStudioFilter] = useState<Set<number>>(new Set())
   const [modalityFilter, setModalityFilter] = useState<Set<number>>(new Set())
   const [teacherFilter, setTeacherFilter] = useState<Set<number>>(new Set())
+  const [statusFilter, setStatusFilter] = useState<
+    Set<CoachingClassStatusEnum>
+  >(() => new Set([CoachingClassStatusEnum.Scheduled]))
 
   const { start: weekStart, end: weekEnd } = getWeekRange(selectedDate)
   const weekKey = weekStart.toISOString()
@@ -329,15 +313,37 @@ export function CalendarPage() {
     }
   }, [])
 
+  const studioFilterKey = useMemo(
+    () => Array.from(studioFilter).sort().join(','),
+    [studioFilter]
+  )
+  const modalityFilterKey = useMemo(
+    () => Array.from(modalityFilter).sort().join(','),
+    [modalityFilter]
+  )
+  const teacherFilterKey = useMemo(
+    () => Array.from(teacherFilter).sort().join(','),
+    [teacherFilter]
+  )
+  const statusFilterKey = useMemo(
+    () => Array.from(statusFilter).sort().join(','),
+    [statusFilter]
+  )
+
   useEffect(() => {
     let cancelled = false
 
+    const query: Parameters<typeof apiClient.api.getAllCoachings>[0] = {
+      date_from: weekStart.toISOString(),
+      date_to: weekEnd.toISOString(),
+    }
+    if (studioFilter.size > 0) query.studio_id = Array.from(studioFilter)
+    if (modalityFilter.size > 0) query.modality_id = Array.from(modalityFilter)
+    if (teacherFilter.size > 0) query.teacher_id = Array.from(teacherFilter)
+    if (statusFilter.size > 0) query.status = Array.from(statusFilter)
+
     apiClient.api
-      .getAllCoachings({
-        date_from: weekStart.toISOString(),
-        date_to: weekEnd.toISOString(),
-        status: 'scheduled',
-      })
+      .getAllCoachings(query)
       .then((res) => {
         if (cancelled) return
         const data = res?.data as any
@@ -352,37 +358,27 @@ export function CalendarPage() {
     return () => {
       cancelled = true
     }
-  }, [weekKey])
+  }, [
+    weekKey,
+    studioFilterKey,
+    modalityFilterKey,
+    teacherFilterKey,
+    statusFilterKey,
+  ])
 
   const handleDateChange = useCallback((date: Date) => {
     setSelectedDate(date)
   }, [])
 
-  const filteredCoachings = useMemo(() => {
-    if (
-      studioFilter.size === 0 &&
-      modalityFilter.size === 0 &&
-      teacherFilter.size === 0
-    ) {
-      return coachings
-    }
-    return coachings.filter((c) => {
-      if (studioFilter.size > 0 && !studioFilter.has(c.studio.id)) return false
-      if (modalityFilter.size > 0 && !modalityFilter.has(c.modality.id))
-        return false
-      if (teacherFilter.size > 0 && !teacherFilter.has(c.teacher.id))
-        return false
-      return true
-    })
-  }, [coachings, studioFilter, modalityFilter, teacherFilter])
-
-  const filteredStudios = useMemo(() => {
+  // Studios shown as columns: if the user picked a studio subset, restrict the
+  // columns to that subset; otherwise show every studio.
+  const visibleStudios = useMemo(() => {
     if (studioFilter.size === 0) return studios
     return studios.filter((s) => studioFilter.has(s.id))
   }, [studios, studioFilter])
 
   const { dayStartHour, dayEndHour } = computeDayHourRange(
-    filteredCoachings,
+    coachings,
     selectedDate
   )
 
@@ -397,25 +393,21 @@ export function CalendarPage() {
 
   const calendarEvents = useMemo(
     () =>
-      toCalendarEvents(
-        filteredCoachings,
-        selectedDate,
-        modalityColorMap,
-        dayStartHour
-      ),
-    [filteredCoachings, selectedDate, modalityColorMap, dayStartHour]
+      toCalendarEvents(coachings, selectedDate, modalityColorMap, dayStartHour),
+    [coachings, selectedDate, modalityColorMap, dayStartHour]
   )
   const calendarResources = useMemo(
-    () => toCalendarResources(filteredStudios),
-    [filteredStudios]
+    () => toCalendarResources(visibleStudios),
+    [visibleStudios]
   )
 
   const dayLoadMap = useMemo(() => {
     const map = new Map<string, number>()
-    const maxLoad = filteredStudios.length * (dayEndHour - dayStartHour)
+    const maxLoad = visibleStudios.length * (dayEndHour - dayStartHour)
     if (maxLoad <= 0) return map
 
-    for (const c of filteredCoachings) {
+    for (const c of coachings) {
+      if (!c.studio) continue
       const start = new Date(c.start_datetime)
       const key = toDateKey(start)
       const dur =
@@ -428,7 +420,7 @@ export function CalendarPage() {
     }
 
     return map
-  }, [filteredCoachings, filteredStudios.length, dayStartHour, dayEndHour])
+  }, [coachings, visibleStudios.length, dayStartHour, dayEndHour])
 
   const studioOptions: FilterOption[] = useMemo(
     () => studios.map((s) => ({ value: s.id, label: s.name })),
@@ -444,17 +436,33 @@ export function CalendarPage() {
     [modalities, modalityColorMap]
   )
   const teacherOptions: FilterOption[] = useMemo(
-    () => teachers.map((te) => ({ value: te.id, label: getTeacherSummaryName(te) })),
+    () =>
+      teachers.map((te) => ({
+        value: te.id,
+        label: getTeacherSummaryName(te),
+      })),
     [teachers]
+  )
+  const statusOptions: FilterOption<CoachingClassStatusEnum>[] = useMemo(
+    () =>
+      Object.values(CoachingClassStatusEnum).map((value) => ({
+        value,
+        label: t(`coachingRequests.status.${value}`),
+      })),
+    [t]
   )
 
   const activeFilterCount =
-    studioFilter.size + modalityFilter.size + teacherFilter.size
+    studioFilter.size +
+    modalityFilter.size +
+    teacherFilter.size +
+    statusFilter.size
 
   const clearAll = () => {
     setStudioFilter(new Set())
     setModalityFilter(new Set())
     setTeacherFilter(new Set())
+    setStatusFilter(new Set())
   }
 
   const filtersCard = (
@@ -463,29 +471,33 @@ export function CalendarPage() {
         <span className="mr-1 text-xs font-medium text-muted-foreground">
           {t('calendar.filters.title')}
         </span>
-        <MultiSelectFilter
-          icon={MapPin}
-          label={t('calendar.filters.studios')}
-          options={studioOptions}
-          selected={studioFilter}
-          onChange={setStudioFilter}
+        <FilterCombobox
+          items={studioOptions}
+          value={Array.from(studioFilter)}
+          onValueChange={(next) => setStudioFilter(new Set(next))}
+          placeholder={t('calendar.filters.studios')}
           emptyText={t('calendar.filters.noStudios')}
         />
-        <MultiSelectFilter
-          icon={Tag}
-          label={t('calendar.filters.modalities')}
-          options={modalityOptions}
-          selected={modalityFilter}
-          onChange={setModalityFilter}
+        <FilterCombobox
+          items={modalityOptions}
+          value={Array.from(modalityFilter)}
+          onValueChange={(next) => setModalityFilter(new Set(next))}
+          placeholder={t('calendar.filters.modalities')}
           emptyText={t('calendar.filters.noModalities')}
         />
-        <MultiSelectFilter
-          icon={User}
-          label={t('calendar.filters.teachers')}
-          options={teacherOptions}
-          selected={teacherFilter}
-          onChange={setTeacherFilter}
+        <FilterCombobox
+          items={teacherOptions}
+          value={Array.from(teacherFilter)}
+          onValueChange={(next) => setTeacherFilter(new Set(next))}
+          placeholder={t('calendar.filters.teachers')}
           emptyText={t('calendar.filters.noTeachers')}
+        />
+        <FilterCombobox
+          items={statusOptions}
+          value={Array.from(statusFilter)}
+          onValueChange={(next) => setStatusFilter(new Set(next))}
+          placeholder={t('calendar.filters.status')}
+          emptyText={t('calendar.filters.noStatus')}
         />
         {activeFilterCount > 0 && (
           <Button

@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { TreeSelect, type TreeSelectNode } from '@/components/ui/tree-select'
+import { TreeSelect, type TreeSelectNode } from '@/components/shared/TreeSelect'
 import { Apple, Banana, Citrus, Cherry, Sparkles, Music, Dumbbell, Palette } from 'lucide-react'
 
 const fruits = [

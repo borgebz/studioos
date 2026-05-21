@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
 import { paths } from '@/app/paths'
 import { ProtectedRoute } from '@/auth/permissions'
 import { LoginPage } from '@/app/pages/LoginPage/LoginPage'
@@ -29,8 +29,9 @@ import { ScheduleCalendarPage } from '@/app/pages/design-system/ScheduleCalendar
 import { ToastPage } from '@/app/pages/design-system/ToastPage'
 import { HomePage } from '@/app/pages/HomePage'
 import { LandingPage } from '@/app/pages/LandingPage'
-import { CalendarPage } from '@/app/pages/calendar/CalendarPage'
+import { CalendarPage } from '@/app/pages/coachings/CalendarPage'
 import { CreateCoachingPage } from '@/app/pages/coachings/CreateCoachingPage'
+import { EditCoachingPage } from '@/app/pages/coachings/EditCoachingPage'
 import { MyCoachingRequestsPage } from '@/app/pages/coachings/MyCoachingRequestsPage'
 import { RequestCoachingPage } from '@/app/pages/coachings/RequestCoachingPage'
 import { CoachingRequestsPage } from '@/app/pages/coachings/CoachingRequestsPage'
@@ -39,9 +40,12 @@ import { EnrollmentRequestsPage } from '@/app/pages/enrollments/EnrollmentReques
 import { EnrollmentReviewPage } from '@/app/pages/enrollments/EnrollmentReviewPage'
 import { MarketplaceListPage } from '@/app/pages/marketplace/MarketplaceListPage'
 import { CreateListingPage } from '@/app/pages/marketplace/CreateListingPage'
+import { EditListingPage } from '@/app/pages/marketplace/EditListingPage'
 import { MyListingsPage } from '@/app/pages/marketplace/MyListingsPage'
 import { SchoolListingsPage } from '@/app/pages/marketplace/SchoolListingsPage'
+import { MyInventoryPage } from '@/app/pages/inventory/MyInventoryPage'
 import { SchoolInventoryPage } from '@/app/pages/inventory/SchoolInventoryPage'
+import { CreateProductPage } from '@/app/pages/inventory/CreateProductPage'
 import { InviteUsersPage } from '@/app/pages/invites/InviteUsersPage'
 import { UsersListPage } from '@/app/pages/users/UsersListPage'
 import { UserDetailPage } from '@/app/pages/users/UserDetailPage'
@@ -62,6 +66,7 @@ export function AppRoutes() {
       <Route path={paths.home} element={<HomePage />} />
       <Route path={paths.calendar} element={<ProtectedRoute permission="coachings.view_coachingclass"><CalendarPage /></ProtectedRoute>} />
       <Route path={paths.coachingsCreate} element={<ProtectedRoute permission="coachings.can_schedule_coaching"><CreateCoachingPage /></ProtectedRoute>} />
+      <Route path={paths.coachingsEdit} element={<ProtectedRoute permission="coachings.change_coachingclass"><EditCoachingPage /></ProtectedRoute>} />
       <Route path={paths.coachingsMyRequests} element={<ProtectedRoute permission={['accounts.can_participate_in_coaching', 'accounts.can_teach']}><MyCoachingRequestsPage /></ProtectedRoute>} />
       <Route path={paths.coachingsRequest} element={<ProtectedRoute permission="accounts.can_participate_in_coaching"><RequestCoachingPage /></ProtectedRoute>} />
       <Route path={paths.coachingsRequests} element={<ProtectedRoute permission="coachings.change_coachingclass"><CoachingRequestsPage /></ProtectedRoute>} />
@@ -70,8 +75,12 @@ export function AppRoutes() {
       <Route path={paths.enrollmentReview} element={<ProtectedRoute permission="enrollments.can_review_enrollment"><EnrollmentReviewPage /></ProtectedRoute>} />
       <Route path={paths.marketplace} element={<ProtectedRoute permission="marketplace.view_productlisting"><MarketplaceListPage /></ProtectedRoute>} />
       <Route path={paths.marketplaceCreate} element={<ProtectedRoute permission="marketplace.manage_school_listings"><CreateListingPage /></ProtectedRoute>} />
+      <Route path={paths.marketplaceEdit} element={<ProtectedRoute permission="marketplace.manage_school_listings"><EditListingPage /></ProtectedRoute>} />
       <Route path={paths.myListings} element={<ProtectedRoute permission="marketplace.view_own_listings"><MyListingsPage /></ProtectedRoute>} />
+      <Route path={paths.myInventory} element={<ProtectedRoute permission="marketplace.view_own_listings"><MyInventoryPage /></ProtectedRoute>} />
+      <Route path={paths.myInventoryCreate} element={<ProtectedRoute permission="inventory.add_product"><CreateProductPage context="personal" /></ProtectedRoute>} />
       <Route path={paths.schoolInventory} element={<ProtectedRoute permission="inventory.view_school_product"><SchoolInventoryPage /></ProtectedRoute>} />
+      <Route path={paths.schoolInventoryCreate} element={<ProtectedRoute permission="inventory.add_school_product"><CreateProductPage context="school" /></ProtectedRoute>} />
       <Route path={paths.schoolListings} element={<ProtectedRoute permission="marketplace.manage_school_listings"><SchoolListingsPage /></ProtectedRoute>} />
       <Route path={paths.invites} element={<ProtectedRoute permission="accounts.can_invite_user"><InviteUsersPage /></ProtectedRoute>} />
       <Route path={paths.users} element={<ProtectedRoute permission="accounts.can_list_users"><UsersListPage /></ProtectedRoute>} />
@@ -85,197 +94,37 @@ export function AppRoutes() {
       <Route path={paths.resetPassword} element={<ResetPasswordPage />} />
       <Route path={paths.accountSettings} element={<AccountSettingsPage />} />
       <Route
-        path={paths.designSystem}
         element={
           <DesignSystemLayout>
-            <DesignSystemIndexPage />
+            <Outlet />
           </DesignSystemLayout>
         }
-      />
-      <Route
-        path={paths.designSystemButtons}
-        element={
-          <DesignSystemLayout>
-            <ButtonsPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemInput}
-        element={
-          <DesignSystemLayout>
-            <InputPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemSelect}
-        element={
-          <DesignSystemLayout>
-            <SelectPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemDropdown}
-        element={
-          <DesignSystemLayout>
-            <DropdownPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemSkeleton}
-        element={
-          <DesignSystemLayout>
-            <SkeletonPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemTooltip}
-        element={
-          <DesignSystemLayout>
-            <TooltipPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemSheet}
-        element={
-          <DesignSystemLayout>
-            <SheetPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemSeparator}
-        element={
-          <DesignSystemLayout>
-            <SeparatorPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemPlayground}
-        element={
-          <DesignSystemLayout>
-            <PlaygroundPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemCalendar}
-        element={
-          <DesignSystemLayout>
-            <DSCalendarPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemPopover}
-        element={
-          <DesignSystemLayout>
-            <PopoverPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemScrollArea}
-        element={
-          <DesignSystemLayout>
-            <ScrollAreaPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemSwitch}
-        element={
-          <DesignSystemLayout>
-            <SwitchPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemAvatar}
-        element={
-          <DesignSystemLayout>
-            <AvatarPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemBadge}
-        element={
-          <DesignSystemLayout>
-            <BadgePage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemCheckbox}
-        element={
-          <DesignSystemLayout>
-            <CheckboxPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemRadioGroup}
-        element={
-          <DesignSystemLayout>
-            <RadioGroupPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemTextarea}
-        element={
-          <DesignSystemLayout>
-            <TextareaPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemAlertDialog}
-        element={
-          <DesignSystemLayout>
-            <AlertDialogPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemDialog}
-        element={
-          <DesignSystemLayout>
-            <DialogPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemLogoLoader}
-        element={
-          <DesignSystemLayout>
-            <LogoLoaderPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemScheduleCalendar}
-        element={
-          <DesignSystemLayout>
-            <ScheduleCalendarPage />
-          </DesignSystemLayout>
-        }
-      />
-      <Route
-        path={paths.designSystemToast}
-        element={
-          <DesignSystemLayout>
-            <ToastPage />
-          </DesignSystemLayout>
-        }
-      />
+      >
+        <Route path={paths.designSystem} element={<DesignSystemIndexPage />} />
+        <Route path={paths.designSystemButtons} element={<ButtonsPage />} />
+        <Route path={paths.designSystemInput} element={<InputPage />} />
+        <Route path={paths.designSystemSelect} element={<SelectPage />} />
+        <Route path={paths.designSystemDropdown} element={<DropdownPage />} />
+        <Route path={paths.designSystemSkeleton} element={<SkeletonPage />} />
+        <Route path={paths.designSystemTooltip} element={<TooltipPage />} />
+        <Route path={paths.designSystemSheet} element={<SheetPage />} />
+        <Route path={paths.designSystemSeparator} element={<SeparatorPage />} />
+        <Route path={paths.designSystemPlayground} element={<PlaygroundPage />} />
+        <Route path={paths.designSystemCalendar} element={<DSCalendarPage />} />
+        <Route path={paths.designSystemPopover} element={<PopoverPage />} />
+        <Route path={paths.designSystemScrollArea} element={<ScrollAreaPage />} />
+        <Route path={paths.designSystemSwitch} element={<SwitchPage />} />
+        <Route path={paths.designSystemAvatar} element={<AvatarPage />} />
+        <Route path={paths.designSystemBadge} element={<BadgePage />} />
+        <Route path={paths.designSystemCheckbox} element={<CheckboxPage />} />
+        <Route path={paths.designSystemRadioGroup} element={<RadioGroupPage />} />
+        <Route path={paths.designSystemTextarea} element={<TextareaPage />} />
+        <Route path={paths.designSystemAlertDialog} element={<AlertDialogPage />} />
+        <Route path={paths.designSystemDialog} element={<DialogPage />} />
+        <Route path={paths.designSystemLogoLoader} element={<LogoLoaderPage />} />
+        <Route path={paths.designSystemScheduleCalendar} element={<ScheduleCalendarPage />} />
+        <Route path={paths.designSystemToast} element={<ToastPage />} />
+      </Route>
     </Routes>
   )
 }

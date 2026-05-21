@@ -1,30 +1,27 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  Plus,
-  Search,
   MoreHorizontal,
   Pencil,
-  Trash2,
+  Plus,
+  Search,
   Store,
-  DollarSign,
-  CheckSquare,
-  X,
+  Trash2,
 } from 'lucide-react'
 import {
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
   useReactTable,
-  type RowSelectionState,
 } from '@tanstack/react-table'
 import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
 import type { ListingList, Status421Enum } from '@/api/studioos-api'
-import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { usePaginatedList } from '@/hooks/usePaginatedList'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -50,47 +47,68 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { DataTable, getSelectionColumn } from '@/components/ui/data-table'
+import { DataTable } from '@/components/ui/data-table'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { ListingCard } from '@/components/shared/ListingCard'
+import { ListingsGridView } from '@/components/shared/ListingsGridView'
+import {
+  ListingsToolbar,
+  type SortKey,
+  type ToolbarChip,
+  type ViewMode,
+} from '@/components/shared/ListingsToolbar'
 import { paths } from '@/app/paths'
 import { StatusBadge, listingTypeLabel } from './marketplace-helpers'
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 export function SchoolListingsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  // -- Filters --
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const search = useDebouncedValue(searchInput, 300)
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [conditionFilter, setConditionFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<SortKey>('recent')
+  const [view, setView] = useState<ViewMode>('grid')
 
-  // -- Data --
-  const fetchPage = useCallback(
-    () =>
-      apiClient.api
-        .marketplaceSchoolListingsRetrieve()
-        .then((r) => r.data) as Promise<{
-        count: number
-        next: string | null
-        previous: string | null
-        results: ListingList[]
-      }>,
-    [],
-  )
+  const sortKeyToOrdering = (key: SortKey) => {
+    switch (key) {
+      case 'priceAsc': return 'asking_price' as const
+      case 'priceDesc': return '-asking_price' as const
+      default: return '-created_at' as const
+    }
+  }
+
+  const fetchPage = useCallback(() => {
+    const query: {
+      search?: string
+      listing_type?: 'rent' | 'sell' | 'lend' | 'donate'
+      status?: 'draft' | 'active' | 'closed'
+      condition?: string
+      ordering?: '-created_at' | 'created_at' | 'asking_price' | '-asking_price'
+    } = {}
+    if (search.trim()) query.search = search.trim()
+    if (typeFilter !== 'all')
+      query.listing_type = typeFilter as typeof query.listing_type
+    if (statusFilter !== 'all')
+      query.status = statusFilter as typeof query.status
+    if (conditionFilter !== 'all') query.condition = conditionFilter
+    query.ordering = sortKeyToOrdering(sortBy)
+    return apiClient.api
+      .marketplaceSchoolListingsRetrieve(query)
+      .then((r) => r.data) as Promise<{
+      count: number
+      next: string | null
+      previous: string | null
+      results: ListingList[]
+    }>
+  }, [search, typeFilter, statusFilter, conditionFilter, sortBy])
 
   const {
     items: listings,
@@ -101,51 +119,40 @@ export function SchoolListingsPage() {
     fetchNextPage,
     refresh,
     setItems: setListings,
-  } = usePaginatedList<ListingList>({ fetchPage })
+  } = usePaginatedList<ListingList>({
+    fetchPage,
+    resetDeps: [search, typeFilter, statusFilter, conditionFilter, sortBy],
+  })
 
-  // -- Client-side filtering --
-  const filtered = useMemo(
-    () =>
-      listings.filter((l) => {
-        if (search) {
-          const q = search.toLowerCase()
-          if (
-            !l.title.toLowerCase().includes(q) &&
-            !l.product_name?.toLowerCase().includes(q)
-          )
-            return false
-        }
-        if (typeFilter !== 'all' && l.listing_type !== typeFilter) return false
-        if (statusFilter !== 'all' && l.status !== statusFilter) return false
-        return true
-      }),
-    [listings, search, typeFilter, statusFilter],
-  )
-
-  // -- Row selection --
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
-
-  // -- Bulk / delete dialogs --
-  const [bulkPriceOpen, setBulkPriceOpen] = useState(false)
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
-  const [newPrice, setNewPrice] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<ListingList | null>(null)
 
-  // -- Columns --
-  const columnHelper = useMemo(() => createColumnHelper<ListingList>(), [])
+  const handleSingleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await apiClient.api.marketplaceSchoolListingsPartialUpdate(
+        deleteTarget.id,
+        { status: 'closed' as Status421Enum },
+      )
+      setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
+      toast.success(t('marketplace.deleteSuccess'))
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+    } finally {
+      setDeleteTarget(null)
+    }
+  }
 
+  // ── Data-table columns (list view) ────────────────────────────────────────
+  const columnHelper = useMemo(() => createColumnHelper<ListingList>(), [])
   const columns = useMemo(
     () => [
-      getSelectionColumn<ListingList>(),
-
-      // Product (thumbnail + title + meta)
       columnHelper.accessor('title', {
         header: () => t('marketplace.col.product'),
         cell: (info) => {
           const row = info.row.original
           return (
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 shrink-0 rounded-lg border border-border bg-muted/30 overflow-hidden">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/30">
                 {row.primary_media_url ? (
                   <img
                     src={row.primary_media_url}
@@ -159,49 +166,24 @@ export function SchoolListingsPage() {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate max-w-[260px]">
+                <p className="max-w-[260px] truncate text-sm font-medium">
                   {row.title}
                 </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs text-muted-foreground truncate max-w-[140px]">
-                    {row.product_name}
-                  </span>
-                  {row.variant_condition && (
-                    <>
-                      <span className="text-xs text-muted-foreground/40">
-                        ·
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {row.variant_condition}
-                      </span>
-                    </>
-                  )}
-                  {row.variant_size && (
-                    <>
-                      <span className="text-xs text-muted-foreground/40">
-                        ·
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {row.variant_size}
-                      </span>
-                    </>
-                  )}
-                </div>
+                <p className="max-w-[260px] truncate text-xs text-muted-foreground">
+                  {row.product_name}
+                </p>
               </div>
             </div>
           )
         },
       }),
-
-      // Price
       columnHelper.accessor('asking_price', {
         header: () => t('marketplace.col.price'),
         cell: (info) => {
           const price = info.getValue()
           return price ? (
             <span className="text-sm font-medium">
-              {t('common.currencySymbol')}
-              {price}
+              {t('common.currencySymbol')} {price}
             </span>
           ) : (
             <span className="text-xs text-muted-foreground">—</span>
@@ -209,8 +191,6 @@ export function SchoolListingsPage() {
         },
         meta: { className: 'hidden sm:table-cell' },
       }),
-
-      // Type
       columnHelper.accessor('listing_type', {
         header: () => t('marketplace.col.type'),
         cell: (info) => (
@@ -220,14 +200,10 @@ export function SchoolListingsPage() {
         ),
         meta: { className: 'hidden md:table-cell' },
       }),
-
-      // Status
       columnHelper.accessor('status', {
         header: () => t('marketplace.col.status'),
         cell: (info) => <StatusBadge status={info.getValue()} t={t} />,
       }),
-
-      // Actions
       columnHelper.display({
         id: 'actions',
         header: () => (
@@ -251,17 +227,19 @@ export function SchoolListingsPage() {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   onClick={() =>
-                    navigate(`${paths.schoolListings}/${row.id}`)
+                    navigate(
+                      paths.marketplaceEdit.replace(':id', String(row.id)),
+                    )
                   }
                 >
-                  <Pencil className="h-4 w-4 mr-2" />
+                  <Pencil className="h-4 w-4" />
                   {t('marketplace.edit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setDeleteTarget(row)}
                   className="text-destructive"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-4 w-4" />
                   {t('marketplace.delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -273,115 +251,91 @@ export function SchoolListingsPage() {
     [columnHelper, navigate, t],
   )
 
-  // -- Table instance --
   const table = useReactTable({
-    data: filtered,
+    data: listings,
     columns,
-    state: { rowSelection },
-    onRowSelectionChange: setRowSelection,
     getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    enableRowSelection: true,
   })
 
-  const selectedRows = table.getSelectedRowModel().rows
-  const someSelected = selectedRows.length > 0
+  const chips: ToolbarChip[] = useMemo(() => {
+    const list: ToolbarChip[] = []
+    if (typeFilter !== 'all')
+      list.push({
+        key: 'type',
+        label: listingTypeLabel(typeFilter, t),
+        onClear: () => setTypeFilter('all'),
+      })
+    if (statusFilter !== 'all')
+      list.push({
+        key: 'status',
+        label: t(`marketplace.status${capitalize(statusFilter)}`, {
+          defaultValue: statusFilter,
+        }),
+        onClear: () => setStatusFilter('all'),
+      })
+    if (conditionFilter !== 'all')
+      list.push({
+        key: 'condition',
+        label: t(`marketplace.condition${capitalize(conditionFilter)}`, {
+          defaultValue: conditionFilter,
+        }),
+        onClear: () => setConditionFilter('all'),
+      })
+    if (searchInput)
+      list.push({
+        key: 'search',
+        label: `"${searchInput}"`,
+        onClear: () => setSearchInput(''),
+      })
+    return list
+  }, [typeFilter, statusFilter, conditionFilter, searchInput, t])
 
-  // -- Bulk actions --
-  const handleBulkPriceApply = async () => {
-    if (!newPrice) return
-    const ids = selectedRows.map((r) => r.original.id)
-    try {
-      await Promise.all(
-        ids.map((id) =>
-          apiClient.api
-            .marketplaceSchoolListingsPartialUpdate(id, {
-              asking_price: newPrice,
-            })
-            .catch(() => null),
-        ),
-      )
-      const idSet = new Set(ids)
-      setListings((prev) =>
-        prev.map((l) =>
-          idSet.has(l.id) ? { ...l, asking_price: newPrice } : l,
-        ),
-      )
-      toast.success(t('marketplace.bulkEditSuccess', { count: ids.length }))
-      table.resetRowSelection()
-      setBulkPriceOpen(false)
-      setNewPrice('')
-    } catch (err) {
-      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
-    }
-  }
-
-  const handleBulkDelete = async () => {
-    const ids = selectedRows.map((r) => r.original.id)
-    try {
-      await Promise.all(
-        ids.map((id) =>
-          apiClient.api
-            .marketplaceSchoolListingsPartialUpdate(id, {
-              status: 'closed' as Status421Enum,
-            })
-            .catch(() => null),
-        ),
-      )
-      const idSet = new Set(ids)
-      setListings((prev) => prev.filter((l) => !idSet.has(l.id)))
-      toast.success(
-        t('marketplace.bulkEditDeleteSuccess', { count: ids.length }),
-      )
-      table.resetRowSelection()
-      setBulkDeleteOpen(false)
-    } catch (err) {
-      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
-    }
-  }
-
-  const handleSingleDelete = async () => {
-    if (!deleteTarget) return
-    try {
-      await apiClient.api.marketplaceSchoolListingsPartialUpdate(
-        deleteTarget.id,
-        { status: 'closed' as Status421Enum },
-      )
-      setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
-      toast.success(t('marketplace.deleteSuccess'))
-    } catch (err) {
-      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
-    } finally {
-      setDeleteTarget(null)
-    }
-  }
+  const emptyState = (
+    <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+      <Store className="mb-4 h-12 w-12 text-muted-foreground/30" />
+      <p className="text-sm font-medium text-muted-foreground">
+        {t('schoolListings.empty')}
+      </p>
+      <p className="mt-1 mb-4 text-xs text-muted-foreground/60">
+        {t('schoolListings.emptyDesc')}
+      </p>
+      <Button
+        size="sm"
+        onClick={() => navigate(`${paths.schoolListings}/create`)}
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        {t('marketplace.createListing')}
+      </Button>
+    </div>
+  )
 
   return (
-    <PageLayout fullHeight>
-      <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
+    <PageLayout>
+      <div className="mx-auto w-full max-w-6xl">
         <PageHeader title={t('schoolListings.title')} backTo={paths.home}>
           <Button onClick={() => navigate(`${paths.schoolListings}/create`)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             {t('marketplace.createListing')}
           </Button>
         </PageHeader>
 
-        {/* Filters */}
-        <div className="rounded-lg border border-border bg-card p-4 mb-4 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-3">
+        {/* Filter card */}
+        <div className="mb-4 rounded-lg border border-border bg-card p-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('marketplace.search')}
                 className="pl-9"
               />
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-3">
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="flex-1 sm:w-[160px] sm:flex-none">
+                <SelectTrigger className="w-full sm:w-[150px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -403,7 +357,7 @@ export function SchoolListingsPage() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="flex-1 sm:w-[160px] sm:flex-none">
+                <SelectTrigger className="w-full sm:w-[150px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -421,140 +375,87 @@ export function SchoolListingsPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <Select
+                value={conditionFilter}
+                onValueChange={setConditionFilter}
+              >
+                <SelectTrigger className="w-full sm:w-[170px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('marketplace.allConditions')}
+                  </SelectItem>
+                  <SelectItem value="new">
+                    {t('marketplace.conditionNew')}
+                  </SelectItem>
+                  <SelectItem value="excellent">
+                    {t('marketplace.conditionExcellent')}
+                  </SelectItem>
+                  <SelectItem value="good">
+                    {t('marketplace.conditionGood')}
+                  </SelectItem>
+                  <SelectItem value="fair">
+                    {t('marketplace.conditionFair')}
+                  </SelectItem>
+                  <SelectItem value="damaged">
+                    {t('marketplace.conditionDamaged')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
 
-        {/* Bulk Actions Bar */}
-        {someSelected && (
-          <div className="sticky top-14 z-20 rounded-lg border border-primary/30 bg-card p-3 mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <CheckSquare className="h-4 w-4 text-primary" />
-              {t('marketplace.selected', { count: selectedRows.length })}
-              <button
-                onClick={() => table.resetRowSelection()}
-                aria-label={t('marketplace.clearSelection')}
-                className="ml-1 rounded-full p-1 hover:bg-muted min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2 sm:ml-auto">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setBulkPriceOpen(true)}
-              >
-                <DollarSign className="h-4 w-4 mr-1" />
-                {t('marketplace.bulkEditPrice')}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setBulkDeleteOpen(true)}
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                {t('marketplace.bulkEditDelete')}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Table */}
-        <DataTable
-          table={table}
-          fillHeight
-          loading={loading}
-          totalCount={count}
-          onRefresh={refresh}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          onLoadMore={fetchNextPage}
-          emptyMessage={
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-              <Store className="h-12 w-12 text-muted-foreground/30 mb-4" />
-              <p className="text-sm font-medium text-muted-foreground">
-                {t('schoolListings.empty')}
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1 mb-4">
-                {t('schoolListings.emptyDesc')}
-              </p>
-              <Button
-                size="sm"
-                onClick={() => navigate(`${paths.schoolListings}/create`)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t('marketplace.createListing')}
-              </Button>
-            </div>
-          }
+        <ListingsToolbar
+          chips={chips}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          view={view}
+          onViewChange={setView}
         />
+
+        {view === 'grid' ? (
+          <ListingsGridView
+            items={listings}
+            getKey={(it) => it.id}
+            loading={loading}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+            renderItem={(item) => (
+              <ListingCard
+                item={item}
+                variant="owner"
+                onOpen={() =>
+                  navigate(
+                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                  )
+                }
+                onEdit={() =>
+                  navigate(
+                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                  )
+                }
+                onDelete={() => setDeleteTarget(item)}
+              />
+            )}
+            empty={emptyState}
+          />
+        ) : (
+          <DataTable
+            table={table}
+            loading={loading}
+            totalCount={count}
+            onRefresh={refresh}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+            emptyMessage={emptyState}
+          />
+        )}
       </div>
 
-      {/* Bulk Price Dialog */}
-      <Dialog open={bulkPriceOpen} onOpenChange={setBulkPriceOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('marketplace.bulkEditPrice')}</DialogTitle>
-            <DialogDescription>
-              {t('marketplace.selected', { count: selectedRows.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <div>
-            <Label htmlFor="bulkPrice">{t('marketplace.newPrice')}</Label>
-            <div className="relative mt-1.5">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                {t('common.currencySymbol')}
-              </span>
-              <Input
-                id="bulkPrice"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                inputMode="decimal"
-                value={newPrice}
-                onChange={(e) => setNewPrice(e.target.value)}
-                className="pl-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBulkPriceOpen(false)}>
-              {t('marketplace.cancel')}
-            </Button>
-            <Button onClick={handleBulkPriceApply} disabled={!newPrice}>
-              {t('marketplace.bulkEditApply')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Bulk Delete Confirmation */}
-      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('marketplace.bulkEditConfirmDelete', {
-                count: selectedRows.length,
-              })}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('marketplace.bulkEditConfirmDeleteDesc')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('marketplace.cancel')}</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button variant="destructive" onClick={handleBulkDelete}>
-                {t('marketplace.bulkEditDelete')}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Single Delete Confirmation */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}

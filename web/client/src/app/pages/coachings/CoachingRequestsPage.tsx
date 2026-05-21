@@ -2,7 +2,8 @@ import { useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { enUS, pt } from 'date-fns/locale'
-import { Check, HandHelping, MoreHorizontal, Users, X, Inbox as InboxIcon } from 'lucide-react'
+import { Check, HandHelping, MoreHorizontal, Pencil, Users, X, Inbox as InboxIcon } from 'lucide-react'
+import { useNavigate, generatePath } from 'react-router-dom'
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -16,7 +17,7 @@ import { CoachingClassStatusEnum, type CoachingClass } from '@/api/studioos-api'
 import {
   usePaginatedList,
   type PaginatedResponse,
-} from '@/hooks/use-paginated-list'
+} from '@/hooks/usePaginatedList'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -100,6 +101,7 @@ function StatusPill({ status }: { status?: CoachingClassStatusEnum }) {
 export function CoachingRequestsPage() {
   const { t, i18n } = useTranslation()
   const { can } = usePermissions()
+  const navigate = useNavigate()
   const dateLocale = i18n.language.startsWith('pt') ? pt : enUS
   const canManage = can('coachings.change_coachingclass')
   const canAccept = can('coachings.can_accept_coaching_as_teacher')
@@ -253,6 +255,17 @@ export function CoachingRequestsPage() {
           </div>
         ),
       }),
+      columnHelper.accessor((row) => row.studio?.name ?? '', {
+        id: 'studio',
+        header: () => t('coachingRequests.col.studio'),
+        cell: (info) => {
+          const name = info.getValue()
+          if (!name) {
+            return <span className="text-muted-foreground">—</span>
+          }
+          return <span>{name}</span>
+        },
+      }),
       columnHelper.accessor((row) => userName(row.requested_by), {
         id: 'requested_by',
         header: () => t('coachingRequests.col.requestedBy'),
@@ -302,8 +315,14 @@ export function CoachingRequestsPage() {
           const showAccept = isRequested && canAccept
           const showApprove = isPendingApproval && canManage
           const showReject = (isRequested || isPendingApproval) && canManage
+          const isTerminal =
+            status === CoachingClassStatusEnum.Completed ||
+            status === CoachingClassStatusEnum.Cancelled ||
+            status === CoachingClassStatusEnum.Rejected
+          const showEdit = canManage && !isTerminal
 
-          if (!showAccept && !showApprove && !showReject) return null
+          if (!showAccept && !showApprove && !showReject && !showEdit)
+            return null
           return (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -327,6 +346,18 @@ export function CoachingRequestsPage() {
                     {t('coachingRequests.approve')}
                   </DropdownMenuItem>
                 )}
+                {showEdit && (
+                  <DropdownMenuItem
+                    onClick={() =>
+                      navigate(
+                        generatePath(paths.coachingsEdit, { id: String(row.id) }),
+                      )
+                    }
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    {t('coachingRequests.edit')}
+                  </DropdownMenuItem>
+                )}
                 {showReject && (
                   <DropdownMenuItem
                     onClick={() => setRejectTarget(row)}
@@ -342,7 +373,7 @@ export function CoachingRequestsPage() {
         },
       }),
     ],
-    [columnHelper, dateLocale, t, canManage, canAccept]
+    [columnHelper, dateLocale, t, canManage, canAccept, navigate]
   )
 
   const table = useReactTable({

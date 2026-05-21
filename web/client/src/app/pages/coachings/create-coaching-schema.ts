@@ -9,7 +9,7 @@ const recurrenceSchema = z.object({
   end_date: z.date().optional(),
 })
 
-export const createCoachingSchema = z.object({
+export const coachingFormSchema = z.object({
   modality_id: z.string().min(1, 'validation.required'),
   teacher_id: z.string().min(1, 'validation.required'),
   studio_id: z.string().min(1, 'validation.required'),
@@ -25,9 +25,13 @@ export const createCoachingSchema = z.object({
   recurrence: recurrenceSchema,
 })
 
-export type CreateCoachingFormValues = z.infer<typeof createCoachingSchema>
+export type CoachingFormValues = z.infer<typeof coachingFormSchema>
 
-export const defaultCoachingValues: CreateCoachingFormValues = {
+// Backward-compat aliases — older imports.
+export const createCoachingSchema = coachingFormSchema
+export type CreateCoachingFormValues = CoachingFormValues
+
+export const defaultCoachingValues: CoachingFormValues = {
   modality_id: '',
   teacher_id: '',
   studio_id: '',

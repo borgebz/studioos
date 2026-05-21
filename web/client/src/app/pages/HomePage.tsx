@@ -7,7 +7,7 @@ export function HomePage() {
   const { t } = useTranslation()
   return (
     <PageLayout>
-      <div className="max-w-2xl">
+      <div className="mx-auto w-full max-w-6xl">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">{t('home.title')}</h1>
         <p className="mt-2 text-muted-foreground">
           {t('home.welcomeBefore')}

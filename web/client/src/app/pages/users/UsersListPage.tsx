@@ -17,7 +17,7 @@ import type { RoleList, UserResponse } from '@/api/studioos-api'
 import {
   usePaginatedList,
   type PaginatedResponse,
-} from '@/hooks/use-paginated-list'
+} from '@/hooks/usePaginatedList'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -82,14 +82,7 @@ function StatusPill({ active }: { active?: boolean }) {
   )
 }
 
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(id)
-  }, [value, delay])
-  return debounced
-}
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 
 export function UsersListPage() {
   const { t, i18n } = useTranslation()

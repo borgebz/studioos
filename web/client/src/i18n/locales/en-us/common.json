@@ -12,6 +12,7 @@
     "reviewRequests": "Review Requests",
     "marketplace": "Marketplace",
     "browse": "Browse",
+    "myInventory": "My Items",
     "myListings": "My Listings",
     "schoolCatalog": "School Catalog",
     "schoolInventory": "School Inventory",
@@ -50,6 +51,7 @@
       "studios": "Studios",
       "modalities": "Modalities",
       "teachers": "Teachers",
+      "status": "Status",
       "all": "All",
       "nSelected": "{{count}} selected",
       "allSelected": "{{count}} selected",
@@ -57,7 +59,8 @@
       "clearAll": "Clear all",
       "noStudios": "No studios available",
       "noModalities": "No modalities available",
-      "noTeachers": "No teachers available"
+      "noTeachers": "No teachers available",
+      "noStatus": "No statuses available"
     }
   },
   "theme": {
@@ -173,6 +176,16 @@
     "overview": "Overview",
     "components": "Components",
     "viewComponent": "View component",
+    "groups": {
+      "actions": "Actions",
+      "inputs": "Inputs",
+      "display": "Display",
+      "overlays": "Overlays",
+      "dateTime": "Date & Time",
+      "layout": "Layout",
+      "feedback": "Feedback",
+      "playground": "Playground"
+    },
     "button": "Button",
     "buttonDesc": "All button variants and sizes.",
     "input": "Input",
@@ -540,6 +553,7 @@
     "pricePerParticipant": "≈ €{{price}} per participant",
     "billable": "Billable",
     "billableDesc": "Generates a billing entry when completed",
+    "billableLockedRequested": "Locked: student-requested coachings always follow the standard billing flow.",
     "summary": "Summary",
     "back": "Back",
     "discard": "Discard",
@@ -554,6 +568,9 @@
     "createSession": "Create session",
     "createSeries": "Create series",
     "createSuccess": "Session created successfully",
+    "editTitle": "Edit Coaching",
+    "updateSession": "Update session",
+    "updateSuccess": "Session updated",
     "missingFields": "Please fill in all required fields",
     "dayMon": "Mon",
     "dayTue": "Tue",
@@ -582,6 +599,7 @@
     "approve": "Approve",
     "approving": "Approving…",
     "approveTooltip": "Approve and schedule",
+    "edit": "Edit",
     "approveTitle": "Approve coaching",
     "approveDesc": "Confirm the studio and set the total price to schedule this session.",
     "approveSuccess": "Coaching approved",
@@ -599,6 +617,7 @@
     "col": {
       "when": "When",
       "modality": "Modality",
+      "studio": "Studio",
       "requestedBy": "Requested by",
       "participants": "Participants",
       "status": "Status",
@@ -628,6 +647,21 @@
       "cancelled": "Session was cancelled.",
       "rejected": "Request was rejected."
     }
+  },
+  "myInventory": {
+    "empty": "You don't have any items yet.",
+    "search": "Search items...",
+    "col": {
+      "material": "Material"
+    }
+  },
+  "inventory": {
+    "createTitle": "New Product",
+    "createProduct": "Create product",
+    "createSuccess": "Product created successfully",
+    "createError": "Failed to create product",
+    "productDetails": "Product Details",
+    "variantSheetDesc": "Set the condition, size, and color of this variant."
   },
   "myCoachingRequests": {
     "title": "My Requests",
@@ -927,6 +961,10 @@
     "createListing": "Create listing",
     "createSuccess": "Listing created successfully",
     "createError": "Failed to create listing",
+    "editTitle": "Edit Listing",
+    "updateListing": "Update listing",
+    "updateSuccess": "Listing updated successfully",
+    "updateError": "Failed to update listing",
     "missingFields": "Please fill in all required fields",
     "media": "Photos",
     "mediaDesc": "Add photos of the product. The first image will be the cover.",
@@ -1015,7 +1053,17 @@
       "type": "Type",
       "status": "Status",
       "actions": "Actions"
-    }
+    },
+    "allConditions": "Any condition",
+    "priceFree": "Free",
+    "priceNegotiable": "Negotiable",
+    "sizeShort": "Size",
+    "viewGrid": "Grid view",
+    "viewList": "List view",
+    "sortBy": "Sort by",
+    "sortRecent": "Most recent",
+    "sortPriceAsc": "Price: low to high",
+    "sortPriceDesc": "Price: high to low"
   },
   "mediaUpload": {
     "dragDropHint": "Drag & drop images here, or use the buttons below",
@@ -1594,6 +1642,13 @@
     "EntryNotCancellable": "This billing entry cannot be cancelled.",
     "FineAmountInvalid": "The fine amount is invalid.",
     "WaiveNotesRequired": "Notes are required when waiving a fine.",
-    "MessageBodyOrFileRequired": "A message body or file is required."
+    "MessageBodyOrFileRequired": "A message body or file is required.",
+    "NotTheAssignedTeacher": "You are not the assigned teacher for this coaching.",
+    "CoachingNotFound": "The coaching was not found.",
+    "CoachingNotWaitingConfirmation": "This coaching is not waiting for confirmation.",
+    "CoachingNotEligibleForParticipantApproval": "This coaching is not eligible for participant approval.",
+    "CoachingNotEligibleForParticipantCancellation": "This coaching is not eligible for participant cancellation.",
+    "CannotCancelAnotherParticipantsRegistration": "You cannot cancel another participant's registration.",
+    "RecurringCoachingNotFound": "The recurring coaching was not found."
   }
 }

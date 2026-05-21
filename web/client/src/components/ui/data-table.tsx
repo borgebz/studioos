@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import { useInfiniteScroll } from '@/hooks/use-infinite-scroll'
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 
 // ---------------------------------------------------------------------------
 // Selection column helper

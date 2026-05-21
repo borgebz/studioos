@@ -5,6 +5,7 @@ import {
   Home,
   Inbox,
   MessageSquarePlus,
+  Package,
   Palette,
   Receipt,
   ShieldAlert,
@@ -60,19 +61,17 @@ export const navConfig: NavEntryConfig[] = [
   // -- Always visible --
   { to: paths.home, labelKey: 'nav.home', icon: Home },
 
-  // -- Calendar (top-level) --
-  {
-    to: paths.calendar,
-    labelKey: 'nav.calendar',
-    icon: CalendarDays,
-    permission: 'coachings.view_coachingclass',
-  },
-
   // -- Coachings --
   {
     labelKey: 'nav.coachings',
     icon: Inbox,
     children: [
+      {
+        to: paths.calendar,
+        labelKey: 'nav.calendar',
+        icon: CalendarDays,
+        permission: 'coachings.view_coachingclass',
+      },
       {
         to: paths.coachingsMyRequests,
         labelKey: 'nav.myRequests',
@@ -107,6 +106,12 @@ export const navConfig: NavEntryConfig[] = [
         labelKey: 'nav.browse',
         icon: ShoppingBag,
         permission: 'marketplace.view_productlisting',
+      },
+      {
+        to: paths.myInventory,
+        labelKey: 'nav.myInventory',
+        icon: Package,
+        permission: 'marketplace.view_own_listings',
       },
       {
         to: paths.myListings,

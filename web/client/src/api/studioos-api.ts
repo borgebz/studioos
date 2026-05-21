@@ -1490,12 +1490,12 @@ export interface ListingDetail {
    */
   asking_price?: string | null;
   is_public?: boolean;
-  product: string;
-  variant: string;
-  active_booking_windows: string;
-  owner_display: string;
-  is_favorited: string;
-  favorites_count: string;
+  product: ProductDetail;
+  variant: ProductVariantRead;
+  active_booking_windows: Record<string, any>[];
+  owner_display: Record<string, any>;
+  is_favorited: boolean;
+  favorites_count: number;
   /** @format date-time */
   created_at: string;
   /** @format date-time */
@@ -1524,13 +1524,15 @@ export interface ListingList {
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
   asking_price?: string | null;
-  primary_media_url: string;
+  /** @format uri */
+  primary_media_url: string | null;
   product_name: string;
   product_category: string;
   variant_condition: string;
   variant_size: string;
   variant_status: string;
-  available_from: string;
+  /** @format date-time */
+  available_from: string | null;
   /** @format date-time */
   created_at: string;
 }
@@ -2426,8 +2428,8 @@ export interface TransactionDetail {
    * * `blocked` - Blocked
    */
   status?: TransactionDetailStatusEnum;
-  requester_display: string;
-  owner_display: string;
+  requester_display: Record<string, any>;
+  owner_display: Record<string, any>;
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
@@ -3716,22 +3718,12 @@ export class Api<
         date_from?: string;
         /** @format date-time */
         date_to?: string;
+        modality_id?: number[];
         /** Filter coachings where this user is a participant. */
         participant_id?: number;
         recurring_coaching_id?: number;
         requested_by_id?: number;
-        /**
-         * * `requested` - Requested
-         * * `pending_approval` - Pending Approval
-         * * `scheduled` - Scheduled
-         * * `waiting_confirmation` - Waiting Confirmation
-         * * `pending_completion_approval` - Pending Completion Approval
-         * * `completed` - Completed
-         * * `cancelled` - Cancelled
-         * * `rejected` - Rejected
-         * @minLength 1
-         */
-        status?:
+        status?: (
           | "requested"
           | "pending_approval"
           | "scheduled"
@@ -3739,9 +3731,10 @@ export class Api<
           | "pending_completion_approval"
           | "completed"
           | "cancelled"
-          | "rejected";
-        studio_id?: number;
-        teacher_id?: number;
+          | "rejected"
+        )[];
+        studio_id?: number[];
+        teacher_id?: number[];
       },
       params: RequestParams = {},
     ) =>
@@ -5164,10 +5157,33 @@ export class Api<
      * @name InventoryProductsRetrieve
      * @request GET:/api/inventory/products/
      */
-    inventoryProductsRetrieve: (params: RequestParams = {}) =>
+    inventoryProductsRetrieve: (
+      query?: {
+        category_id?: number;
+        /** @minLength 1 */
+        name?: string;
+        /**
+         * * `-updated_at` - Recently updated
+         * * `updated_at` - Oldest updated
+         * * `name` - Name A-Z
+         * * `-name` - Name Z-A
+         * @minLength 1
+         */
+        ordering?: "-updated_at" | "updated_at" | "name" | "-name";
+        /**
+         * * `active` - Active
+         * * `inactive` - Inactive
+         * * `archived` - Archived
+         * @minLength 1
+         */
+        status?: "active" | "inactive" | "archived";
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<InventoryMemberProductList, ErrorResponse>({
         path: `/api/inventory/products/`,
         method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),
@@ -5288,10 +5304,33 @@ export class Api<
      * @name InventorySchoolProductsRetrieve
      * @request GET:/api/inventory/school/products/
      */
-    inventorySchoolProductsRetrieve: (params: RequestParams = {}) =>
+    inventorySchoolProductsRetrieve: (
+      query?: {
+        category_id?: number;
+        /** @minLength 1 */
+        name?: string;
+        /**
+         * * `-updated_at` - Recently updated
+         * * `updated_at` - Oldest updated
+         * * `name` - Name A-Z
+         * * `-name` - Name Z-A
+         * @minLength 1
+         */
+        ordering?: "-updated_at" | "updated_at" | "name" | "-name";
+        /**
+         * * `active` - Active
+         * * `inactive` - Inactive
+         * * `archived` - Archived
+         * @minLength 1
+         */
+        status?: "active" | "inactive" | "archived";
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<InventorySchoolProductList, ErrorResponse>({
         path: `/api/inventory/school/products/`,
         method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),
@@ -5674,10 +5713,49 @@ export class Api<
      * @name MarketplaceListingsRetrieve
      * @request GET:/api/marketplace/listings/
      */
-    marketplaceListingsRetrieve: (params: RequestParams = {}) =>
+    marketplaceListingsRetrieve: (
+      query?: {
+        category_id?: number;
+        color_id?: number;
+        /** @minLength 1 */
+        condition?: string;
+        /**
+         * * `rent` - Rent
+         * * `sell` - Sell
+         * * `lend` - Lend
+         * * `donate` - Donate
+         * @minLength 1
+         */
+        listing_type?: "rent" | "sell" | "lend" | "donate";
+        /**
+         * * `-created_at` - Newest first
+         * * `created_at` - Oldest first
+         * * `asking_price` - Price ascending
+         * * `-asking_price` - Price descending
+         * @minLength 1
+         */
+        ordering?:
+          | "-created_at"
+          | "created_at"
+          | "asking_price"
+          | "-asking_price";
+        /** @minLength 1 */
+        search?: string;
+        size_id?: number;
+        /**
+         * * `draft` - Draft
+         * * `active` - Active
+         * * `closed` - Closed
+         * @minLength 1
+         */
+        status?: "draft" | "active" | "closed";
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<MarketplaceListingList, ErrorResponse>({
         path: `/api/marketplace/listings/`,
         method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),
@@ -5967,10 +6045,49 @@ export class Api<
      * @name MarketplaceListingsMineRetrieve
      * @request GET:/api/marketplace/listings/mine/
      */
-    marketplaceListingsMineRetrieve: (params: RequestParams = {}) =>
+    marketplaceListingsMineRetrieve: (
+      query?: {
+        category_id?: number;
+        color_id?: number;
+        /** @minLength 1 */
+        condition?: string;
+        /**
+         * * `rent` - Rent
+         * * `sell` - Sell
+         * * `lend` - Lend
+         * * `donate` - Donate
+         * @minLength 1
+         */
+        listing_type?: "rent" | "sell" | "lend" | "donate";
+        /**
+         * * `-created_at` - Newest first
+         * * `created_at` - Oldest first
+         * * `asking_price` - Price ascending
+         * * `-asking_price` - Price descending
+         * @minLength 1
+         */
+        ordering?:
+          | "-created_at"
+          | "created_at"
+          | "asking_price"
+          | "-asking_price";
+        /** @minLength 1 */
+        search?: string;
+        size_id?: number;
+        /**
+         * * `draft` - Draft
+         * * `active` - Active
+         * * `closed` - Closed
+         * @minLength 1
+         */
+        status?: "draft" | "active" | "closed";
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<MyListingsList, ErrorResponse>({
         path: `/api/marketplace/listings/mine/`,
         method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),
@@ -5982,10 +6099,49 @@ export class Api<
      * @name MarketplaceSchoolListingsRetrieve
      * @request GET:/api/marketplace/school/listings/
      */
-    marketplaceSchoolListingsRetrieve: (params: RequestParams = {}) =>
+    marketplaceSchoolListingsRetrieve: (
+      query?: {
+        category_id?: number;
+        color_id?: number;
+        /** @minLength 1 */
+        condition?: string;
+        /**
+         * * `rent` - Rent
+         * * `sell` - Sell
+         * * `lend` - Lend
+         * * `donate` - Donate
+         * @minLength 1
+         */
+        listing_type?: "rent" | "sell" | "lend" | "donate";
+        /**
+         * * `-created_at` - Newest first
+         * * `created_at` - Oldest first
+         * * `asking_price` - Price ascending
+         * * `-asking_price` - Price descending
+         * @minLength 1
+         */
+        ordering?:
+          | "-created_at"
+          | "created_at"
+          | "asking_price"
+          | "-asking_price";
+        /** @minLength 1 */
+        search?: string;
+        size_id?: number;
+        /**
+         * * `draft` - Draft
+         * * `active` - Active
+         * * `closed` - Closed
+         * @minLength 1
+         */
+        status?: "draft" | "active" | "closed";
+      },
+      params: RequestParams = {},
+    ) =>
       this.request<SchoolListingList, ErrorResponse>({
         path: `/api/marketplace/school/listings/`,
         method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),

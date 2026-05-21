@@ -32,7 +32,7 @@ import {
 import {
   usePaginatedList,
   type PaginatedResponse,
-} from '@/hooks/use-paginated-list'
+} from '@/hooks/usePaginatedList'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {

@@ -60,46 +60,40 @@ Use these only via CSS variables. For reference:
 
 ## 3. Layout Architecture
 
-The app uses a fixed layout inspired by Saleor:
+The app shell is **sidebar + content** — there is no global top bar. Brand identity, theme/language toggles and user controls live in the sidebar footer (see §15). The only horizontal bars on a page are page-owned: an in-content `PageHeader` (back arrow + title + actions) at the top, and an **optional** sticky action footer at the bottom for forms and bulk-action pages.
 
 ```
-┌─────────────────────────────────────────────────┐
-│  TopBar (h-14, sticky, border-bottom)           │
-├────────┬────────────────────────────────────────┤
+┌────────┬────────────────────────────────────────┐
 │        │                                        │
 │ Side-  │  Content Area                          │
 │ bar    │  (scrollable, padded)                  │
 │        │                                        │
-│ (col-  │  ┌─ Page Header ──────────────────┐   │
+│ (col-  │  ┌─ PageHeader ───────────────────┐   │
 │ lapsi- │  │  ← Back    Title      Actions  │   │
 │ ble)   │  └────────────────────────────────┘   │
 │        │                                        │
-│        │  ┌─ Card Section ─────────────────┐   │
-│        │  │  Section Heading               │   │
-│        │  │  ─────────────────────────     │   │
-│        │  │  Form fields / Content         │   │
+│ logo   │  ┌─ Card Section ─────────────────┐   │
+│ nav    │  │  Section Heading               │   │
+│ groups │  │  Form fields / Content         │   │
 │        │  └────────────────────────────────┘   │
-│        │                                        │
-│        │  ┌─ Card Section ─────────────────┐   │
-│        │  │  ...                           │   │
-│        │  └────────────────────────────────┘   │
-│        │                                        │
+│ user   │                                        │
+│ footer │  ┌─ Card Section ─────────────────┐   │
+│ (theme,│  │  ...                           │   │
+│  lang, │  └────────────────────────────────┘   │
+│ logout)│                                        │
+│        │  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄    │
+│        │  Optional sticky action bar (only      │
+│        │  on form / multi-step pages)           │
 └────────┴────────────────────────────────────────┘
 ```
-
-### TopBar
-
-- Height: `h-14` (3.5rem), sticky, `z-50`.
-- Contains: sidebar trigger, brand name ("StudioOS"), right-aligned actions (language switcher, theme toggle, user menu).
-- Background: `bg-card` with `border-b border-border`.
 
 ### Sidebar
 
 - Uses shadcn `Sidebar` with `collapsible="icon"`.
-- Sits below the TopBar (`top: 3.5rem`).
-- Navigation items use `SidebarMenuButton` with Lucide icons.
-- Active state determined by current route path.
-- Groups: organize nav items into `SidebarGroup` by domain (e.g., Dashboard, Catalog, People, Finance).
+- Header: brand wordmark and logo.
+- Body: navigation items via `SidebarMenuButton` with Lucide icons. Active state from current route path. Groups organize nav items by domain (Coachings, Marketplace, School Catalog, People, Billing, Payments).
+- Footer: user profile card → dropdown with theme switcher, language switcher, logout (see §15 "Sidebar Footer").
+- Renders **real user data** from `useAuth()` (`user.full_name`, `user.email`, `user.profile.photo_url`).
 
 ### Content Area
 
@@ -107,8 +101,25 @@ The app uses a fixed layout inspired by Saleor:
 - Max content width depends on page complexity:
   - **Two-column pages** (create/edit with sidebar, calendar, etc.): use **`max-w-6xl`** — the sidebar column needs room.
   - **Single-column pages** (simple forms, utility pages like Invite Users): use **`max-w-4xl`**.
-  - Never use `max-w-2xl` or other narrower widths — consistency across pages is mandatory.
+  - **Narrower widths (`max-w-2xl`, `max-w-3xl`) are allowed only for small focused forms** (single-column, ≤ ~6 fields) such as account settings panels or short dialogs embedded in a page. Anything larger goes back to `max-w-4xl`/`max-w-6xl`.
 - Background: `bg-background` (the slightly off-white page background).
+- Grain texture is applied to `SidebarInset` (the content wrapper), not to the sidebar itself (see §8 "Grain Texture").
+
+### PageHeader (in-content top bar)
+
+- Renders inside the scrolling content area, **not** a sticky global bar.
+- Layout: `ChevronLeft` back button (when `backTo` is set) + `text-2xl font-semibold tracking-tight` title + right-aligned actions (`ml-auto`).
+- Built from the shared [`PageHeader`](src/components/shared/PageHeader.tsx) component — never reimplement inline.
+
+### Optional Bottom Action Bar
+
+Some pages need a sticky bottom bar for primary actions (Save / Cancel / Delete on forms, or Approve / Reject on review screens). When present:
+
+- It is **page-owned**, not global — only forms and action-heavy pages render one. Browsing pages (list views, dashboards) have no bottom bar.
+- Sticky-bottom inside the scrolling content area: `sticky bottom-0 z-10 border-t border-border bg-background`.
+- Contains a constrained inner container matching the page width (`mx-auto max-w-6xl flex items-center justify-between`).
+- When the submit button sits outside the `<form>` element, wire them with `id="page-form"` + `form="page-form"` — see §4.6 for the full pattern.
+- Destructive actions (Delete, Cancel enrollment) sit on the **left**, separated from the primary Save/Back pair on the right.
 
 ---
 
@@ -180,6 +191,32 @@ Content:      Stacked card sections, each with a heading + description + control
 
 **Components used:** `Switch`, `Select`, `Input`, `Separator`, `Label`.
 
+### 4.6 Two-column Form + Sticky Footer (Create / Edit pages)
+
+All large create/edit pages (Coaching, Listing, Product, Enrollment review, User edit) share one concrete layout:
+
+1. **Page header** at the top — back arrow + title + secondary actions.
+2. **Two-column body** scrolls naturally — `grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6` inside `mx-auto w-full max-w-6xl`. Main form on the left, metadata/status sidebar on the right.
+3. **Sticky footer** sits *outside* the scrolling body. Submit/Cancel buttons live here.
+
+When the submit button is outside the `<form>` element (because the footer is a sibling of the form, not a child), wire them together with the `form` attribute:
+
+```tsx
+<form id="page-form" onSubmit={form.handleSubmit(onSubmit)}>
+  {/* fields */}
+</form>
+
+{/* …elsewhere in the same page tree… */}
+<div className="sticky bottom-0 border-t bg-background">
+  <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
+  <Button type="submit" form="page-form">Save</Button>
+</div>
+```
+
+The `form="page-form"` attribute lets a button outside the form trigger its `onSubmit`. Keep the form `id` to a single conventional value per page (`page-form`) so the pattern is recognisable.
+
+This pattern is identical for public pages (§16) — only the surrounding shell differs.
+
 ---
 
 ## 5. Component Usage Guide
@@ -196,6 +233,8 @@ Content:      Stacked card sections, each with a heading + description + control
 | `link` | Inline text links within content. |
 
 **Sizes:** Use `default` for page-level actions, `sm` for table/card-level actions, `icon` for icon-only buttons.
+
+**Icons in buttons and badges.** When a Lucide icon clearly reinforces the action or status, include it — buttons like "Create", "Delete", "Publish" become more scannable with a leading icon (`<Plus className="size-4" />`), and status badges become accessible-by-default when they pair color with a glyph. Reserve text-only buttons/badges for cases where no icon adds meaning.
 
 ### Icons
 
@@ -243,8 +282,9 @@ Content:      Stacked card sections, each with a heading + description + control
 
 ### Badges / Status
 
+- **Always use the shadcn `Badge` primitive** (`@/components/ui/badge`). Never build a custom pill — color and icon are passed via `className` and children. Domain-specific status mappings (e.g. `StatusBadge` in marketplace-helpers, `ProductStatusBadge`) wrap the same primitive — never reinvent it.
 - **One colored badge per row, max.** Status is the column that earns color and shape. Other enums (type, kind, role, source, category) render as plain `text-sm text-muted-foreground` — never as colored badges. Multiple colored badges on the same row creates visual noise.
-- Use `Badge` only for **status** indicators (active, pending, cancelled, etc.).
+- **Prefer badges with an icon.** When a badge represents a status with an obvious metaphor (check = active, clock = pending, ban = cancelled), include a Lucide icon before the label: `<Badge><Check className="size-3" /> Active</Badge>`. The icon doubles as redundant signal for color-blind users (§20).
 - Status colors — consistent mapping:
   - **Active / Published / Completed**: `bg-emerald-100 text-emerald-800` (light) / `bg-emerald-900/30 text-emerald-400` (dark)
   - **Pending / Scheduled / Draft**: `bg-amber-100 text-amber-800` (light) / `bg-amber-900/30 text-amber-400` (dark)
@@ -272,14 +312,15 @@ Content:      Stacked card sections, each with a heading + description + control
 - Keep content to one short line.
 - Side: `top` by default, adjust to avoid viewport clipping.
 
-### Loading States
+### Loading & Empty States
 
-Two patterns, depending on context:
+Three patterns, depending on context:
 
 | Situation | Component | Example |
 |-----------|-----------|---------|
 | **Loading data into a component** (list, form, card) | `Skeleton` shaped to match expected content | Fetching users → skeleton table rows |
-| **Full-page transition** (redirect, big reload, submission) | `FullPageLoader` (the animated SVG) | Submitting enrollment, auth redirect |
+| **Full-page transition** (redirect, big reload, submission) | `LogoLoader` (the animated SVG, used by `FullPageLoader`) | Submitting enrollment, auth redirect |
+| **Empty list / no results** | Centered Lucide icon + heading + helper line + optional CTA. The `LogoLoader` can also be repurposed as the visual anchor of an empty state when it fits the page (no dedicated `EmptyState` component exists yet — compose inline). | Empty marketplace, no coachings scheduled |
 
 **Skeleton rules:**
 - Match the skeleton shape to the expected content layout.
@@ -287,9 +328,10 @@ Two patterns, depending on context:
 - Card loading: skeleton lines for heading + 2-3 content lines.
 - Never show a blank page or a raw `animate-spin` spinner — those are not acceptable substitutes for Skeleton.
 
-**FullPageLoader rules:**
+**LogoLoader / FullPageLoader rules:**
 - Use for transitions where the entire page is replaced (navigation after form submit, auth loading, onboarding completion).
 - Not for partial data loading within a visible page.
+- `LogoLoader` is the underlying animated mark; `FullPageLoader` is the full-screen wrapper. Either may be reused as the centerpiece of an empty state when the page warrants it.
 
 ### Separators
 
@@ -440,6 +482,7 @@ Pages that don't have their API endpoints ready yet may use temporary mock data 
 
 ### Data Fetching Rules
 
+- **Server-side filtering and sorting is mandatory.** All list filtering (search, status, type, category, etc.) and sorting (by date, price, name, etc.) must be done via API query parameters — never by fetching all data and filtering/sorting client-side with `.filter()`, `.sort()`, or `useMemo`. Use `useDebouncedValue` (from `@/hooks/use-debounced-value`) for text search inputs to avoid excessive API calls, and pass filter/sort values as `resetDeps` to `usePaginatedList` so the list refetches when they change. If a sort option is needed, add an `ordering` query param to the API endpoint first.
 - Use `apiClient.*` methods directly in page components via `useEffect`.
 - **Prevent duplicate requests from React StrictMode:** Use a `useRef` guard to ensure the effect only runs once:
 
@@ -516,86 +559,116 @@ src/
 │   │   ├── CoachingDetailPage.tsx
 │   │   └── ...
 ├── components/
-│   ├── ui/                 # shadcn primitives (do not edit manually)
+│   ├── ui/                 # shadcn primitives + custom data-table/input-group (do not edit primitives manually)
 │   ├── layout/             # App shell (TopBar, Sidebar, etc.)
 │   └── shared/             # Reusable composed components
-│       ├── PageHeader.tsx   # Back arrow + title + actions
-│       ├── DataTable.tsx    # Reusable table wrapper
-│       ├── StatusBadge.tsx  # Status → badge color mapping
-│       ├── EmptyState.tsx   # Empty list placeholder
-│       ├── CardSection.tsx   # Card with heading + children
-│       ├── ImageCropDialog.tsx # Reusable image crop modal
-│       └── ...
+│       ├── PageHeader.tsx
+│       ├── PageLayout.tsx
+│       ├── CardSection.tsx
+│       ├── DatePicker.tsx
+│       ├── TimePicker.tsx
+│       ├── ImageCropDialog.tsx
+│       ├── MediaUpload.tsx
+│       ├── TreeSelect.tsx
+│       ├── LogoLoader.tsx
+│       ├── ProfileSetupPrompt.tsx
+│       ├── ScheduleCalendar.tsx
+│       ├── ListingCard.tsx
+│       ├── ListingsGridView.tsx
+│       ├── ListingsToolbar.tsx
+│       ├── ProductCard.tsx
+│       ├── ProductStatusBadge.tsx
+│       ├── ColorSwatchPicker.tsx
+│       └── SubmitArrow.tsx
 ├── auth/                   # Authentication & authorization
 │   ├── auth-context.ts     # AuthContextValue type + React context
 │   ├── AuthContext.tsx      # AuthProvider (token refresh, login/logout)
 │   ├── useAuth.ts           # useAuth() hook
 │   ├── permissions.ts       # usePermissions(), <Authorized>, <ProtectedRoute>
 │   └── nav-config.ts        # Sidebar navigation map with permission declarations
-├── hooks/                  # Custom hooks (useMock*, useDebounce, etc.)
+├── hooks/                  # Custom hooks — camelCase filenames
+│   ├── useDebouncedValue.ts
+│   ├── usePaginatedList.ts
+│   ├── useInfiniteScroll.ts
+│   └── useMobile.ts
 ├── mocks/                  # Mock data files
 ├── api/                    # Auto-generated API client (do not edit)
-├── lib/                    # Utilities (cn, formatters, constants)
+├── lib/                    # Utilities (cn, formatters, constants) — kebab-case filenames
 ├── i18n/                   # Translation config + locale files
 ├── theme/                  # ThemeProvider
 └── assets/                 # Static files (logos, images)
 ```
 
+`DataTable` is a custom composed wrapper around TanStack Table and lives under `components/ui/data-table.tsx` alongside the shadcn primitives — treat it as project-owned, not auto-generated. `TreeSelect` is a custom composed primitive and lives under `components/shared/TreeSelect.tsx`.
+
 ### Naming Conventions
 
-- Components: `PascalCase.tsx` — `CoachingsListPage.tsx`, `StatusBadge.tsx`.
-- Hooks: `camelCase.ts` — `useMockStudents.ts`, `useDebounce.ts`.
-- Utilities: `camelCase.ts` — `formatDate.ts`, `cn.ts`.
+- Components: `PascalCase.tsx` — `CoachingsListPage.tsx`, `ProductStatusBadge.tsx`.
+- Hooks: `camelCase.ts` starting with `use` — `useDebouncedValue.ts`, `usePaginatedList.ts`.
+- Utilities, configs, non-component: `kebab-case.ts` — `api-errors.ts`, `user-utils.ts`, `image-resize.ts`.
 - Mock files: `camelCase.ts` — `students.ts`, `coachings.ts`.
 - Translation keys: `domain.keyName` — `coachings.statusPending`.
 
 ---
 
-## 12. shadcn Components to Install
+## 12. shadcn Components — Installed Inventory
 
-Currently installed: `Button`, `DropdownMenu`, `Input`, `Select`, `Separator`, `Sheet`, `Sidebar`, `Skeleton`, `Tooltip`.
+The project uses both **shadcn/ui** (Radix-based) primitives and **`@base-ui/react`** primitives — the latter is what powers `combobox` (chip-input, autocomplete). Both are first-class; pick whichever the matching shadcn registry entry uses.
 
-Install as needed (via `npx shadcn@latest add <component>`):
+Install new primitives via `npx shadcn@latest add <component>`. Do not hand-edit `src/components/ui/*.tsx` files for installed primitives — re-run the CLI instead.
 
-| Component | Usage |
-|-----------|-------|
-| `Table` | List pages, data grids |
-| `Badge` | Status indicators |
-| `Card` | Content sections (heading + body pattern) |
-| `Dialog` | Modal forms, quick edits |
-| `AlertDialog` | Destructive action confirmations |
-| `Avatar` | User avatars with initials fallback |
-| `Checkbox` | Table row selection, form checkboxes |
-| `Label` | Form field labels |
-| `Textarea` | Multi-line text inputs |
-| `Switch` | Toggle settings |
-| `Tabs` | Section switching (like Saleor's Subcategories/Products tabs) |
-| `Collapsible` | Expandable sections |
-| `Breadcrumb` | If needed for deep navigation |
-| `Pagination` | Table pagination controls |
-| `Calendar` | Date pickers (coaching scheduling) |
-| `Popover` | Date picker containers, filter popovers |
-| `Command` | Search/command palette |
-| `ScrollArea` | Scrollable containers with styled scrollbars |
-| `Form` | React Hook Form integration wrapper |
-| `Sonner` / `Toast` | Success/error notifications |
-| `Progress` | Upload progress, onboarding progress |
-| `RadioGroup` | Single-choice form groups |
+### Currently installed in `src/components/ui/`
+
+`alert-dialog`, `avatar`, `badge`, `button`, `calendar`, `card`, `checkbox`, `combobox` (base-ui), `data-table` (custom), `dialog`, `dropdown-menu`, `input`, `input-group` (base-ui), `label`, `popover`, `radio-group`, `scroll-area`, `select`, `separator`, `sheet`, `sidebar`, `skeleton`, `sonner`, `switch`, `table`, `tabs`, `textarea`, `tooltip`.
+
+Update this list whenever you add or remove a primitive.
+
+### Notes
+
+- `data-table` is a custom TanStack-React-Table wrapper — keep it under `ui/` but treat it as project-owned.
+- `combobox` and `input-group` use `@base-ui/react`; they expose chip-input, autocomplete, and addon slots that Radix-based primitives do not.
+- Multi-select dropdowns must use `Combobox` (`multiple` + `ComboboxChips`) — see §13.
+- `TreeSelect` is project-owned, lives in `components/shared/`, and is not a shadcn primitive.
 
 ---
 
-## 13. Design System Showcase
+## 13. Component Reuse Rules
 
-**Every UI component — both shadcn primitives and custom shared components — must have a corresponding showcase page in the Design System**, demonstrating all its variants and states. This is mandatory, not optional.
+**Always use existing components before building new ones.** This is the single most important rule for maintaining UI consistency.
+
+### Lookup Order
+
+When you need a UI element (multi-select, combobox, color picker, radio cards, date range, etc.):
+
+1. **Check installed shadcn primitives first** — look in `src/components/ui/`. If the component exists there, use it.
+2. **Check shared components** — look in `src/components/shared/`. Reusable composed components live here (`DatePicker`, `TimePicker`, `ImageCropDialog`, `ProductCard`, `ListingCard`, etc.).
+3. **Check the shadcn registry** — browse [ui.shadcn.com/docs/components](https://ui.shadcn.com/docs/components). If a suitable component exists, install it (`npx shadcn@latest add <component>`) rather than hand-building one.
+4. **Only then build custom** — if no shadcn primitive or shared component covers the need, build a new component in `src/components/shared/` following the project patterns.
+
+### Rules
+
+- **Never hand-build a component that shadcn already provides.** Examples: multi-select must use `Combobox` (`multiple` + `ComboboxChips` + `ComboboxChipsInput`) — never a hand-built popover-with-checkboxes; radio cards use `RadioGroup`; popovers use `Popover`.
+- **Never duplicate a shared component.** If `src/components/shared/DatePicker.tsx` exists, don't create an inline date picker in a page file. Import and use the shared one.
+- **Extract when reused.** If you build a custom component for one page and a second page needs it, extract it to `src/components/shared/` immediately — don't copy-paste. Pages may keep a co-located `*-helpers.tsx` file for single-page utilities (e.g. `marketplace-helpers.tsx`); promote to `shared/` the moment a second page imports from it.
+- **Composition over recreation.** Compose complex widgets from shadcn primitives (`Popover` + `Command` = searchable dropdown, `Combobox` + `ComboboxChips` = multi-select) rather than building from scratch with raw `<div>`, `<input>`, and manual event handlers.
+
+### Installed shadcn Components (keep this list updated)
+
+When installing a new shadcn component, add it to the list in §12 and verify it doesn't duplicate an existing shared component.
+
+---
+
+## 14. Design System Showcase
+
+The Design System (`/design-system`) is a living catalogue. **Every shadcn primitive installed under `src/components/ui/` should have a showcase page** demonstrating its variants and states — this is the hard requirement.
+
+For **custom shared components** under `src/components/shared/`, a showcase page is *encouraged* but not gating: small wrappers (`PageHeader`, `CardSection`, `PageLayout`) can be understood from one usage site, while non-trivial composed widgets (`DatePicker`, `TimePicker`, `LogoLoader`, `ScheduleCalendar`, `TreeSelect`, `MediaUpload`, `ImageCropDialog`) should get a page when time allows. Missing showcases here are tech debt, not blockers.
 
 ### Scope
 
-This applies to:
-- **shadcn/ui primitives** (`Button`, `Badge`, `Dialog`, etc.)
-- **Custom shared components** (`PageHeader`, `CardSection`, `DatePicker`, `TimePicker`, `LogoLoader`, `PageLayout`, etc.)
-- **Composed patterns** (e.g., a filter bar, a status badge with domain-specific colors)
-
-If you build it or install it, it gets a showcase page.
+- **shadcn/ui primitives** — required.
+- **Custom shared components** — encouraged; add when a second consumer arrives or when behaviour is non-obvious.
+- **Composed patterns** (filter bar, status badge with domain colors) — only worth a page when they generalise across domains.
 
 ### Requirements
 
@@ -619,7 +692,7 @@ If you build it or install it, it gets a showcase page.
 
 ---
 
-## 14. Login Page
+## 15. Login Page
 
 The login page has its own visual identity, separate from the main app, with a warm/theatrical aesthetic.
 
@@ -649,7 +722,7 @@ The sidebar footer uses a card-like trigger that opens a dropdown menu:
 
 ---
 
-## 15. Public Pages
+## 16. Public Pages
 
 Public pages (login, enrollment) are standalone — no sidebar, no auth guard. They have their own layout and manage theme/language toggles independently.
 
@@ -701,7 +774,7 @@ Public pages use a full-width `<main>` with grain, structured as sibling childre
 
 ---
 
-## 16. Scrolling & Overflow
+## 17. Scrolling & Overflow
 
 ### Page Scrolling
 
@@ -718,7 +791,7 @@ Public pages use a full-width `<main>` with grain, structured as sibling childre
 
 ---
 
-## 17. Card Layout Patterns
+## 18. Card Layout Patterns
 
 ### Toolbar + Content Split
 
@@ -727,7 +800,7 @@ Public pages use a full-width `<main>` with grain, structured as sibling childre
 
 ---
 
-## 18. API-First Data Fetching
+## 19. API-First Data Fetching
 
 - **Always prefer real API requests** over mock data. Use `apiClient.api.*` methods for all data fetching.
 - Mock data in `src/mocks/` is only acceptable as a temporary stopgap when the API endpoint genuinely does not exist yet. Delete the mock file as soon as the real endpoint is available.
@@ -735,7 +808,7 @@ Public pages use a full-width `<main>` with grain, structured as sibling childre
 
 ---
 
-## 19. Accessibility
+## 20. Accessibility
 
 - All interactive elements must be keyboard navigable.
 - Focus rings use `ring` color variable — visible in both themes.
@@ -749,7 +822,7 @@ Public pages use a full-width `<main>` with grain, structured as sibling childre
 
 ---
 
-## 20. Destructive Action Dialogs
+## 21. Destructive Action Dialogs
 
 Destructive `AlertDialogAction` buttons must use the `asChild` + `Button variant="destructive"` pattern. Never hardcode `bg-destructive text-white`:
 
@@ -767,7 +840,7 @@ Destructive `AlertDialogAction` buttons must use the `asChild` + `Button variant
 
 ---
 
-## 21. Toast Notifications
+## 22. Toast Notifications
 
 We use **Sonner** (`toast` from `sonner`) for all toast notifications. The `<Toaster>` is mounted once in `App.tsx` with `position="top-right"`.
 
@@ -817,7 +890,7 @@ toast.error('Email is required')  // → use form.setError('email', ...)
 
 ---
 
-## 22. Currency & Locale
+## 23. Currency & Locale
 
 ### Currency Display
 
@@ -837,7 +910,7 @@ format(date, "d 'de' MMMM", { locale: pt })
 
 ---
 
-## 22. Auth Page Patterns
+## 24. Auth Page Patterns
 
 ### Shared CSS Classes
 
@@ -876,7 +949,7 @@ These elements are part of brand identity and are NOT translated via i18n:
 
 ---
 
-## 23. Code Quality Rules
+## 25. Code Quality Rules
 
 ### Shared Utility Extraction
 
@@ -918,11 +991,11 @@ const teacher = teachers.find((t) => t.id === id)!
 
 ---
 
-## 24. Routing
+## 26. Routing
 
 ### Catch-All Route
 
-The router must include a `<Route path="*">` catch-all. Unmatched URLs must never render a blank page.
+The router should include a `<Route path="*">` catch-all so unmatched URLs render a dedicated 404 page rather than a blank screen. Until that 404 page lands, this is tracked as planned work — new routes do not block on it.
 
 ### Layout Groups
 
@@ -942,7 +1015,7 @@ Use React Router nested routes with `<Outlet>` for pages sharing a layout. Never
 
 ---
 
-## 25. Form & Request Handling
+## 27. Form & Request Handling
 
 ### When to Use react-hook-form + zod
 
@@ -1203,7 +1276,7 @@ The utilities live in `src/lib/api-errors.ts`. Pages must import from there — 
 
 ---
 
-## 27. Permissions & RBAC
+## 28. Permissions & RBAC
 
 The backend enforces permissions via `require_perm('app.codename')` decorators. The `GET /auth/me/` endpoint returns `permissions: string[]` in `app_label.codename` format. The frontend mirrors this with a thin permission layer that controls **what the user sees**, not what they can do (the API is the authority).
 
@@ -1290,15 +1363,39 @@ Items without `permission` are always visible. Groups with zero visible children
 
 ### Current permission mapping
 
-| Page | Permission | Visible to |
-|---|---|---|
-| Home | *(none)* | everyone |
-| Calendar | `coachings.view_coachingclass` | direction, coordination, collaborator, teacher |
-| Create Coaching | `coachings.can_schedule_coaching` | direction, coordination |
-| Coaching Requests | `coachings.view_coachingclass` | direction, coordination, collaborator, teacher |
-| Enrollment | `enrollments.can_review_enrollment` | direction, coordination |
-| Marketplace | `marketplace.view_productlisting` | direction, coordination |
-| Create Listing | `marketplace.manage_school_listings` | direction, coordination |
-| Invites | `accounts.can_invite_user` | direction, coordination |
-| Account Settings | *(none)* | everyone |
-| Design System | *(none)* | everyone (dev tool) |
+The source of truth is `src/app/routes.tsx` (`<ProtectedRoute permission="…">`) and `src/auth/nav-config.ts` (sidebar `permission` field, plus `hidePermission` for groups that disappear when the user holds a given permission — e.g. the student "Payments" group is hidden from anyone with billing-admin rights).
+
+The table below mirrors those files. **Do not add a "visible to: direction / coordination / …" column** — roles are not the contract and the role → permission mapping lives in the API. The frontend only ever checks permissions.
+
+| Page | Permission |
+|---|---|
+| Home | *(none)* |
+| Calendar | `coachings.view_coachingclass` |
+| Create Coaching | `coachings.can_schedule_coaching` |
+| Edit Coaching | `coachings.change_coachingclass` |
+| My Coaching Requests | `accounts.can_participate_in_coaching` OR `accounts.can_teach` |
+| Request Coaching | `accounts.can_participate_in_coaching` |
+| Coaching Requests | `coachings.change_coachingclass` |
+| Enrollment Requests | `enrollments.can_review_enrollment` |
+| Enrollment Review | `enrollments.can_review_enrollment` |
+| Marketplace Browse | `marketplace.view_productlisting` |
+| Create Listing | `marketplace.manage_school_listings` |
+| Edit Listing | `marketplace.manage_school_listings` |
+| My Listings | `marketplace.view_own_listings` |
+| My Inventory | `marketplace.view_own_listings` |
+| My Inventory Create | `inventory.add_product` |
+| School Inventory | `inventory.view_school_product` |
+| School Inventory Create | `inventory.add_school_product` |
+| School Listings | `marketplace.manage_school_listings` |
+| Users list | `accounts.can_list_users` |
+| User Detail | `accounts.view_user` |
+| User Edit | `accounts.change_user` |
+| Invites | `accounts.can_invite_user` |
+| Billing Entries | `billing.view_billingentry` (admin actions gated by `billing.can_cancel_billingentry`) |
+| Billing Fines | `billing.view_fine` (admin actions gated by `billing.can_review_fine`) |
+| Account Settings | *(none)* |
+| Design System | *(none)* (dev tool) |
+
+### `hidePermission`
+
+Sidebar groups in `nav-config.ts` may declare `hidePermission` to disappear when the user holds that permission. The current usage swaps the student-facing "Payments" group out for the admin-facing "Billing" group based on whether the user can `billing.can_cancel_billingentry`. Use sparingly — most gating should be additive (`permission`), not subtractive.

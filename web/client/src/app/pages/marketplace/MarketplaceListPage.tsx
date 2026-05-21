@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search, ShoppingBag } from 'lucide-react'
+import { Search, ShoppingBag, Tag } from 'lucide-react'
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -10,7 +11,8 @@ import {
 
 import { apiClient } from '@/api/api-client'
 import type { ListingList } from '@/api/studioos-api'
-import { usePaginatedList } from '@/hooks/use-paginated-list'
+import { useDebouncedValue } from '@/hooks/useDebouncedValue'
+import { usePaginatedList } from '@/hooks/usePaginatedList'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -22,33 +24,61 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { ListingCard } from '@/components/shared/ListingCard'
+import { ListingsGridView } from '@/components/shared/ListingsGridView'
+import {
+  ListingsToolbar,
+  type SortKey,
+  type ToolbarChip,
+  type ViewMode,
+} from '@/components/shared/ListingsToolbar'
 import { paths } from '@/app/paths'
 import { StatusBadge, listingTypeLabel } from './marketplace-helpers'
 
-// ---------------------------------------------------------------------------
-// Browse Marketplace — read-only view of all public active listings
-// ---------------------------------------------------------------------------
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 export function MarketplaceListPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
-  // -- Filters --
-  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const search = useDebouncedValue(searchInput, 300)
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [conditionFilter, setConditionFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<SortKey>('recent')
+  const [view, setView] = useState<ViewMode>('grid')
 
-  // -- Data (public listings — active + public only) --
-  const fetchPage = useCallback(
-    () =>
-      apiClient.api
-        .marketplaceListingsRetrieve()
-        .then((r) => r.data) as Promise<{
-        count: number
-        next: string | null
-        previous: string | null
-        results: ListingList[]
-      }>,
-    [],
-  )
+  const sortKeyToOrdering = (key: SortKey) => {
+    switch (key) {
+      case 'priceAsc': return 'asking_price' as const
+      case 'priceDesc': return '-asking_price' as const
+      default: return '-created_at' as const
+    }
+  }
+
+  const fetchPage = useCallback(() => {
+    const query: {
+      search?: string
+      listing_type?: 'rent' | 'sell' | 'lend' | 'donate'
+      condition?: string
+      ordering?: '-created_at' | 'created_at' | 'asking_price' | '-asking_price'
+    } = {}
+    if (search.trim()) query.search = search.trim()
+    if (typeFilter !== 'all')
+      query.listing_type = typeFilter as typeof query.listing_type
+    if (conditionFilter !== 'all') query.condition = conditionFilter
+    query.ordering = sortKeyToOrdering(sortBy)
+    return apiClient.api
+      .marketplaceListingsRetrieve(query)
+      .then((r) => r.data) as Promise<{
+      count: number
+      next: string | null
+      previous: string | null
+      results: ListingList[]
+    }>
+  }, [search, typeFilter, conditionFilter, sortBy])
 
   const {
     items: listings,
@@ -58,39 +88,22 @@ export function MarketplaceListPage() {
     hasNextPage,
     fetchNextPage,
     refresh,
-  } = usePaginatedList<ListingList>({ fetchPage })
+  } = usePaginatedList<ListingList>({
+    fetchPage,
+    resetDeps: [search, typeFilter, conditionFilter, sortBy],
+  })
 
-  // -- Client-side filtering --
-  const filtered = useMemo(
-    () =>
-      listings.filter((l) => {
-        if (search) {
-          const q = search.toLowerCase()
-          if (
-            !l.title.toLowerCase().includes(q) &&
-            !l.product_name?.toLowerCase().includes(q)
-          )
-            return false
-        }
-        if (typeFilter !== 'all' && l.listing_type !== typeFilter) return false
-        return true
-      }),
-    [listings, search, typeFilter],
-  )
-
-  // -- Columns --
+  // ── Data-table columns (list view) ────────────────────────────────────────
   const columnHelper = useMemo(() => createColumnHelper<ListingList>(), [])
-
   const columns = useMemo(
     () => [
-      // Product (thumbnail + title + meta)
       columnHelper.accessor('title', {
         header: () => t('marketplace.col.product'),
         cell: (info) => {
           const row = info.row.original
           return (
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 shrink-0 rounded-lg border border-border bg-muted/30 overflow-hidden">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/30">
                 {row.primary_media_url ? (
                   <img
                     src={row.primary_media_url}
@@ -104,49 +117,24 @@ export function MarketplaceListPage() {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate max-w-[260px]">
+                <p className="max-w-[260px] truncate text-sm font-medium">
                   {row.title}
                 </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs text-muted-foreground truncate max-w-[140px]">
-                    {row.product_name}
-                  </span>
-                  {row.variant_condition && (
-                    <>
-                      <span className="text-xs text-muted-foreground/40">
-                        ·
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {row.variant_condition}
-                      </span>
-                    </>
-                  )}
-                  {row.variant_size && (
-                    <>
-                      <span className="text-xs text-muted-foreground/40">
-                        ·
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {row.variant_size}
-                      </span>
-                    </>
-                  )}
-                </div>
+                <p className="max-w-[260px] truncate text-xs text-muted-foreground">
+                  {row.product_name}
+                </p>
               </div>
             </div>
           )
         },
       }),
-
-      // Price
       columnHelper.accessor('asking_price', {
         header: () => t('marketplace.col.price'),
         cell: (info) => {
           const price = info.getValue()
           return price ? (
             <span className="text-sm font-medium">
-              {t('common.currencySymbol')}
-              {price}
+              {t('common.currencySymbol')} {price}
             </span>
           ) : (
             <span className="text-xs text-muted-foreground">—</span>
@@ -154,8 +142,6 @@ export function MarketplaceListPage() {
         },
         meta: { className: 'hidden sm:table-cell' },
       }),
-
-      // Type
       columnHelper.accessor('listing_type', {
         header: () => t('marketplace.col.type'),
         cell: (info) => (
@@ -165,8 +151,6 @@ export function MarketplaceListPage() {
         ),
         meta: { className: 'hidden md:table-cell' },
       }),
-
-      // Status (browse only shows active, but included for consistency)
       columnHelper.accessor('status', {
         header: () => t('marketplace.col.status'),
         cell: (info) => <StatusBadge status={info.getValue()} t={t} />,
@@ -175,79 +159,164 @@ export function MarketplaceListPage() {
     [columnHelper, t],
   )
 
-  // -- Table instance (no row selection for browse) --
   const table = useReactTable({
-    data: filtered,
+    data: listings,
     columns,
     getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
   })
 
+  const chips: ToolbarChip[] = useMemo(() => {
+    const list: ToolbarChip[] = []
+    if (typeFilter !== 'all')
+      list.push({
+        key: 'type',
+        label: listingTypeLabel(typeFilter, t),
+        onClear: () => setTypeFilter('all'),
+      })
+    if (conditionFilter !== 'all')
+      list.push({
+        key: 'condition',
+        label: t(`marketplace.condition${capitalize(conditionFilter)}`, {
+          defaultValue: conditionFilter,
+        }),
+        onClear: () => setConditionFilter('all'),
+      })
+    if (searchInput)
+      list.push({
+        key: 'search',
+        label: `"${searchInput}"`,
+        onClear: () => setSearchInput(''),
+      })
+    return list
+  }, [typeFilter, conditionFilter, searchInput, t])
+
+  const emptyBrowse = (
+    <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+      <Tag className="mb-4 h-12 w-12 text-muted-foreground/30" />
+      <p className="text-sm font-medium text-muted-foreground">
+        {t('marketplace.browseEmpty')}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground/60">
+        {t('marketplace.browseEmptyDesc')}
+      </p>
+    </div>
+  )
+
   return (
-    <PageLayout fullHeight>
-      <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
+    <PageLayout>
+      <div className="mx-auto w-full max-w-6xl">
         <PageHeader title={t('marketplace.browseTitle')} backTo={paths.home} />
 
-        {/* Filters */}
-        <div className="rounded-lg border border-border bg-card p-4 mb-4 shrink-0">
-          <div className="flex flex-col sm:flex-row gap-3">
+        {/* Filter card */}
+        <div className="mb-4 rounded-lg border border-border bg-card p-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 placeholder={t('marketplace.search')}
                 className="pl-9"
               />
             </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full sm:w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {t('marketplace.allTypes')}
-                </SelectItem>
-                <SelectItem value="sell">
-                  {t('marketplace.typeSell')}
-                </SelectItem>
-                <SelectItem value="rent">
-                  {t('marketplace.typeRent')}
-                </SelectItem>
-                <SelectItem value="lend">
-                  {t('marketplace.typeLend')}
-                </SelectItem>
-                <SelectItem value="donate">
-                  {t('marketplace.typeDonate')}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap items-center gap-3">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-full sm:w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('marketplace.allTypes')}
+                  </SelectItem>
+                  <SelectItem value="sell">
+                    {t('marketplace.typeSell')}
+                  </SelectItem>
+                  <SelectItem value="rent">
+                    {t('marketplace.typeRent')}
+                  </SelectItem>
+                  <SelectItem value="lend">
+                    {t('marketplace.typeLend')}
+                  </SelectItem>
+                  <SelectItem value="donate">
+                    {t('marketplace.typeDonate')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={conditionFilter}
+                onValueChange={setConditionFilter}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('marketplace.allConditions')}
+                  </SelectItem>
+                  <SelectItem value="new">
+                    {t('marketplace.conditionNew')}
+                  </SelectItem>
+                  <SelectItem value="excellent">
+                    {t('marketplace.conditionExcellent')}
+                  </SelectItem>
+                  <SelectItem value="good">
+                    {t('marketplace.conditionGood')}
+                  </SelectItem>
+                  <SelectItem value="fair">
+                    {t('marketplace.conditionFair')}
+                  </SelectItem>
+                  <SelectItem value="damaged">
+                    {t('marketplace.conditionDamaged')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
-        {/* Table */}
-        <DataTable
-          table={table}
-          fillHeight
-          loading={loading}
-          totalCount={count}
-          onRefresh={refresh}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          onLoadMore={fetchNextPage}
-          emptyMessage={
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-              <ShoppingBag className="h-12 w-12 text-muted-foreground/30 mb-4" />
-              <p className="text-sm font-medium text-muted-foreground">
-                {t('marketplace.browseEmpty')}
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                {t('marketplace.browseEmptyDesc')}
-              </p>
-            </div>
-          }
+        <ListingsToolbar
+          chips={chips}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          view={view}
+          onViewChange={setView}
         />
+
+        {view === 'grid' ? (
+          <ListingsGridView
+            items={listings}
+            getKey={(it) => it.id}
+            loading={loading}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+            renderItem={(item) => (
+              <ListingCard
+                item={item}
+                variant="browse"
+                onOpen={() =>
+                  navigate(
+                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                  )
+                }
+              />
+            )}
+            empty={emptyBrowse}
+          />
+        ) : (
+          <DataTable
+            table={table}
+            loading={loading}
+            totalCount={count}
+            onRefresh={refresh}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={fetchNextPage}
+            emptyMessage={emptyBrowse}
+          />
+        )}
       </div>
     </PageLayout>
   )
