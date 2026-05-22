@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { ProductCard } from '@/components/shared/ProductCard'
@@ -30,10 +31,13 @@ import { ProductStatusBadge } from '@/components/shared/ProductStatusBadge'
 import { ListingsGridView } from '@/components/shared/ListingsGridView'
 import {
   ListingsToolbar,
+  ViewToggleButton,
   type ToolbarChip,
   type ViewMode,
 } from '@/components/shared/ListingsToolbar'
 import { paths } from '@/app/paths'
+
+type InventoryStatus = 'active' | 'inactive' | 'archived'
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -45,39 +49,7 @@ export function MyInventoryPage() {
 
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput, 300)
-  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [view, setView] = useState<ViewMode>('grid')
-
-  const fetchPage = useCallback(() => {
-    const query: {
-      name?: string
-      status?: 'active' | 'inactive' | 'archived'
-    } = {}
-    if (search.trim()) query.name = search.trim()
-    if (statusFilter !== 'all')
-      query.status = statusFilter as typeof query.status
-    return apiClient.api
-      .inventoryProductsRetrieve(query)
-      .then((r) => r.data) as Promise<{
-      count: number
-      next: string | null
-      previous: string | null
-      results: ProductDetail[]
-    }>
-  }, [search, statusFilter])
-
-  const {
-    items: products,
-    count,
-    loading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refresh,
-  } = usePaginatedList<ProductDetail>({
-    fetchPage,
-    resetDeps: [search, statusFilter],
-  })
 
   // ── Data-table columns (list view) ────────────────────────────────────────
   const columnHelper = useMemo(() => createColumnHelper<ProductDetail>(), [])
@@ -138,15 +110,78 @@ export function MyInventoryPage() {
       }),
       columnHelper.accessor('status', {
         header: () => t('marketplace.col.status'),
+        meta: {
+          filter: {
+            type: 'select',
+            label: t('marketplace.col.status'),
+            anyLabel: t('marketplace.allStatuses'),
+            options: [
+              { value: 'active', label: t('schoolInventory.statusActive') },
+              { value: 'inactive', label: t('schoolInventory.statusInactive') },
+              { value: 'archived', label: t('schoolInventory.statusArchived') },
+            ],
+          },
+        },
         cell: (info) => <ProductStatusBadge status={info.getValue()} />,
       }),
     ],
     [columnHelper, t],
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<ProductDetail>({
+    columns,
+    syncToUrl: true,
+  })
+
+  const statusFilter =
+    (columnFilters.find((f) => f.id === 'status')?.value as
+      | InventoryStatus
+      | undefined) ?? null
+
+  const setStatusFilter = useCallback(
+    (next: InventoryStatus | 'all') => {
+      setColumnFilters((prev) => {
+        const without = prev.filter((f) => f.id !== 'status')
+        if (next === 'all') return without
+        return [...without, { id: 'status', value: next }]
+      })
+    },
+    [setColumnFilters],
+  )
+
+  const fetchPage = useCallback(() => {
+    const query: { name?: string; status?: InventoryStatus } = {}
+    if (search.trim()) query.name = search.trim()
+    if (statusFilter) query.status = statusFilter
+    return apiClient.api
+      .inventoryProductsRetrieve(query)
+      .then((r) => r.data) as Promise<{
+      count: number
+      next: string | null
+      previous: string | null
+      results: ProductDetail[]
+    }>
+  }, [search, statusFilter])
+
+  const {
+    items: products,
+    count,
+    loading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refresh,
+  } = usePaginatedList<ProductDetail>({
+    fetchPage,
+    resetDeps: [search, statusFilter],
+  })
+
   const table = useReactTable({
     data: products,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -154,7 +189,7 @@ export function MyInventoryPage() {
 
   const chips: ToolbarChip[] = useMemo(() => {
     const list: ToolbarChip[] = []
-    if (statusFilter !== 'all')
+    if (statusFilter)
       list.push({
         key: 'status',
         label: t(`schoolInventory.status${capitalize(statusFilter)}`, {
@@ -169,7 +204,7 @@ export function MyInventoryPage() {
         onClear: () => setSearchInput(''),
       })
     return list
-  }, [statusFilter, searchInput, t])
+  }, [statusFilter, searchInput, setStatusFilter, t])
 
   const emptyState = (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
@@ -192,54 +227,55 @@ export function MyInventoryPage() {
     <PageLayout>
       <div className="mx-auto w-full max-w-6xl">
         <PageHeader title={t('nav.myInventory')} backTo={paths.home}>
+          <ViewToggleButton view={view} onChange={setView} />
           <Button onClick={() => navigate(paths.myInventoryCreate)}>
             <Plus className="mr-2 h-4 w-4" />
             {t('inventory.createProduct')}
           </Button>
         </PageHeader>
 
-        {/* Filter card */}
-        <div className="mb-4 rounded-lg border border-border bg-card p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder={t('myInventory.search')}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    {t('marketplace.allStatuses')}
-                  </SelectItem>
-                  <SelectItem value="active">
-                    {t('schoolInventory.statusActive')}
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    {t('schoolInventory.statusInactive')}
-                  </SelectItem>
-                  <SelectItem value="archived">
-                    {t('schoolInventory.statusArchived')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Inline filter row — no card, no extra chrome. Search spans both
+            views; enum selects only appear in grid view (table view uses
+            column-header filters). */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t('myInventory.search')}
+              className="pl-9"
+            />
           </div>
+          {view === 'grid' && (
+            <Select
+              value={statusFilter ?? 'all'}
+              onValueChange={(v) =>
+                setStatusFilter(v as InventoryStatus | 'all')
+              }
+            >
+              <SelectTrigger className="w-full sm:w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {t('marketplace.allStatuses')}
+                </SelectItem>
+                <SelectItem value="active">
+                  {t('schoolInventory.statusActive')}
+                </SelectItem>
+                <SelectItem value="inactive">
+                  {t('schoolInventory.statusInactive')}
+                </SelectItem>
+                <SelectItem value="archived">
+                  {t('schoolInventory.statusArchived')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
-        <ListingsToolbar
-          chips={chips}
-          hideSort
-          view={view}
-          onViewChange={setView}
-        />
+        <ListingsToolbar chips={chips} />
 
         {view === 'grid' ? (
           <ListingsGridView

@@ -56,4 +56,11 @@ export const paths = {
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password/:uid/:token',
   accountSettings: '/account',
+  messages: '/messages',
+  events: '/events',
+  eventsCreate: '/events/create',
+  eventsDetail: '/events/:id',
+  eventsEdit: '/events/:id/edit',
+  eventsPostCreate: '/events/:id/posts/create',
+  eventsPostEdit: '/events/:id/posts/:postId/edit',
 } as const

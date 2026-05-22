@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -21,6 +21,8 @@ import {
   type NavEntryConfig,
 } from '@/auth/nav-config'
 import { useTheme, type Theme } from '@/theme/ThemeProvider'
+import { useUnreadMessages } from '@/app/pages/messages/useUnreadMessages'
+import { useUserChannelSocket } from '@/app/pages/messages/useUserChannelSocket'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -149,6 +151,35 @@ export function AppSidebar() {
   const { user, logout } = useAuth()
   const { can, canAny } = usePermissions()
   const { theme, setTheme } = useTheme()
+  const { total: unreadMessages, refresh: refreshUnread } = useUnreadMessages()
+  const [shake, setShake] = useState(false)
+  const shakeTimer = useRef<number | null>(null)
+
+  useUserChannelSocket(Boolean(user), {
+    onIncomingMessage: () => {
+      // Refresh the unread count so the badge number updates from the
+      // server's source-of-truth (handles reads from other tabs too).
+      refreshUnread()
+      // Trigger a one-shot shake animation. Restart it if a fresh message
+      // lands while we're still animating.
+      setShake(false)
+      if (shakeTimer.current) window.clearTimeout(shakeTimer.current)
+      // Force a reflow so the animation re-runs even if the class was just
+      // toggled off.
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setShake(true)
+          shakeTimer.current = window.setTimeout(() => setShake(false), 700)
+        })
+      })
+    },
+  })
+
+  useEffect(() => {
+    return () => {
+      if (shakeTimer.current) window.clearTimeout(shakeTimer.current)
+    }
+  }, [])
 
   const currentLang = i18n.language.startsWith('pt') ? 'pt' : 'en'
 
@@ -251,16 +282,36 @@ export function AppSidebar() {
                     : location.pathname.startsWith(entry.to)
                 const Icon = entry.icon
 
+                const showUnread =
+                  entry.to === paths.messages && unreadMessages > 0
+                const badgeLabel =
+                  unreadMessages > 99 ? '+99' : String(unreadMessages)
+
                 return (
                   <SidebarMenuItem key={entry.to}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      tooltip={t(entry.labelKey)}
+                      tooltip={
+                        showUnread
+                          ? `${t(entry.labelKey)} · ${badgeLabel}`
+                          : t(entry.labelKey)
+                      }
                     >
                       <NavLink to={entry.to}>
                         <Icon />
-                        <span>{t(entry.labelKey)}</span>
+                        <span className="flex-1">{t(entry.labelKey)}</span>
+                        {showUnread && (
+                          <span
+                            className={cn(
+                              'ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10.5px] font-semibold text-primary-foreground group-data-[collapsible=icon]:hidden',
+                              shake && 'unread-shake',
+                            )}
+                            aria-label={`${badgeLabel} unread`}
+                          >
+                            {badgeLabel}
+                          </span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

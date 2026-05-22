@@ -23,19 +23,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { cn } from '@/lib/utils'
@@ -44,8 +38,6 @@ import { parseApiError } from '@/lib/api-errors'
 import { paths } from '@/app/paths'
 
 import { DeactivateUserDialog } from './DeactivateUserDialog'
-
-type StatusFilter = 'all' | 'active' | 'inactive'
 
 function userName(user: UserResponse): string {
   const full = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
@@ -96,8 +88,6 @@ export function UsersListPage() {
 
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput, 300)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [roleFilter, setRoleFilter] = useState<string>('all')
 
   const [roles, setRoles] = useState<RoleList[]>([])
   const rolesLoaded = useRef(false)
@@ -115,36 +105,6 @@ export function UsersListPage() {
       .catch(() => null)
   }, [])
 
-  const fetchPage = useCallback(async (): Promise<
-    PaginatedResponse<UserResponse>
-  > => {
-    const query: {
-      search?: string
-      is_active?: boolean
-      role_code?: string
-    } = {}
-    if (search.trim()) query.search = search.trim()
-    if (statusFilter === 'active') query.is_active = true
-    if (statusFilter === 'inactive') query.is_active = false
-    if (roleFilter !== 'all') query.role_code = roleFilter
-    const res = await apiClient.api.listUsers(query)
-    return res.data
-  }, [search, statusFilter, roleFilter])
-
-  const {
-    items: rows,
-    count,
-    loading,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    refresh,
-    setItems: setRows,
-  } = usePaginatedList<UserResponse>({
-    fetchPage,
-    resetDeps: [search, statusFilter, roleFilter],
-  })
-
   const handleResendInvite = async (user: UserResponse) => {
     setResendingId(user.id)
     try {
@@ -156,13 +116,6 @@ export function UsersListPage() {
       setResendingId(null)
     }
   }
-
-  const handleDeactivated = useCallback(
-    (updated: UserResponse) => {
-      setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
-    },
-    [setRows],
-  )
 
   const columnHelper = useMemo(() => createColumnHelper<UserResponse>(), [])
 
@@ -199,6 +152,15 @@ export function UsersListPage() {
       columnHelper.display({
         id: 'role',
         header: () => t('users.col.role'),
+        meta: {
+          filter: {
+            type: 'select',
+            label: t('users.col.role'),
+            anyLabel: t('users.filter.allRoles'),
+            urlKey: 'role_code',
+            options: roles.map((r) => ({ value: r.code, label: r.name })),
+          },
+        },
         cell: (info) => <RolesText roles={info.row.original.role} />,
       }),
       columnHelper.accessor(
@@ -231,6 +193,15 @@ export function UsersListPage() {
       columnHelper.accessor('is_active', {
         id: 'status',
         header: () => t('users.col.status'),
+        meta: {
+          filter: {
+            type: 'boolean',
+            label: t('users.col.status'),
+            urlKey: 'is_active',
+            trueLabel: t('users.status.active'),
+            falseLabel: t('users.status.inactive'),
+          },
+        },
         cell: (info) => <StatusPill active={info.getValue()} />,
       }),
       columnHelper.display({
@@ -331,6 +302,7 @@ export function UsersListPage() {
     [
       columnHelper,
       dateLocale,
+      roles,
       t,
       canEdit,
       canDeactivate,
@@ -340,9 +312,60 @@ export function UsersListPage() {
     ],
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<UserResponse>({
+    columns,
+    syncToUrl: true,
+  })
+
+  const isActiveFilter = columnFilters.find((f) => f.id === 'status')?.value as
+    | boolean
+    | undefined
+  const roleFilter = columnFilters.find((f) => f.id === 'role')?.value as
+    | string
+    | undefined
+
+  const fetchPage = useCallback(async (): Promise<
+    PaginatedResponse<UserResponse>
+  > => {
+    const query: {
+      search?: string
+      is_active?: boolean
+      role_code?: string
+    } = {}
+    if (search.trim()) query.search = search.trim()
+    if (isActiveFilter !== undefined) query.is_active = isActiveFilter
+    if (roleFilter) query.role_code = roleFilter
+    const res = await apiClient.api.listUsers(query)
+    return res.data
+  }, [search, isActiveFilter, roleFilter])
+
+  const {
+    items: rows,
+    count,
+    loading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refresh,
+    setItems: setRows,
+  } = usePaginatedList<UserResponse>({
+    fetchPage,
+    resetDeps: [search, isActiveFilter, roleFilter],
+  })
+
+  const handleDeactivated = useCallback(
+    (updated: UserResponse) => {
+      setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
+    },
+    [setRows],
+  )
+
   const table = useReactTable({
     data: rows,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getCoreRowModel: getCoreRowModel(),
   })
 
@@ -362,7 +385,7 @@ export function UsersListPage() {
           {t('users.subtitle')}
         </p>
 
-        <div className="mb-4 flex flex-col gap-3 shrink-0 sm:flex-row sm:items-center">
+        <div className="mb-4 shrink-0">
           <Input
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -370,34 +393,6 @@ export function UsersListPage() {
             className="sm:max-w-xs"
             aria-label={t('users.searchPlaceholder')}
           />
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="sm:w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('users.filter.allStatus')}</SelectItem>
-              <SelectItem value="active">{t('users.filter.active')}</SelectItem>
-              <SelectItem value="inactive">
-                {t('users.filter.inactive')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="sm:w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('users.filter.allRoles')}</SelectItem>
-              {roles.map((r) => (
-                <SelectItem key={r.code} value={r.code}>
-                  {r.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <DataTable

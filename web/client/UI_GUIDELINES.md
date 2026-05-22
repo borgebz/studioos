@@ -335,6 +335,24 @@ const table = useReactTable({
 - Separate heading from content with `Separator` or `mb-4` spacing.
 - Cards stack vertically with `gap-6` between them.
 
+#### Card Elevation (Saleor-aligned, flat by default)
+
+We follow Saleor's visual language: **borders separate cards, not shadows**. Pick the right tier for each surface; do not combine border + shadow on the same element unless the tier explicitly calls for it.
+
+| Tier | When to use | Shadow class | Examples |
+|---|---|---|---|
+| **1. Section cards** | Page-level content groups: heading + fields/content. The default for almost everything. | *none* (border only) | `CardSection`, the two outer panels on the Messages page, sidebars on detail pages, any `bg-card rounded-lg border border-border p-6` container |
+| **2. Grid tiles** | Standalone clickable atoms in a gallery layout — the whole card is the click target. | `shadow-sm` resting · `hover:shadow-md` | `ProductCard`, `ListingCard`, any tappable tile in a catalogue grid |
+| **3. Floating overlays** | Anything that escapes the page flow and floats over content. | `shadow-md` (menus) · `shadow-lg` (modals) | Popover, Dropdown, Select content, Combobox content, Dialog, AlertDialog, Sheet, Tooltip |
+| **4. Conversational atoms** | Discrete utterances on a conversation surface. Not cards — speech acts. | `shadow-sm` | Chat bubbles in `MessageThread`, sonner toasts |
+
+**Rules:**
+
+- **Section cards stay flat.** No `shadow-sm`, no `shadow-xs`. If a section feels "stuck to the background", that's a background-contrast problem (`bg-background` vs `bg-card`), not a shadow problem.
+- **The raw shadcn `Card` primitive has no shadow** (we stripped its default `shadow-sm`). It now matches `CardSection`. Pages that want a lifted tile use `ProductCard`/`ListingCard` or apply `shadow-sm hover:shadow-md` explicitly.
+- **Form controls keep `shadow-xs`.** Inputs, `Select` trigger, outline `Button`, etc. — that subtle lift is part of the control affordance, not card elevation. Don't touch it.
+- **Never combine border + `shadow-sm` on a section card.** Saleor picks one or the other for section-level surfaces, and it picks the border. So do we.
+
 ### Badges / Status
 
 - **Always use the shadcn `Badge` primitive** (`@/components/ui/badge`). Never build a custom pill — color and icon are passed via `className` and children. Domain-specific status mappings (e.g. `StatusBadge` in marketplace-helpers, `ProductStatusBadge`) wrap the same primitive — never reinvent it.

@@ -21,13 +21,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -40,6 +33,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { cn } from '@/lib/utils'
@@ -48,13 +42,6 @@ import { AcceptCoachingDialog } from './AcceptCoachingDialog'
 import { ApproveCoachingDialog } from './ApproveCoachingDialog'
 import { RejectCoachingDialog } from './RejectCoachingDialog'
 import { paths } from '@/app/paths'
-
-type StatusFilter = 'pending' | CoachingClassStatusEnum | 'all'
-
-const PENDING_STATUSES: CoachingClassStatusEnum[] = [
-  CoachingClassStatusEnum.Requested,
-  CoachingClassStatusEnum.PendingApproval,
-]
 
 function userName(
   user: CoachingClass['teacher'] | CoachingClass['requested_by'] | null
@@ -106,113 +93,9 @@ export function CoachingRequestsPage() {
   const canManage = can('coachings.change_coachingclass')
   const canAccept = can('coachings.can_accept_coaching_as_teacher')
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending')
-
   const [acceptTarget, setAcceptTarget] = useState<CoachingClass | null>(null)
   const [approveTarget, setApproveTarget] = useState<CoachingClass | null>(null)
   const [rejectTarget, setRejectTarget] = useState<CoachingClass | null>(null)
-
-  // -- Data fetching via usePaginatedList --
-  const fetchPage = useCallback(async (): Promise<
-    PaginatedResponse<CoachingClass>
-  > => {
-    if (statusFilter === 'pending') {
-      // Merge two status filters client-side — no server-side pagination
-      const responses = await Promise.all(
-        PENDING_STATUSES.map((s) =>
-          apiClient.api.getAllCoachings({ status: s }).catch(() => null),
-        ),
-      )
-      const merged = responses
-        .flatMap((r) => r?.data?.results ?? [])
-        .sort((a, b) =>
-          (a.start_datetime ?? '').localeCompare(b.start_datetime ?? ''),
-        )
-      return {
-        count: merged.length,
-        next: null,
-        previous: null,
-        results: merged,
-      }
-    }
-    // Single-status or "all" — pass through the real pagination envelope
-    const res =
-      statusFilter === 'all'
-        ? await apiClient.api.getAllCoachings({})
-        : await apiClient.api.getAllCoachings({ status: statusFilter })
-    return res.data
-  }, [statusFilter])
-
-  const {
-    items: rows,
-    count,
-    loading,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    refresh,
-    setItems: setRows,
-  } = usePaginatedList<CoachingClass>({
-    fetchPage,
-    resetDeps: [statusFilter],
-  })
-
-  const handleAccepted = useCallback(
-    (updated: CoachingClass) => {
-      setRows((prev) => {
-        const next = prev.map((r) => (r.id === updated.id ? updated : r))
-        if (statusFilter === 'pending') {
-          return next.filter((r) =>
-            PENDING_STATUSES.includes(
-              r.status ?? CoachingClassStatusEnum.Requested
-            )
-          )
-        }
-        if (statusFilter === 'all') return next
-        return next.filter((r) => r.status === statusFilter)
-      })
-      toast.success(t('coachingRequests.acceptSuccess'))
-    },
-    [statusFilter, t, setRows]
-  )
-
-  const handleApproved = useCallback(
-    (updated: CoachingClass) => {
-      setRows((prev) => {
-        const next = prev.map((r) => (r.id === updated.id ? updated : r))
-        if (statusFilter === 'pending') {
-          return next.filter((r) =>
-            PENDING_STATUSES.includes(
-              r.status ?? CoachingClassStatusEnum.Requested
-            )
-          )
-        }
-        if (statusFilter === 'all') return next
-        return next.filter((r) => r.status === statusFilter)
-      })
-      toast.success(t('coachingRequests.approveSuccess'))
-    },
-    [statusFilter, t, setRows]
-  )
-
-  const handleRejected = useCallback(
-    (updated: CoachingClass) => {
-      setRows((prev) => {
-        const next = prev.map((r) => (r.id === updated.id ? updated : r))
-        if (statusFilter === 'pending') {
-          return next.filter((r) =>
-            PENDING_STATUSES.includes(
-              r.status ?? CoachingClassStatusEnum.Requested
-            )
-          )
-        }
-        if (statusFilter === 'all') return next
-        return next.filter((r) => r.status === statusFilter)
-      })
-      toast.success(t('coachingRequests.rejectSuccess'))
-    },
-    [statusFilter, t, setRows]
-  )
 
   const columnHelper = useMemo(() => createColumnHelper<CoachingClass>(), [])
 
@@ -293,6 +176,22 @@ export function CoachingRequestsPage() {
       }),
       columnHelper.accessor('status', {
         header: () => t('coachingRequests.col.status'),
+        meta: {
+          filter: {
+            type: 'multi-select',
+            label: t('coachingRequests.col.status'),
+            options: [
+              { value: CoachingClassStatusEnum.Requested, label: t('coachingRequests.status.requested') },
+              { value: CoachingClassStatusEnum.PendingApproval, label: t('coachingRequests.status.pending_approval') },
+              { value: CoachingClassStatusEnum.Scheduled, label: t('coachingRequests.status.scheduled') },
+              { value: CoachingClassStatusEnum.WaitingConfirmation, label: t('coachingRequests.status.waiting_confirmation') },
+              { value: CoachingClassStatusEnum.PendingCompletionApproval, label: t('coachingRequests.status.pending_completion_approval') },
+              { value: CoachingClassStatusEnum.Completed, label: t('coachingRequests.status.completed') },
+              { value: CoachingClassStatusEnum.Cancelled, label: t('coachingRequests.status.cancelled') },
+              { value: CoachingClassStatusEnum.Rejected, label: t('coachingRequests.status.rejected') },
+            ],
+          },
+        },
         cell: (info) => (
           <TooltipProvider delayDuration={200}>
             <StatusPill status={info.getValue()} />
@@ -376,9 +275,100 @@ export function CoachingRequestsPage() {
     [columnHelper, dateLocale, t, canManage, canAccept, navigate]
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<CoachingClass>({
+    columns,
+    syncToUrl: true,
+    defaultFilters: [
+      {
+        id: 'status',
+        value: [
+          CoachingClassStatusEnum.Requested,
+          CoachingClassStatusEnum.PendingApproval,
+        ],
+      },
+    ],
+  })
+
+  const statusFilter = useMemo(
+    () =>
+      (columnFilters.find((f) => f.id === 'status')?.value as
+        | CoachingClassStatusEnum[]
+        | undefined) ?? null,
+    [columnFilters],
+  )
+  const statusKey = statusFilter ? statusFilter.slice().sort().join(',') : ''
+
+  const fetchPage = useCallback(async (): Promise<
+    PaginatedResponse<CoachingClass>
+  > => {
+    const res = await apiClient.api.getAllCoachings(
+      statusFilter && statusFilter.length > 0
+        ? { status: statusFilter }
+        : {},
+    )
+    return res.data
+  }, [statusFilter])
+
+  const {
+    items: rows,
+    count,
+    loading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refresh,
+    setItems: setRows,
+  } = usePaginatedList<CoachingClass>({
+    fetchPage,
+    resetDeps: [statusKey],
+  })
+
+  const filterAfterMutation = useCallback(
+    (next: CoachingClass[]) => {
+      if (!statusFilter || statusFilter.length === 0) return next
+      return next.filter((r) =>
+        statusFilter.includes(r.status ?? CoachingClassStatusEnum.Requested),
+      )
+    },
+    [statusFilter],
+  )
+
+  const handleAccepted = useCallback(
+    (updated: CoachingClass) => {
+      setRows((prev) =>
+        filterAfterMutation(prev.map((r) => (r.id === updated.id ? updated : r))),
+      )
+      toast.success(t('coachingRequests.acceptSuccess'))
+    },
+    [filterAfterMutation, t, setRows],
+  )
+
+  const handleApproved = useCallback(
+    (updated: CoachingClass) => {
+      setRows((prev) =>
+        filterAfterMutation(prev.map((r) => (r.id === updated.id ? updated : r))),
+      )
+      toast.success(t('coachingRequests.approveSuccess'))
+    },
+    [filterAfterMutation, t, setRows],
+  )
+
+  const handleRejected = useCallback(
+    (updated: CoachingClass) => {
+      setRows((prev) =>
+        filterAfterMutation(prev.map((r) => (r.id === updated.id ? updated : r))),
+      )
+      toast.success(t('coachingRequests.rejectSuccess'))
+    },
+    [filterAfterMutation, t, setRows],
+  )
+
   const table = useReactTable({
     data: rows,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getCoreRowModel: getCoreRowModel(),
   })
 
@@ -390,37 +380,6 @@ export function CoachingRequestsPage() {
         <p className="-mt-4 mb-6 text-sm text-muted-foreground shrink-0">
           {t('coachingRequests.subtitle')}
         </p>
-
-        <div className="mb-4 flex items-center gap-3 shrink-0">
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">
-                {t('coachingRequests.filter.pending')}
-              </SelectItem>
-              <SelectItem value="requested">
-                {t('coachingRequests.status.requested')}
-              </SelectItem>
-              <SelectItem value="pending_approval">
-                {t('coachingRequests.status.pending_approval')}
-              </SelectItem>
-              <SelectItem value="scheduled">
-                {t('coachingRequests.status.scheduled')}
-              </SelectItem>
-              <SelectItem value="rejected">
-                {t('coachingRequests.status.rejected')}
-              </SelectItem>
-              <SelectItem value="all">
-                {t('coachingRequests.filter.all')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         <DataTable
           table={table}

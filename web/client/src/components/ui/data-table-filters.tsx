@@ -385,22 +385,25 @@ function ColumnFilterEditor({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex h-6 items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">
           {def.label}
         </span>
-        {active && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="-mr-2 h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
-            onClick={onClear}
-          >
-            <X className="h-3 w-3" />
-            {t('common.filter.clear')}
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-hidden={!active}
+          tabIndex={active ? 0 : -1}
+          className={cn(
+            '-mr-2 h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground',
+            !active && 'pointer-events-none opacity-0',
+          )}
+          onClick={onClear}
+        >
+          <X className="h-3 w-3" />
+          {t('common.filter.clear')}
+        </Button>
       </div>
 
       {def.type === 'text' && (

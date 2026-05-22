@@ -26,19 +26,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { paths } from '@/app/paths'
@@ -46,9 +40,6 @@ import { cn } from '@/lib/utils'
 
 import { ApproveFineDialog } from './ApproveFineDialog'
 import { WaiveFineDialog } from './WaiveFineDialog'
-
-type StatusFilter = FineStatusEnum | 'all'
-type ReasonFilter = ReasonEnum | 'all'
 
 function studentName(student: FineList['student']): string {
   if (!student) return ''
@@ -107,85 +98,8 @@ export function BillingFinesPage() {
   const canReview = can('billing.can_review_fine')
   const currency = t('common.currencySymbol')
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
-    FineStatusEnum.PendingReview,
-  )
-  const [reasonFilter, setReasonFilter] = useState<ReasonFilter>('all')
   const [approveTarget, setApproveTarget] = useState<FineList | null>(null)
   const [waiveTarget, setWaiveTarget] = useState<FineList | null>(null)
-
-  const fetchPage = useCallback(async (): Promise<PaginatedResponse<FineList>> => {
-    const res = await apiClient.api.billingFinesList({
-      ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
-      ...(reasonFilter !== 'all' ? { reason: reasonFilter } : {}),
-    })
-    const items = (res.data ?? []) as unknown as FineList[]
-    return {
-      count: items.length,
-      next: null,
-      previous: null,
-      results: items,
-    }
-  }, [statusFilter, reasonFilter])
-
-  const {
-    items: rows,
-    count,
-    loading,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    refresh,
-    setItems: setRows,
-  } = usePaginatedList<FineList>({
-    fetchPage,
-    resetDeps: [statusFilter, reasonFilter],
-  })
-
-  const detailToList = (detail: FineDetail): FineList => ({
-    id: detail.id,
-    reason: detail.reason,
-    status: detail.status,
-    amount: detail.amount,
-    student: detail.student,
-    coaching_class: detail.coaching_class
-      ? {
-          id: detail.coaching_class.id,
-          start_datetime: detail.coaching_class.start_datetime,
-          end_datetime: detail.coaching_class.end_datetime,
-          modality: detail.coaching_class.modality,
-        }
-      : (null as unknown as FineList['coaching_class']),
-    billing_entry: detail.billing_entry,
-    reviewed_at: detail.reviewed_at,
-    created_at: detail.created_at,
-  })
-
-  const handleApproved = useCallback(
-    (updated: FineDetail) => {
-      const slim = detailToList(updated)
-      setRows((prev) => {
-        const next = prev.map((r) => (r.id === slim.id ? slim : r))
-        if (statusFilter === 'all') return next
-        return next.filter((r) => r.status === statusFilter)
-      })
-      toast.success(t('billingFines.approveSuccess'))
-    },
-    [statusFilter, t, setRows],
-  )
-
-  const handleWaived = useCallback(
-    (updated: FineDetail) => {
-      const slim = detailToList(updated)
-      setRows((prev) => {
-        const next = prev.map((r) => (r.id === slim.id ? slim : r))
-        if (statusFilter === 'all') return next
-        return next.filter((r) => r.status === statusFilter)
-      })
-      toast.success(t('billingFines.waiveSuccess'))
-    },
-    [statusFilter, t, setRows],
-  )
 
   const columnHelper = useMemo(() => createColumnHelper<FineList>(), [])
 
@@ -256,6 +170,16 @@ export function BillingFinesPage() {
       }),
       columnHelper.accessor('reason', {
         header: () => t('billingFines.col.reason'),
+        meta: {
+          filter: {
+            type: 'multi-select',
+            label: t('billingFines.col.reason'),
+            options: [
+              { value: ReasonEnum.Absence, label: t('billingFines.reason.absence') },
+              { value: ReasonEnum.LateCancellation, label: t('billingFines.reason.late_cancellation') },
+            ],
+          },
+        },
         cell: (info) => (
           <span className="text-foreground">
             {t(`billingFines.reason.${info.getValue()}`)}
@@ -284,6 +208,17 @@ export function BillingFinesPage() {
       columnHelper.accessor((row) => effectiveStatusKey(row), {
         id: 'status',
         header: () => t('billingFines.col.status'),
+        meta: {
+          filter: {
+            type: 'multi-select',
+            label: t('billingFines.col.status'),
+            options: [
+              { value: FineStatusEnum.PendingReview, label: t('billingFines.status.pending_review') },
+              { value: FineStatusEnum.Approved, label: t('billingFines.status.approved') },
+              { value: FineStatusEnum.Waived, label: t('billingFines.status.waived') },
+            ],
+          },
+        },
         cell: (info) => (
           <TooltipProvider delayDuration={200}>
             <StatusPill fine={info.row.original} />
@@ -348,9 +283,109 @@ export function BillingFinesPage() {
     [columnHelper, t, canReview, currency],
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<FineList>({
+    columns,
+    syncToUrl: true,
+    defaultFilters: [{ id: 'status', value: [FineStatusEnum.PendingReview] }],
+  })
+
+  const statusFilter = useMemo(
+    () =>
+      (columnFilters.find((f) => f.id === 'status')?.value as
+        | FineStatusEnum[]
+        | undefined) ?? null,
+    [columnFilters],
+  )
+  const reasonFilter = useMemo(
+    () =>
+      (columnFilters.find((f) => f.id === 'reason')?.value as
+        | ReasonEnum[]
+        | undefined) ?? null,
+    [columnFilters],
+  )
+
+  const statusKey = statusFilter ? statusFilter.slice().sort().join(',') : ''
+  const reasonKey = reasonFilter ? reasonFilter.slice().sort().join(',') : ''
+
+  const fetchPage = useCallback(async (): Promise<PaginatedResponse<FineList>> => {
+    const res = await apiClient.api.billingFinesList({
+      ...(statusFilter && statusFilter.length > 0 ? { status: statusFilter } : {}),
+      ...(reasonFilter && reasonFilter.length > 0 ? { reason: reasonFilter } : {}),
+    })
+    const items = (res.data ?? []) as unknown as FineList[]
+    return {
+      count: items.length,
+      next: null,
+      previous: null,
+      results: items,
+    }
+  }, [statusFilter, reasonFilter])
+
+  const {
+    items: rows,
+    count,
+    loading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refresh,
+    setItems: setRows,
+  } = usePaginatedList<FineList>({
+    fetchPage,
+    resetDeps: [statusKey, reasonKey],
+  })
+
+  const detailToList = useCallback((detail: FineDetail): FineList => ({
+    id: detail.id,
+    reason: detail.reason,
+    status: detail.status,
+    amount: detail.amount,
+    student: detail.student,
+    coaching_class: detail.coaching_class
+      ? {
+          id: detail.coaching_class.id,
+          start_datetime: detail.coaching_class.start_datetime,
+          end_datetime: detail.coaching_class.end_datetime,
+          modality: detail.coaching_class.modality,
+        }
+      : (null as unknown as FineList['coaching_class']),
+    billing_entry: detail.billing_entry,
+    reviewed_at: detail.reviewed_at,
+    created_at: detail.created_at,
+  }), [])
+
+  const handleApproved = useCallback(
+    (updated: FineDetail) => {
+      const slim = detailToList(updated)
+      setRows((prev) => {
+        const next = prev.map((r) => (r.id === slim.id ? slim : r))
+        if (!statusFilter || statusFilter.length === 0) return next
+        return next.filter((r) => statusFilter.includes(r.status))
+      })
+      toast.success(t('billingFines.approveSuccess'))
+    },
+    [detailToList, statusFilter, t, setRows],
+  )
+
+  const handleWaived = useCallback(
+    (updated: FineDetail) => {
+      const slim = detailToList(updated)
+      setRows((prev) => {
+        const next = prev.map((r) => (r.id === slim.id ? slim : r))
+        if (!statusFilter || statusFilter.length === 0) return next
+        return next.filter((r) => statusFilter.includes(r.status))
+      })
+      toast.success(t('billingFines.waiveSuccess'))
+    },
+    [detailToList, statusFilter, t, setRows],
+  )
+
   const table = useReactTable({
     data: rows,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getCoreRowModel: getCoreRowModel(),
   })
 
@@ -362,51 +397,6 @@ export function BillingFinesPage() {
         <p className="-mt-4 mb-6 text-sm text-muted-foreground shrink-0">
           {t('billingFines.subtitle')}
         </p>
-
-        <div className="mb-4 flex flex-wrap items-center gap-3 shrink-0">
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={FineStatusEnum.PendingReview}>
-                {t('billingFines.status.pending_review')}
-              </SelectItem>
-              <SelectItem value={FineStatusEnum.Approved}>
-                {t('billingFines.status.approved')}
-              </SelectItem>
-              <SelectItem value={FineStatusEnum.Waived}>
-                {t('billingFines.status.waived')}
-              </SelectItem>
-              <SelectItem value="all">
-                {t('billingFines.filter.allStatuses')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={reasonFilter}
-            onValueChange={(v) => setReasonFilter(v as ReasonFilter)}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t('billingFines.filter.allReasons')}
-              </SelectItem>
-              <SelectItem value={ReasonEnum.Absence}>
-                {t('billingFines.reason.absence')}
-              </SelectItem>
-              <SelectItem value={ReasonEnum.LateCancellation}>
-                {t('billingFines.reason.late_cancellation')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         <DataTable
           table={table}

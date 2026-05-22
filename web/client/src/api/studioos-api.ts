@@ -751,11 +751,30 @@ export interface ConsentInput {
 export interface Conversation {
   id: number;
   participant_ids: number[];
+  participants: ConversationParticipantSummary[];
   coaching_id: number | null;
   recurring_coaching_id: number | null;
   last_message: Message | null;
+  pinned_message_ids: number[];
   /** @format date-time */
   updated_at: string;
+}
+
+/**
+ * Lightweight participant info embedded inside every Conversation.
+ *
+ * Lets the messaging UI render names + avatars without a separate
+ * ``/api/accounts/users/`` call — that endpoint requires
+ * ``accounts.can_list_users``, which most non-admin roles do not hold.
+ * The caller is already a participant in this conversation, so exposing
+ * these fields here is not a leak.
+ */
+export interface ConversationParticipantSummary {
+  id: number;
+  display_name: string;
+  /** @format email */
+  email: string;
+  photo_url: string | null;
 }
 
 export interface CreateCategory {
@@ -1598,6 +1617,14 @@ export interface Message {
   original_filename: string;
   mime_type: string;
   /** @format date-time */
+  edited_at: string | null;
+  /** @format date-time */
+  deleted_at: string;
+  reactions: ReactionGroup[];
+  /** @format date-time */
+  pinned_at: string;
+  pinned_by_id: number | null;
+  /** @format date-time */
   created_at: string;
 }
 
@@ -1739,6 +1766,10 @@ export interface PatchedCoachingUpdate {
   /** @format date-time */
   end_datetime?: string;
   notes?: string;
+}
+
+export interface PatchedEditMessage {
+  body?: string;
 }
 
 export interface PatchedEnrollmentPeriod {
@@ -2152,6 +2183,17 @@ export interface Profile {
   is_public?: boolean;
 }
 
+export interface ReactionGroup {
+  emoji: string;
+  count: number;
+  user_ids: number[];
+}
+
+export interface ReactionInput {
+  /** @maxLength 16 */
+  emoji: string;
+}
+
 export interface RecurringAvailability {
   /**
    * Comma-separated weekday integers (0=Mon..6=Sun), e.g. '0,2,4' for Mon/Wed/Fri.
@@ -2323,18 +2365,11 @@ export interface SchoolTransactionList {
   results: TransactionDetail[];
 }
 
-export interface SendMessage {
-  /** @default "" */
-  body?: string;
+export interface SendMessageMultipart {
+  /** JSON-encoded SendMessage payload (body, original_filename, mime_type). Optional when only a file is sent. */
+  data?: string;
   /** @format uri */
-  file?: string | null;
-  /** @maxLength 255 */
-  original_filename?: string;
-  /**
-   * @maxLength 100
-   * @default ""
-   */
-  mime_type?: string;
+  file?: string;
 }
 
 export interface SetRolePermissions {
@@ -2473,6 +2508,11 @@ export interface TransactionRequest {
   end_at?: string | null;
   /** @default "" */
   notes?: string;
+}
+
+export interface UnreadCount {
+  total: number;
+  by_conversation: Record<string, number>;
 }
 
 export interface UserList {
@@ -3431,20 +3471,8 @@ export class Api<
         date_from?: string;
         /** @format date-time */
         date_to?: string;
-        /**
-         * * `coaching` - Coaching
-         * * `fine` - Fine
-         * * `marketplace` - Marketplace
-         * @minLength 1
-         */
-        source_type?: "coaching" | "fine" | "marketplace";
-        /**
-         * * `pending` - Pending
-         * * `exported` - Exported
-         * * `cancelled` - Cancelled
-         * @minLength 1
-         */
-        status?: "pending" | "exported" | "cancelled";
+        source_type?: ("coaching" | "fine" | "marketplace")[];
+        status?: ("pending" | "exported" | "cancelled")[];
         student_id?: number;
       },
       params: RequestParams = {},
@@ -3503,19 +3531,8 @@ export class Api<
     billingFinesList: (
       query?: {
         coaching_class_id?: number;
-        /**
-         * * `absence` - Absence
-         * * `late_cancellation` - Late cancellation
-         * @minLength 1
-         */
-        reason?: "absence" | "late_cancellation";
-        /**
-         * * `pending_review` - Pending review
-         * * `approved` - Approved
-         * * `waived` - Waived
-         * @minLength 1
-         */
-        status?: "pending_review" | "approved" | "waived";
+        reason?: ("absence" | "late_cancellation")[];
+        status?: ("pending_review" | "approved" | "waived")[];
         student_id?: number;
       },
       params: RequestParams = {},
@@ -4277,26 +4294,14 @@ export class Api<
       query?: {
         /** @minLength 1 */
         academic_year?: string;
-        /**
-         * * `new` - New
-         * * `renewal` - Renewal
-         * @minLength 1
-         */
-        enrollment_type?: "new" | "renewal";
-        /**
-         * * `submitted` - Submitted
-         * * `under_review` - Under Review
-         * * `approved` - Approved
-         * * `rejected` - Rejected
-         * * `cancelled` - Cancelled
-         * @minLength 1
-         */
-        status?:
+        enrollment_type?: ("new" | "renewal")[];
+        status?: (
           | "submitted"
           | "under_review"
           | "approved"
           | "rejected"
-          | "cancelled";
+          | "cancelled"
+        )[];
         student_id?: number;
       },
       params: RequestParams = {},
@@ -6524,6 +6529,23 @@ export class Api<
      * No description
      *
      * @tags messaging
+     * @name MessagingConversationsMarkReadCreate
+     * @request POST:/api/messaging/conversations/{conversation_id}/mark-read/
+     */
+    messagingConversationsMarkReadCreate: (
+      conversationId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/api/messaging/conversations/${conversationId}/mark-read/`,
+        method: "POST",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
      * @name MessagingConversationsMessagesList
      * @request GET:/api/messaging/conversations/{conversation_id}/messages/
      */
@@ -6547,7 +6569,7 @@ export class Api<
      */
     messagingConversationsMessagesCreate: (
       conversationId: number,
-      data: SendMessage,
+      data: SendMessageMultipart,
       params: RequestParams = {},
     ) =>
       this.request<Message, ErrorResponse>({
@@ -6555,6 +6577,131 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingConversationsUnreadCountRetrieve
+     * @request GET:/api/messaging/conversations/unread-count/
+     */
+    messagingConversationsUnreadCountRetrieve: (params: RequestParams = {}) =>
+      this.request<UnreadCount, ErrorResponse>({
+        path: `/api/messaging/conversations/unread-count/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingMessagesPartialUpdate
+     * @request PATCH:/api/messaging/messages/{message_id}/
+     */
+    messagingMessagesPartialUpdate: (
+      messageId: number,
+      data: PatchedEditMessage,
+      params: RequestParams = {},
+    ) =>
+      this.request<Message, ErrorResponse>({
+        path: `/api/messaging/messages/${messageId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingMessagesDestroy
+     * @request DELETE:/api/messaging/messages/{message_id}/
+     */
+    messagingMessagesDestroy: (messageId: number, params: RequestParams = {}) =>
+      this.request<void, ErrorResponse>({
+        path: `/api/messaging/messages/${messageId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingMessagesPinCreate
+     * @request POST:/api/messaging/messages/{message_id}/pin/
+     */
+    messagingMessagesPinCreate: (
+      messageId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Message, ErrorResponse>({
+        path: `/api/messaging/messages/${messageId}/pin/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingMessagesReactionsCreate
+     * @request POST:/api/messaging/messages/{message_id}/reactions/
+     */
+    messagingMessagesReactionsCreate: (
+      messageId: number,
+      data: ReactionInput,
+      params: RequestParams = {},
+    ) =>
+      this.request<Message, ErrorResponse>({
+        path: `/api/messaging/messages/${messageId}/reactions/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingMessagesReactionsDestroy
+     * @request DELETE:/api/messaging/messages/{message_id}/reactions/
+     */
+    messagingMessagesReactionsDestroy: (
+      messageId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Message, ErrorResponse>({
+        path: `/api/messaging/messages/${messageId}/reactions/`,
+        method: "DELETE",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingMessagesUnpinCreate
+     * @request POST:/api/messaging/messages/{message_id}/unpin/
+     */
+    messagingMessagesUnpinCreate: (
+      messageId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<Message, ErrorResponse>({
+        path: `/api/messaging/messages/${messageId}/unpin/`,
+        method: "POST",
         format: "json",
         ...params,
       }),

@@ -4,6 +4,7 @@ import {
   CreditCard,
   Home,
   Inbox,
+  MessageCircle,
   MessageSquarePlus,
   Package,
   Palette,
@@ -11,6 +12,7 @@ import {
   ShieldAlert,
   ShoppingBag,
   Store,
+  Ticket,
   Tag,
   TriangleAlert,
   UserPlus,
@@ -60,6 +62,22 @@ export function isNavGroup(entry: NavEntryConfig): entry is NavGroupConfig {
 export const navConfig: NavEntryConfig[] = [
   // -- Always visible --
   { to: paths.home, labelKey: 'nav.home', icon: Home },
+
+  // -- Messages (standalone) --
+  {
+    to: paths.messages,
+    labelKey: 'nav.messages',
+    icon: MessageCircle,
+    permission: 'messaging.can_list_conversations',
+  },
+
+  // -- Events (standalone) --
+  {
+    to: paths.events,
+    labelKey: 'nav.events',
+    icon: Ticket,
+    permission: 'events.view_event',
+  },
 
   // -- Coachings --
   {

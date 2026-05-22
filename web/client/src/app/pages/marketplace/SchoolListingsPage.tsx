@@ -48,12 +48,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { ListingCard } from '@/components/shared/ListingCard'
 import { ListingsGridView } from '@/components/shared/ListingsGridView'
 import {
   ListingsToolbar,
+  ViewToggleButton,
   type SortKey,
   type ToolbarChip,
   type ViewMode,
@@ -71,9 +73,6 @@ export function SchoolListingsPage() {
 
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput, 300)
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [conditionFilter, setConditionFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortKey>('recent')
   const [view, setView] = useState<ViewMode>('grid')
 
@@ -85,62 +84,7 @@ export function SchoolListingsPage() {
     }
   }
 
-  const fetchPage = useCallback(() => {
-    const query: {
-      search?: string
-      listing_type?: 'rent' | 'sell' | 'lend' | 'donate'
-      status?: 'draft' | 'active' | 'closed'
-      condition?: string
-      ordering?: '-created_at' | 'created_at' | 'asking_price' | '-asking_price'
-    } = {}
-    if (search.trim()) query.search = search.trim()
-    if (typeFilter !== 'all')
-      query.listing_type = typeFilter as typeof query.listing_type
-    if (statusFilter !== 'all')
-      query.status = statusFilter as typeof query.status
-    if (conditionFilter !== 'all') query.condition = conditionFilter
-    query.ordering = sortKeyToOrdering(sortBy)
-    return apiClient.api
-      .marketplaceSchoolListingsRetrieve(query)
-      .then((r) => r.data) as Promise<{
-      count: number
-      next: string | null
-      previous: string | null
-      results: ListingList[]
-    }>
-  }, [search, typeFilter, statusFilter, conditionFilter, sortBy])
-
-  const {
-    items: listings,
-    count,
-    loading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refresh,
-    setItems: setListings,
-  } = usePaginatedList<ListingList>({
-    fetchPage,
-    resetDeps: [search, typeFilter, statusFilter, conditionFilter, sortBy],
-  })
-
   const [deleteTarget, setDeleteTarget] = useState<ListingList | null>(null)
-
-  const handleSingleDelete = async () => {
-    if (!deleteTarget) return
-    try {
-      await apiClient.api.marketplaceSchoolListingsPartialUpdate(
-        deleteTarget.id,
-        { status: 'closed' as ListingStatusEnum },
-      )
-      setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
-      toast.success(t('marketplace.deleteSuccess'))
-    } catch (err) {
-      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
-    } finally {
-      setDeleteTarget(null)
-    }
-  }
 
   // ── Data-table columns (list view) ────────────────────────────────────────
   const columnHelper = useMemo(() => createColumnHelper<ListingList>(), [])
@@ -198,11 +142,60 @@ export function SchoolListingsPage() {
             {listingTypeLabel(info.getValue(), t)}
           </span>
         ),
-        meta: { className: 'hidden md:table-cell' },
+        meta: {
+          className: 'hidden md:table-cell',
+          filter: {
+            type: 'select',
+            label: t('marketplace.col.type'),
+            anyLabel: t('marketplace.allTypes'),
+            options: [
+              { value: 'sell', label: t('marketplace.typeSell') },
+              { value: 'rent', label: t('marketplace.typeRent') },
+              { value: 'lend', label: t('marketplace.typeLend') },
+              { value: 'donate', label: t('marketplace.typeDonate') },
+            ],
+          },
+        },
+      }),
+      columnHelper.accessor('variant_condition', {
+        id: 'condition',
+        header: () => t('marketplace.col.condition'),
+        cell: (info) => (
+          <span className="text-xs text-muted-foreground">
+            {info.getValue() || '—'}
+          </span>
+        ),
+        meta: {
+          className: 'hidden lg:table-cell',
+          filter: {
+            type: 'select',
+            label: t('marketplace.col.condition'),
+            anyLabel: t('marketplace.allConditions'),
+            options: [
+              { value: 'new', label: t('marketplace.conditionNew') },
+              { value: 'excellent', label: t('marketplace.conditionExcellent') },
+              { value: 'good', label: t('marketplace.conditionGood') },
+              { value: 'fair', label: t('marketplace.conditionFair') },
+              { value: 'damaged', label: t('marketplace.conditionDamaged') },
+            ],
+          },
+        },
       }),
       columnHelper.accessor('status', {
         header: () => t('marketplace.col.status'),
         cell: (info) => <StatusBadge status={info.getValue()} t={t} />,
+        meta: {
+          filter: {
+            type: 'select',
+            label: t('marketplace.col.status'),
+            anyLabel: t('marketplace.allStatuses'),
+            options: [
+              { value: 'draft', label: t('marketplace.statusDraft') },
+              { value: 'active', label: t('marketplace.statusActive') },
+              { value: 'closed', label: t('marketplace.statusSold') },
+            ],
+          },
+        },
       }),
       columnHelper.display({
         id: 'actions',
@@ -251,9 +244,121 @@ export function SchoolListingsPage() {
     [columnHelper, navigate, t],
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<ListingList>({
+    columns,
+    syncToUrl: true,
+  })
+
+  type ListingTypeFilter = 'rent' | 'sell' | 'lend' | 'donate'
+  type ListingStatusFilter = 'draft' | 'active' | 'closed'
+
+  const typeFilter =
+    (columnFilters.find((f) => f.id === 'listing_type')?.value as
+      | ListingTypeFilter
+      | undefined) ?? null
+
+  const statusFilter =
+    (columnFilters.find((f) => f.id === 'status')?.value as
+      | ListingStatusFilter
+      | undefined) ?? null
+
+  const conditionFilter =
+    (columnFilters.find((f) => f.id === 'condition')?.value as
+      | string
+      | undefined) ?? null
+
+  const setTypeFilter = useCallback(
+    (next: ListingTypeFilter | 'all') => {
+      setColumnFilters((prev) => {
+        const without = prev.filter((f) => f.id !== 'listing_type')
+        if (next === 'all') return without
+        return [...without, { id: 'listing_type', value: next }]
+      })
+    },
+    [setColumnFilters],
+  )
+
+  const setStatusFilter = useCallback(
+    (next: ListingStatusFilter | 'all') => {
+      setColumnFilters((prev) => {
+        const without = prev.filter((f) => f.id !== 'status')
+        if (next === 'all') return without
+        return [...without, { id: 'status', value: next }]
+      })
+    },
+    [setColumnFilters],
+  )
+
+  const setConditionFilter = useCallback(
+    (next: string) => {
+      setColumnFilters((prev) => {
+        const without = prev.filter((f) => f.id !== 'condition')
+        if (next === 'all') return without
+        return [...without, { id: 'condition', value: next }]
+      })
+    },
+    [setColumnFilters],
+  )
+
+  const fetchPage = useCallback(() => {
+    const query: {
+      search?: string
+      listing_type?: ListingTypeFilter
+      status?: ListingStatusFilter
+      condition?: string
+      ordering?: '-created_at' | 'created_at' | 'asking_price' | '-asking_price'
+    } = {}
+    if (search.trim()) query.search = search.trim()
+    if (typeFilter) query.listing_type = typeFilter
+    if (statusFilter) query.status = statusFilter
+    if (conditionFilter) query.condition = conditionFilter
+    query.ordering = sortKeyToOrdering(sortBy)
+    return apiClient.api
+      .marketplaceSchoolListingsRetrieve(query)
+      .then((r) => r.data) as Promise<{
+      count: number
+      next: string | null
+      previous: string | null
+      results: ListingList[]
+    }>
+  }, [search, typeFilter, statusFilter, conditionFilter, sortBy])
+
+  const {
+    items: listings,
+    count,
+    loading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refresh,
+    setItems: setListings,
+  } = usePaginatedList<ListingList>({
+    fetchPage,
+    resetDeps: [search, typeFilter, statusFilter, conditionFilter, sortBy],
+  })
+
+  const handleSingleDelete = async () => {
+    if (!deleteTarget) return
+    try {
+      await apiClient.api.marketplaceSchoolListingsPartialUpdate(
+        deleteTarget.id,
+        { status: 'closed' as ListingStatusEnum },
+      )
+      setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
+      toast.success(t('marketplace.deleteSuccess'))
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+    } finally {
+      setDeleteTarget(null)
+    }
+  }
+
   const table = useReactTable({
     data: listings,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -261,13 +366,13 @@ export function SchoolListingsPage() {
 
   const chips: ToolbarChip[] = useMemo(() => {
     const list: ToolbarChip[] = []
-    if (typeFilter !== 'all')
+    if (typeFilter)
       list.push({
         key: 'type',
         label: listingTypeLabel(typeFilter, t),
         onClear: () => setTypeFilter('all'),
       })
-    if (statusFilter !== 'all')
+    if (statusFilter)
       list.push({
         key: 'status',
         label: t(`marketplace.status${capitalize(statusFilter)}`, {
@@ -275,7 +380,7 @@ export function SchoolListingsPage() {
         }),
         onClear: () => setStatusFilter('all'),
       })
-    if (conditionFilter !== 'all')
+    if (conditionFilter)
       list.push({
         key: 'condition',
         label: t(`marketplace.condition${capitalize(conditionFilter)}`, {
@@ -290,7 +395,16 @@ export function SchoolListingsPage() {
         onClear: () => setSearchInput(''),
       })
     return list
-  }, [typeFilter, statusFilter, conditionFilter, searchInput, t])
+  }, [
+    typeFilter,
+    statusFilter,
+    conditionFilter,
+    searchInput,
+    setTypeFilter,
+    setStatusFilter,
+    setConditionFilter,
+    t,
+  ])
 
   const emptyState = (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
@@ -315,26 +429,34 @@ export function SchoolListingsPage() {
     <PageLayout>
       <div className="mx-auto w-full max-w-6xl">
         <PageHeader title={t('schoolListings.title')} backTo={paths.home}>
+          <ViewToggleButton view={view} onChange={setView} />
           <Button onClick={() => navigate(`${paths.schoolListings}/create`)}>
             <Plus className="mr-2 h-4 w-4" />
             {t('marketplace.createListing')}
           </Button>
         </PageHeader>
 
-        {/* Filter card */}
-        <div className="mb-4 rounded-lg border border-border bg-card p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder={t('marketplace.search')}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+        {/* Inline filter row — no card, no extra chrome. Search spans both
+            views; enum selects only appear in grid view (table view uses
+            column-header filters). Sort is view-independent. */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t('marketplace.search')}
+              className="pl-9"
+            />
+          </div>
+          {view === 'grid' && (
+            <>
+              <Select
+                value={typeFilter ?? 'all'}
+                onValueChange={(v) =>
+                  setTypeFilter(v as ListingTypeFilter | 'all')
+                }
+              >
                 <SelectTrigger className="w-full sm:w-[150px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -356,7 +478,12 @@ export function SchoolListingsPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select
+                value={statusFilter ?? 'all'}
+                onValueChange={(v) =>
+                  setStatusFilter(v as ListingStatusFilter | 'all')
+                }
+              >
                 <SelectTrigger className="w-full sm:w-[150px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -376,7 +503,7 @@ export function SchoolListingsPage() {
                 </SelectContent>
               </Select>
               <Select
-                value={conditionFilter}
+                value={conditionFilter ?? 'all'}
                 onValueChange={setConditionFilter}
               >
                 <SelectTrigger className="w-full sm:w-[170px]">
@@ -403,17 +530,30 @@ export function SchoolListingsPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
+            </>
+          )}
+          <Select
+            value={sortBy}
+            onValueChange={(v) => setSortBy(v as SortKey)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">
+                {t('marketplace.sortRecent')}
+              </SelectItem>
+              <SelectItem value="priceAsc">
+                {t('marketplace.sortPriceAsc')}
+              </SelectItem>
+              <SelectItem value="priceDesc">
+                {t('marketplace.sortPriceDesc')}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <ListingsToolbar
-          chips={chips}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          view={view}
-          onViewChange={setView}
-        />
+        <ListingsToolbar chips={chips} />
 
         {view === 'grid' ? (
           <ListingsGridView

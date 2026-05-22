@@ -35,26 +35,12 @@ import {
 } from '@/hooks/usePaginatedList'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { cn } from '@/lib/utils'
 import { paths } from '@/app/paths'
-
-type StatusFilter = 'pending' | EnrollmentReadStatusEnum | 'all'
-type TypeFilter = 'all' | EnrollmentTypeEnum
-
-const PENDING_STATUSES: EnrollmentReadStatusEnum[] = [
-  EnrollmentReadStatusEnum.Submitted,
-  EnrollmentReadStatusEnum.UnderReview,
-]
 
 const REVIEWABLE_STATUSES: EnrollmentReadStatusEnum[] = [
   EnrollmentReadStatusEnum.Submitted,
@@ -123,59 +109,7 @@ export function EnrollmentRequestsPage() {
   const navigate = useNavigate()
   const dateLocale = i18n.language.startsWith('pt') ? pt : enUS
 
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending')
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [startingReviewId, setStartingReviewId] = useState<number | null>(null)
-
-  const fetchPage = useCallback(async (): Promise<
-    PaginatedResponse<EnrollmentRead>
-  > => {
-    const typeParam =
-      typeFilter === 'all' ? undefined : (typeFilter as 'new' | 'renewal')
-
-    if (statusFilter === 'pending') {
-      const responses = await Promise.all(
-        PENDING_STATUSES.map((s) =>
-          apiClient.api
-            .enrollmentsListList({ status: s, enrollment_type: typeParam })
-            .catch(() => null),
-        ),
-      )
-      const merged = responses
-        .flatMap((r) => toPaginatedResponse(r?.data).results)
-        .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
-      return {
-        count: merged.length,
-        next: null,
-        previous: null,
-        results: merged,
-      }
-    }
-
-    const res =
-      statusFilter === 'all'
-        ? await apiClient.api.enrollmentsListList({
-            enrollment_type: typeParam,
-          })
-        : await apiClient.api.enrollmentsListList({
-            status: statusFilter,
-            enrollment_type: typeParam,
-          })
-    return toPaginatedResponse(res.data)
-  }, [statusFilter, typeFilter])
-
-  const {
-    items: rows,
-    count,
-    loading,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-    refresh,
-  } = usePaginatedList<EnrollmentRead>({
-    fetchPage,
-    resetDeps: [statusFilter, typeFilter],
-  })
 
   const handleStartReview = useCallback(
     async (row: EnrollmentRead) => {
@@ -270,6 +204,16 @@ export function EnrollmentRequestsPage() {
       ),
       columnHelper.accessor('enrollment_type', {
         header: () => t('enrollmentRequests.col.type'),
+        meta: {
+          filter: {
+            type: 'multi-select',
+            label: t('enrollmentRequests.col.type'),
+            options: [
+              { value: EnrollmentTypeEnum.New, label: t('enrollmentRequests.type.new') },
+              { value: EnrollmentTypeEnum.Renewal, label: t('enrollmentRequests.type.renewal') },
+            ],
+          },
+        },
         cell: (info) => {
           const type = info.getValue()
           if (!type) return <span className="text-muted-foreground">—</span>
@@ -282,6 +226,19 @@ export function EnrollmentRequestsPage() {
       }),
       columnHelper.accessor('status', {
         header: () => t('enrollmentRequests.col.status'),
+        meta: {
+          filter: {
+            type: 'multi-select',
+            label: t('enrollmentRequests.col.status'),
+            options: [
+              { value: EnrollmentReadStatusEnum.Submitted, label: t('enrollmentRequests.status.submitted') },
+              { value: EnrollmentReadStatusEnum.UnderReview, label: t('enrollmentRequests.status.under_review') },
+              { value: EnrollmentReadStatusEnum.Approved, label: t('enrollmentRequests.status.approved') },
+              { value: EnrollmentReadStatusEnum.Rejected, label: t('enrollmentRequests.status.rejected') },
+              { value: EnrollmentReadStatusEnum.Cancelled, label: t('enrollmentRequests.status.cancelled') },
+            ],
+          },
+        },
         cell: (info) => <EnrollmentStatusPill status={info.getValue()} />,
       }),
       columnHelper.display({
@@ -355,9 +312,68 @@ export function EnrollmentRequestsPage() {
     [columnHelper, dateLocale, handleStartReview, navigate, startingReviewId, t],
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<EnrollmentRead>({
+    columns,
+    syncToUrl: true,
+    defaultFilters: [
+      {
+        id: 'status',
+        value: [
+          EnrollmentReadStatusEnum.Submitted,
+          EnrollmentReadStatusEnum.UnderReview,
+        ],
+      },
+    ],
+  })
+
+  const statusFilter = useMemo(
+    () =>
+      (columnFilters.find((f) => f.id === 'status')?.value as
+        | EnrollmentReadStatusEnum[]
+        | undefined) ?? null,
+    [columnFilters],
+  )
+  const typeFilter = useMemo(
+    () =>
+      (columnFilters.find((f) => f.id === 'enrollment_type')?.value as
+        | EnrollmentTypeEnum[]
+        | undefined) ?? null,
+    [columnFilters],
+  )
+  const statusKey = statusFilter ? statusFilter.slice().sort().join(',') : ''
+  const typeKey = typeFilter ? typeFilter.slice().sort().join(',') : ''
+
+  const fetchPage = useCallback(async (): Promise<
+    PaginatedResponse<EnrollmentRead>
+  > => {
+    const res = await apiClient.api.enrollmentsListList({
+      ...(statusFilter && statusFilter.length > 0 ? { status: statusFilter } : {}),
+      ...(typeFilter && typeFilter.length > 0
+        ? { enrollment_type: typeFilter }
+        : {}),
+    })
+    return toPaginatedResponse(res.data)
+  }, [statusFilter, typeFilter])
+
+  const {
+    items: rows,
+    count,
+    loading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    refresh,
+  } = usePaginatedList<EnrollmentRead>({
+    fetchPage,
+    resetDeps: [statusKey, typeKey],
+  })
+
   const table = useReactTable({
     data: rows,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getCoreRowModel: getCoreRowModel(),
   })
 
@@ -372,60 +388,6 @@ export function EnrollmentRequestsPage() {
         <p className="-mt-4 mb-6 text-sm text-muted-foreground shrink-0">
           {t('enrollmentRequests.subtitle')}
         </p>
-
-        <div className="mb-4 flex flex-wrap items-center gap-3 shrink-0">
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">
-                {t('enrollmentRequests.filter.pending')}
-              </SelectItem>
-              <SelectItem value="submitted">
-                {t('enrollmentRequests.status.submitted')}
-              </SelectItem>
-              <SelectItem value="under_review">
-                {t('enrollmentRequests.status.under_review')}
-              </SelectItem>
-              <SelectItem value="approved">
-                {t('enrollmentRequests.status.approved')}
-              </SelectItem>
-              <SelectItem value="rejected">
-                {t('enrollmentRequests.status.rejected')}
-              </SelectItem>
-              <SelectItem value="cancelled">
-                {t('enrollmentRequests.status.cancelled')}
-              </SelectItem>
-              <SelectItem value="all">
-                {t('enrollmentRequests.filter.all')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={typeFilter}
-            onValueChange={(v) => setTypeFilter(v as TypeFilter)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t('enrollmentRequests.typeFilter.all')}
-              </SelectItem>
-              <SelectItem value="new">
-                {t('enrollmentRequests.type.new')}
-              </SelectItem>
-              <SelectItem value="renewal">
-                {t('enrollmentRequests.type.renewal')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
 
         <DataTable
           table={table}

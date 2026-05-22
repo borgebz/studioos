@@ -22,18 +22,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { ListingCard } from '@/components/shared/ListingCard'
 import { ListingsGridView } from '@/components/shared/ListingsGridView'
 import {
   ListingsToolbar,
+  ViewToggleButton,
   type SortKey,
   type ToolbarChip,
   type ViewMode,
 } from '@/components/shared/ListingsToolbar'
 import { paths } from '@/app/paths'
 import { StatusBadge, listingTypeLabel } from './marketplace-helpers'
+
+type ListingType = 'rent' | 'sell' | 'lend' | 'donate'
+type ListingCondition = 'new' | 'excellent' | 'good' | 'fair' | 'damaged'
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -45,8 +50,6 @@ export function MarketplaceListPage() {
 
   const [searchInput, setSearchInput] = useState('')
   const search = useDebouncedValue(searchInput, 300)
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [conditionFilter, setConditionFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortKey>('recent')
   const [view, setView] = useState<ViewMode>('grid')
 
@@ -57,41 +60,6 @@ export function MarketplaceListPage() {
       default: return '-created_at' as const
     }
   }
-
-  const fetchPage = useCallback(() => {
-    const query: {
-      search?: string
-      listing_type?: 'rent' | 'sell' | 'lend' | 'donate'
-      condition?: string
-      ordering?: '-created_at' | 'created_at' | 'asking_price' | '-asking_price'
-    } = {}
-    if (search.trim()) query.search = search.trim()
-    if (typeFilter !== 'all')
-      query.listing_type = typeFilter as typeof query.listing_type
-    if (conditionFilter !== 'all') query.condition = conditionFilter
-    query.ordering = sortKeyToOrdering(sortBy)
-    return apiClient.api
-      .marketplaceListingsRetrieve(query)
-      .then((r) => r.data) as Promise<{
-      count: number
-      next: string | null
-      previous: string | null
-      results: ListingList[]
-    }>
-  }, [search, typeFilter, conditionFilter, sortBy])
-
-  const {
-    items: listings,
-    count,
-    loading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refresh,
-  } = usePaginatedList<ListingList>({
-    fetchPage,
-    resetDeps: [search, typeFilter, conditionFilter, sortBy],
-  })
 
   // ── Data-table columns (list view) ────────────────────────────────────────
   const columnHelper = useMemo(() => createColumnHelper<ListingList>(), [])
@@ -144,12 +112,60 @@ export function MarketplaceListPage() {
       }),
       columnHelper.accessor('listing_type', {
         header: () => t('marketplace.col.type'),
+        meta: {
+          className: 'hidden md:table-cell',
+          filter: {
+            type: 'select',
+            label: t('marketplace.col.type'),
+            anyLabel: t('marketplace.allTypes'),
+            options: [
+              { value: 'sell', label: t('marketplace.typeSell') },
+              { value: 'rent', label: t('marketplace.typeRent') },
+              { value: 'lend', label: t('marketplace.typeLend') },
+              { value: 'donate', label: t('marketplace.typeDonate') },
+            ],
+          },
+        },
         cell: (info) => (
           <span className="text-xs text-muted-foreground">
             {listingTypeLabel(info.getValue(), t)}
           </span>
         ),
-        meta: { className: 'hidden md:table-cell' },
+      }),
+      columnHelper.accessor('variant_condition', {
+        id: 'condition',
+        header: () => t('marketplace.col.condition', {
+          defaultValue: 'Condition',
+        }),
+        meta: {
+          className: 'hidden lg:table-cell',
+          filter: {
+            type: 'select',
+            label: t('marketplace.col.condition', {
+              defaultValue: 'Condition',
+            }),
+            anyLabel: t('marketplace.allConditions'),
+            options: [
+              { value: 'new', label: t('marketplace.conditionNew') },
+              { value: 'excellent', label: t('marketplace.conditionExcellent') },
+              { value: 'good', label: t('marketplace.conditionGood') },
+              { value: 'fair', label: t('marketplace.conditionFair') },
+              { value: 'damaged', label: t('marketplace.conditionDamaged') },
+            ],
+          },
+        },
+        cell: (info) => {
+          const v = info.getValue()
+          return v ? (
+            <span className="text-xs text-muted-foreground">
+              {t(`marketplace.condition${capitalize(String(v))}`, {
+                defaultValue: String(v),
+              })}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          )
+        },
       }),
       columnHelper.accessor('status', {
         header: () => t('marketplace.col.status'),
@@ -159,9 +175,83 @@ export function MarketplaceListPage() {
     [columnHelper, t],
   )
 
+  const { columnFilters, setColumnFilters } = useColumnFilters<ListingList>({
+    columns,
+    syncToUrl: true,
+  })
+
+  const typeFilter =
+    (columnFilters.find((f) => f.id === 'listing_type')?.value as
+      | ListingType
+      | undefined) ?? null
+
+  const conditionFilter =
+    (columnFilters.find((f) => f.id === 'condition')?.value as
+      | ListingCondition
+      | undefined) ?? null
+
+  const setTypeFilter = useCallback(
+    (next: ListingType | 'all') => {
+      setColumnFilters((prev) => {
+        const without = prev.filter((f) => f.id !== 'listing_type')
+        if (next === 'all') return without
+        return [...without, { id: 'listing_type', value: next }]
+      })
+    },
+    [setColumnFilters],
+  )
+
+  const setConditionFilter = useCallback(
+    (next: ListingCondition | 'all') => {
+      setColumnFilters((prev) => {
+        const without = prev.filter((f) => f.id !== 'condition')
+        if (next === 'all') return without
+        return [...without, { id: 'condition', value: next }]
+      })
+    },
+    [setColumnFilters],
+  )
+
+  const fetchPage = useCallback(() => {
+    const query: {
+      search?: string
+      listing_type?: ListingType
+      condition?: string
+      ordering?: '-created_at' | 'created_at' | 'asking_price' | '-asking_price'
+    } = {}
+    if (search.trim()) query.search = search.trim()
+    if (typeFilter) query.listing_type = typeFilter
+    if (conditionFilter) query.condition = conditionFilter
+    query.ordering = sortKeyToOrdering(sortBy)
+    return apiClient.api
+      .marketplaceListingsRetrieve(query)
+      .then((r) => r.data) as Promise<{
+      count: number
+      next: string | null
+      previous: string | null
+      results: ListingList[]
+    }>
+  }, [search, typeFilter, conditionFilter, sortBy])
+
+  const {
+    items: listings,
+    count,
+    loading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refresh,
+  } = usePaginatedList<ListingList>({
+    fetchPage,
+    resetDeps: [search, typeFilter, conditionFilter, sortBy],
+  })
+
   const table = useReactTable({
     data: listings,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -169,13 +259,13 @@ export function MarketplaceListPage() {
 
   const chips: ToolbarChip[] = useMemo(() => {
     const list: ToolbarChip[] = []
-    if (typeFilter !== 'all')
+    if (typeFilter)
       list.push({
         key: 'type',
         label: listingTypeLabel(typeFilter, t),
         onClear: () => setTypeFilter('all'),
       })
-    if (conditionFilter !== 'all')
+    if (conditionFilter)
       list.push({
         key: 'condition',
         label: t(`marketplace.condition${capitalize(conditionFilter)}`, {
@@ -190,7 +280,7 @@ export function MarketplaceListPage() {
         onClear: () => setSearchInput(''),
       })
     return list
-  }, [typeFilter, conditionFilter, searchInput, t])
+  }, [typeFilter, conditionFilter, searchInput, setTypeFilter, setConditionFilter, t])
 
   const emptyBrowse = (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
@@ -207,22 +297,31 @@ export function MarketplaceListPage() {
   return (
     <PageLayout>
       <div className="mx-auto w-full max-w-6xl">
-        <PageHeader title={t('marketplace.browseTitle')} backTo={paths.home} />
+        <PageHeader title={t('marketplace.browseTitle')} backTo={paths.home}>
+          <ViewToggleButton view={view} onChange={setView} />
+        </PageHeader>
 
-        {/* Filter card */}
-        <div className="mb-4 rounded-lg border border-border bg-card p-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder={t('marketplace.search')}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+        {/* Inline filter row — no card, no extra chrome. Search spans both
+            views; enum selects only appear in grid view (table view uses
+            column-header filters). Sort is view-independent. */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={t('marketplace.search')}
+              className="pl-9"
+            />
+          </div>
+          {view === 'grid' && (
+            <>
+              <Select
+                value={typeFilter ?? 'all'}
+                onValueChange={(v) =>
+                  setTypeFilter(v as ListingType | 'all')
+                }
+              >
                 <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -245,8 +344,10 @@ export function MarketplaceListPage() {
                 </SelectContent>
               </Select>
               <Select
-                value={conditionFilter}
-                onValueChange={setConditionFilter}
+                value={conditionFilter ?? 'all'}
+                onValueChange={(v) =>
+                  setConditionFilter(v as ListingCondition | 'all')
+                }
               >
                 <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue />
@@ -272,17 +373,30 @@ export function MarketplaceListPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
+            </>
+          )}
+          <Select
+            value={sortBy}
+            onValueChange={(v) => setSortBy(v as SortKey)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">
+                {t('marketplace.sortRecent')}
+              </SelectItem>
+              <SelectItem value="priceAsc">
+                {t('marketplace.sortPriceAsc')}
+              </SelectItem>
+              <SelectItem value="priceDesc">
+                {t('marketplace.sortPriceDesc')}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <ListingsToolbar
-          chips={chips}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          view={view}
-          onViewChange={setView}
-        />
+        <ListingsToolbar chips={chips} />
 
         {view === 'grid' ? (
           <ListingsGridView

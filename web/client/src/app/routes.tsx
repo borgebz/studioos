@@ -57,6 +57,11 @@ import { OnboardingPage } from '@/app/pages/onboarding/OnboardingPage'
 import { ForgotPasswordPage } from '@/app/pages/password-reset/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/app/pages/password-reset/ResetPasswordPage'
 import { AccountSettingsPage } from '@/app/pages/account/AccountSettingsPage'
+import { MessagesPage } from '@/app/pages/messages/MessagesPage'
+import { EventsListPage } from '@/app/pages/events/EventsListPage'
+import { EventDetailPage } from '@/app/pages/events/EventDetailPage'
+import { EventFormPage } from '@/app/pages/events/EventFormPage'
+import { EventPostFormPage } from '@/app/pages/events/EventPostFormPage'
 
 export function AppRoutes() {
   return (
@@ -93,6 +98,13 @@ export function AppRoutes() {
       <Route path={paths.forgotPassword} element={<ForgotPasswordPage />} />
       <Route path={paths.resetPassword} element={<ResetPasswordPage />} />
       <Route path={paths.accountSettings} element={<AccountSettingsPage />} />
+      <Route path={paths.messages} element={<ProtectedRoute permission="messaging.can_list_conversations"><MessagesPage /></ProtectedRoute>} />
+      <Route path={paths.events} element={<ProtectedRoute permission="events.view_event"><EventsListPage /></ProtectedRoute>} />
+      <Route path={paths.eventsCreate} element={<ProtectedRoute permission="events.add_event"><EventFormPage mode="create" /></ProtectedRoute>} />
+      <Route path={paths.eventsDetail} element={<ProtectedRoute permission="events.view_event"><EventDetailPage /></ProtectedRoute>} />
+      <Route path={paths.eventsEdit} element={<ProtectedRoute permission="events.change_event"><EventFormPage mode="edit" /></ProtectedRoute>} />
+      <Route path={paths.eventsPostCreate} element={<ProtectedRoute permission="events.add_eventpost"><EventPostFormPage mode="create" /></ProtectedRoute>} />
+      <Route path={paths.eventsPostEdit} element={<ProtectedRoute permission="events.change_eventpost"><EventPostFormPage mode="edit" /></ProtectedRoute>} />
       <Route
         element={
           <DesignSystemLayout>

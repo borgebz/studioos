@@ -140,9 +140,8 @@ export function BillingEntriesPage() {
         header: () => t('billing.col.source'),
         meta: {
           filter: {
-            type: 'select',
+            type: 'multi-select',
             label: t('billing.col.source'),
-            anyLabel: t('billing.filter.allSources'),
             options: [
               { value: SourceTypeEnum.Coaching, label: t('billing.source.coaching') },
               { value: SourceTypeEnum.Fine, label: t('billing.source.fine') },
@@ -171,9 +170,8 @@ export function BillingEntriesPage() {
         header: () => t('billing.col.status'),
         meta: {
           filter: {
-            type: 'select',
+            type: 'multi-select',
             label: t('billing.col.status'),
-            anyLabel: t('billing.filter.allStatuses'),
             options: [
               { value: BillingEntryStatusEnum.Pending, label: t('billing.status.pending') },
               { value: BillingEntryStatusEnum.Exported, label: t('billing.status.exported') },
@@ -231,24 +229,39 @@ export function BillingEntriesPage() {
   const { columnFilters, setColumnFilters } = useColumnFilters<BillingEntryList>({
     columns,
     syncToUrl: true,
-    defaultFilters: [{ id: 'status', value: BillingEntryStatusEnum.Pending }],
+    defaultFilters: [{ id: 'status', value: [BillingEntryStatusEnum.Pending] }],
   })
 
-  const statusFilter =
-    (columnFilters.find((f) => f.id === 'status')?.value as
-      | BillingEntryStatusEnum
-      | undefined) ?? null
-  const sourceFilter =
-    (columnFilters.find((f) => f.id === 'source_type')?.value as
-      | SourceTypeEnum
-      | undefined) ?? null
+  const statusFilter = useMemo(
+    () =>
+      (columnFilters.find((f) => f.id === 'status')?.value as
+        | BillingEntryStatusEnum[]
+        | undefined) ?? null,
+    [columnFilters],
+  )
+  const sourceFilter = useMemo(
+    () =>
+      (columnFilters.find((f) => f.id === 'source_type')?.value as
+        | SourceTypeEnum[]
+        | undefined) ?? null,
+    [columnFilters],
+  )
+
+  // Stable keys for `resetDeps` so we only refetch when the filter actually
+  // changes value (not just identity).
+  const statusKey = statusFilter ? statusFilter.slice().sort().join(',') : ''
+  const sourceKey = sourceFilter ? sourceFilter.slice().sort().join(',') : ''
 
   const fetchPage = useCallback(async (): Promise<
     PaginatedResponse<BillingEntryList>
   > => {
     const res = await apiClient.api.billingEntriesList({
-      ...(statusFilter ? { status: statusFilter } : {}),
-      ...(sourceFilter ? { source_type: sourceFilter } : {}),
+      ...(statusFilter && statusFilter.length > 0
+        ? { status: statusFilter }
+        : {}),
+      ...(sourceFilter && sourceFilter.length > 0
+        ? { source_type: sourceFilter }
+        : {}),
     })
     const items = (res.data ?? []) as unknown as BillingEntryList[]
     return {
@@ -270,7 +283,7 @@ export function BillingEntriesPage() {
     setItems: setRows,
   } = usePaginatedList<BillingEntryList>({
     fetchPage,
-    resetDeps: [statusFilter, sourceFilter],
+    resetDeps: [statusKey, sourceKey],
   })
 
   const handleCancelled = useCallback(
@@ -295,8 +308,8 @@ export function BillingEntriesPage() {
           created_at: updated.created_at,
         }
         const next = prev.map((r) => (r.id === slim.id ? slim : r))
-        if (!statusFilter) return next
-        return next.filter((r) => r.status === statusFilter)
+        if (!statusFilter || statusFilter.length === 0) return next
+        return next.filter((r) => statusFilter.includes(r.status))
       })
       toast.success(t('billing.cancelSuccess'))
     },
