@@ -92,6 +92,15 @@ class Message(BaseModel):
     file = models.FileField(upload_to=message_file_path, null=True, blank=True)
     original_filename = models.CharField(max_length=255, blank=True)
     mime_type = models.CharField(max_length=100, blank=True, default="")
+    edited_at = models.DateTimeField(null=True, blank=True)
+    pinned_at = models.DateTimeField(null=True, blank=True)
+    pinned_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pinned_messages",
+    )
     read_by = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         related_name="read_messages",
@@ -103,3 +112,30 @@ class Message(BaseModel):
 
     def __str__(self):
         return f"Message {self.pk} in Conversation {self.conversation_id}"
+
+
+class MessageReaction(BaseModel):
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name="reactions",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="message_reactions",
+    )
+    emoji = models.CharField(max_length=16)
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["message", "user", "emoji"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="unique_active_message_reaction",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Reaction {self.emoji} on Message {self.message_id} by {self.user_id}"

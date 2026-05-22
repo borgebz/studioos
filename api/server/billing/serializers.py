@@ -151,14 +151,40 @@ class BillingEntryCancelSerializer(serializers.Serializer):
 
 
 class BillingEntryListQuerySerializer(serializers.Serializer):
+    """Query params for ``GET /api/billing/entries/``.
+
+    ``status`` and ``source_type`` accept multiple values (repeat the param,
+    e.g. ``?status=pending&status=exported``) and are translated into
+    ``__in`` lookups by the service.
+    """
+
+    _MULTI_FIELDS = ("status", "source_type")
+
     student_id = serializers.IntegerField(required=False)
     coaching_class_id = serializers.IntegerField(required=False)
-    status = serializers.ChoiceField(choices=BillingEntryStatus.choices, required=False)
-    source_type = serializers.ChoiceField(
-        choices=BillingEntrySourceType.choices, required=False
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=BillingEntryStatus.choices),
+        required=False,
+    )
+    source_type = serializers.ListField(
+        child=serializers.ChoiceField(choices=BillingEntrySourceType.choices),
+        required=False,
     )
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
+
+    def to_internal_value(self, data):
+        # QueryDict collapses repeated keys to the last value when iterated;
+        # use getlist() so multi-value filters survive.
+        if hasattr(data, "getlist"):
+            normalized = {}
+            for key in data.keys():
+                if key in self._MULTI_FIELDS:
+                    normalized[key] = data.getlist(key)
+                else:
+                    normalized[key] = data.get(key)
+            data = normalized
+        return super().to_internal_value(data)
 
 
 # -----------------------------------------------------------------------------
@@ -264,7 +290,33 @@ class FineWaiveSerializer(serializers.Serializer):
 
 
 class FineListQuerySerializer(serializers.Serializer):
+    """Query params for ``GET /api/billing/fines/``.
+
+    ``status`` and ``reason`` accept multiple values (repeat the param,
+    e.g. ``?status=pending_review&status=approved``) and are translated into
+    ``__in`` lookups by the service.
+    """
+
+    _MULTI_FIELDS = ("status", "reason")
+
     student_id = serializers.IntegerField(required=False)
     coaching_class_id = serializers.IntegerField(required=False)
-    status = serializers.ChoiceField(choices=FineStatus.choices, required=False)
-    reason = serializers.ChoiceField(choices=FineReason.choices, required=False)
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=FineStatus.choices),
+        required=False,
+    )
+    reason = serializers.ListField(
+        child=serializers.ChoiceField(choices=FineReason.choices),
+        required=False,
+    )
+
+    def to_internal_value(self, data):
+        if hasattr(data, "getlist"):
+            normalized = {}
+            for key in data.keys():
+                if key in self._MULTI_FIELDS:
+                    normalized[key] = data.getlist(key)
+                else:
+                    normalized[key] = data.get(key)
+            data = normalized
+        return super().to_internal_value(data)

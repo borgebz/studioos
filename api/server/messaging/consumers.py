@@ -53,12 +53,81 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(
             text_data=json.dumps(
                 {
+                    "type": "message",
                     "id": event["id"],
                     "sender_id": event["sender_id"],
                     "body": event["body"],
                     "file_url": event["file_url"],
                     "original_filename": event["original_filename"],
                     "created_at": event["created_at"],
+                }
+            )
+        )
+
+    async def message_edited(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "message.edited",
+                    "id": event["id"],
+                    "body": event["body"],
+                    "edited_at": event["edited_at"],
+                }
+            )
+        )
+
+    async def message_deleted(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "message.deleted",
+                    "id": event["id"],
+                }
+            )
+        )
+
+    async def reaction_added(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "reaction.added",
+                    "message_id": event["message_id"],
+                    "user_id": event["user_id"],
+                    "emoji": event["emoji"],
+                }
+            )
+        )
+
+    async def reaction_removed(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "reaction.removed",
+                    "message_id": event["message_id"],
+                    "user_id": event["user_id"],
+                    "emoji": event["emoji"],
+                }
+            )
+        )
+
+    async def message_pinned(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "message.pinned",
+                    "id": event["id"],
+                    "pinned_by_id": event["pinned_by_id"],
+                    "pinned_at": event["pinned_at"],
+                }
+            )
+        )
+
+    async def message_unpinned(self, event):
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "message.unpinned",
+                    "id": event["id"],
                 }
             )
         )

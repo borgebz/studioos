@@ -169,6 +169,58 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
     ],
+    # Several models declare an inner `Status` TextChoices class. Without
+    # explicit names drf-spectacular falls back to hash-suffixed names like
+    # `StatusDc4Enum`, `Status421Enum`, … which surface in the generated
+    # TypeScript client and force the frontend to import obscure enums.
+    # Map each value set to a human-readable name so the generated client
+    # exports `ProductStatusEnum`, `ListingStatusEnum`, etc.
+    # Inner Choices classes (e.g. Product.Status) can't be referenced by dotted
+    # path because Python's import_string only walks modules. Pass the literal
+    # value list for those; use the dotted path for top-level Choices classes.
+    "ENUM_NAME_OVERRIDES": {
+        "ProductStatusEnum": [
+            ("active", "Active"),
+            ("inactive", "Inactive"),
+            ("archived", "Archived"),
+        ],
+        "TargetGenderEnum": [
+            ("female", "Female"),
+            ("male", "Male"),
+            ("unisex", "Unisex"),
+        ],
+        "ProductVariantStatusEnum": [
+            ("available", "Available"),
+            ("maintenance", "Maintenance"),
+            ("inactive", "Inactive"),
+            ("sold", "Sold"),
+            ("donated", "Donated"),
+            ("archived", "Archived"),
+        ],
+        "VariantBookingStatusEnum": [
+            ("pending", "Pending"),
+            ("confirmed", "Confirmed"),
+            ("completed", "Completed"),
+            ("blocked", "Blocked"),
+            ("cancelled", "Cancelled"),
+        ],
+        "ListingStatusEnum": [
+            ("draft", "Draft"),
+            ("active", "Active"),
+            ("closed", "Closed"),
+        ],
+        "TransactionStatusEnum": [
+            ("pending", "Pending"),
+            ("accepted", "Accepted"),
+            ("completed", "Completed"),
+            ("rejected", "Rejected"),
+            ("cancelled", "Cancelled"),
+            ("blocked", "Blocked"),
+        ],
+        "BillingEntryStatusEnum": "billing.models.BillingEntryStatus.choices",
+        "FineStatusEnum": "billing.models.FineStatus.choices",
+        "CoachingParticipantStatusEnum": "coachings.models.CoachingParticipantStatus.choices",
+    },
 }
 
 # -----------------------------------------------------------------------------
@@ -231,6 +283,13 @@ COACHING_REMINDER_WINDOWS = []
 for _pair in COACHING_REMINDER_WINDOWS_RAW.split(","):
     _h, _f = _pair.strip().split(":")
     COACHING_REMINDER_WINDOWS.append((int(_h), bool(int(_f))))
+
+
+# Window (in minutes) during which a message sender can edit their own message
+# after it was sent. After this window, edits are rejected.
+MESSAGE_EDIT_WINDOW_MINUTES = config(
+    "MESSAGE_EDIT_WINDOW_MINUTES", default=15, cast=int
+)
 
 
 # -----------------------------------------------------------------------------
