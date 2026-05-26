@@ -30,6 +30,7 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = [
             "id",
+            "kind",
             "sender_id",
             "body",
             "file_url",
@@ -85,16 +86,40 @@ class MessageSerializer(serializers.ModelSerializer):
         ]
 
 
+class ConversationParticipantSummarySerializer(serializers.Serializer):
+    """Lightweight participant info embedded inside every Conversation.
+
+    Identity is derived from the Profile, which is the user's opt-in to
+    being discoverable for messaging. If a participant has no profile yet
+    we expose only their numeric id + ``has_profile=False`` and the client
+    renders an "Anonymous user" placeholder — we never leak first_name /
+    last_name / email through this surface.
+    """
+
+    id = serializers.IntegerField()
+    has_profile = serializers.BooleanField()
+    display_name = serializers.CharField(allow_null=True)
+    photo_url = serializers.CharField(allow_null=True)
+
+
 class ConversationSerializer(serializers.ModelSerializer):
     participant_ids = serializers.SerializerMethodField()
+    participants = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
     pinned_message_ids = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+    created_by_id = serializers.IntegerField(read_only=True, allow_null=True)
 
     class Meta:
         model = Conversation
         fields = [
             "id",
+            "kind",
+            "name",
             "participant_ids",
+            "participants",
+            "is_admin",
+            "created_by_id",
             "coaching_id",
             "recurring_coaching_id",
             "last_message",
@@ -102,9 +127,74 @@ class ConversationSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_admin(self, obj):
+        request = self.context.get("request")
+        if request is None or not request.user.is_authenticated:
+            return False
+        # Only meaningful on GROUP conversations; for DMs/coaching/listing
+        # it's always False (no member-management surface).
+        from .models import ConversationKind, ConversationParticipant
+        if obj.kind != ConversationKind.GROUP:
+            return False
+        cp = ConversationParticipant.objects.filter(
+            conversation=obj, user=request.user
+        ).first()
+        return bool(cp and cp.is_admin)
+
     @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
     def get_participant_ids(self, obj):
-        return list(obj.participants.values_list("id", flat=True))
+        # Active participants only — soft-deleted rows linger in the M2M
+        # through table for audit purposes but must not show in the UI.
+        return list(
+            obj.conversation_participants
+            .filter(deleted_at__isnull=True)
+            .values_list("user_id", flat=True)
+        )
+
+    @extend_schema_field(ConversationParticipantSummarySerializer(many=True))
+    def get_participants(self, obj):
+        request = self.context.get("request")
+        # Use the through manager so we can scope to active rows. Without
+        # this, removed-then-re-added users would double-count.
+        active_user_ids = list(
+            obj.conversation_participants
+            .filter(deleted_at__isnull=True)
+            .values_list("user_id", flat=True)
+        )
+        users = (
+            obj.participants.filter(pk__in=active_user_ids)
+            .select_related("profile")
+        )
+        out = []
+        for u in users:
+            profile = getattr(u, "profile", None)
+            has_profile = profile is not None
+            if has_profile:
+                photo_url = None
+                if profile.photo:
+                    url = profile.photo.url
+                    photo_url = request.build_absolute_uri(url) if request else url
+                out.append(
+                    {
+                        "id": u.id,
+                        "has_profile": True,
+                        "display_name": profile.display_name,
+                        "photo_url": photo_url,
+                    }
+                )
+            else:
+                # Profileless users appear as anonymous placeholders. The
+                # client renders a localized "Anonymous user" label.
+                out.append(
+                    {
+                        "id": u.id,
+                        "has_profile": False,
+                        "display_name": None,
+                        "photo_url": None,
+                    }
+                )
+        return out
 
     @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
     def get_pinned_message_ids(self, obj):
@@ -137,6 +227,25 @@ class EditMessageSerializer(serializers.Serializer):
 
 class ReactionInputSerializer(serializers.Serializer):
     emoji = serializers.CharField(required=True, max_length=16, allow_blank=False)
+
+
+class CreateGroupConversationSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, max_length=120, allow_blank=False)
+    participant_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False,
+    )
+
+
+class RenameConversationSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, max_length=120, allow_blank=False)
+
+
+class AddParticipantsSerializer(serializers.Serializer):
+    user_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False,
+    )
 
 
 class SendMessageSerializer(serializers.Serializer):

@@ -279,12 +279,12 @@ class EnrollmentListView(APIView):
         q = EnrollmentListQuerySerializer(data=request.query_params)
         q.is_valid(raise_exception=True)
         filters = {}
-        if "status" in q.validated_data:
-            filters["status"] = q.validated_data["status"]
+        if q.validated_data.get("status"):
+            filters["status__in"] = q.validated_data["status"]
         if "academic_year" in q.validated_data:
             filters["period__academic_year"] = q.validated_data["academic_year"]
-        if "enrollment_type" in q.validated_data:
-            filters["enrollment_type"] = q.validated_data["enrollment_type"]
+        if q.validated_data.get("enrollment_type"):
+            filters["enrollment_type__in"] = q.validated_data["enrollment_type"]
         if "student_id" in q.validated_data:
             filters["student_id"] = q.validated_data["student_id"]
 

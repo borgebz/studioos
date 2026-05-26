@@ -19,6 +19,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     ProfileSerializer,
+    PublicProfileSerializer,
     RefreshTokenSourceSerializer,
     TeacherSummarySerializer,
     UserCoreUpdateSerializer,
@@ -38,6 +39,7 @@ from .services import (
     get_profile_for_user,
     invite_user,
     list_emails_for_export,
+    list_public_profiles,
     list_teachers,
     list_users,
     request_password_reset,
@@ -324,6 +326,45 @@ class MeView(APIView):
         user = get_me_user(pk=request.user.pk)
         serializer = MeSerializer(user, context={"request": request})
         return Response(serializer.data)
+
+
+class PublicProfileListView(APIView):
+    """
+    GET /api/accounts/profiles/ — discovery list for messaging.
+
+    Open to any authenticated user. Returns profiles only — users who haven't
+    created one are intentionally invisible. The requester is excluded.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            inline_serializer(
+                name="PublicProfileListQuery",
+                fields={
+                    "search": serializers.CharField(required=False, allow_blank=True),
+                },
+            ),
+        ],
+        responses={
+            200: paginated_list_schema(
+                name="PublicProfileList",
+                results_serializer=PublicProfileSerializer,
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def get(self, request):
+        search = request.query_params.get("search") or None
+        profiles = list_public_profiles(
+            requesting_user=request.user, search=search,
+        )
+        return paginated_response(
+            request=request,
+            items=profiles,
+            serializer_class=PublicProfileSerializer,
+        )
 
 
 class MyProfileView(APIView):

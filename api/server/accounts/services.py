@@ -264,6 +264,24 @@ def get_profile_for_user(*, user):
         raise AppNotFound("ProfileNotFound")
 
 
+def list_public_profiles(*, requesting_user, search=None):
+    """List every profile in the system except the requester's own.
+
+    No permission gate beyond authentication: profile existence is the
+    user's own opt-in to being discoverable for messaging. Filter by
+    case-insensitive substring match on ``display_name`` when ``search`` is
+    provided.
+    """
+    qs = (
+        Profile.objects.select_related("user")
+        .exclude(user=requesting_user)
+        .order_by("display_name")
+    )
+    if search:
+        qs = qs.filter(display_name__icontains=search.strip())
+    return qs
+
+
 def create_profile_for_user(*, user, created_by=None, **fields):
     profile = Profile(user=user, created_by=created_by, **fields)
     try:

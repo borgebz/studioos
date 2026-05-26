@@ -14,11 +14,14 @@ from core.schemas import DEFAULT_ERROR_RESPONSES
 
 from . import services
 from .serializers import (
+    AddParticipantsSerializer,
     ConversationSerializer,
     CreateConversationSerializer,
+    CreateGroupConversationSerializer,
     EditMessageSerializer,
     MessageSerializer,
     ReactionInputSerializer,
+    RenameConversationSerializer,
     SendMessageSerializer,
     UnreadCountSerializer,
 )
@@ -138,6 +141,138 @@ class MessageListView(APIView):
             MessageSerializer(msg, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class CreateGroupConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=CreateGroupConversationSerializer,
+        responses={201: ConversationSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request):
+        serializer = CreateGroupConversationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        conv = services.create_group_conversation(
+            name=serializer.validated_data["name"],
+            participant_ids=serializer.validated_data["participant_ids"],
+            created_by=request.user,
+        )
+        return Response(
+            ConversationSerializer(conv, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ConversationDetailView(APIView):
+    """PATCH to rename a group conversation. Admin-gated server-side."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=RenameConversationSerializer,
+        responses={200: ConversationSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def patch(self, request, conversation_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        serializer = RenameConversationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        conv = services.rename_conversation(
+            conversation=conv,
+            name=serializer.validated_data["name"],
+            updated_by=request.user,
+        )
+        return Response(
+            ConversationSerializer(conv, context={"request": request}).data,
+        )
+
+
+class ConversationParticipantsView(APIView):
+    """POST to add one or more members to a group conversation. Any member
+    can add; backend enforces."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=AddParticipantsSerializer,
+        responses={200: ConversationSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request, conversation_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        serializer = AddParticipantsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.add_participants(
+            conversation=conv,
+            user_ids=serializer.validated_data["user_ids"],
+            added_by=request.user,
+        )
+        # Refresh from DB so the response includes the new participant list.
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        return Response(
+            ConversationSerializer(conv, context={"request": request}).data,
+        )
+
+
+class ConversationParticipantDetailView(APIView):
+    """DELETE to remove a member from a group conversation (admin only)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
+    @require_perm("messaging.can_send_message")
+    def delete(self, request, conversation_id, user_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        target = services.get_user_for_conversation(user_id=user_id)
+        services.remove_participant(
+            conversation=conv,
+            target_user=target,
+            removed_by=request.user,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class LeaveConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={204: None, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request, conversation_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        services.leave_conversation(conversation=conv, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MarkConversationReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={204: None, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_list_conversations")
+    def post(self, request, conversation_id):
+        # get_conversation raises 404 if the caller isn't a participant.
+        services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        services.mark_read(conversation_id=conversation_id, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class UnreadCountView(APIView):

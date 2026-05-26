@@ -40,6 +40,22 @@ EVENTS_PERMISSIONS_MANAGEMENT = [
     "events.delete_eventinterest",
 ]
 
+# Community-level events access for non-staff roles (teachers, parents,
+# students, collaborators). Read-only on the event itself + the ability to
+# express interest and join the conversation.
+EVENTS_PERMISSIONS_COMMUNITY = [
+    "events.view_event",
+    "events.view_eventfile",
+    "events.view_eventpost",
+    "events.view_eventcomment",
+    "events.add_eventcomment",
+    "events.change_eventcomment",
+    "events.delete_eventcomment",
+    "events.view_eventinterest",
+    "events.add_eventinterest",
+    "events.delete_eventinterest",
+]
+
 MESSAGING_PERMISSIONS = [
     "messaging.can_send_message",
     "messaging.can_list_conversations",
@@ -287,6 +303,8 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingparticipant",
         "classes.view_classe",
         "classes.view_classemember",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         *MESSAGING_PERMISSIONS,
     ],
     "teacher": [
@@ -305,6 +323,8 @@ ROLE_PERMISSIONS = {
         # classes (read-only)
         "classes.view_classe",
         "classes.view_classemember",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         *MESSAGING_PERMISSIONS,
     ],
     "teacher_external": [
@@ -323,6 +343,8 @@ ROLE_PERMISSIONS = {
         # classes (read-only)
         "classes.view_classe",
         "classes.view_classemember",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         *MESSAGING_PERMISSIONS,
     ],
     "parent": [
@@ -343,6 +365,8 @@ ROLE_PERMISSIONS = {
         # billing (view own children's entries)
         "billing.view_billingentry",
         "billing.view_fine",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
@@ -366,6 +390,8 @@ ROLE_PERMISSIONS = {
         # billing (view own entries)
         "billing.view_billingentry",
         "billing.view_fine",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,

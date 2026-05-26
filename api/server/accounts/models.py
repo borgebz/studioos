@@ -101,10 +101,12 @@ class Profile(BaseModel):
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    display_name = models.CharField(max_length=200, blank=True)
+    # Required. A profile only exists once the user has chosen how they want
+    # to appear in the messaging directory — empty display_name is not
+    # allowed (validated at the service/serializer level).
+    display_name = models.CharField(max_length=200)
     bio = models.TextField(blank=True)
     photo = models.ImageField(upload_to=profile_photo_path, null=True, blank=True)
-    is_public = models.BooleanField(default=False)
 
     class Meta:
         permissions = [

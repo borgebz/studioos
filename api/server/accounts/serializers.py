@@ -209,16 +209,39 @@ class ProfileSummarySerializer(PhotoUrlMixin, serializers.ModelSerializer):
         fields = ["display_name", "photo_url"]
 
 
+class PublicProfileSerializer(PhotoUrlMixin, serializers.ModelSerializer):
+    """Read-only profile shape exposed to any authenticated user via the
+    public profiles list. Used by the messaging discovery picker — the
+    presence of a profile is what makes a user reachable.
+    """
+
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    photo_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Profile
+        fields = ["user_id", "display_name", "photo_url"]
+
+
 class ProfileSerializer(PhotoUrlMixin, serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ["display_name", "bio", "photo", "photo_url", "is_public"]
+        fields = ["display_name", "bio", "photo", "photo_url"]
         extra_kwargs = {
             # write-only — clients upload the file, never get the raw path back
             "photo": {"write_only": True, "required": False},
+            # display_name is required on create — profile existence implies
+            # the user has chosen how to appear in the messaging directory.
+            "display_name": {"required": True, "allow_blank": False},
         }
+
+    def validate_display_name(self, value):
+        stripped = (value or "").strip()
+        if not stripped:
+            raise serializers.ValidationError("DisplayNameRequired")
+        return stripped
 
     def validate_photo(self, value):
         valid_extensions = [".jpg", ".jpeg", ".png", ".webp"]
@@ -238,6 +261,13 @@ class MeSerializer(serializers.Serializer):
     permissions = serializers.SerializerMethodField()
     language = serializers.CharField()
     profile = serializers.SerializerMethodField(allow_null=True)
+    has_profile = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_has_profile(self, obj):
+        # Existence of the related row is the truth — having a profile is the
+        # opt-in to messaging discovery (no separate is_public flag).
+        return hasattr(obj, "profile") and obj.profile is not None
 
     @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_role(self, obj):

@@ -13,6 +13,7 @@ from .views import (
     OnboardingTokenView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
+    PublicProfileListView,
     RefreshView,
     ResendInviteView,
     TeacherListView,
@@ -64,6 +65,8 @@ urlpatterns = [
     path("emails/export/", EmailExportView.as_view(), name="email-export"),
     # Profile
     path("profile/me/", MyProfileView.as_view(), name="profile-me"),
+    # Public profiles — messaging discovery (any authenticated user)
+    path("profiles/", PublicProfileListView.as_view(), name="profile-list"),
     # Activate
     path("activate/", ActivateAccountView.as_view(), name="account-activate"),
 ]
