@@ -11,15 +11,8 @@ import { Separator } from '@/components/ui/separator'
 import {
   Avatar,
   AvatarFallback,
-  AvatarGroup,
-  AvatarGroupCount,
+  AvatarImage,
 } from '@/components/ui/avatar'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 
 // ---------------------------------------------------------------------------
 // Dancer SVG paths from logo-dancer.svg
@@ -487,25 +480,43 @@ function Team({ t }: { t: (key: string) => string }) {
       role: t('landing.teamRoleDirection'),
       cred: t('landing.teamCredDiana'),
       initials: 'DC',
+      photo: '/team/diana.jpg',
     },
     {
       name: 'Rui Martins',
       role: t('landing.teamRoleDirection'),
       cred: t('landing.teamCredPedro'),
       initials: 'PA',
+      photo: '/team/pedro.png',
     },
     {
       name: 'Sofia Costa',
       role: t('landing.teamRoleCoordination'),
       cred: t('landing.teamCredMaria'),
       initials: 'MB',
+      photo: '/team/maria.jpg',
     },
   ]
 
   const support = [
-    { name: 'Teresa Lopes', role: t('landing.teamRoleClotilde'), initials: 'CD' },
-    { name: 'Inês Ferreira', role: t('landing.teamRoleJoana'), initials: 'JG' },
-    { name: 'Marta Sousa', role: t('landing.teamRoleFilipa'), initials: 'FC' },
+    {
+      name: 'Teresa Lopes',
+      role: t('landing.teamRoleClotilde'),
+      initials: 'CD',
+      photo: '/team/clotilde.jpg',
+    },
+    {
+      name: 'Inês Ferreira',
+      role: t('landing.teamRoleJoana'),
+      initials: 'JG',
+      photo: '/team/joana.jpg',
+    },
+    {
+      name: 'Marta Sousa',
+      role: t('landing.teamRoleFilipa'),
+      initials: 'FC',
+      photo: '/team/filipa.png',
+    },
   ]
 
   return (
@@ -525,12 +536,14 @@ function Team({ t }: { t: (key: string) => string }) {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {team.map((p) => (
             <Card key={p.name} className="gap-4 py-0 overflow-hidden">
-              <div className="flex h-48 items-center justify-center bg-muted">
-                <Avatar className="size-20">
-                  <AvatarFallback className="text-2xl">
-                    {p.initials}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+                <img
+                  src={p.photo}
+                  alt={p.name}
+                  className="h-full w-full object-cover grayscale"
+                  style={{ objectPosition: '50% 25%' }}
+                  loading="lazy"
+                />
               </div>
               <CardContent className="pb-6">
                 <Badge variant="secondary" className="mb-2">
@@ -552,7 +565,13 @@ function Team({ t }: { t: (key: string) => string }) {
         <div className="grid gap-6 sm:grid-cols-3">
           {support.map((s) => (
             <div key={s.name} className="flex items-center gap-4">
-              <Avatar>
+              <Avatar className="size-14">
+                <AvatarImage
+                  src={s.photo}
+                  alt={s.name}
+                  className="grayscale"
+                  style={{ objectPosition: '50% 25%' }}
+                />
                 <AvatarFallback>{s.initials}</AvatarFallback>
               </Avatar>
               <div>
@@ -645,12 +664,10 @@ function BentoCard({
   tag,
   en,
   className,
-  children,
 }: {
   tag: string
   en: string
   className?: string
-  children: React.ReactNode
 }) {
   return (
     <Card
@@ -662,352 +679,12 @@ function BentoCard({
           {en}
         </span>
       </div>
-      <CardContent className="flex-1 pb-4">{children}</CardContent>
+      <CardContent className="flex flex-1 items-center justify-center pb-4">
+        <span className="landing-display text-[20px] text-muted-foreground">
+          {en} module
+        </span>
+      </CardContent>
     </Card>
-  )
-}
-
-function EnrollmentMock() {
-  const rows = [
-    ['Maria T.', 'Ballet · Grade 5', 'Pago', '✓'],
-    ['Ana M.', 'Contemporânea · I', 'Pago', '✓'],
-    ['Beatriz F.', 'Ballet · Pre-Prim', 'Pendente', '·'],
-    ['Sofia R.', 'Jazz · II', 'Pago', '✓'],
-    ['Carolina S.', 'Sapateado · I', 'Pago', '✓'],
-  ] as const
-
-  return (
-    <div className="flex h-full flex-col gap-2.5">
-      <div className="landing-display text-[26px] leading-tight">
-        Período de{' '}
-        <span className="text-primary">matrículas</span> aberto.
-      </div>
-      <div className="text-xs text-muted-foreground">
-        187 candidaturas · 142 confirmadas
-      </div>
-      <div className="mt-1.5 flex flex-1 flex-col overflow-hidden border border-border bg-muted/30">
-        <div className="landing-mono grid grid-cols-[1.4fr_1.6fr_.9fr_24px] border-b border-border px-3 py-2 text-[9.5px] text-muted-foreground">
-          <span>Aluno</span>
-          <span>Modalidade</span>
-          <span>Estado</span>
-          <span />
-        </div>
-        {rows.map((r, i) => (
-          <div
-            key={i}
-            className="grid grid-cols-[1.4fr_1.6fr_.9fr_24px] items-center border-b border-border px-3 py-2 text-[12.5px] last:border-b-0"
-          >
-            <span className="font-medium">{r[0]}</span>
-            <span className="text-muted-foreground">{r[1]}</span>
-            <span
-              className={
-                r[2] === 'Pendente'
-                  ? 'text-muted-foreground'
-                  : ''
-              }
-            >
-              {r[2]}
-            </span>
-            <span className="landing-mono text-right text-muted-foreground">
-              {r[3]}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function CalendarMock() {
-  const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as const
-  const events: Record<number, [string, string, 'ink' | 'soft' | 'accent'][]> = {
-    0: [['18:00', 'Ballet · Grade 3', 'ink']],
-    1: [
-      ['17:30', 'Pré-dança', 'soft'],
-      ['19:00', 'Contemporânea', 'accent'],
-    ],
-    2: [['18:00', 'Contemp. I', 'ink']],
-    3: [
-      ['17:00', 'Sapateado', 'soft'],
-      ['19:30', 'Studio Training', 'ink'],
-    ],
-    4: [['18:00', 'Jazz · II', 'ink']],
-    5: [['10:00', 'Aulas abertas', 'accent']],
-  }
-  return (
-    <div className="grid h-full grid-cols-6 gap-1 pt-1.5">
-      {days.map((d, i) => (
-        <div key={d} className="flex flex-col gap-1">
-          <div className="landing-mono mb-0.5 text-[9.5px] text-muted-foreground">
-            {d}
-          </div>
-          {(events[i] || []).map((e, j) => (
-            <div
-              key={j}
-              className={`border border-border p-1.5 text-[9.5px] leading-tight ${
-                e[2] === 'accent'
-                  ? 'bg-primary text-primary-foreground'
-                  : e[2] === 'soft'
-                    ? 'bg-muted'
-                    : 'bg-foreground text-background'
-              }`}
-            >
-              <div className="landing-mono text-[8.5px] opacity-80">
-                {e[0]}
-              </div>
-              <div className="font-medium">{e[1]}</div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function CoachingMock() {
-  const slots = [
-    ['Diana S. C.', 'Qua · 16:00', true],
-    ['Pedro A.', 'Qui · 18:30', true],
-    ['Rita N.', 'Sex · 17:00', false],
-  ] as const
-
-  return (
-    <div className="flex h-full flex-col justify-between">
-      <div className="landing-display text-[22px] leading-tight">
-        Reservar uma{' '}
-        <span className="text-primary">privada</span>.
-      </div>
-      <div className="mt-2 flex flex-col gap-1.5">
-        {slots.map(([n, t, free]) => (
-          <div
-            key={n}
-            className={`flex items-center justify-between border border-border px-2.5 py-2 ${free ? 'bg-muted/30' : 'opacity-55'}`}
-          >
-            <span className="text-xs font-medium">{n}</span>
-            <span className="landing-mono text-muted-foreground">
-              {t}
-            </span>
-            <Badge
-              variant={free ? 'default' : 'secondary'}
-              className="text-[10px]"
-            >
-              {free ? 'livre' : 'ocupado'}
-            </Badge>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function EventsMock() {
-  return (
-    <div className="flex h-full flex-col gap-1.5">
-      <div className="border-l-2 border-primary pl-2.5">
-        <div className="landing-mono text-[9.5px] text-primary">
-          14 JUN · Braga
-        </div>
-        <div className="landing-display text-lg">
-          Soma das Artes 2026
-        </div>
-      </div>
-      <div className="text-xs leading-relaxed text-muted-foreground">
-        Espetáculo de fim de ano.
-        <br />
-        <span className="text-foreground">32 comentários</span> · 3
-        publicações
-      </div>
-      <div className="mt-auto flex items-center gap-1">
-        <AvatarGroup>
-          {['AT', 'MC', 'RS'].map((i) => (
-            <Avatar key={i} size="sm">
-              <AvatarFallback className="text-[8px]">
-                {i}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-        </AvatarGroup>
-        <AvatarGroupCount className="size-6 text-xs">
-          +47
-        </AvatarGroupCount>
-      </div>
-    </div>
-  )
-}
-
-function BillingMock() {
-  return (
-    <div className="flex h-full flex-col justify-between">
-      <div>
-        <div className="landing-display text-[32px] leading-none">
-          €18.420
-        </div>
-        <div className="landing-mono mt-1 text-muted-foreground">
-          Recebido · Maio 2026
-        </div>
-      </div>
-      <div className="flex h-14 items-end gap-0.5">
-        {[42, 58, 70, 64, 82, 76, 88, 94, 100].map((h, i) => (
-          <div
-            key={i}
-            className={`flex-1 ${i === 8 ? 'bg-primary' : 'bg-foreground'}`}
-            style={{ height: `${h}%` }}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between text-[11px] text-muted-foreground">
-        <span>3 multas em aberto</span>
-        <span>97% em dia</span>
-      </div>
-    </div>
-  )
-}
-
-function ClassesMock() {
-  return (
-    <div className="flex h-full flex-col gap-1.5">
-      <div className="landing-display text-[22px] leading-tight">
-        Turma ·{' '}
-        <span className="text-primary">Grade 5</span>
-      </div>
-      <div className="landing-mono text-muted-foreground">
-        14 alunas · Estúdio I · Diana S.C.
-      </div>
-      <div className="mt-1.5 grid grid-cols-7 gap-1">
-        {Array.from({ length: 14 }).map((_, i) => (
-          <div
-            key={i}
-            className={`aspect-square border border-border ${i === 4 || i === 11 ? 'bg-muted' : 'bg-foreground'}`}
-          />
-        ))}
-      </div>
-      <div className="mt-auto text-[11px] text-muted-foreground">
-        2 ausentes · 12 presentes
-      </div>
-    </div>
-  )
-}
-
-function InventoryMock() {
-  const sizes = ['35', '36', '37', '38', '39', '40'] as const
-  const stock = [4, 7, 2, 5, 3, 1] as const
-
-  return (
-    <div className="flex h-full flex-col gap-2">
-      <div className="landing-display text-[22px]">
-        Sapatilhas ·{' '}
-        <span className="text-primary">pontas</span>
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {sizes.map((s, i) => (
-          <TooltipProvider key={s}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className={`border border-border px-2 py-1 text-[11px] font-medium ${i === 2 ? 'bg-foreground text-background' : ''}`}
-                >
-                  {s}{' '}
-                  <span className="opacity-55">· {stock[i]}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                {stock[i]} em stock
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ))}
-      </div>
-      <div className="mt-auto text-[11px] text-muted-foreground">
-        22 em stock · 4 reservadas
-      </div>
-    </div>
-  )
-}
-
-function MessagingMock() {
-  const messages = [
-    ['Diana S.C.', 'Trouxe a partitura nova para amanhã', 'DC'],
-    ['M. Tavares', 'Obrigada pela aula extra!', 'MT'],
-    ['Pedro A.', 'Vamos ensaiar a variação às 17h', 'PA'],
-  ] as const
-
-  return (
-    <div className="flex h-full flex-col gap-1.5">
-      {messages.map(([n, m, initials], i) => (
-        <div key={i} className="flex items-start gap-2">
-          <Avatar size="sm">
-            <AvatarFallback className="text-[8px]">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <div className="landing-mono text-[9px] text-primary">
-              {n}
-            </div>
-            <div className="truncate text-xs">{m}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function ModalitiesMock() {
-  const tags = [
-    'Ballet',
-    'Contemp.',
-    'Jazz',
-    'Hip-Hop',
-    'Teatro Musical',
-    'Acrodance',
-  ] as const
-
-  return (
-    <div className="flex flex-wrap gap-1.5 pt-3">
-      {tags.map((t, i) => (
-        <Badge
-          key={t}
-          variant={i === 0 ? 'default' : 'outline'}
-        >
-          {t}
-        </Badge>
-      ))}
-    </div>
-  )
-}
-
-function AttendanceMock() {
-  return (
-    <div className="flex h-full items-center justify-between">
-      <div>
-        <div className="landing-display text-[38px] leading-none">
-          96<span className="text-primary">%</span>
-        </div>
-        <div className="landing-mono text-muted-foreground">
-          Assiduidade média · maio
-        </div>
-      </div>
-      <svg width="80" height="80" viewBox="0 0 80 80">
-        <circle
-          cx="40"
-          cy="40"
-          r="34"
-          className="stroke-border"
-          strokeWidth="6"
-          fill="none"
-        />
-        <circle
-          cx="40"
-          cy="40"
-          r="34"
-          className="stroke-foreground"
-          strokeWidth="6"
-          fill="none"
-          strokeDasharray={`${2 * Math.PI * 34 * 0.96} 999`}
-          transform="rotate(-90 40 40)"
-        />
-      </svg>
-    </div>
   )
 }
 
@@ -1037,87 +714,66 @@ function PlatformBento() {
           </div>
         </div>
 
-        {/* Bento grid */}
         <div className="grid auto-rows-[120px] grid-cols-6 gap-4 lg:grid-cols-12">
           <BentoCard
             tag="Inscrições"
             en="Enrollments"
             className="col-span-6 row-span-4"
-          >
-            <EnrollmentMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Calendário"
             en="Calendar"
             className="col-span-6 row-span-4"
-          >
-            <CalendarMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Aulas Privadas"
             en="Coachings"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <CoachingMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Eventos"
             en="Events"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <EventsMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Faturação"
             en="Billing"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <BillingMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Turmas"
             en="Classes"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <ClassesMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Inventário"
             en="Inventory"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <InventoryMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Mensagens"
             en="Messaging"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <MessagingMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Modalidades"
             en="Modalities"
             className="col-span-6 row-span-2"
-          >
-            <ModalitiesMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Assiduidade"
             en="Attendance"
             className="col-span-6 row-span-2"
-          >
-            <AttendanceMock />
-          </BentoCard>
+          />
         </div>
       </div>
     </section>

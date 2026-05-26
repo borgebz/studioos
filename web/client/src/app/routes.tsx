@@ -27,6 +27,7 @@ import { DialogPage } from '@/app/pages/design-system/DialogPage'
 import { LogoLoaderPage } from '@/app/pages/design-system/LogoLoaderPage'
 import { ScheduleCalendarPage } from '@/app/pages/design-system/ScheduleCalendarPage'
 import { ToastPage } from '@/app/pages/design-system/ToastPage'
+import { RichTextEditorPage } from '@/app/pages/design-system/RichTextEditorPage'
 import { HomePage } from '@/app/pages/HomePage'
 import { LandingPage } from '@/app/pages/LandingPage'
 import { CalendarPage } from '@/app/pages/coachings/CalendarPage'
@@ -136,6 +137,7 @@ export function AppRoutes() {
         <Route path={paths.designSystemLogoLoader} element={<LogoLoaderPage />} />
         <Route path={paths.designSystemScheduleCalendar} element={<ScheduleCalendarPage />} />
         <Route path={paths.designSystemToast} element={<ToastPage />} />
+        <Route path={paths.designSystemRichTextEditor} element={<RichTextEditorPage />} />
       </Route>
     </Routes>
   )

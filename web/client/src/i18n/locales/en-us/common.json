@@ -391,6 +391,7 @@
     "radioGroupLargeDesc": "Up to 30 students. Workshop format.",
     "radioGroupHorizontal": "Horizontal layout",
     "textarea": "Textarea",
+    "richTextEditor": "Rich text editor",
     "textareaDesc": "Multi-line text input.",
     "textareaSubtitle": "Placeholder, disabled, rows, and with labels.",
     "textareaPlaceholder": "Type your message here...",
@@ -1857,16 +1858,61 @@
       "deleteFailed": "Couldn't delete the message.",
       "reactFailed": "Couldn't update the reaction.",
       "pinFailed": "Couldn't update the pin.",
-      "startConversationFailed": "Couldn't start the conversation."
+      "startConversationFailed": "Couldn't start the conversation.",
+      "createGroupFailed": "Couldn't create the group.",
+      "renameFailed": "Couldn't rename the group.",
+      "addMemberFailed": "Couldn't add the member.",
+      "removeMemberFailed": "Couldn't remove the member.",
+      "leaveFailed": "Couldn't leave the conversation."
     },
     "openDetails": "Open conversation details",
     "closeDetails": "Close details",
     "newMessage": "New message",
+    "anonymousUser": "Anonymous user",
+    "noProfileYet": "No profile yet",
+    "noProfile": {
+      "title": "Set up your profile to use messaging",
+      "description": "Other members find each other through their profile. Add a display name (and optionally a photo) to start chatting.",
+      "cta": "Go to my profile"
+    },
     "newConversation": {
       "title": "New conversation",
+      "titleGroup": "New group",
       "description": "Pick someone to start chatting with.",
-      "searchPlaceholder": "Search by name or email…",
+      "descriptionGroup": "Pick at least 2 people and give the group a name.",
+      "searchPlaceholder": "Search by name…",
+      "namePlaceholder": "Group name",
+      "selectionHint_one": "{{count}} selected · {{min}} required",
+      "selectionHint_other": "{{count}} selected · {{min}} required",
+      "createGroup": "Create group",
+      "tabs": {
+        "direct": "Direct",
+        "group": "Group"
+      },
       "empty": "No people found."
+    },
+    "untitledGroup": "Untitled group",
+    "system": {
+      "groupCreated": "{{actor}} created the group \"{{name}}\"",
+      "renamed": "{{actor}} renamed the group to \"{{name}}\"",
+      "participantAdded": "{{actor}} added {{target}}",
+      "participantRemoved": "{{actor}} removed {{target}}",
+      "participantLeft": "{{actor}} left the conversation",
+      "adminAutoPromoted": "{{target}} is now an admin"
+    },
+    "systemPreview": {
+      "group_created": "created the group",
+      "renamed": "renamed the group",
+      "participant_added": "added a member",
+      "participant_removed": "removed a member",
+      "participant_left": "left the conversation",
+      "admin_auto_promoted": "new admin",
+      "update": "updated the conversation"
+    },
+    "typing": {
+      "one": "{{name}} is typing…",
+      "two": "{{a}} and {{b}} are typing…",
+      "many": "{{count}} people are typing…"
     },
     "reactions": {
       "thumbsUp": "Thumbs up",
@@ -1879,10 +1925,17 @@
     "details": {
       "title": "Conversation details",
       "about": "About",
+      "groupName": "Group name",
+      "rename": "Rename",
+      "addMember": "Add member",
+      "removeMember": "Remove member",
+      "membersCount_one": "{{count}} member",
+      "membersCount_other": "{{count}} members",
       "pinnedCount_one": "{{count}} pinned message",
       "pinnedCount_other": "{{count}} pinned messages",
       "filesCount_one": "{{count}} file",
-      "filesCount_other": "{{count}} files"
+      "filesCount_other": "{{count}} files",
+      "leave": "Leave conversation"
     }
   },
   "common": {

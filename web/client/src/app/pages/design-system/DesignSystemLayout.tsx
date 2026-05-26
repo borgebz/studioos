@@ -85,6 +85,7 @@ const designSystemGroups: DSGroup[] = [
     labelKey: 'designSystem.groups.playground',
     links: [
       { to: paths.designSystemPlayground, labelKey: 'designSystem.playground' },
+      { to: paths.designSystemRichTextEditor, labelKey: 'designSystem.richTextEditor' },
     ],
   },
 ]

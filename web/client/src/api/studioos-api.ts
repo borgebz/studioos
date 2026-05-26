@@ -192,6 +192,15 @@ export enum NotificationEnum {
 }
 
 /**
+ * * `user` - User message
+ * * `system` - System message
+ */
+export enum MessageKindEnum {
+  User = "user",
+  System = "system",
+}
+
+/**
  * * `rent` - Rent
  * * `sell` - Sell
  * * `lend` - Lend
@@ -279,6 +288,19 @@ export enum EnrollmentReadStatusEnum {
 export enum EnrollmentPaymentReadStatusEnum {
   Pending = "pending",
   Confirmed = "confirmed",
+}
+
+/**
+ * * `direct` - Direct
+ * * `group` - Group
+ * * `coaching` - Coaching
+ * * `listing` - Listing
+ */
+export enum ConversationKindEnum {
+  Direct = "direct",
+  Group = "group",
+  Coaching = "coaching",
+  Listing = "listing",
 }
 
 /**
@@ -410,6 +432,10 @@ export interface ActivationSuccess {
 
 export interface AddParticipant {
   student_id: number;
+}
+
+export interface AddParticipants {
+  user_ids: number[];
 }
 
 export interface Availability {
@@ -750,8 +776,19 @@ export interface ConsentInput {
 
 export interface Conversation {
   id: number;
+  /**
+   * * `direct` - Direct
+   * * `group` - Group
+   * * `coaching` - Coaching
+   * * `listing` - Listing
+   */
+  kind?: ConversationKindEnum;
+  /** @maxLength 120 */
+  name?: string;
   participant_ids: number[];
   participants: ConversationParticipantSummary[];
+  is_admin: boolean;
+  created_by_id: number | null;
   coaching_id: number | null;
   recurring_coaching_id: number | null;
   last_message: Message | null;
@@ -763,17 +800,16 @@ export interface Conversation {
 /**
  * Lightweight participant info embedded inside every Conversation.
  *
- * Lets the messaging UI render names + avatars without a separate
- * ``/api/accounts/users/`` call — that endpoint requires
- * ``accounts.can_list_users``, which most non-admin roles do not hold.
- * The caller is already a participant in this conversation, so exposing
- * these fields here is not a leak.
+ * Identity is derived from the Profile, which is the user's opt-in to
+ * being discoverable for messaging. If a participant has no profile yet
+ * we expose only their numeric id + ``has_profile=False`` and the client
+ * renders an "Anonymous user" placeholder — we never leak first_name /
+ * last_name / email through this surface.
  */
 export interface ConversationParticipantSummary {
   id: number;
-  display_name: string;
-  /** @format email */
-  email: string;
+  has_profile: boolean;
+  display_name: string | null;
   photo_url: string | null;
 }
 
@@ -795,6 +831,12 @@ export interface CreateColor {
 
 export interface CreateConversation {
   user_id: number;
+}
+
+export interface CreateGroupConversation {
+  /** @maxLength 120 */
+  name: string;
+  participant_ids: number[];
 }
 
 export interface CreateRole {
@@ -1602,6 +1644,7 @@ export interface Me {
   permissions: string[];
   language: string;
   profile: MeEndpointProfileOutput | null;
+  has_profile: boolean;
 }
 
 export interface MeEndpointProfileOutput {
@@ -1611,6 +1654,7 @@ export interface MeEndpointProfileOutput {
 
 export interface Message {
   id: number;
+  kind: MessageKindEnum;
   sender_id: number;
   body: string;
   file_url: string | null;
@@ -1943,7 +1987,11 @@ export interface PatchedProfile {
   /** @format uri */
   photo?: string | null;
   photo_url?: string | null;
-  is_public?: boolean;
+}
+
+export interface PatchedRenameConversation {
+  /** @maxLength 120 */
+  name?: string;
 }
 
 export interface PatchedSchoolProductUpdate {
@@ -2175,12 +2223,32 @@ export interface ProductVariantWrite {
 
 export interface Profile {
   /** @maxLength 200 */
-  display_name?: string;
+  display_name: string;
   bio?: string;
   /** @format uri */
   photo?: string | null;
   photo_url: string | null;
-  is_public?: boolean;
+}
+
+/**
+ * Read-only profile shape exposed to any authenticated user via the
+ * public profiles list. Used by the messaging discovery picker — the
+ * presence of a profile is what makes a user reachable.
+ */
+export interface PublicProfile {
+  user_id: number;
+  /** @maxLength 200 */
+  display_name: string;
+  photo_url: string | null;
+}
+
+export interface PublicProfileList {
+  count: number;
+  /** @format uri */
+  next?: string | null;
+  /** @format uri */
+  previous?: string | null;
+  results: PublicProfile[];
 }
 
 export interface ReactionGroup {
@@ -3220,6 +3288,27 @@ export class Api<
         method: "PATCH",
         body: data,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description GET /api/accounts/profiles/ — discovery list for messaging. Open to any authenticated user. Returns profiles only — users who haven't created one are intentionally invisible. The requester is excluded.
+     *
+     * @tags accounts
+     * @name AccountsProfilesRetrieve
+     * @request GET:/api/accounts/profiles/
+     */
+    accountsProfilesRetrieve: (
+      query?: {
+        search?: string;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<PublicProfileList, ErrorResponse>({
+        path: `/api/accounts/profiles/`,
+        method: "GET",
+        query: query,
         format: "json",
         ...params,
       }),
@@ -6526,6 +6615,44 @@ export class Api<
       }),
 
     /**
+     * @description PATCH to rename a group conversation. Admin-gated server-side.
+     *
+     * @tags messaging
+     * @name MessagingConversationsPartialUpdate
+     * @request PATCH:/api/messaging/conversations/{conversation_id}/
+     */
+    messagingConversationsPartialUpdate: (
+      conversationId: number,
+      data: PatchedRenameConversation,
+      params: RequestParams = {},
+    ) =>
+      this.request<Conversation, ErrorResponse>({
+        path: `/api/messaging/conversations/${conversationId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingConversationsLeaveCreate
+     * @request POST:/api/messaging/conversations/{conversation_id}/leave/
+     */
+    messagingConversationsLeaveCreate: (
+      conversationId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/api/messaging/conversations/${conversationId}/leave/`,
+        method: "POST",
+        ...params,
+      }),
+
+    /**
      * No description
      *
      * @tags messaging
@@ -6577,6 +6704,65 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.FormData,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description POST to add one or more members to a group conversation. Any member can add; backend enforces.
+     *
+     * @tags messaging
+     * @name MessagingConversationsParticipantsCreate
+     * @request POST:/api/messaging/conversations/{conversation_id}/participants/
+     */
+    messagingConversationsParticipantsCreate: (
+      conversationId: number,
+      data: AddParticipants,
+      params: RequestParams = {},
+    ) =>
+      this.request<Conversation, ErrorResponse>({
+        path: `/api/messaging/conversations/${conversationId}/participants/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description DELETE to remove a member from a group conversation (admin only).
+     *
+     * @tags messaging
+     * @name MessagingConversationsParticipantsDestroy
+     * @request DELETE:/api/messaging/conversations/{conversation_id}/participants/{user_id}/
+     */
+    messagingConversationsParticipantsDestroy: (
+      conversationId: number,
+      userId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<void, ErrorResponse>({
+        path: `/api/messaging/conversations/${conversationId}/participants/${userId}/`,
+        method: "DELETE",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags messaging
+     * @name MessagingConversationsGroupsCreate
+     * @request POST:/api/messaging/conversations/groups/
+     */
+    messagingConversationsGroupsCreate: (
+      data: CreateGroupConversation,
+      params: RequestParams = {},
+    ) =>
+      this.request<Conversation, ErrorResponse>({
+        path: `/api/messaging/conversations/groups/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

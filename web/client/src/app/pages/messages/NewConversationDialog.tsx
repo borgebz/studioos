@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
+import { Check, Search, Users, X } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
-import type { UserResponse } from '@/api/studioos-api'
+import type { PublicProfile } from '@/api/studioos-api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -14,38 +15,45 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 
 interface NewConversationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onPick: (userId: number) => void | Promise<void>
+  onPickDirect: (userId: number) => void | Promise<void>
+  onCreateGroup: (name: string, userIds: number[]) => void | Promise<void>
   meId: number | null
 }
 
-/** Pick a user to start (or open) a direct conversation with.
- *  The picker queries the same `listUsers` endpoint the rest of the app uses,
- *  so role-based visibility (direction sees everyone, etc.) is inherited.
- *  No additional client-side filter is applied — when authorization for
- *  who-can-DM-whom lands, the backend gate will enforce it at create time. */
+type Mode = 'direct' | 'group'
+
+/** Pick a user (DM) or build a group conversation.
+ *  Uses /api/accounts/profiles/ for discovery — profile existence is the
+ *  user's opt-in to messaging, no permission gate. */
 export function NewConversationDialog({
   open,
   onOpenChange,
-  onPick,
+  onPickDirect,
+  onCreateGroup,
   meId,
 }: NewConversationDialogProps) {
   const { t } = useTranslation()
-  const [users, setUsers] = useState<UserResponse[]>([])
+  const [mode, setMode] = useState<Mode>('direct')
+  const [profiles, setProfiles] = useState<PublicProfile[]>([])
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  // DM submit state — single-select pending request.
   const [submittingId, setSubmittingId] = useState<number | null>(null)
+  // Group state — selection + name + submit lock.
+  const [selected, setSelected] = useState<PublicProfile[]>([])
+  const [groupName, setGroupName] = useState('')
+  const [submittingGroup, setSubmittingGroup] = useState(false)
   const fetchSeq = useRef(0)
-  // Skeleton only flashes on the initial open. Subsequent searches keep the
-  // current list visible (slightly dimmed) while the new request is in
-  // flight — feels much smoother than re-rendering an empty placeholder
-  // between every keystroke.
+  // Skeleton flashes only on the first open; subsequent searches keep the
+  // existing list visible while refreshing in place.
   const hasLoadedOnce = useRef(false)
 
   // Debounce the search query so each keystroke doesn't fire a request.
@@ -56,54 +64,86 @@ export function NewConversationDialog({
     return () => window.clearTimeout(id)
   }, [open, query, debouncedQuery])
 
-  // Initial load + refresh on the debounced query.
   useEffect(() => {
     if (!open) return
     const seq = ++fetchSeq.current
     setLoading(true)
     apiClient.api
-      .listUsers(
-        {
-          ...(debouncedQuery.trim() ? { search: debouncedQuery.trim() } : {}),
-          page_size: 100,
-        } as Parameters<typeof apiClient.api.listUsers>[0],
+      .accountsProfilesRetrieve(
+        debouncedQuery.trim() ? { search: debouncedQuery.trim() } : undefined,
       )
       .then((res) => {
         if (seq !== fetchSeq.current) return
-        setUsers(res.data.results)
+        setProfiles(res.data.results)
         hasLoadedOnce.current = true
       })
       .catch(() => {
         if (seq !== fetchSeq.current) return
-        // Keep previous results on error — don't blank the list out.
-        if (!hasLoadedOnce.current) setUsers([])
+        if (!hasLoadedOnce.current) setProfiles([])
       })
       .finally(() => {
         if (seq === fetchSeq.current) setLoading(false)
       })
   }, [open, debouncedQuery])
 
-  // Reset state when closing so the next open is fresh.
+  // Reset on close.
   useEffect(() => {
     if (!open) {
+      setMode('direct')
       setQuery('')
       setDebouncedQuery('')
       setSubmittingId(null)
+      setSelected([])
+      setGroupName('')
+      setSubmittingGroup(false)
       hasLoadedOnce.current = false
     }
   }, [open])
 
-  const visibleUsers = useMemo(
-    () => users.filter((u) => u.id !== meId),
-    [users, meId],
+  const visibleProfiles = useMemo(
+    () => profiles.filter((p) => p.user_id !== meId),
+    [profiles, meId],
   )
 
-  async function handlePick(userId: number) {
+  const selectedIds = useMemo(
+    () => new Set(selected.map((p) => p.user_id)),
+    [selected],
+  )
+
+  async function handlePickDirect(userId: number) {
     setSubmittingId(userId)
     try {
-      await onPick(userId)
+      await onPickDirect(userId)
     } finally {
       setSubmittingId(null)
+    }
+  }
+
+  function toggleSelected(p: PublicProfile) {
+    setSelected((prev) =>
+      prev.some((x) => x.user_id === p.user_id)
+        ? prev.filter((x) => x.user_id !== p.user_id)
+        : [...prev, p],
+    )
+  }
+
+  // Min 3 members = creator + 2 others. UI counts only the picked "others".
+  const GROUP_OTHERS_MIN = 2
+  const canSubmitGroup =
+    groupName.trim().length > 0 &&
+    selected.length >= GROUP_OTHERS_MIN &&
+    !submittingGroup
+
+  async function handleCreateGroup() {
+    if (!canSubmitGroup) return
+    setSubmittingGroup(true)
+    try {
+      await onCreateGroup(
+        groupName.trim(),
+        selected.map((p) => p.user_id),
+      )
+    } finally {
+      setSubmittingGroup(false)
     }
   }
 
@@ -111,11 +151,60 @@ export function NewConversationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6">
-          <DialogTitle>{t('messages.newConversation.title')}</DialogTitle>
+          <DialogTitle>
+            {mode === 'group'
+              ? t('messages.newConversation.titleGroup')
+              : t('messages.newConversation.title')}
+          </DialogTitle>
           <DialogDescription>
-            {t('messages.newConversation.description')}
+            {mode === 'group'
+              ? t('messages.newConversation.descriptionGroup')
+              : t('messages.newConversation.description')}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="px-6 pt-4">
+          <Tabs value={mode} onValueChange={(v) => setMode(v as Mode)}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="direct">
+                {t('messages.newConversation.tabs.direct')}
+              </TabsTrigger>
+              <TabsTrigger value="group">
+                <Users className="size-3.5" aria-hidden="true" />
+                {t('messages.newConversation.tabs.group')}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {mode === 'group' && (
+          <div className="mt-4 px-6">
+            <Input
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder={t('messages.newConversation.namePlaceholder')}
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={120}
+              aria-label={t('messages.newConversation.namePlaceholder')}
+            />
+            {selected.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {selected.map((p) => (
+                  <button
+                    key={p.user_id}
+                    type="button"
+                    onClick={() => toggleSelected(p)}
+                    className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-xs text-accent-foreground transition-colors hover:bg-accent/80"
+                  >
+                    {p.display_name}
+                    <X className="size-3" aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="px-6 pt-4">
           <div className="relative">
@@ -124,11 +213,7 @@ export function NewConversationDialog({
               className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
-              autoFocus
               type="search"
-              // Suppress Safari/iOS autofill suggestions — this isn't an
-              // email/username field. The non-standard names below are what
-              // WebKit actually respects in practice.
               name="conversation-recipient-search"
               autoComplete="off"
               autoCorrect="off"
@@ -144,10 +229,10 @@ export function NewConversationDialog({
           </div>
         </div>
 
-        <div className="mt-3 max-h-80 overflow-y-auto px-2 pb-4">
+        <div className="mt-3 max-h-72 overflow-y-auto px-2 pb-2">
           {loading && !hasLoadedOnce.current ? (
             <UserListSkeleton />
-          ) : visibleUsers.length === 0 ? (
+          ) : visibleProfiles.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
               {t('messages.newConversation.empty')}
             </div>
@@ -159,32 +244,52 @@ export function NewConversationDialog({
               )}
               aria-busy={loading}
             >
-              {visibleUsers.map((u) => {
-                const name = u.display_name || `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || u.email
-                const submitting = submittingId === u.id
+              {visibleProfiles.map((p) => {
+                const submitting =
+                  mode === 'direct' && submittingId === p.user_id
+                const isSelected = selectedIds.has(p.user_id)
                 return (
-                  <li key={u.id}>
+                  <li key={p.user_id}>
                     <button
                       type="button"
-                      onClick={() => handlePick(u.id)}
-                      disabled={submitting || submittingId !== null}
+                      onClick={() =>
+                        mode === 'direct'
+                          ? handlePickDirect(p.user_id)
+                          : toggleSelected(p)
+                      }
+                      disabled={
+                        (mode === 'direct' && submittingId !== null) ||
+                        submitting ||
+                        submittingGroup
+                      }
                       className={cn(
                         'flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-left transition-colors',
                         'hover:bg-accent disabled:opacity-60',
+                        mode === 'group' && isSelected && 'bg-accent',
                       )}
                     >
                       <Avatar size="default">
-                        {u.photo_url && <AvatarImage src={u.photo_url} alt={name} />}
-                        <AvatarFallback>{getInitials(name)}</AvatarFallback>
+                        {p.photo_url && (
+                          <AvatarImage
+                            src={p.photo_url}
+                            alt={p.display_name}
+                          />
+                        )}
+                        <AvatarFallback>
+                          {getInitials(p.display_name)}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium text-foreground">
-                          {name}
-                        </div>
-                        <div className="truncate text-xs text-muted-foreground">
-                          {u.email}
+                          {p.display_name}
                         </div>
                       </div>
+                      {mode === 'group' && isSelected && (
+                        <Check
+                          className="size-4 text-primary"
+                          aria-hidden="true"
+                        />
+                      )}
                     </button>
                   </li>
                 )
@@ -192,6 +297,24 @@ export function NewConversationDialog({
             </ul>
           )}
         </div>
+
+        {mode === 'group' && (
+          <div className="flex items-center justify-between border-t border-border px-6 py-3">
+            <span className="text-xs text-muted-foreground">
+              {t('messages.newConversation.selectionHint', {
+                count: selected.length,
+                min: GROUP_OTHERS_MIN,
+              })}
+            </span>
+            <Button
+              type="button"
+              disabled={!canSubmitGroup}
+              onClick={() => void handleCreateGroup()}
+            >
+              {t('messages.newConversation.createGroup')}
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

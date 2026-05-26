@@ -21,7 +21,10 @@ import {
   type NavEntryConfig,
 } from '@/auth/nav-config'
 import { useTheme, type Theme } from '@/theme/ThemeProvider'
-import { useUnreadMessages } from '@/app/pages/messages/useUnreadMessages'
+import {
+  triggerUnreadRefresh,
+  useUnreadMessages,
+} from '@/app/pages/messages/useUnreadMessages'
 import { useUserChannelSocket } from '@/app/pages/messages/useUserChannelSocket'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -151,15 +154,20 @@ export function AppSidebar() {
   const { user, logout } = useAuth()
   const { can, canAny } = usePermissions()
   const { theme, setTheme } = useTheme()
-  const { total: unreadMessages, refresh: refreshUnread } = useUnreadMessages()
+  const { total: unreadMessages } = useUnreadMessages()
   const [shake, setShake] = useState(false)
   const shakeTimer = useRef<number | null>(null)
 
   useUserChannelSocket(Boolean(user), {
+    onConversationAdded: () => {
+      // Membership change — refresh every unread hook (this badge + any
+      // per-conversation badges in MessagesPage).
+      triggerUnreadRefresh()
+    },
     onIncomingMessage: () => {
-      // Refresh the unread count so the badge number updates from the
-      // server's source-of-truth (handles reads from other tabs too).
-      refreshUnread()
+      // Refresh every unread hook from the server's source-of-truth
+      // (handles reads from other tabs too).
+      triggerUnreadRefresh()
       // Trigger a one-shot shake animation. Restart it if a fresh message
       // lands while we're still animating.
       setShake(false)

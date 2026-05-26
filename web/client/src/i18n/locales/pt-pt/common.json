@@ -391,6 +391,7 @@
     "radioGroupLargeDesc": "Até 30 alunos. Formato de workshop.",
     "radioGroupHorizontal": "Layout horizontal",
     "textarea": "Textarea",
+    "richTextEditor": "Editor de texto",
     "textareaDesc": "Campo de texto multi-linha.",
     "textareaSubtitle": "Placeholder, desativado, linhas e com etiquetas.",
     "textareaPlaceholder": "Escreva a sua mensagem aqui...",
@@ -1857,16 +1858,61 @@
       "deleteFailed": "Não foi possível apagar a mensagem.",
       "reactFailed": "Não foi possível atualizar a reação.",
       "pinFailed": "Não foi possível atualizar a afixação.",
-      "startConversationFailed": "Não foi possível iniciar a conversa."
+      "startConversationFailed": "Não foi possível iniciar a conversa.",
+      "createGroupFailed": "Não foi possível criar o grupo.",
+      "renameFailed": "Não foi possível renomear o grupo.",
+      "addMemberFailed": "Não foi possível adicionar o membro.",
+      "removeMemberFailed": "Não foi possível remover o membro.",
+      "leaveFailed": "Não foi possível sair da conversa."
     },
     "openDetails": "Abrir detalhes da conversa",
     "closeDetails": "Fechar detalhes",
     "newMessage": "Nova mensagem",
+    "anonymousUser": "Utilizador anónimo",
+    "noProfileYet": "Sem perfil ainda",
+    "noProfile": {
+      "title": "Cria o teu perfil para usar as mensagens",
+      "description": "Os outros membros encontram-se através do perfil. Adiciona um nome a apresentar (e opcionalmente uma foto) para começar a conversar.",
+      "cta": "Ir para o meu perfil"
+    },
     "newConversation": {
       "title": "Nova conversa",
+      "titleGroup": "Novo grupo",
       "description": "Escolhe alguém para começar a conversa.",
-      "searchPlaceholder": "Pesquisar por nome ou email…",
+      "descriptionGroup": "Escolhe pelo menos 2 pessoas e dá um nome ao grupo.",
+      "searchPlaceholder": "Pesquisar por nome…",
+      "namePlaceholder": "Nome do grupo",
+      "selectionHint_one": "{{count}} selecionado · {{min}} necessários",
+      "selectionHint_other": "{{count}} selecionados · {{min}} necessários",
+      "createGroup": "Criar grupo",
+      "tabs": {
+        "direct": "Direta",
+        "group": "Grupo"
+      },
       "empty": "Nenhuma pessoa encontrada."
+    },
+    "untitledGroup": "Grupo sem nome",
+    "system": {
+      "groupCreated": "{{actor}} criou o grupo \"{{name}}\"",
+      "renamed": "{{actor}} renomeou o grupo para \"{{name}}\"",
+      "participantAdded": "{{actor}} adicionou {{target}}",
+      "participantRemoved": "{{actor}} removeu {{target}}",
+      "participantLeft": "{{actor}} saiu da conversa",
+      "adminAutoPromoted": "{{target}} é agora administrador"
+    },
+    "systemPreview": {
+      "group_created": "criou o grupo",
+      "renamed": "renomeou o grupo",
+      "participant_added": "adicionou um membro",
+      "participant_removed": "removeu um membro",
+      "participant_left": "saiu da conversa",
+      "admin_auto_promoted": "novo administrador",
+      "update": "atualizou a conversa"
+    },
+    "typing": {
+      "one": "{{name}} está a escrever…",
+      "two": "{{a}} e {{b}} estão a escrever…",
+      "many": "{{count}} pessoas estão a escrever…"
     },
     "reactions": {
       "thumbsUp": "Gosto",
@@ -1879,10 +1925,17 @@
     "details": {
       "title": "Detalhes da conversa",
       "about": "Sobre",
+      "groupName": "Nome do grupo",
+      "rename": "Renomear",
+      "addMember": "Adicionar membro",
+      "removeMember": "Remover membro",
+      "membersCount_one": "{{count}} membro",
+      "membersCount_other": "{{count}} membros",
       "pinnedCount_one": "{{count}} mensagem afixada",
       "pinnedCount_other": "{{count}} mensagens afixadas",
       "filesCount_one": "{{count}} ficheiro",
-      "filesCount_other": "{{count}} ficheiros"
+      "filesCount_other": "{{count}} ficheiros",
+      "leave": "Sair da conversa"
     }
   },
   "common": {

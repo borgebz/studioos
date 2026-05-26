@@ -7,8 +7,19 @@ type IncomingMessageEvent = {
   sender_id: number
 }
 
+type ConversationAddedEvent = {
+  type: 'conversation.added'
+  conversation_id: number
+}
+
+type UserChannelEvent = IncomingMessageEvent | ConversationAddedEvent
+
 export interface UserChannelHandlers {
   onIncomingMessage?: (e: IncomingMessageEvent) => void
+  /** Fires when the user is added (or removed) from a conversation — both
+   *  cases the inbox should refetch so the conversation list reflects the
+   *  membership change. */
+  onConversationAdded?: (e: ConversationAddedEvent) => void
 }
 
 /**
@@ -52,7 +63,7 @@ export function useUserChannelSocket(
       }
 
       ws.onmessage = (event) => {
-        let data: IncomingMessageEvent
+        let data: UserChannelEvent
         try {
           data = JSON.parse(event.data)
         } catch {
@@ -60,6 +71,8 @@ export function useUserChannelSocket(
         }
         if (data.type === 'incoming_message') {
           handlersRef.current.onIncomingMessage?.(data)
+        } else if (data.type === 'conversation.added') {
+          handlersRef.current.onConversationAdded?.(data)
         }
       }
 

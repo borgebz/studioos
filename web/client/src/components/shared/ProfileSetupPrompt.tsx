@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Camera, Sparkles } from 'lucide-react'
+import { UserPen, IdCard, BadgeCheck } from 'lucide-react'
 import { useAuth } from '@/auth/useAuth'
 import { paths } from '@/app/paths'
 import { getInitials } from '@/lib/user-utils'
@@ -46,8 +46,8 @@ export function ProfileSetupPrompt() {
     <Dialog open={open} onOpenChange={(v) => !v && handleDismiss()}>
       <DialogContent className="sm:max-w-md overflow-hidden p-0" showCloseButton={false}>
         <div className="relative bg-background before:absolute before:inset-0 before:rounded-[inherit] before:bg-primary/5 px-6 pt-8 pb-12">
-          <Sparkles className="absolute top-4 right-6 h-5 w-5 text-primary/40" />
-          <Sparkles className="absolute top-8 left-8 h-3 w-3 text-primary/25 rotate-12" />
+          <BadgeCheck className="absolute top-4 right-6 h-5 w-5 text-primary/40" />
+          <IdCard className="absolute top-8 left-8 h-4 w-4 text-primary/25 -rotate-12" />
           <div className="relative flex justify-center">
             <div className="relative">
               <Avatar className="h-24 w-24 ring-4 ring-background shadow-lg">
@@ -62,7 +62,7 @@ export function ProfileSetupPrompt() {
                 </AvatarFallback>
               </Avatar>
               <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                <Camera className="h-4 w-4" />
+                <UserPen className="h-4 w-4" />
               </div>
             </div>
           </div>

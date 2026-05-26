@@ -14,6 +14,7 @@ import {
   Send,
   SmilePlus,
   Trash2,
+  Users,
   X,
 } from 'lucide-react'
 
@@ -38,7 +39,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 
-import type { ConversationParticipant } from './types'
+import { participantName, type ConversationParticipant } from './types'
 
 const QUICK_REACTIONS: { emoji: string; key: string }[] = [
   { emoji: '👍', key: 'thumbsUp' },
@@ -63,6 +64,12 @@ interface MessageThreadProps {
   onReact: (messageId: number, emoji: string) => Promise<void>
   onPin: (messageId: number, pin: boolean) => Promise<void>
   dayLabel: (iso: string) => string
+  /** Other-participant IDs currently typing in this conversation. */
+  typingUserIds: number[]
+  /** Throttled "I am typing" emitter — composer calls this on input. */
+  onTyping: () => void
+  /** Fired on send / blur / unmount so peers stop showing my bubble. */
+  onTypingStopped: () => void
 }
 
 export function MessageThread({
@@ -79,6 +86,9 @@ export function MessageThread({
   onReact,
   onPin,
   dayLabel,
+  typingUserIds,
+  onTyping,
+  onTypingStopped,
 }: MessageThreadProps) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
@@ -103,9 +113,12 @@ export function MessageThread({
     meId,
     t,
   )
+  // Subtitle: group member count for groups; nothing for DMs since the
+  // name in the header already says everything (the email used to live
+  // here, but it's not exposed to non-admin users anymore).
   const headerSub = others.length > 1
     ? t('messages.groupParticipantCount', { count: conversation.participant_ids.length })
-    : primary?.email ?? ''
+    : ''
 
   // ── pinned messages (resolved) ──────────────────────────────────────────
   const pinnedMessages = useMemo(
@@ -148,12 +161,21 @@ export function MessageThread({
         aria-label={t('messages.openDetails')}
         aria-expanded={detailsOpen}
       >
-        <Avatar size="lg">
-          {primary?.photoUrl && (
-            <AvatarImage src={primary.photoUrl} alt={headerLabel} />
-          )}
-          <AvatarFallback>{getInitials(headerLabel)}</AvatarFallback>
-        </Avatar>
+        {conversation.kind === 'group' ? (
+          <span
+            aria-hidden="true"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+          >
+            <Users className="size-5" />
+          </span>
+        ) : (
+          <Avatar size="lg">
+            {primary?.photoUrl && (
+              <AvatarImage src={primary.photoUrl} alt={headerLabel} />
+            )}
+            <AvatarFallback>{getInitials(headerLabel)}</AvatarFallback>
+          </Avatar>
+        )}
         <div className="min-w-0 flex-1">
           <div className="truncate text-base font-semibold tracking-tight text-foreground">
             {headerLabel}
@@ -201,6 +223,15 @@ export function MessageThread({
                 {group.day}
               </div>
               {group.items.map((m, i) => {
+                if (m.kind === 'system') {
+                  return (
+                    <SystemMessage
+                      key={m.id}
+                      message={m}
+                      participants={participants}
+                    />
+                  )
+                }
                 const prev = i > 0 ? group.items[i - 1] : null
                 const next = i < group.items.length - 1 ? group.items[i + 1] : null
                 const showAvatar = !prev || prev.sender_id !== m.sender_id
@@ -254,8 +285,23 @@ export function MessageThread({
         )}
       </div>
 
+      {/* Typing indicator (only when *others* are typing) */}
+      {typingUserIds.length > 0 && (
+        <div className="shrink-0 border-t border-border bg-card px-7 pt-2">
+          <TypingIndicator
+            userIds={typingUserIds}
+            participants={participants}
+          />
+        </div>
+      )}
+
       {/* Composer */}
-      <div className="shrink-0 border-t border-border bg-card px-7 py-4">
+      <div
+        className={cn(
+          'shrink-0 border-border bg-card px-7 py-4',
+          typingUserIds.length === 0 && 'border-t',
+        )}
+      >
         <div className="mx-auto max-w-[680px]">
           {file && (
             <div className="mb-2 flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5 text-xs">
@@ -274,13 +320,18 @@ export function MessageThread({
           <Composer
             value={draft}
             hasFile={Boolean(file)}
-            onChange={setDraft}
+            onChange={(v) => {
+              setDraft(v)
+              if (v.trim().length > 0) onTyping()
+            }}
+            onBlur={onTypingStopped}
             onFilePick={setFile}
             onSubmit={async () => {
               if (!draft.trim() && !file) return
               await onSend(draft, file)
               setDraft('')
               setFile(null)
+              onTypingStopped()
             }}
           />
         </div>
@@ -332,7 +383,7 @@ function Bubble({
 }: BubbleProps) {
   const { t } = useTranslation()
   const deleted = Boolean(message.deleted_at)
-  const senderName = sender?.displayName ?? t('messages.unknownUser')
+  const senderName = participantName(sender, t, message.sender_id)
 
   return (
     <div className="group w-full py-0.5">
@@ -633,16 +684,54 @@ function BubbleActions({
   )
 }
 
+function TypingIndicator({
+  userIds,
+  participants,
+}: {
+  userIds: number[]
+  participants: Record<number, ConversationParticipant>
+}) {
+  const { t } = useTranslation()
+  // Resolve names: prefer first name. Show up to 3, summarize the rest.
+  const names = userIds.map((id) => {
+    const name = participantName(participants[id], t, id)
+    return name.split(' ')[0]
+  })
+  let label: string
+  if (names.length === 1) {
+    label = t('messages.typing.one', { name: names[0] })
+  } else if (names.length === 2) {
+    label = t('messages.typing.two', { a: names[0], b: names[1] })
+  } else {
+    label = t('messages.typing.many', { count: names.length })
+  }
+  return (
+    <div
+      className="mx-auto flex max-w-[680px] items-center gap-2 text-[11.5px] text-muted-foreground"
+      aria-live="polite"
+    >
+      <span className="inline-flex items-end gap-0.5 leading-none">
+        <span className="size-1 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:0ms]" />
+        <span className="size-1 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:120ms]" />
+        <span className="size-1 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:240ms]" />
+      </span>
+      <span>{label}</span>
+    </div>
+  )
+}
+
 function Composer({
   value,
   hasFile,
   onChange,
+  onBlur,
   onFilePick,
   onSubmit,
 }: {
   value: string
   hasFile: boolean
   onChange: (v: string) => void
+  onBlur?: () => void
   onFilePick: (f: File | null) => void
   onSubmit: () => Promise<void> | void
 }) {
@@ -678,6 +767,7 @@ function Composer({
       <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         onKeyDown={handleKey}
         placeholder={t('messages.composerPlaceholder')}
         rows={1}
@@ -708,6 +798,61 @@ function isImageAttachment(m: Message): boolean {
   if (m.mime_type && m.mime_type.startsWith('image/')) return true
   const name = (m.original_filename || m.file_url || '').toLowerCase()
   return IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext))
+}
+
+function SystemMessage({
+  message,
+  participants,
+}: {
+  message: Message
+  participants: Record<number, ConversationParticipant>
+}) {
+  const { t } = useTranslation()
+  // Body is JSON {"event": "...", ...fields}. Decode and localize.
+  let parsed: { event?: string; target_id?: number; name?: string; old_name?: string; new_name?: string } = {}
+  try {
+    parsed = JSON.parse(message.body || '{}')
+  } catch {
+    // ignore
+  }
+
+  const actorName = participantName(participants[message.sender_id], t, message.sender_id)
+  const targetName =
+    parsed.target_id !== undefined
+      ? participantName(participants[parsed.target_id], t, parsed.target_id)
+      : ''
+
+  let text = ''
+  switch (parsed.event) {
+    case 'group_created':
+      text = t('messages.system.groupCreated', { actor: actorName, name: parsed.name || '' })
+      break
+    case 'renamed':
+      text = t('messages.system.renamed', { actor: actorName, name: parsed.new_name || '' })
+      break
+    case 'participant_added':
+      text = t('messages.system.participantAdded', { actor: actorName, target: targetName })
+      break
+    case 'participant_removed':
+      text = t('messages.system.participantRemoved', { actor: actorName, target: targetName })
+      break
+    case 'participant_left':
+      text = t('messages.system.participantLeft', { actor: actorName })
+      break
+    case 'admin_auto_promoted':
+      text = t('messages.system.adminAutoPromoted', { target: targetName })
+      break
+    default:
+      text = parsed.event || ''
+  }
+
+  return (
+    <div className="my-3 flex justify-center">
+      <span className="rounded-full bg-muted/60 px-3 py-1 text-[11px] text-muted-foreground">
+        {text}
+      </span>
+    </div>
+  )
 }
 
 function ThreadSkeleton() {
@@ -745,12 +890,16 @@ function conversationHeaderLabel(
   meId: number,
   t: (k: string) => string,
 ): string {
+  // Groups are titled by their user-set name. DMs derive from participants.
+  if (c.kind === 'group') {
+    return c.name || t('messages.untitledGroup')
+  }
   const others = c.participant_ids.filter((id) => id !== meId)
   if (others.length === 0) return t('messages.selfConversation')
-  if (others.length === 1) return dict[others[0]]?.displayName ?? `User #${others[0]}`
+  if (others.length === 1) return participantName(dict[others[0]], t, others[0])
   const names = others
     .slice(0, 3)
-    .map((id) => dict[id]?.displayName?.split(' ')[0] ?? `#${id}`)
+    .map((id) => participantName(dict[id], t, id).split(' ')[0])
   const extra = others.length - names.length
   return extra > 0 ? `${names.join(', ')} +${extra}` : names.join(', ')
 }

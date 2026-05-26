@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { format, isToday, isYesterday } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { pt } from 'date-fns/locale/pt'
-import { MessageSquarePlus, Plus, Search, X } from 'lucide-react'
+import { MessageSquarePlus, Plus, Search, UserCircle2, X } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+
+import { paths } from '@/app/paths'
 import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
@@ -20,9 +23,9 @@ import { ConversationDetailsContent } from './ConversationDetails'
 import { ConversationList } from './ConversationList'
 import { MessageThread } from './MessageThread'
 import { NewConversationDialog } from './NewConversationDialog'
-import type { ConversationParticipant } from './types'
+import { participantName, type ConversationParticipant } from './types'
 import { useConversationSocket } from './useConversationSocket'
-import { useUnreadMessages } from './useUnreadMessages'
+import { triggerUnreadRefresh, useUnreadMessages } from './useUnreadMessages'
 
 function dateLocale(lang: string) {
   return lang.startsWith('pt') ? pt : enUS
@@ -57,8 +60,7 @@ export function MessagesPage() {
   const [search, setSearch] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [newDialogOpen, setNewDialogOpen] = useState(false)
-  const { byConversation: unreadByConversation, refresh: refreshUnread } =
-    useUnreadMessages()
+  const { byConversation: unreadByConversation } = useUnreadMessages()
 
   // ── load conversations ────────────────────────────────────────────────
   // Participant info (name, email, photo) is embedded on each Conversation
@@ -137,13 +139,15 @@ export function MessagesPage() {
     apiClient.api
       .messagingConversationsMarkReadCreate(activeId)
       .then(() => {
-        // Pull the new unread map so per-conv + sidebar badges update.
-        refreshUnread()
+        // Fan out to *every* mounted unread hook (this page's per-conv
+        // badges + the sidebar's total). Each hook owns its own state, so
+        // calling refresh() on one wouldn't reach the other.
+        triggerUnreadRefresh()
       })
       .catch(() => {
         // silent — not user-visible
       })
-  }, [activeId, refreshUnread])
+  }, [activeId])
 
   useEffect(() => {
     if (activeId === null || loadingThread) return
@@ -166,7 +170,39 @@ export function MessagesPage() {
   const meId = user?.id ?? null
 
   // ── live updates over WebSocket ────────────────────────────────────────
-  useConversationSocket(activeId, {
+  // Set of user IDs currently typing in the active conversation. Each entry
+  // gets a 6-second auto-expire timer so we don't leave a stale "is typing"
+  // bubble if the sender disconnects mid-stream.
+  const [typingUserIds, setTypingUserIds] = useState<number[]>([])
+  const typingTimers = useRef<Map<number, number>>(new Map())
+  const TYPING_TTL_MS = 6_000
+
+  function markUserTyping(userId: number) {
+    setTypingUserIds((prev) =>
+      prev.includes(userId) ? prev : [...prev, userId],
+    )
+    const existing = typingTimers.current.get(userId)
+    if (existing) window.clearTimeout(existing)
+    const handle = window.setTimeout(() => {
+      setTypingUserIds((prev) => prev.filter((id) => id !== userId))
+      typingTimers.current.delete(userId)
+    }, TYPING_TTL_MS)
+    typingTimers.current.set(userId, handle)
+  }
+
+  function clearUserTyping(userId: number) {
+    const existing = typingTimers.current.get(userId)
+    if (existing) window.clearTimeout(existing)
+    typingTimers.current.delete(userId)
+    setTypingUserIds((prev) => prev.filter((id) => id !== userId))
+  }
+
+  // Note: we don't clear typing state on activeId change here, because the
+  // effect would re-run under React's StrictMode dev double-invocation and
+  // wipe a freshly-arrived event. Each user's typing bubble auto-expires
+  // after TYPING_TTL_MS via its own timer, which is the actual safety net.
+
+  const conversationSocket = useConversationSocket(activeId, {
     onMessage: (e) => {
       // Skip if we already added it locally (echo of our own send).
       setMessages((prev) => {
@@ -308,7 +344,57 @@ export function MessagesPage() {
         ),
       )
     },
+    onParticipantAdded: () => {
+      // Refetch the active conversation so the participants list updates.
+      apiClient.api
+        .messagingConversationsList()
+        .then((res) => setConversations(res.data))
+        .catch(() => {})
+    },
+    onParticipantRemoved: (e) => {
+      if (e.user_id === meId) {
+        // We were removed — drop the conversation from local state.
+        setConversations((prev) =>
+          prev.filter((c) => c.id !== e.conversation_id),
+        )
+        if (activeId === e.conversation_id) setActiveId(null)
+        return
+      }
+      apiClient.api
+        .messagingConversationsList()
+        .then((res) => setConversations(res.data))
+        .catch(() => {})
+    },
+    onConversationRenamed: (e) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === e.id ? { ...c, name: e.name } : c)),
+      )
+    },
+    onTyping: (e) => {
+      if (e.user_id === meId) return
+      markUserTyping(e.user_id)
+    },
+    onTypingStopped: (e) => {
+      clearUserTyping(e.user_id)
+    },
   })
+
+  // Throttled "I'm typing" emit — fires at most once every 3 seconds while
+  // the user is composing. The send helper no-ops if the socket isn't open.
+  const lastTypingEmittedAt = useRef<number>(0)
+  const TYPING_EMIT_INTERVAL_MS = 3_000
+
+  function emitTyping() {
+    const now = Date.now()
+    if (now - lastTypingEmittedAt.current < TYPING_EMIT_INTERVAL_MS) return
+    lastTypingEmittedAt.current = now
+    conversationSocket.send({ type: 'typing' })
+  }
+
+  function emitTypingStopped() {
+    lastTypingEmittedAt.current = 0
+    conversationSocket.send({ type: 'typing_stopped' })
+  }
 
   // ── send message ───────────────────────────────────────────────────────
   const sendingRef = useRef(false)
@@ -455,6 +541,24 @@ export function MessagesPage() {
     }
   }
 
+  // ── create a new group conversation ────────────────────────────────────
+  async function handleCreateGroup(name: string, userIds: number[]) {
+    try {
+      const res = await apiClient.api.messagingConversationsGroupsCreate({
+        name,
+        participant_ids: userIds,
+      })
+      const conv = res.data
+      setConversations((prev) =>
+        prev.some((c) => c.id === conv.id) ? prev : [conv, ...prev],
+      )
+      setActiveId(conv.id)
+      setNewDialogOpen(false)
+    } catch {
+      toast.error(t('messages.errors.createGroupFailed'))
+    }
+  }
+
   // ── filtered list (search) ─────────────────────────────────────────────
   // Note: there is no concept of "pinned conversations" yet — message-pinning
   // and conversation-pinning are intentionally separate. Threads are listed
@@ -464,6 +568,21 @@ export function MessagesPage() {
     const q = search.trim().toLowerCase()
     return conversations.filter((c) => conversationLabel(c, participants, meId, t).toLowerCase().includes(q))
   }, [conversations, participants, meId, search, t])
+
+  const hasProfile = Boolean(user?.has_profile)
+
+  // Profile is the opt-in to messaging — anyone without one gets a hard
+  // gate at the page level. Their participation in coaching groups (etc.)
+  // is still recorded server-side; other members will see them as
+  // "Anonymous user" until they create a profile.
+  if (user && !hasProfile) {
+    return (
+      <PageLayout fullHeight>
+        <PageHeader title={t('messages.title')} />
+        <NoProfileGate />
+      </PageLayout>
+    )
+  }
 
   return (
     <PageLayout fullHeight>
@@ -477,7 +596,8 @@ export function MessagesPage() {
       <NewConversationDialog
         open={newDialogOpen}
         onOpenChange={setNewDialogOpen}
-        onPick={handleStartConversation}
+        onPickDirect={handleStartConversation}
+        onCreateGroup={handleCreateGroup}
         meId={meId}
       />
 
@@ -541,6 +661,9 @@ export function MessagesPage() {
               onReact={handleReact}
               onPin={handlePin}
               dayLabel={(iso) => dayLabel(iso, lang, t)}
+              typingUserIds={typingUserIds}
+              onTyping={emitTyping}
+              onTypingStopped={emitTypingStopped}
             />
           ) : (
             <NoConversationSelected />
@@ -569,11 +692,52 @@ export function MessagesPage() {
               messages={messages}
               participants={participants}
               meId={meId}
+              onRefreshConversation={async () => {
+                try {
+                  const res =
+                    await apiClient.api.messagingConversationsList()
+                  setConversations(res.data)
+                } catch {
+                  // non-fatal — WS will eventually catch us up
+                }
+              }}
+              onAfterLeave={() => {
+                setConversations((prev) =>
+                  prev.filter((c) => c.id !== activeConversation.id),
+                )
+                setActiveId(null)
+                setDetailsOpen(false)
+              }}
             />
           </div>
         )}
       </div>
     </PageLayout>
+  )
+}
+
+function NoProfileGate() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-1 min-h-0 items-center justify-center px-6">
+      <div className="flex max-w-md flex-col items-center gap-3 text-center">
+        <UserCircle2
+          aria-hidden="true"
+          className="size-10 text-muted-foreground"
+        />
+        <h2 className="text-lg font-semibold tracking-tight">
+          {t('messages.noProfile.title')}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {t('messages.noProfile.description')}
+        </p>
+        <Button asChild className="mt-2">
+          <NavLink to={paths.accountSettings}>
+            {t('messages.noProfile.cta')}
+          </NavLink>
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -642,12 +806,13 @@ function buildParticipantDict(
   const dict: Record<number, ConversationParticipant> = {}
   for (const c of convs) {
     for (const p of c.participants) {
-      // Conversation may surface the same person across multiple threads;
-      // the latest snapshot wins. Field shapes match server contract.
+      // Conversation surfaces the same person across multiple threads; the
+      // latest snapshot wins. Participants without a profile come back with
+      // display_name=null — the UI renders them as "Anonymous user".
       dict[p.id] = {
         id: p.id,
-        displayName: p.display_name || p.email,
-        email: p.email,
+        hasProfile: p.has_profile,
+        displayName: p.display_name ?? null,
         photoUrl: p.photo_url ?? null,
       }
     }
@@ -663,13 +828,10 @@ function conversationLabel(
 ): string {
   const others = c.participant_ids.filter((id) => id !== meId)
   if (others.length === 0) return t('messages.selfConversation')
-  if (others.length === 1) {
-    const p = dict[others[0]]
-    return p?.displayName ?? `User #${others[0]}`
-  }
+  if (others.length === 1) return participantName(dict[others[0]], t, others[0])
   const names = others
     .slice(0, 3)
-    .map((id) => dict[id]?.displayName?.split(' ')[0] ?? `#${id}`)
+    .map((id) => participantName(dict[id], t, id).split(' ')[0])
   const extra = others.length - names.length
   return extra > 0 ? `${names.join(', ')} +${extra}` : names.join(', ')
 }

@@ -26,6 +26,7 @@ export const paths = {
   designSystemLogoLoader: '/design-system/logo-loader',
   designSystemScheduleCalendar: '/design-system/schedule-calendar',
   designSystemToast: '/design-system/toast',
+  designSystemRichTextEditor: '/design-system/rich-text-editor',
   calendar: '/calendar',
   coachings: '/coachings',
   coachingsCreate: '/coachings/create',

@@ -238,6 +238,19 @@
   animation: landing-marquee 40s linear infinite;
 }
 
+/* Typing-indicator dot bounce — three staggered dots next to "X is typing". */
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
+  30% { transform: translateY(-2px); opacity: 1; }
+}
+.animate-typing-dot {
+  animation: typing-dot 1.05s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-typing-dot { animation: none; }
+}
+
 /* Sidebar unread-badge shake — fires when a new message arrives over the
    user-channel WS. Short, low-amplitude wobble so it draws the eye without
    being obnoxious. */

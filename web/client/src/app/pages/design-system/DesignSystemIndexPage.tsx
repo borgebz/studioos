@@ -12,17 +12,18 @@ import {
 } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
+  BadgeCheck,
   CalendarDays,
-  Camera,
   ClipboardList,
   ExternalLink,
   Globe,
   GraduationCap,
+  IdCard,
   LogIn,
   Plus,
   Settings,
-  Sparkles,
   User,
+  UserPen,
 } from 'lucide-react'
 
 const pages = [
@@ -135,8 +136,8 @@ export function DesignSystemIndexPage() {
         <Dialog open={profilePromptOpen} onOpenChange={setProfilePromptOpen}>
           <DialogContent className="sm:max-w-md overflow-hidden p-0" showCloseButton={false}>
             <div className="relative bg-primary/5 px-6 pt-8 pb-12">
-              <Sparkles className="absolute top-4 right-6 h-5 w-5 text-primary/40" />
-              <Sparkles className="absolute top-8 left-8 h-3 w-3 text-primary/25 rotate-12" />
+              <BadgeCheck className="absolute top-4 right-6 h-5 w-5 text-primary/40" />
+              <IdCard className="absolute top-8 left-8 h-4 w-4 text-primary/25 -rotate-12" />
               <div className="flex justify-center">
                 <div className="relative">
                   <Avatar className="h-24 w-24 ring-4 ring-background shadow-lg">
@@ -145,7 +146,7 @@ export function DesignSystemIndexPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                    <Camera className="h-4 w-4" />
+                    <UserPen className="h-4 w-4" />
                   </div>
                 </div>
               </div>
