@@ -33,17 +33,49 @@ SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 
+# When Caddy (or any reverse proxy) terminates TLS in front of Django, the
+# request arrives over plain HTTP from the proxy. Trust the X-Forwarded-Proto
+# header so request.is_secure() returns True and cookie Secure flags are honoured.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Defence-in-depth: Caddy already redirects HTTP→HTTPS at the edge, so this only
+# fires if a request bypasses Caddy and hits Django directly (e.g., container
+# port accidentally exposed). With SECURE_PROXY_SSL_HEADER set above, normal
+# Caddy traffic carries X-Forwarded-Proto=https and never triggers the redirect.
+SECURE_SSL_REDIRECT = not DEBUG
+
+# Use the X-Forwarded-Host header to build absolute URLs (so request.get_host()
+# returns the public hostname like "st.studioos.club" rather than the internal
+# container name "api").
+USE_X_FORWARDED_HOST = True
+
+# Built-in Django cookie hardening. Auth (JWT) cookies are configured separately
+# in accounts/auth_cookies.py and already mirror this pattern.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
 
 # -----------------------------------------------------------------------------
-# CORS
+# CORS / CSRF
 # -----------------------------------------------------------------------------
 
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:3000,http://localhost:5173",
-    cast=lambda v: [o.strip() for o in v.split(",")],
+    cast=lambda v: [o.strip() for o in v.split(",") if o.strip()],
 )
 CORS_ALLOW_CREDENTIALS = True
+
+# Origins (scheme + host) allowed to send unsafe HTTP methods (POST/PUT/DELETE).
+# Django rejects any cross-origin POST if the Origin header isn't in this list.
+# Staging: "https://st.studioos.club,https://api.st.studioos.club"
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="",
+    cast=lambda v: [o.strip() for o in v.split(",") if o.strip()],
+)
 
 
 # -----------------------------------------------------------------------------
