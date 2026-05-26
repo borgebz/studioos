@@ -133,7 +133,7 @@ export function UserEditPage() {
         email: values.email,
         phone: values.phone,
         phone_country_code: values.phone_country_code,
-        language: values.language,
+        language: values.language as LanguageEnum,
         address: values.address,
         postal_code: values.postal_code,
         role_codes: values.role_codes,

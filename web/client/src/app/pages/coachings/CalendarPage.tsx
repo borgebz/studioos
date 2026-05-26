@@ -47,8 +47,8 @@ function FilterCombobox<T extends string | number>({
       multiple
       autoHighlight
       items={items}
-      value={value}
-      onValueChange={(next) => onValueChange(next as T[])}
+      value={value as unknown as FilterOption<T>[]}
+      onValueChange={(next) => onValueChange(next as unknown as T[])}
       itemToStringLabel={(item: FilterOption<T>) => item.label}
       itemToStringValue={(item: FilterOption<T>) => String(item.value)}
     >
@@ -67,7 +67,7 @@ function FilterCombobox<T extends string | number>({
                   return (
                     <ComboboxChip
                       key={String(v)}
-                      value={v}
+                      {...({ value: v } as { value: T })}
                       className="max-w-[110px]"
                     >
                       {item?.swatch && (

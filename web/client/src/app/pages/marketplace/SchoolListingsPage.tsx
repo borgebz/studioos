@@ -342,7 +342,7 @@ export function SchoolListingsPage() {
     try {
       await apiClient.api.marketplaceSchoolListingsPartialUpdate(
         deleteTarget.id,
-        { status: 'closed' as ListingStatusEnum },
+        { status: 'closed' as ListingStatusEnum } as Parameters<typeof apiClient.api.marketplaceSchoolListingsPartialUpdate>[1],
       )
       setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
       toast.success(t('marketplace.deleteSuccess'))

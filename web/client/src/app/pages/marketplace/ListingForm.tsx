@@ -54,7 +54,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
@@ -234,26 +233,16 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
     return defaultListingValues
   }, [isEdit, listing])
 
-  const { register, handleSubmit, control, watch, setValue } =
+  const { register, handleSubmit, control, watch } =
     useForm<CreateListingFormValues>({
       resolver: zodResolver(createListingSchema),
       defaultValues: formDefaults,
     })
 
   const listingType = watch('listing_type')
-  const title = watch('title')
-  const description = watch('description')
   const askingPrice = watch('asking_price')
-  const isPublic = watch('is_public')
   const productName = watch('product_name')
-  const productDescription = watch('product_description')
   const categoryId = watch('category_id')
-  const targetGender = watch('target_gender')
-  const brand = watch('brand')
-  const material = watch('material')
-  const inventoryCode = watch('inventory_code')
-  const storageLocation = watch('storage_location')
-  const schoolNotes = watch('school_notes')
 
   const categoryTreeNodes: TreeSelectNode[] = React.useMemo(() => {
     const roots = categories.filter((c) => !c.parent)

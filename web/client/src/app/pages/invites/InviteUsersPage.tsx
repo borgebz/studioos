@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Mail,
@@ -37,7 +36,6 @@ import {
 
 export function InviteUsersPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
 
   const [roles, setRoles] = useState<RoleList[]>([])
   const rolesLoaded = useRef(false)

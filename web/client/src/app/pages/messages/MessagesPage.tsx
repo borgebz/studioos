@@ -10,7 +10,7 @@ import { paths } from '@/app/paths'
 import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
-import type { Conversation, Message } from '@/api/studioos-api'
+import { MessageKindEnum, type Conversation, type Message } from '@/api/studioos-api'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -209,6 +209,7 @@ export function MessagesPage() {
         if (prev.some((m) => m.id === e.id)) return prev
         const msg: Message = {
           id: e.id,
+          kind: MessageKindEnum.User,
           sender_id: e.sender_id,
           body: e.body,
           file_url: e.file_url,

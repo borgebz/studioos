@@ -47,6 +47,7 @@ export interface CalendarCategory {
 export interface ScheduleCalendarProps {
   resources: CalendarResource[]
   events: CalendarEvent[]
+  categories?: CalendarCategory[]
   dayStartHour?: number
   dayEndHour?: number
   slotMinutes?: number
@@ -200,7 +201,6 @@ function TimeGutter({
 }
 
 function ResourceColumn({
-  resource,
   events,
   totalSlots,
   slotHeight,

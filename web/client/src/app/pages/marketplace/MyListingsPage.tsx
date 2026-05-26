@@ -341,7 +341,7 @@ export function MyListingsPage() {
     try {
       await apiClient.api.marketplaceListingsPartialUpdate(deleteTarget.id, {
         status: 'closed' as ListingStatusEnum,
-      })
+      } as Parameters<typeof apiClient.api.marketplaceListingsPartialUpdate>[1])
       setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
       toast.success(t('marketplace.deleteSuccess'))
     } catch (err) {

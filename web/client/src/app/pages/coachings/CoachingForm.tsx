@@ -23,6 +23,7 @@ import { parseApiError } from '@/lib/api-errors'
 import { usePermissions } from '@/auth/permissions'
 import {
   CoachingClassStatusEnum,
+  RecurrenceTypeEnum,
   type CoachingClass,
   type Modality as ApiModality,
   type Studio as ApiStudio,
@@ -390,7 +391,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
         participant_ids: participants.map((p) => p.id),
         recurring_coaching: data.is_recurring
           ? {
-              recurrence_type: data.recurrence.recurrence_type,
+              recurrence_type: data.recurrence.recurrence_type as RecurrenceTypeEnum,
               recurrence_interval: data.recurrence.recurrence_interval,
               days_of_week: data.recurrence.selected_days.join(','),
               end_date:

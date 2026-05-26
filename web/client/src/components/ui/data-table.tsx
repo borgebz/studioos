@@ -66,9 +66,6 @@ export function getSelectionColumn<TData>(): ColumnDef<TData, unknown> {
 const TH_CLASS =
   'text-muted-foreground h-10 px-3 text-left align-middle text-xs font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
 
-const TD_CLASS =
-  'p-3 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
-
 /**
  * Renders a header cell's label alongside its filter icon (when
  * `meta.filter` is declared). The filter icon flips side for right-aligned

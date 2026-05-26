@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { DateRange } from 'react-day-picker'
 import { Calendar } from '@/components/ui/calendar'
 
 export function CalendarPage() {
   const { t } = useTranslation()
   const [single, setSingle] = useState<Date | undefined>(new Date())
-  const [range, setRange] = useState<{ from: Date; to?: Date } | undefined>({
+  const [range, setRange] = useState<DateRange | undefined>({
     from: new Date(),
     to: new Date(Date.now() + 5 * 86400000),
   })

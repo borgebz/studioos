@@ -80,7 +80,7 @@ const EVENTS: CalendarEvent[] = SEED.map((e, i) => ({
 }))
 
 const FEW_RESOURCES: CalendarResource[] = RESOURCES.slice(0, 2)
-const FEW_EVENTS: CalendarEvent[] = EVENTS.filter((e) => e.resourceId <= 2)
+const FEW_EVENTS: CalendarEvent[] = EVENTS.filter((e) => Number(e.resourceId) <= 2)
 
 export function ScheduleCalendarPage() {
   const { t } = useTranslation()

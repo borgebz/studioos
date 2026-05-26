@@ -71,7 +71,7 @@ export function AccountSettingsPage() {
         reset({
           display_name: profile.display_name || '',
           bio: profile.bio || '',
-          is_public: profile.is_public ?? true,
+          is_public: (profile as { is_public?: boolean }).is_public ?? true,
         })
         setPhotoUrl(profile.photo_url || null)
         setHasProfile(true)

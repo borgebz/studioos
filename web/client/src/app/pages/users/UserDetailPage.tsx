@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
+import type { Locale } from 'date-fns'
 import { enUS, pt } from 'date-fns/locale'
 import {
   CalendarDays,
@@ -10,7 +11,6 @@ import {
   Pencil,
   Phone,
   Receipt,
-  ShieldCheck,
   UserX,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -30,14 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
@@ -404,7 +397,7 @@ function CoachingsTab({
     loaded.current = true
     Promise.all([
       apiClient.api
-        .getAllCoachings({ teacher_id: userId })
+        .getAllCoachings({ teacher_id: [userId] })
         .catch(() => null),
       apiClient.api
         .getAllCoachings({ requested_by_id: userId })
@@ -524,7 +517,7 @@ function EnrollmentsTab({
     apiClient.api
       .enrollmentsListList({ student_id: userId })
       .then((res) => {
-        const data = res.data
+        const data = res.data as EnrollmentRead[] | { results?: EnrollmentRead[] } | undefined
         setRows(Array.isArray(data) ? data : data?.results ?? [])
       })
       .catch(() => setRows([]))

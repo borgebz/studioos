@@ -13,7 +13,7 @@ export const coachingFormSchema = z.object({
   modality_id: z.string().min(1, 'validation.required'),
   teacher_id: z.string().min(1, 'validation.required'),
   studio_id: z.string().min(1, 'validation.required'),
-  date: z.date({ required_error: 'validation.required' }),
+  date: z.date({ error: 'validation.required' }),
   start_time: z.string().min(1, 'validation.required'),
   end_time: z.string().min(1, 'validation.required'),
   total_price: z.string(),

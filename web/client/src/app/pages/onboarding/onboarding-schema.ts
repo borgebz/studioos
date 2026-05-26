@@ -5,7 +5,7 @@ export const onboardingSchema = z.object({
   last_name: z.string().min(1, 'validation.required'),
   phone_country_code: z.string().min(1, 'validation.required'),
   phone: z.string().min(1, 'validation.required'),
-  date_of_birth: z.date({ required_error: 'validation.required' }),
+  date_of_birth: z.date({ error: 'validation.required' }),
   password: z.string().min(8, 'auth.onboarding.passwordTooShort'),
 })
 

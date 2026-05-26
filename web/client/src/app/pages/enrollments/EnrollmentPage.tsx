@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -19,7 +19,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -100,10 +99,9 @@ export function EnrollmentPage() {
     register,
     handleSubmit,
     control,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<EnrollmentFormValues>({
-    resolver: zodResolver(enrollmentSchema),
+    resolver: zodResolver(enrollmentSchema) as unknown as Resolver<EnrollmentFormValues>,
     defaultValues: enrollmentDefaults,
   })
 
@@ -171,7 +169,7 @@ export function EnrollmentPage() {
         period_id: period?.id ?? undefined,
         consent_rgpd: true,
         consent_internal_regulation: true,
-      })
+      } as Parameters<typeof apiClient.api.enrollmentsCreate>[0])
       setSubmitted(res.data)
       toast.success(t('enrollments.successTitle'))
     } catch (err) {

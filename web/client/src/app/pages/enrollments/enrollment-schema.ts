@@ -25,8 +25,8 @@ export const enrollmentSchema = z.object({
 
   historical_notes: z.string().optional().default(''),
 
-  consent_rgpd: z.literal(true, { errorMap: () => ({ message: 'enrollments.validation.consentRequired' }) }),
-  consent_internal_regulation: z.literal(true, { errorMap: () => ({ message: 'enrollments.validation.consentRequired' }) }),
+  consent_rgpd: z.literal(true, { error: 'enrollments.validation.consentRequired' }),
+  consent_internal_regulation: z.literal(true, { error: 'enrollments.validation.consentRequired' }),
 })
 
 export type EnrollmentFormValues = z.infer<typeof enrollmentSchema>

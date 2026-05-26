@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Sun, Moon, ExternalLink } from 'lucide-react'
@@ -633,7 +633,7 @@ function Projetos({ t }: { t: (key: string) => string }) {
         </div>
 
         <div className="grid border-t border-border sm:grid-cols-2">
-          {projects.map((p, i) => (
+          {projects.map((p) => (
             <article
               key={p.title}
               className="grid grid-cols-[auto_1fr] items-start gap-8 border-b border-border px-8 py-10 sm:odd:border-r"
