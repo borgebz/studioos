@@ -1,6 +1,5 @@
 import type { Conversation } from '@/api/studioos-api'
 import { ConversationKindEnum } from '@/api/studioos-api'
-import { Users } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
@@ -31,51 +30,58 @@ export function ConversationList({
   const { t } = useTranslation()
   return (
     <ul className="flex flex-col">
-      {conversations.map((c, i) => {
+      {conversations.map((c) => {
         const isActive = c.id === activeId
-        const isLast = i === conversations.length - 1
         const others = c.participant_ids.filter((id) => id !== meId)
-        const primary = others[0] !== undefined ? participants[others[0]] : null
         const label = formatLabel(c, participants, meId, t)
         const preview = formatPreview(c, participants, meId, t)
         const unread = unreadByConversation?.[String(c.id)] ?? 0
         const hasUnread = unread > 0 && !isActive
+        const isGroup = c.kind === ConversationKindEnum.Group
+        // For groups we stack the two highest-recency participants instead
+        // of the bland generic icon — it makes each conversation feel like
+        // a place with people in it.
+        const primaryId = others[0]
+        const secondaryId = others[1]
+        const primary =
+          primaryId !== undefined ? participants[primaryId] : null
+        const secondary =
+          secondaryId !== undefined ? participants[secondaryId] : null
+        const primaryName = primary
+          ? participantName(primary, t, primary.id)
+          : ''
+        const secondaryName = secondary
+          ? participantName(secondary, t, secondary.id)
+          : ''
         return (
-          <li key={c.id}>
+          <li key={c.id} className="relative">
+            {isActive && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-2 left-0 w-0.5 rounded-r bg-primary"
+              />
+            )}
             <button
               type="button"
               onClick={() => onSelect(c.id)}
               className={cn(
-                // Bigger touch targets + breathing room on mobile, tighter on
-                // desktop where the rail is a narrow 280px column.
-                'group relative grid w-full grid-cols-[auto_1fr_auto] items-start gap-3 px-4 py-3 text-left transition-colors md:items-center md:gap-2.5 md:px-3 md:py-2.5',
+                'group grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 text-left transition-colors',
+                'border-b border-border/60 last:border-b-0',
                 isActive
-                  ? 'bg-primary/8 text-foreground'
-                  : 'hover:bg-accent/40 active:bg-accent/60'
+                  ? 'bg-muted/60'
+                  : 'hover:bg-muted/40 active:bg-muted/50'
               )}
               aria-current={isActive ? 'true' : undefined}
             >
-              {isActive && (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-primary"
+              {isGroup ? (
+                <GroupAvatarStack
+                  primary={primary}
+                  secondary={secondary}
+                  primaryName={primaryName}
+                  secondaryName={secondaryName}
                 />
-              )}
-              {c.kind === ConversationKindEnum.Group ? (
-                <span
-                  aria-hidden="true"
-                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary md:size-9"
-                >
-                  <Users className="size-5 md:size-4" />
-                </span>
               ) : (
-                <Avatar
-                  // On mobile we want a slightly larger avatar to match the
-                  // row's increased vertical rhythm. Override via className
-                  // since the variant size jumps from 32px → 40px in one step.
-                  size="default"
-                  className="size-10 md:size-8"
-                >
+                <Avatar size="lg" className="size-11 shrink-0">
                   {primary?.photoUrl && (
                     <AvatarImage src={primary.photoUrl} alt={label} />
                   )}
@@ -85,7 +91,7 @@ export function ConversationList({
               <div className="min-w-0 flex flex-col gap-0.5">
                 <span
                   className={cn(
-                    'truncate text-sm text-foreground',
+                    'truncate text-[15px] leading-tight text-foreground',
                     hasUnread ? 'font-semibold' : 'font-medium'
                   )}
                 >
@@ -93,7 +99,7 @@ export function ConversationList({
                 </span>
                 <span
                   className={cn(
-                    'truncate text-xs',
+                    'truncate text-[13px] leading-snug',
                     hasUnread
                       ? 'font-medium text-foreground/80'
                       : 'text-muted-foreground'
@@ -102,39 +108,77 @@ export function ConversationList({
                   {preview}
                 </span>
               </div>
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-col items-end gap-1.5">
                 <span
                   className={cn(
-                    'text-[11px]',
+                    'text-[11px] tabular-nums',
                     hasUnread
-                      ? 'font-medium text-primary'
+                      ? 'font-semibold text-primary'
                       : 'text-muted-foreground'
                   )}
                 >
                   {lastTimeLabel(c.updated_at)}
                 </span>
-                {hasUnread && (
+                {hasUnread ? (
                   <span
-                    className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground"
+                    className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-none text-primary-foreground"
                     aria-label={`${unread} unread`}
                   >
-                    {unread > 99 ? '+99' : unread}
+                    {unread > 99 ? '99+' : unread}
                   </span>
+                ) : (
+                  <span className="h-5" aria-hidden="true" />
                 )}
               </div>
             </button>
-            {/* Hairline divider between rows — skipped on the last row and
-             *  on the active row (the row tint already isolates it). */}
-            {!isLast && !isActive && (
-              <div
-                aria-hidden="true"
-                className="mx-4 h-px bg-border/60 md:mx-3"
-              />
-            )}
           </li>
         )
       })}
     </ul>
+  )
+}
+
+/** Two overlapping avatars used as a group glyph. Reads as "people in here"
+ *  instead of the bland generic Users icon. */
+function GroupAvatarStack({
+  primary,
+  secondary,
+  primaryName,
+  secondaryName,
+}: {
+  primary: ConversationParticipant | null
+  secondary: ConversationParticipant | null
+  primaryName: string
+  secondaryName: string
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className="relative block size-11 shrink-0"
+    >
+      <Avatar
+        size="default"
+        className="absolute right-0 bottom-0 size-7 ring-2 ring-card"
+      >
+        {primary?.photoUrl && (
+          <AvatarImage src={primary.photoUrl} alt={primaryName} />
+        )}
+        <AvatarFallback className="text-[10px]">
+          {getInitials(primaryName)}
+        </AvatarFallback>
+      </Avatar>
+      <Avatar
+        size="default"
+        className="absolute left-0 top-0 size-7 ring-2 ring-card"
+      >
+        {secondary?.photoUrl && (
+          <AvatarImage src={secondary.photoUrl} alt={secondaryName} />
+        )}
+        <AvatarFallback className="text-[10px]">
+          {getInitials(secondaryName) || '··'}
+        </AvatarFallback>
+      </Avatar>
+    </span>
   )
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Moon, Sun } from 'lucide-react'
 import { paths } from '@/app/paths'
@@ -29,9 +29,12 @@ type OnboardingStep = 'loading' | 'invalid' | 'form' | 'submitting' | 'success'
 export function OnboardingPage() {
   const { t, i18n } = useTranslation()
   const { token } = useParams<{ token: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const { refreshUser } = useAuth()
   const { theme, setTheme } = useTheme()
+
+  const isPreview = new URLSearchParams(location.search).has('preview')
 
   const currentLang = i18n.language.startsWith('pt') ? 'pt' : 'en'
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -66,6 +69,12 @@ export function OnboardingPage() {
   useEffect(() => {
     if (loaded.current || !token) return
     loaded.current = true
+    if (isPreview) {
+      setEmail('ana.silva.maria@studioos.dev')
+      setRole('teacher')
+      setStep('form')
+      return
+    }
     apiClient.api
       .accountsOnboardRetrieve(token)
       .then((res) => {
@@ -74,7 +83,7 @@ export function OnboardingPage() {
         setStep('form')
       })
       .catch(() => setStep('invalid'))
-  }, [token])
+  }, [token, isPreview])
 
   const onSubmit = async (data: OnboardingFormValues) => {
     if (!token) return
@@ -166,10 +175,10 @@ export function OnboardingPage() {
             <div className="login-corner login-corner-br" />
 
             <div
-              className="flex justify-between text-[10.5px] uppercase tracking-[0.18em]"
+              className="flex justify-between text-[11px]"
               style={{ color: 'var(--login-panel-text)' }}
             >
-              <span>◐ EST. MMXIV</span>
+              <span className="uppercase tracking-[0.18em]">◐ EST. MMXIV</span>
               <span>{t('auth.onboarding.marqueeWelcome')}</span>
             </div>
 
@@ -178,7 +187,7 @@ export function OnboardingPage() {
                 className="text-center"
                 style={{ color: 'var(--login-panel-text)', opacity: 0.8 }}
               >
-                <p className="mb-2 text-[10.5px] uppercase tracking-[0.32em]">
+                <p className="mb-2 text-[12px]">
                   {t('auth.onboarding.invitedAs')}
                 </p>
                 <Badge variant="outline" className="text-sm capitalize">
@@ -200,17 +209,17 @@ export function OnboardingPage() {
               </h1>
 
               <div
-                className="flex items-center gap-3.5 text-[11px] uppercase tracking-[0.36em]"
+                className="flex items-center gap-2 text-[12px]"
                 style={{ color: 'var(--login-panel-text)', opacity: 0.7 }}
               >
-                <span>BRAGA</span>
+                <span>Braga</span>
                 <span className="inline-block h-1 w-1 rounded-full bg-current" />
-                <span>PORTUGAL</span>
+                <span>Portugal</span>
               </div>
             </div>
 
             <div
-              className="flex justify-center text-[10.5px] uppercase tracking-[0.18em]"
+              className="flex justify-center text-[12px]"
               style={{ color: 'var(--login-panel-text)' }}
             >
               <span>{email}</span>
@@ -283,12 +292,27 @@ export function OnboardingPage() {
                 </p>
               </div>
 
-              {/* Mobile role badge */}
-              <div className="mb-5 flex items-center gap-2 lg:hidden">
-                <span className="text-sm text-muted-foreground">{email}</span>
-                <Badge variant="outline" className="capitalize">
-                  {t(`roles.${role}`)}
-                </Badge>
+              {/* Mobile invitee stub */}
+              <div
+                className="mb-6 rounded-md px-4 py-3 lg:hidden"
+                style={{
+                  background: 'var(--login-brand-surface)',
+                  border: '1px solid var(--login-rule)',
+                  color: 'var(--login-panel-text)',
+                }}
+              >
+                <p className="text-sm">
+                  {t('auth.onboarding.invitedAs')}{' '}
+                  <span className="font-medium capitalize">
+                    {t(`roles.${role}`)}
+                  </span>
+                </p>
+                <p
+                  className="mt-0.5 truncate text-xs opacity-65"
+                  title={email}
+                >
+                  {email}
+                </p>
               </div>
 
               {/* Form */}
@@ -433,7 +457,7 @@ export function OnboardingPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t border-dashed border-border pt-4 text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="flex items-center justify-between pt-4 text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
             <span>{t('auth.login.copyright')}</span>
             <span
               className="auth-wordmark hidden sm:inline"

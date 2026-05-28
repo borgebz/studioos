@@ -107,7 +107,7 @@
       "heroTitle_2": " profile.",
       "heroBody": "You've been invited to join StudioOS. Fill in your details below to activate your account.",
       "ticket": "INVITATION · NEW MEMBER",
-      "marqueeWelcome": "WELCOME",
+      "marqueeWelcome": "Welcome",
       "invitedAs": "Invited as",
       "firstName": "First name",
       "firstNamePlaceholder": "e.g. Ana",
@@ -1093,6 +1093,18 @@
     "remove": "Remove photo",
     "setPrimary": "Set as primary photo"
   },
+  "imageUpload": {
+    "dropHint": "Drag an image or",
+    "browse": "browse files",
+    "browseButton": "Browse",
+    "takePhoto": "Take photo",
+    "replace": "Replace",
+    "remove": "Remove",
+    "changePhoto": "Change photo",
+    "tooLarge": "Image must be under {{size}} MB",
+    "invalidType": "Unsupported image format",
+    "hint": "JPG, PNG or WEBP · max {{size}} MB"
+  },
   "users": {
     "title": "Users",
     "subtitle": "Manage everyone who has access to your school.",
@@ -1849,6 +1861,7 @@
     "composerPlaceholder": "Write a message…",
     "send": "Send",
     "attachFile": "Attach file",
+    "attachLabel": "Attach",
     "removeFile": "Remove file",
     "reactLabel": "Add reaction",
     "moreLabel": "More",
@@ -1882,6 +1895,11 @@
     "openDetails": "Open conversation details",
     "closeDetails": "Close details",
     "newMessage": "New message",
+    "messageActions": "Message actions",
+    "jumpToBottom": "Jump to latest",
+    "newMessagesCount_one": "{{count}} new message",
+    "newMessagesCount_other": "{{count}} new messages",
+    "clearSearch": "Clear search",
     "anonymousUser": "Anonymous user",
     "noProfileYet": "No profile yet",
     "noProfile": {
@@ -1900,10 +1918,11 @@
       "selectionHint_other": "{{count}} selected",
       "selectionHintEmpty": "No one selected",
       "createGroup": "Create group",
-      "tabs": {
-        "direct": "Direct",
-        "group": "Group"
-      },
+      "startChat": "Start chat",
+      "toLabel": "To",
+      "groupNameLabel": "Group name",
+      "addAnother": "Add another…",
+      "removeChip": "Remove {{name}}",
       "empty": "No people found."
     },
     "untitledGroup": "Untitled group",
@@ -1950,6 +1969,9 @@
       "pinnedCount_other": "{{count}} pinned messages",
       "filesCount_one": "{{count}} file",
       "filesCount_other": "{{count}} files",
+      "photosCount_one": "{{count}} photo",
+      "photosCount_other": "{{count}} photos",
+      "directSubtitle": "Direct conversation",
       "leave": "Leave conversation"
     }
   },

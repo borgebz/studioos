@@ -316,7 +316,12 @@
 }
 .grain::before {
   content: '';
-  position: absolute;
+  /* position: fixed pins the grain to the viewport, so it covers the entire
+   * visible area regardless of scroll position (vertical, horizontal, or
+   * overscroll bounce on iOS Safari). Stays within .grain's isolated stacking
+   * context, so z-index -1 sits above the element's bg-color and below its
+   * content. This is the iOS-safe alternative to background-attachment: fixed. */
+  position: fixed;
   inset: 0;
   z-index: -1;
   background-image: radial-gradient(

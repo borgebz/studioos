@@ -13,27 +13,17 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   BadgeCheck,
-  CalendarDays,
-  ClipboardList,
   ExternalLink,
   FileQuestion,
-  Globe,
   GraduationCap,
   IdCard,
   LogIn,
-  Plus,
-  Settings,
+  Ticket,
   User,
   UserPen,
 } from 'lucide-react'
 
 const pages = [
-  {
-    to: paths.landing,
-    label: 'Landing Page',
-    description: 'Public landing page with school info and StudioOS features.',
-    icon: Globe,
-  },
   {
     to: `${paths.login}?preview`,
     label: 'Login',
@@ -41,34 +31,16 @@ const pages = [
     icon: LogIn,
   },
   {
+    to: `${paths.onboarding.replace(':token', 'preview')}?preview`,
+    label: 'Onboarding',
+    description: 'Invite acceptance flow shown to new members from an email link.',
+    icon: Ticket,
+  },
+  {
     to: paths.enrollment,
     label: 'Enrollment',
     description: 'Public sign-up form for students and guardians.',
     icon: GraduationCap,
-  },
-  {
-    to: paths.coachingsCreate,
-    label: 'Create Coaching',
-    description: 'Multi-section form to schedule a coaching session.',
-    icon: Plus,
-  },
-  {
-    to: paths.calendar,
-    label: 'Calendar',
-    description: 'Weekly schedule calendar view.',
-    icon: CalendarDays,
-  },
-  {
-    to: paths.accountSettings,
-    label: 'Account Settings',
-    description: 'Profile editing and user account management.',
-    icon: Settings,
-  },
-  {
-    to: paths.home,
-    label: 'Home',
-    description: 'Dashboard home page.',
-    icon: ClipboardList,
   },
   {
     to: '/404',

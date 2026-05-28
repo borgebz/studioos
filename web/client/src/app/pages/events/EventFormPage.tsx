@@ -4,17 +4,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import {
-  Camera,
-  Check,
-  ChevronRight,
-  ImagePlus,
-  Megaphone,
-  Plus,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react'
+import { Check, ChevronRight, Megaphone, Plus } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
 import type {
@@ -33,6 +23,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { TimePicker } from '@/components/shared/TimePicker'
 import { RichTextEditor } from '@/components/shared/RichTextEditor'
+import { ImageUpload } from '@/components/shared/ImageUpload'
 import { paths } from '@/app/paths'
 import { cn } from '@/lib/utils'
 import { eventFormSchema, type EventFormValues } from './event-schema'
@@ -249,12 +240,9 @@ export function EventFormPage({ mode }: EventFormPageProps) {
     }
   }
 
-  const onCoverPick = (file: File | null) => {
+  const onCoverPick = (file: File) => {
     setValue('cover_file', file, { shouldDirty: true })
-    if (file) {
-      const url = URL.createObjectURL(file)
-      setCoverPreview(url)
-    }
+    setCoverPreview(URL.createObjectURL(file))
   }
 
   if (loading) {
@@ -346,9 +334,11 @@ export function EventFormPage({ mode }: EventFormPageProps) {
                 title={t('events.form.cover')}
                 description={t('events.form.coverHint')}
               >
-                <CoverUpload
-                  url={coverPreview}
-                  onPick={onCoverPick}
+                <ImageUpload
+                  variant="cover"
+                  aspectRatio={16 / 9}
+                  value={coverPreview}
+                  onChange={(file) => onCoverPick(file)}
                   onRemove={() => {
                     setCoverPreview(null)
                     setValue('cover_file', null, { shouldDirty: true })
@@ -632,139 +622,6 @@ function RadioCard({
   )
 }
 
-// ─── Cover upload ────────────────────────────────────────────────────────
-
-function CoverUpload({
-  url,
-  onPick,
-  onRemove,
-}: {
-  url: string | null
-  onPick: (file: File | null) => void
-  onRemove: () => void
-}) {
-  const { t } = useTranslation()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const cameraRef = useRef<HTMLInputElement>(null)
-  const pick = (file: File | undefined) => {
-    if (file) onPick(file)
-  }
-  return (
-    <div className="space-y-3">
-      {url ? (
-        <div className="relative overflow-hidden rounded-md border border-border bg-muted/30">
-          <img
-            src={url}
-            alt="cover"
-            className="aspect-[16/9] w-full object-cover"
-          />
-        </div>
-      ) : (
-        <div
-          className="flex aspect-[16/9] w-full flex-col items-center justify-center rounded-md border-2 border-dashed border-border bg-muted/10 p-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
-          onDragOver={(e) => {
-            e.preventDefault()
-            e.currentTarget.classList.add('border-primary/40', 'bg-primary/5')
-          }}
-          onDragLeave={(e) => {
-            e.currentTarget.classList.remove(
-              'border-primary/40',
-              'bg-primary/5'
-            )
-          }}
-          onDrop={(e) => {
-            e.preventDefault()
-            e.currentTarget.classList.remove(
-              'border-primary/40',
-              'bg-primary/5'
-            )
-            pick(e.dataTransfer.files?.[0])
-          }}
-        >
-          <ImagePlus className="mb-2 size-8 text-muted-foreground" />
-          <p className="text-sm">
-            {t('events.form.coverDropzone')}{' '}
-            <label className="cursor-pointer font-medium text-primary hover:underline">
-              {t('events.form.coverBrowse')}
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  pick(e.target.files?.[0])
-                  e.target.value = ''
-                }}
-              />
-            </label>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t('events.form.coverHint')}
-          </p>
-        </div>
-      )}
-      <div className="flex flex-wrap gap-2">
-        {url && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => inputRef.current?.click()}
-          >
-            <Upload className="size-4" />
-            {t('events.form.coverReplace')}
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => cameraRef.current?.click()}
-          aria-label={t('events.form.coverCapture')}
-        >
-          <Camera className="size-4" />
-        </Button>
-        {url && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={onRemove}
-          >
-            <Trash2 className="size-4" />
-            {t('events.files.remove')}
-          </Button>
-        )}
-      </div>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        hidden
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onPick(f)
-          e.target.value = ''
-        }}
-      />
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onPick(f)
-          e.target.value = ''
-        }}
-      />
-    </div>
-  )
-}
-
 // Silence unused-import lint if some helpers above are conditionally rendered.
 void ChevronRight
 void Plus
-void ImagePlus
-void X

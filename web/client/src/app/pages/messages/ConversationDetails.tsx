@@ -69,6 +69,16 @@ export function ConversationDetailsContent({
     [messages]
   )
 
+  const { images, documents } = useMemo(() => {
+    const images: Message[] = []
+    const documents: Message[] = []
+    for (const m of files) {
+      if (isImageMessage(m)) images.push(m)
+      else documents.push(m)
+    }
+    return { images, documents }
+  }, [files])
+
   const pinned = useMemo(
     () =>
       conversation.pinned_message_ids
@@ -126,7 +136,7 @@ export function ConversationDetailsContent({
           <SectionLabel>{t('messages.details.groupName')}</SectionLabel>
           <div className="mt-2.5">
             {renaming ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2">
                 <Input
                   autoFocus
                   value={pendingName}
@@ -140,9 +150,21 @@ export function ConversationDetailsContent({
                     }
                   }}
                 />
-                <Button size="sm" onClick={() => void handleRename()}>
-                  {t('messages.saveEdit')}
-                </Button>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setPendingName(conversation.name || '')
+                      setRenaming(false)
+                    }}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button size="sm" onClick={() => void handleRename()}>
+                    {t('messages.saveEdit')}
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-2">
@@ -228,11 +250,13 @@ export function ConversationDetailsContent({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="size-7 text-muted-foreground opacity-0 transition-opacity group-hover/member:opacity-100 focus-visible:opacity-100"
+                    // Always visible on mobile (no hover event); hover-revealed on md+
+                    // to keep the desktop list calm.
+                    className="size-9 shrink-0 text-muted-foreground md:size-7 md:opacity-0 md:transition-opacity md:group-hover/member:opacity-100 md:focus-visible:opacity-100"
                     onClick={() => void handleRemove(p.id)}
                     aria-label={t('messages.details.removeMember')}
                   >
-                    <Trash2 className="size-3.5" />
+                    <Trash2 className="size-4 md:size-3.5" />
                   </Button>
                 )}
               </li>
@@ -265,13 +289,43 @@ export function ConversationDetailsContent({
         </Section>
       )}
 
-      {files.length > 0 && (
+      {images.length > 0 && (
         <Section>
           <SectionLabel>
-            {t('messages.details.filesCount', { count: files.length })}
+            {t('messages.details.photosCount', { count: images.length })}
+          </SectionLabel>
+          {/* 3-up image grid — far more useful than a filename list when
+           *  most attachments are photos shared inside the conversation. */}
+          <ul className="mt-3 grid grid-cols-3 gap-1.5">
+            {images.map((m) => (
+              <li key={m.id} className="aspect-square">
+                <a
+                  href={m.file_url ?? '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block size-full overflow-hidden rounded-md border border-border bg-muted"
+                  aria-label={m.original_filename || t('messages.attachment')}
+                >
+                  <img
+                    src={m.file_url ?? ''}
+                    alt={m.original_filename || ''}
+                    loading="lazy"
+                    className="block size-full object-cover"
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      {documents.length > 0 && (
+        <Section>
+          <SectionLabel>
+            {t('messages.details.filesCount', { count: documents.length })}
           </SectionLabel>
           <ul className="mt-3 flex flex-col gap-1.5">
-            {files.map((m) => (
+            {documents.map((m) => (
               <li key={m.id}>
                 <FileChip message={m} />
               </li>
@@ -281,10 +335,10 @@ export function ConversationDetailsContent({
       )}
 
       {isGroup && (
-        <div className="mt-8 border-t border-border/60 pt-5">
+        <div className="mt-8 border-t border-border/60 pt-5 pb-[max(0px,env(safe-area-inset-bottom))]">
           <Button
-            variant="ghost"
-            className="w-full justify-center text-destructive hover:bg-destructive/8 hover:text-destructive"
+            variant="outline"
+            className="w-full justify-center border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={() => void handleLeave()}
           >
             <LogOut className="size-4" />
@@ -293,6 +347,14 @@ export function ConversationDetailsContent({
         </div>
       )}
     </div>
+  )
+}
+
+function isImageMessage(m: Message): boolean {
+  if (m.mime_type && m.mime_type.startsWith('image/')) return true
+  const name = (m.original_filename || m.file_url || '').toLowerCase()
+  return ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some((ext) =>
+    name.endsWith(ext)
   )
 }
 

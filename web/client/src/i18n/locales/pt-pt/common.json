@@ -107,7 +107,7 @@
       "heroTitle_2": " perfil.",
       "heroBody": "Foi convidado/a para se juntar à StudioOS. Preencha os seus dados abaixo para ativar a sua conta.",
       "ticket": "CONVITE · NOVO MEMBRO",
-      "marqueeWelcome": "BEM-VINDO/A",
+      "marqueeWelcome": "Bem-vindo/a",
       "invitedAs": "Convidado/a como",
       "firstName": "Nome",
       "firstNamePlaceholder": "ex. Ana",
@@ -1093,6 +1093,18 @@
     "remove": "Remover foto",
     "setPrimary": "Definir como foto principal"
   },
+  "imageUpload": {
+    "dropHint": "Arraste uma imagem ou",
+    "browse": "procurar ficheiros",
+    "browseButton": "Procurar",
+    "takePhoto": "Tirar foto",
+    "replace": "Substituir",
+    "remove": "Remover",
+    "changePhoto": "Alterar foto",
+    "tooLarge": "A imagem deve ter menos de {{size}} MB",
+    "invalidType": "Formato de imagem não suportado",
+    "hint": "JPG, PNG ou WEBP · máx {{size}} MB"
+  },
   "users": {
     "title": "Utilizadores",
     "subtitle": "Gere todas as pessoas com acesso à tua escola.",
@@ -1849,6 +1861,7 @@
     "composerPlaceholder": "Escrever uma mensagem…",
     "send": "Enviar",
     "attachFile": "Anexar ficheiro",
+    "attachLabel": "Anexar",
     "removeFile": "Remover ficheiro",
     "reactLabel": "Adicionar reação",
     "moreLabel": "Mais",
@@ -1882,6 +1895,11 @@
     "openDetails": "Abrir detalhes da conversa",
     "closeDetails": "Fechar detalhes",
     "newMessage": "Nova mensagem",
+    "messageActions": "Ações da mensagem",
+    "jumpToBottom": "Ir para o final",
+    "newMessagesCount_one": "{{count}} nova mensagem",
+    "newMessagesCount_other": "{{count}} novas mensagens",
+    "clearSearch": "Limpar pesquisa",
     "anonymousUser": "Utilizador anónimo",
     "noProfileYet": "Sem perfil ainda",
     "noProfile": {
@@ -1900,10 +1918,11 @@
       "selectionHint_other": "{{count}} selecionados",
       "selectionHintEmpty": "Ninguém selecionado",
       "createGroup": "Criar grupo",
-      "tabs": {
-        "direct": "Direta",
-        "group": "Grupo"
-      },
+      "startChat": "Iniciar conversa",
+      "toLabel": "Para",
+      "groupNameLabel": "Nome do grupo",
+      "addAnother": "Adicionar mais…",
+      "removeChip": "Remover {{name}}",
       "empty": "Nenhuma pessoa encontrada."
     },
     "untitledGroup": "Grupo sem nome",
@@ -1950,6 +1969,9 @@
       "pinnedCount_other": "{{count}} mensagens afixadas",
       "filesCount_one": "{{count}} ficheiro",
       "filesCount_other": "{{count}} ficheiros",
+      "photosCount_one": "{{count}} foto",
+      "photosCount_other": "{{count}} fotos",
+      "directSubtitle": "Conversa direta",
       "leave": "Sair da conversa"
     }
   },

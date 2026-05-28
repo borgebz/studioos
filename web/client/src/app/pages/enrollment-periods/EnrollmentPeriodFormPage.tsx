@@ -213,17 +213,20 @@ export function EnrollmentPeriodFormPage({
 
   const footer = (
     <>
-      <Button
-        variant="outline"
-        type="button"
-        onClick={() => navigate(paths.enrollmentPeriods)}
-        disabled={submitting}
-      >
-        {t('common.back')}
-      </Button>
-      <Button type="submit" form="page-form" disabled={submitting}>
-        {t('common.save')}
-      </Button>
+      <span />
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => navigate(paths.enrollmentPeriods)}
+          disabled={submitting}
+        >
+          {t('common.back')}
+        </Button>
+        <Button type="submit" form="page-form" disabled={submitting}>
+          {t('common.save')}
+        </Button>
+      </div>
     </>
   )
 

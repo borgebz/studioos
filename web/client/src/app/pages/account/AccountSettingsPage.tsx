@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { Camera, User } from 'lucide-react'
+import { User } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
 import type { Profile } from '@/api/studioos-api'
-import { ImageCropDialog } from '@/components/shared/ImageCropDialog'
+import { ImageUpload } from '@/components/shared/ImageUpload'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { CardSection } from '@/components/shared/CardSection'
@@ -32,12 +31,10 @@ export function AccountSettingsPage() {
 
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [cropSrc, setCropSrc] = useState<string | null>(null)
   const [hasProfile, setHasProfile] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const dataLoaded = useRef(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { register, handleSubmit, control, reset, watch } =
     useForm<AccountSettingsFormValues>({
@@ -84,40 +81,10 @@ export function AccountSettingsPage() {
     void load()
   }, [user, reset])
 
-  const handlePhotoChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      if (!file) return
-
-      const maxSize = 5 * 1024 * 1024
-      if (file.size > maxSize) {
-        toast.warning(t('account.photoTooLarge'))
-        return
-      }
-
-      const allowed = ['image/jpeg', 'image/png', 'image/webp']
-      if (!allowed.includes(file.type)) {
-        toast.warning(t('account.photoInvalidType'))
-        return
-      }
-
-      // Open the crop dialog with the selected image
-      setCropSrc(URL.createObjectURL(file))
-    },
-    [t]
-  )
-
-  const handleCropComplete = useCallback((croppedFile: File) => {
-    setCropSrc(null)
-    setPhotoFile(croppedFile)
-    setPhotoUrl(URL.createObjectURL(croppedFile))
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }, [])
-
-  const handleCropCancel = useCallback(() => {
-    setCropSrc(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }, [])
+  const handlePhotoPick = (file: File) => {
+    setPhotoFile(file)
+    setPhotoUrl(URL.createObjectURL(file))
+  }
 
   const onSubmit = async (data: AccountSettingsFormValues) => {
     setIsSaving(true)
@@ -338,31 +305,13 @@ export function AccountSettingsPage() {
             {/* Photo */}
             <CardSection title={t('account.photo')}>
               <div className="flex flex-col items-center gap-4">
-                <div className="relative">
-                  <Avatar className="h-28 w-28">
-                    {photoUrl && (
-                      <AvatarImage src={photoUrl} alt={displayName} />
-                    )}
-                    <AvatarFallback className="text-2xl">
-                      {initials || <User className="h-8 w-8" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <button
-                    type="button"
-                    aria-label={t('account.changePhoto')}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                  />
-                </div>
+                <ImageUpload
+                  variant="avatar"
+                  value={photoUrl}
+                  onChange={handlePhotoPick}
+                  alt={displayName}
+                  fallback={initials || <User className="h-8 w-8" />}
+                />
                 <p className="text-xs text-muted-foreground text-center">
                   {t('account.photoHelper')}
                 </p>
@@ -388,13 +337,6 @@ export function AccountSettingsPage() {
         </div>
       </div>
 
-      <ImageCropDialog
-        imageSrc={cropSrc}
-        onCropComplete={handleCropComplete}
-        onCancel={handleCropCancel}
-        outputSize={512}
-        cropShape="round"
-      />
     </PageLayout>
   )
 }

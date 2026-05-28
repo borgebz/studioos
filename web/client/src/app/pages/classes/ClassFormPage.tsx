@@ -173,48 +173,52 @@ export function ClassFormPage({ mode }: ClassFormPageProps) {
     )
   }
 
+  const canDeleteClass = mode === 'edit' && canManage && classe
+
   const footer = (
     <>
-      <Button
-        variant="outline"
-        type="button"
-        onClick={() => navigate(paths.classes)}
-        disabled={submitting}
-      >
-        {t('common.back')}
-      </Button>
-      <Button type="submit" form="page-form" disabled={submitting}>
-        {t('common.save')}
-      </Button>
+      {canDeleteClass ? (
+        <Button
+          variant="destructive"
+          size="sm"
+          type="button"
+          onClick={() =>
+            setDeleteTarget({
+              id: classe.id,
+              name: classe.name,
+              description: classe.description,
+              created_at: classe.created_at,
+              updated_at: classe.updated_at,
+            })
+          }
+          disabled={submitting}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {t('common.delete')}
+        </Button>
+      ) : (
+        <span />
+      )}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => navigate(paths.classes)}
+          disabled={submitting}
+        >
+          {t('common.back')}
+        </Button>
+        <Button type="submit" form="page-form" disabled={submitting}>
+          {t('common.save')}
+        </Button>
+      </div>
     </>
   )
 
   return (
     <PageLayout footer={footer}>
       <div className="mx-auto w-full max-w-6xl">
-        <PageHeader title={title} backTo={paths.classes}>
-          {mode === 'edit' && canManage && classe && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              aria-label={t('common.delete')}
-              onClick={() =>
-                setDeleteTarget({
-                  id: classe.id,
-                  name: classe.name,
-                  description: classe.description,
-                  created_at: classe.created_at,
-                  updated_at: classe.updated_at,
-                })
-              }
-              disabled={submitting}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </PageHeader>
+        <PageHeader title={title} backTo={paths.classes} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
             <div className="space-y-6">

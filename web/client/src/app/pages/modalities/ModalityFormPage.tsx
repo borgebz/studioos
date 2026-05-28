@@ -173,38 +173,40 @@ export function ModalityFormPage({ mode }: ModalityFormPageProps) {
 
   const footer = (
     <>
-      <Button
-        variant="outline"
-        type="button"
-        onClick={() => navigate(paths.modalities)}
-        disabled={submitting}
-      >
-        {t('common.back')}
-      </Button>
-      <Button type="submit" form="page-form" disabled={submitting}>
-        {t('common.save')}
-      </Button>
+      {canDelete && modality ? (
+        <Button
+          variant="destructive"
+          size="sm"
+          type="button"
+          onClick={() => setDeleteTarget(modality)}
+          disabled={submitting}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {t('common.delete')}
+        </Button>
+      ) : (
+        <span />
+      )}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => navigate(paths.modalities)}
+          disabled={submitting}
+        >
+          {t('common.back')}
+        </Button>
+        <Button type="submit" form="page-form" disabled={submitting}>
+          {t('common.save')}
+        </Button>
+      </div>
     </>
   )
 
   return (
     <PageLayout footer={footer}>
       <div className="mx-auto w-full max-w-6xl">
-        <PageHeader title={title} backTo={paths.modalities}>
-          {canDelete && modality && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              aria-label={t('common.delete')}
-              onClick={() => setDeleteTarget(modality)}
-              disabled={submitting}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </PageHeader>
+        <PageHeader title={title} backTo={paths.modalities} />
 
         <form
           id="page-form"

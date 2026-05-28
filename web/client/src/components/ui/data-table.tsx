@@ -154,10 +154,13 @@ const STICKY_TH_CLASS = cn(
   TH_BASE,
   // The header must be fully opaque so scrolled rows don't bleed through —
   // sticky positioning keeps the th painted, but a translucent background
-  // would still let the underlying rows show. Inset shadow (not border) keeps
-  // the divider clipped to the cell — a sticky element's border isn't
-  // clipped by the scroll container.
-  'sticky top-0 z-10 bg-muted shadow-[inset_0_-1px_0_var(--border)]'
+  // would still let the underlying rows show. We use `bg-card` (same as the
+  // wrapper) so adjacent header cells visually merge into one continuous bar:
+  // a contrasting background (e.g. `bg-muted`) creates faint vertical seams
+  // between cells at the antialiased edges, which read as column dividers.
+  // Inset shadow (not border) keeps the divider clipped to the cell — a
+  // sticky element's border isn't clipped by the scroll container.
+  'sticky top-0 z-10 bg-card shadow-[inset_0_-1px_0_var(--border)]'
 )
 
 // ---------------------------------------------------------------------------
@@ -310,7 +313,10 @@ export function DataTable<TData>({
     return (
       <div
         className={cn(
-          'flex flex-col flex-1 min-h-0 rounded-lg border border-border bg-card',
+          // `overflow-hidden` clips the inner scroll container's content to
+          // the rounded-lg corners — without it the sticky thead and bottom
+          // rows paint past the rounding and the table looks square-cornered.
+          'flex flex-col flex-1 min-h-0 overflow-hidden rounded-lg border border-border bg-card',
           className
         )}
       >
@@ -358,7 +364,7 @@ export function DataTable<TData>({
       )}
     >
       <Table>
-        <TableHeader className="bg-muted/40">
+        <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-transparent">
               {headerGroup.headers.map((header) => {

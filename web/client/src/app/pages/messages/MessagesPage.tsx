@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input'
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
@@ -95,13 +96,10 @@ export function MessagesPage() {
         if (cancelled) return
         const convs = res.data
         setConversations(convs)
-        // On desktop we auto-open the first conversation so the right pane
-        // isn't an empty state on first load. On mobile we use a navigator
-        // pattern (inbox ↔ thread), so jumping straight into a thread on a
-        // hard refresh would hide the inbox — leave activeId null instead.
-        if (convs.length && activeId === null && !isMobile) {
-          setActiveId(convs[0].id)
-        }
+        // No auto-select. On both desktop and mobile we land on the empty
+        // state ("Select a conversation") until the user explicitly picks
+        // one — refreshing the page should not silently re-enter the
+        // last-listed thread.
         setParticipants(buildParticipantDict(convs))
       })
       .catch(() => {
@@ -696,36 +694,48 @@ export function MessagesPage() {
           detailsOpen && 'md:grid-cols-[280px_1fr_320px]'
         )}
       >
-        {/* Rail — conversation list. On mobile, hidden while the thread is
-         *  showing (we navigate between the two). Cards float over the
-         *  SidebarInset's grain background; a hint of translucency on the
-         *  card surface lets the paper texture register through the panel. */}
+        {/* Rail — conversation list. Liquid-glass deck on its own: a search
+         *  card floating above a list card, with the page grain reading
+         *  through the gap between them. Mirrors the thread's card pattern
+         *  so both halves of the page share the same visual language. On
+         *  mobile, hidden while the thread is showing (navigator pattern). */}
         <div
           className={cn(
-            'flex min-w-0 min-h-0 flex-col bg-card/95',
-            // Desktop card chrome — softer border + a touch of elevation so
-            // the rail reads as a card, not a flat column.
-            'md:rounded-lg md:border md:border-border/70 md:shadow-[0_1px_2px_0_rgb(0_0_0_/_0.04)]',
+            'flex min-w-0 min-h-0 flex-col gap-1.5 p-1.5 md:gap-2 md:p-2.5',
             mobileShowThread && 'hidden md:flex'
           )}
         >
-          <div className="border-b border-border px-4 py-3 md:p-3">
-            <div className="relative">
-              <Search
-                aria-hidden="true"
-                className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('messages.searchPlaceholder')}
-                className="h-10 pl-9 md:h-9"
-                aria-label={t('messages.searchPlaceholder')}
-              />
-            </div>
+          {/* Search input sits directly on the grain — no card chrome
+           *  around it. The Input itself is the only object on this row. */}
+          <div className="relative shrink-0">
+            <Search
+              aria-hidden="true"
+              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              type="search"
+              inputMode="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('messages.searchPlaceholder')}
+              className="h-10 pl-9 pr-9 md:h-9"
+              aria-label={t('messages.searchPlaceholder')}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                aria-label={t('messages.clearSearch')}
+                className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+              </button>
+            )}
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          {/* List card */}
+          <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="h-full overflow-y-auto">
             {loadingList ? (
               <ConversationListSkeleton />
             ) : visibleConversations.length === 0 ? (
@@ -741,15 +751,17 @@ export function MessagesPage() {
                 unreadByConversation={unreadByConversation}
               />
             )}
+            </div>
           </div>
         </div>
 
-        {/* Center — thread. On mobile, hidden until a conversation is
-         *  picked, then takes over the screen. */}
+        {/* Center — thread. Liquid-glass deck: the wrapper has no card chrome
+         *  of its own. The thread renders separate floating cards (header,
+         *  optional pinned, composer) with the messages canvas between them,
+         *  all sitting on the page grain. */}
         <div
           className={cn(
-            'flex min-w-0 min-h-0 flex-col overflow-hidden bg-card/95',
-            'md:rounded-lg md:border md:border-border/70 md:shadow-[0_1px_2px_0_rgb(0_0_0_/_0.04)]',
+            'flex min-w-0 min-h-0 flex-col overflow-hidden',
             !mobileShowThread && 'hidden md:flex'
           )}
         >
@@ -779,21 +791,32 @@ export function MessagesPage() {
         </div>
 
         {/* Details — desktop right panel (toggled by header click). On
-         *  mobile we open the same content as a Sheet so it overlays
-         *  the thread instead of stealing column space. */}
+         *  mobile we open as a bottom sheet with the same chrome as
+         *  NewConversationDialog: drag handle, conversation name as
+         *  the title, descriptive subtitle, body below. */}
         {detailsOpen && activeConversation && meId !== null && isMobile && (
           <Sheet
             open={detailsOpen}
             onOpenChange={(o) => setDetailsOpen(o)}
           >
             <SheetContent
-              side="right"
-              className="w-full gap-0 sm:max-w-md"
+              side="bottom"
+              className="flex h-[92dvh] flex-col gap-0 rounded-t-2xl border-t bg-background p-0"
             >
-              <SheetHeader className="border-b border-border">
-                <SheetTitle className="text-sm font-semibold tracking-tight">
-                  {t('messages.details.title')}
+              {/* Drag handle — same affordance as NewConversationDialog. */}
+              <div className="flex shrink-0 justify-center pt-2.5 pb-1">
+                <span
+                  aria-hidden="true"
+                  className="h-1 w-9 rounded-full bg-muted-foreground/30"
+                />
+              </div>
+              <SheetHeader className="shrink-0 gap-1 px-5 pt-2 pb-3 text-left">
+                <SheetTitle className="text-base font-semibold tracking-tight">
+                  {detailsTitle(activeConversation, participants, meId, t)}
                 </SheetTitle>
+                <SheetDescription className="text-xs text-muted-foreground">
+                  {detailsSubtitle(activeConversation, t)}
+                </SheetDescription>
               </SheetHeader>
               <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
                 <ConversationDetailsContent
@@ -897,9 +920,9 @@ function ConversationListSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <li
           key={i}
-          className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 md:gap-2.5 md:px-3 md:py-2.5"
+          className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0"
         >
-          <Skeleton className="size-10 rounded-full md:size-8" />
+          <Skeleton className="size-11 rounded-full" />
           <div className="flex min-w-0 flex-col gap-1.5">
             <Skeleton className="h-3.5 w-32 max-w-full" />
             <Skeleton className="h-3 w-44 max-w-full" />
@@ -997,4 +1020,29 @@ function conversationLabel(
     .map((id) => participantName(dict[id], t, id).split(' ')[0])
   const extra = others.length - names.length
   return extra > 0 ? `${names.join(', ')} +${extra}` : names.join(', ')
+}
+
+/** Title for the mobile details sheet — the conversation name itself
+ *  (the group name, or the other participant's name for a DM). More
+ *  useful than a generic "Conversation details" header. */
+function detailsTitle(
+  c: Conversation,
+  dict: Record<number, ConversationParticipant>,
+  meId: number | null,
+  t: (k: string) => string
+): string {
+  if (c.kind === 'group') return c.name || t('messages.untitledGroup')
+  return conversationLabel(c, dict, meId, t)
+}
+
+/** Subtitle: member count for groups, "Direct conversation" for DMs.
+ *  Mirrors NewConversationDialog's pattern of title + descriptive
+ *  subtitle inside the sheet header. */
+function detailsSubtitle(c: Conversation, t: (k: string) => string): string {
+  if (c.kind === 'group') {
+    return t('messages.details.membersCount', {
+      count: c.participant_ids.length,
+    })
+  }
+  return t('messages.details.directSubtitle')
 }

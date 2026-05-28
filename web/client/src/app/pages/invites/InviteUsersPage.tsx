@@ -54,7 +54,7 @@ export function InviteUsersPage() {
   } = useForm<SingleInviteFormValues>({
     resolver: zodResolver(singleInviteSchema),
     defaultValues: { email: '', role: '' },
-    mode: 'onBlur',
+    mode: 'onChange',
   })
 
   useEffect(() => {

@@ -124,7 +124,7 @@ export function StudioFormPage({ mode }: StudioFormPageProps) {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-4xl">
+        <div className="w-full max-w-3xl">
           <PageHeader title={title} backTo={paths.studios} />
           <Skeleton className="h-[400px] w-full" />
         </div>
@@ -134,42 +134,40 @@ export function StudioFormPage({ mode }: StudioFormPageProps) {
 
   const footer = (
     <>
-      <Button
-        variant="outline"
-        type="button"
-        onClick={() => navigate(paths.studios)}
-        disabled={submitting}
-      >
-        {t('common.back')}
-      </Button>
-      <Button
-        type="submit"
-        form="page-form"
-        disabled={submitting}
-      >
-        {t('common.save')}
-      </Button>
+      {canDelete && studio ? (
+        <Button
+          variant="destructive"
+          size="sm"
+          type="button"
+          onClick={() => setDeleteTarget(studio)}
+          disabled={submitting}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {t('common.delete')}
+        </Button>
+      ) : (
+        <span />
+      )}
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => navigate(paths.studios)}
+          disabled={submitting}
+        >
+          {t('common.back')}
+        </Button>
+        <Button type="submit" form="page-form" disabled={submitting}>
+          {t('common.save')}
+        </Button>
+      </div>
     </>
   )
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-4xl">
-        <PageHeader title={title} backTo={paths.studios}>
-          {canDelete && studio && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              aria-label={t('common.delete')}
-              onClick={() => setDeleteTarget(studio)}
-              disabled={submitting}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </PageHeader>
+      <div className="w-full max-w-3xl">
+        <PageHeader title={title} backTo={paths.studios} />
 
         <form
           id="page-form"

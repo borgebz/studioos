@@ -16,8 +16,11 @@ function Avatar({
     <AvatarPrimitive.Root
       data-slot="avatar"
       data-size={size}
+      // Solid `bg-card` base so the avatar is always opaque — without it
+      // the grain texture on `SidebarInset` bleeds through transparent
+      // photos and the bg-primary/15 fallback tint.
       className={cn(
-        'group/avatar relative flex size-8 shrink-0 overflow-hidden rounded-full select-none data-[size=lg]:size-10 data-[size=sm]:size-6',
+        'group/avatar relative flex size-8 shrink-0 overflow-hidden rounded-full bg-card select-none data-[size=lg]:size-10 data-[size=sm]:size-6',
         className
       )}
       {...props}

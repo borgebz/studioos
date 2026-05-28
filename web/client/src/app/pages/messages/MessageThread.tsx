@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { pt } from 'date-fns/locale/pt'
 import {
+  ArrowDown,
+  Camera,
   ChevronLeft,
   Download,
   Eye,
@@ -12,6 +14,7 @@ import {
   Pencil,
   Pin,
   PinOff,
+  Plus,
   Send,
   SmilePlus,
   Trash2,
@@ -29,6 +32,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Tooltip,
@@ -37,6 +46,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Textarea } from '@/components/ui/textarea'
+import { useIsMobile } from '@/hooks/useMobile'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 
@@ -96,17 +106,68 @@ export function MessageThread({
 }: MessageThreadProps) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
+  const isMobile = useIsMobile()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [draft, setDraft] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingBody, setEditingBody] = useState('')
+  // Mobile: long-press on a bubble opens a bottom action sheet with the
+  // reactions row + Pin/Edit/Delete. The always-on action strip is hidden
+  // under md to keep the thread visually calm.
+  const [actionSheetId, setActionSheetId] = useState<number | null>(null)
 
-  // auto-scroll to bottom when messages change
-  useEffect(() => {
+  // Track whether the scroll viewport is pinned to the bottom. Used to (a)
+  // suppress auto-scroll when the user is reading history, and (b) drive the
+  // jump-to-bottom pill + unread-since-scroll counter.
+  const [atBottom, setAtBottom] = useState(true)
+  const [unreadBelow, setUnreadBelow] = useState(0)
+  const lastSeenIdRef = useRef<number | null>(null)
+  const prevConvIdRef = useRef<number | null>(null)
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const el = scrollRef.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [messages.length, conversation.id])
+    if (!el) return
+    el.scrollTo({ top: el.scrollHeight, behavior })
+  }, [])
+
+  // Reset the "new messages" pill whenever we switch conversations.
+  useEffect(() => {
+    if (prevConvIdRef.current !== conversation.id) {
+      prevConvIdRef.current = conversation.id
+      setUnreadBelow(0)
+      setAtBottom(true)
+      // Use 'auto' so switching conversations doesn't animate.
+      requestAnimationFrame(() => scrollToBottom('auto'))
+    }
+  }, [conversation.id, scrollToBottom])
+
+  // Auto-scroll only when the user is already at (or near) the bottom; if
+  // they've scrolled up to read history, surface a "jump to bottom" pill
+  // with the count of new messages instead of yanking them around.
+  useEffect(() => {
+    const lastId = messages.length ? messages[messages.length - 1].id : null
+    const prevLastId = lastSeenIdRef.current
+    lastSeenIdRef.current = lastId
+
+    if (atBottom) {
+      requestAnimationFrame(() => scrollToBottom('auto'))
+      setUnreadBelow(0)
+      return
+    }
+    // A new message arrived while the user is scrolled up.
+    if (lastId !== null && prevLastId !== null && lastId !== prevLastId) {
+      setUnreadBelow((n) => n + 1)
+    }
+  }, [messages, atBottom, scrollToBottom])
+
+  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight
+    const near = distance < 80
+    setAtBottom(near)
+    if (near) setUnreadBelow(0)
+  }
 
   // ── header label ────────────────────────────────────────────────────────
   const others = conversation.participant_ids.filter((id) => id !== meId)
@@ -156,9 +217,16 @@ export function MessageThread({
   const timeLocale = lang.startsWith('pt') ? pt : enUS
 
   return (
-    <>
-      {/* Header — back arrow (mobile only) + clickable strip that toggles details */}
-      <div className="flex shrink-0 items-center border-b border-border">
+    // Liquid-glass deck. Each strip (header, pinned, composer) is its own
+    // floating card; the messages canvas in between is transparent so the
+    // page grain (SidebarInset) reads as the paper underneath them all.
+    // Tight gap on purpose — keeps the cards visually separated without
+    // leaving a wide strip of grain that lets messages "peek" while
+    // scrolling under the cards.
+    <div className="flex h-full min-h-0 flex-col gap-1.5 p-1.5 md:gap-2 md:p-2.5">
+      {/* Header card — back arrow (mobile only) + clickable strip that
+       *  toggles details. */}
+      <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         {onBack && (
           <button
             type="button"
@@ -208,16 +276,18 @@ export function MessageThread({
         </button>
       </div>
 
-      {/* Pinned bar */}
+      {/* Pinned bar — single read-only row. Pin icon + the most recent
+       *  pinned message body, left-aligned, truncated. The full list of
+       *  pinned items lives in the conversation details panel; this strip
+       *  is just a passive marker that something is pinned. */}
       {pinnedMessages.length > 0 && (
-        <div className="shrink-0 border-b border-border bg-accent/40 px-7 py-2.5">
-          <div className="mx-auto flex max-w-[680px] items-center gap-2 text-xs">
-            <Pin className="size-3 text-muted-foreground" aria-hidden="true" />
-            <span className="font-medium text-muted-foreground">
-              {t('messages.pinnedCount', { count: pinnedMessages.length })}
-            </span>
+        <div className="shrink-0 overflow-hidden rounded-xl border border-border bg-accent/60 px-4 py-2 shadow-sm backdrop-blur-sm md:px-5">
+          <div className="flex items-center gap-2 text-xs">
+            <Pin
+              aria-hidden="true"
+              className="size-3 shrink-0 text-muted-foreground"
+            />
             <span className="truncate text-foreground/80">
-              ·{' '}
               {pinnedMessages[0].body ||
                 pinnedMessages[0].original_filename ||
                 t('messages.attachment')}
@@ -226,12 +296,15 @@ export function MessageThread({
         </div>
       )}
 
-      {/* Messages — paper canvas. The .grain class layers a subtle dot
-       *  texture behind the content so messages feel like they sit on
-       *  stationery instead of a flat panel. */}
+      {/* Messages — transparent canvas between the floating cards. The page
+       *  grain (SidebarInset) reads through as the paper underneath. No
+       *  vertical padding so messages clip cleanly at the canvas edge
+       *  (right under the floating card edges) instead of revealing a
+       *  strip of grain when they scroll past. */}
       <div
         ref={scrollRef}
-        className="grain relative flex-1 min-h-0 overflow-y-auto bg-muted/30 px-6 py-5"
+        onScroll={handleScroll}
+        className="relative flex-1 min-h-0 overflow-y-auto bg-transparent px-3 py-0 md:px-5"
       >
         {loading ? (
           <ThreadSkeleton />
@@ -245,8 +318,12 @@ export function MessageThread({
           <div>
             {groupedMessages.map((group) => (
               <div key={group.key}>
-                <div className="my-6 text-center text-xs font-medium text-muted-foreground">
-                  {group.day}
+                {/* Day label — sits inline between groups. Not sticky so it
+                 *  never collides with the floating header card above. */}
+                <div className="my-4 flex justify-center">
+                  <span className="rounded-full bg-card/90 px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-border/60">
+                    {group.day}
+                  </span>
                 </div>
                 {group.items.map((m, i) => {
                   if (m.kind === 'system') {
@@ -274,6 +351,7 @@ export function MessageThread({
                       showAvatar={showAvatar}
                       sender={participants[m.sender_id]}
                       meId={meId}
+                      isMobile={isMobile}
                       isPinned={conversation.pinned_message_ids.includes(m.id)}
                       isEditing={editingId === m.id}
                       editingBody={editingBody}
@@ -298,6 +376,7 @@ export function MessageThread({
                       onDelete={() => onDelete(m.id)}
                       onReact={(emoji) => onReact(m.id, emoji)}
                       onPin={(pin) => onPin(m.id, pin)}
+                      onOpenActions={() => setActionSheetId(m.id)}
                       isLastOfRun={isLastOfRun}
                       isLastOverall={isLastOverall}
                       timeLabel={(iso) =>
@@ -312,25 +391,38 @@ export function MessageThread({
             ))}
           </div>
         )}
+
+        {/* Jump-to-bottom pill — only visible when the user has scrolled up
+         *  far enough that they could miss incoming messages. */}
+        {!atBottom && (
+          <button
+            type="button"
+            onClick={() => {
+              scrollToBottom('smooth')
+              setUnreadBelow(0)
+            }}
+            className="sticky bottom-3 z-20 mx-auto flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-md transition-colors hover:bg-accent"
+            aria-label={t('messages.jumpToBottom')}
+          >
+            <ArrowDown className="size-3.5" aria-hidden="true" />
+            {unreadBelow > 0
+              ? t('messages.newMessagesCount', { count: unreadBelow })
+              : t('messages.jumpToBottom')}
+          </button>
+        )}
       </div>
 
-      {/* Typing indicator (only when *others* are typing) */}
-      {typingUserIds.length > 0 && (
-        <div className="shrink-0 border-t border-border bg-card px-7 pt-2">
-          <TypingIndicator
-            userIds={typingUserIds}
-            participants={participants}
-          />
-        </div>
-      )}
-
-      {/* Composer */}
-      <div
-        className={cn(
-          'shrink-0 border-border bg-card px-7 py-4',
-          typingUserIds.length === 0 && 'border-t'
+      {/* Composer card — floats above the safe-area; the typing indicator
+       *  sits inside the same card so it doesn't read as a separate strip. */}
+      <div className="shrink-0 overflow-hidden rounded-xl border border-border bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-sm md:px-7 md:py-4">
+        {typingUserIds.length > 0 && (
+          <div className="mb-2">
+            <TypingIndicator
+              userIds={typingUserIds}
+              participants={participants}
+            />
+          </div>
         )}
-      >
         <div className="mx-auto max-w-[680px]">
           {file && (
             <div className="mb-2 flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5 text-xs">
@@ -349,6 +441,7 @@ export function MessageThread({
           <Composer
             value={draft}
             hasFile={Boolean(file)}
+            isMobile={isMobile}
             onChange={(v) => {
               setDraft(v)
               if (v.trim().length > 0) onTyping()
@@ -365,7 +458,42 @@ export function MessageThread({
           />
         </div>
       </div>
-    </>
+
+      {/* Mobile action sheet — opens on long-press of a bubble. Replaces the
+       *  always-visible bubble action strip that crowded the mobile layout. */}
+      {isMobile && actionSheetId !== null && (
+        <MobileActionSheet
+          message={messages.find((m) => m.id === actionSheetId) ?? null}
+          isPinned={
+            actionSheetId !== null &&
+            conversation.pinned_message_ids.includes(actionSheetId)
+          }
+          mine={
+            messages.find((m) => m.id === actionSheetId)?.sender_id === meId
+          }
+          onClose={() => setActionSheetId(null)}
+          onReact={async (emoji) => {
+            await onReact(actionSheetId, emoji)
+            setActionSheetId(null)
+          }}
+          onPin={async (pin) => {
+            await onPin(actionSheetId, pin)
+            setActionSheetId(null)
+          }}
+          onStartEdit={() => {
+            const m = messages.find((x) => x.id === actionSheetId)
+            if (!m) return
+            setEditingId(m.id)
+            setEditingBody(m.body)
+            setActionSheetId(null)
+          }}
+          onDelete={async () => {
+            await onDelete(actionSheetId)
+            setActionSheetId(null)
+          }}
+        />
+      )}
+    </div>
   )
 }
 
@@ -377,6 +505,7 @@ interface BubbleProps {
   isLastOverall: boolean
   sender?: ConversationParticipant
   meId: number
+  isMobile: boolean
   isPinned: boolean
   isEditing: boolean
   editingBody: string
@@ -387,6 +516,8 @@ interface BubbleProps {
   onDelete: () => void
   onReact: (emoji: string) => void
   onPin: (pin: boolean) => void
+  /** Mobile-only: long-press handler raises a bottom action sheet. */
+  onOpenActions: () => void
   timeLabel: (iso: string) => string
 }
 
@@ -398,6 +529,7 @@ function Bubble({
   isLastOverall,
   sender,
   meId,
+  isMobile,
   isPinned,
   isEditing,
   editingBody,
@@ -408,11 +540,50 @@ function Bubble({
   onDelete,
   onReact,
   onPin,
+  onOpenActions,
   timeLabel,
 }: BubbleProps) {
   const { t } = useTranslation()
   const deleted = Boolean(message.deleted_at)
   const senderName = participantName(sender, t, message.sender_id)
+
+  // Long-press wiring. On mobile, pressing and holding the bubble for ~450ms
+  // opens the action sheet (reactions row + pin/edit/delete). Short taps fall
+  // through so links inside the bubble (image, file) still work. We also
+  // cancel on pointer movement so a scroll gesture never trips an action.
+  const longPressTimer = useRef<number | null>(null)
+  const longPressFired = useRef(false)
+  const pressOrigin = useRef<{ x: number; y: number } | null>(null)
+
+  function clearLongPress() {
+    if (longPressTimer.current !== null) {
+      window.clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    if (!isMobile || deleted || isEditing) return
+    longPressFired.current = false
+    pressOrigin.current = { x: e.clientX, y: e.clientY }
+    longPressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true
+      // Soft haptic confirmation on supported devices.
+      if ('vibrate' in navigator) navigator.vibrate(10)
+      onOpenActions()
+    }, 450)
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!pressOrigin.current) return
+    const dx = e.clientX - pressOrigin.current.x
+    const dy = e.clientY - pressOrigin.current.y
+    if (Math.hypot(dx, dy) > 8) clearLongPress()
+  }
+
+  function onPointerUp() {
+    clearLongPress()
+  }
 
   return (
     <div className="group w-full py-0.5">
@@ -450,10 +621,19 @@ function Bubble({
             'relative flex max-w-[78%] items-center gap-1',
             mine ? 'flex-row-reverse' : 'flex-row'
           )}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={clearLongPress}
+          onContextMenu={(e) => {
+            // Suppress the native long-press context menu on mobile so our
+            // action sheet is the only thing that surfaces.
+            if (isMobile) e.preventDefault()
+          }}
         >
           <div
             className={cn(
-              'rounded-lg px-3.5 py-2 text-sm leading-relaxed shadow-sm',
+              'rounded-lg px-3.5 py-2 text-sm leading-relaxed shadow-sm select-none md:select-auto',
               mine
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-card border border-border text-card-foreground',
@@ -548,7 +728,7 @@ function Bubble({
             )}
           </div>
 
-          {!deleted && !isEditing && (
+          {!deleted && !isEditing && !isMobile && (
             <BubbleActions
               mine={mine}
               isPinned={isPinned}
@@ -639,9 +819,9 @@ function BubbleActions({
     <TooltipProvider delayDuration={200}>
       <div
         className={cn(
-          // absolutely positioned so the actions don't reserve layout space
-          // when not hovered — keeps mine bubbles hugging the right edge.
-          'absolute top-1/2 z-10 -translate-y-1/2 flex shrink-0 items-center gap-0.5 rounded-md bg-card/95 px-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100',
+          // Desktop-only hover-reveal strip. On mobile the long-press action
+          // sheet replaces this entirely, so we never render this branch.
+          'absolute top-1/2 z-10 -translate-y-1/2 hidden md:flex shrink-0 items-center gap-0.5 rounded-md border border-transparent bg-card/95 px-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-within:opacity-100',
           mine ? 'right-full mr-1' : 'left-full ml-1'
         )}
       >
@@ -772,6 +952,7 @@ function TypingIndicator({
 function Composer({
   value,
   hasFile,
+  isMobile,
   onChange,
   onBlur,
   onFilePick,
@@ -779,6 +960,7 @@ function Composer({
 }: {
   value: string
   hasFile: boolean
+  isMobile: boolean
   onChange: (v: string) => void
   onBlur?: () => void
   onFilePick: (f: File | null) => void
@@ -786,13 +968,21 @@ function Composer({
 }) {
   const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // On mobile the on-screen keyboard's Enter key is "newline" by user
+    // mental model — there's no Shift to fall back on. Sending is the
+    // send-button's job. On desktop we keep the convenience: Enter sends,
+    // Shift+Enter inserts a newline.
+    if (isMobile) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       void onSubmit()
     }
   }
+
+  const canSend = Boolean(value.trim() || hasFile)
 
   return (
     <div className="flex items-end gap-2">
@@ -800,39 +990,201 @@ function Composer({
         ref={fileInputRef}
         type="file"
         className="hidden"
-        onChange={(e) => onFilePick(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          onFilePick(e.target.files?.[0] ?? null)
+          e.target.value = ''
+        }}
         accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.mp4,.mov"
       />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="size-9 shrink-0 text-muted-foreground"
-        onClick={() => fileInputRef.current?.click()}
-        aria-label={t('messages.attachFile')}
-      >
-        <Paperclip className="size-4" />
-      </Button>
-      <Textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        onKeyDown={handleKey}
-        placeholder={t('messages.composerPlaceholder')}
-        rows={1}
-        className="min-h-[40px] max-h-32 flex-1 resize-none"
+      <input
+        ref={cameraInputRef}
+        type="file"
+        className="hidden"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => {
+          onFilePick(e.target.files?.[0] ?? null)
+          e.target.value = ''
+        }}
       />
-      <Button
-        type="button"
-        onClick={() => void onSubmit()}
-        disabled={!value.trim() && !hasFile}
-        size="icon"
-        className="size-9 shrink-0"
-        aria-label={t('messages.send')}
-      >
-        <Send className="size-4" />
-      </Button>
+
+      {/* Attach affordance. Mobile has two destinations (camera + file
+       *  picker), so the + opens a DropdownMenu. Desktop only has the file
+       *  picker — wrapping that single choice in a menu would be a needless
+       *  extra click, so the button triggers the picker directly. */}
+      {isMobile ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-11 shrink-0 text-muted-foreground"
+              aria-label={t('messages.attachLabel')}
+            >
+              <Plus className="size-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" side="top" sideOffset={6}>
+            <DropdownMenuItem
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="size-4" />
+              {t('imageUpload.takePhoto')}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <Paperclip className="size-4" />
+              {t('messages.attachFile')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-9 shrink-0 text-muted-foreground"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label={t('messages.attachFile')}
+        >
+          <Plus className="size-4" />
+        </Button>
+      )}
+
+      {/* Textarea + inline send button. The send label lives inside the
+       *  textarea's right edge so the input row reads as one object, not
+       *  two. The textarea reserves right padding so text doesn't underrun
+       *  the button. The button itself is plain-text "Send" (no icon),
+       *  vertically centered against the textarea's first line. */}
+      <div className="relative flex-1">
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          onKeyDown={handleKey}
+          placeholder={t('messages.composerPlaceholder')}
+          rows={1}
+          enterKeyHint="enter"
+          className="min-h-11 max-h-32 w-full resize-none pr-[88px] md:min-h-[40px] md:pr-20"
+        />
+        <Button
+          type="button"
+          onClick={() => {
+            if ('vibrate' in navigator) navigator.vibrate(5)
+            void onSubmit()
+          }}
+          disabled={!canSend}
+          variant="ghost"
+          size="sm"
+          className="absolute right-1.5 top-1.5 h-8 px-3 text-sm font-medium text-primary hover:bg-primary/10 hover:text-primary md:h-7"
+          aria-label={t('messages.send')}
+        >
+          {t('messages.send')}
+        </Button>
+      </div>
     </div>
+  )
+}
+
+function MobileActionSheet({
+  message,
+  isPinned,
+  mine,
+  onClose,
+  onReact,
+  onPin,
+  onStartEdit,
+  onDelete,
+}: {
+  message: Message | null
+  isPinned: boolean
+  mine: boolean
+  onClose: () => void
+  onReact: (emoji: string) => Promise<void> | void
+  onPin: (pin: boolean) => Promise<void> | void
+  onStartEdit: () => void
+  onDelete: () => Promise<void> | void
+}) {
+  const { t } = useTranslation()
+  if (!message) return null
+  const canEdit = mine && canEditWindow(message)
+  return (
+    <Sheet open onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="bottom"
+        className="gap-0 rounded-t-xl pb-[max(1rem,env(safe-area-inset-bottom))]"
+      >
+        <SheetHeader className="border-b border-border">
+          <SheetTitle className="text-sm font-semibold tracking-tight">
+            {t('messages.messageActions')}
+          </SheetTitle>
+        </SheetHeader>
+
+        {/* Reactions row — generous 44px+ tap targets across the row. */}
+        <div className="flex items-center justify-between gap-1 px-3 py-3">
+          {QUICK_REACTIONS.map(({ emoji, key }) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => void onReact(emoji)}
+              className="flex size-12 items-center justify-center rounded-full text-2xl transition-colors hover:bg-accent active:scale-95"
+              aria-label={t(`messages.reactions.${key}`)}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
+        <div className="border-t border-border">
+          <ActionRow
+            icon={isPinned ? PinOff : Pin}
+            label={isPinned ? t('messages.unpin') : t('messages.pin')}
+            onClick={() => void onPin(!isPinned)}
+          />
+          {canEdit && (
+            <ActionRow
+              icon={Pencil}
+              label={t('messages.edit')}
+              onClick={onStartEdit}
+            />
+          )}
+          {mine && (
+            <ActionRow
+              icon={Trash2}
+              label={t('messages.delete')}
+              destructive
+              onClick={() => void onDelete()}
+            />
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function ActionRow({
+  icon: Icon,
+  label,
+  destructive,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
+  label: string
+  destructive?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex w-full items-center gap-3 px-5 py-3.5 text-left text-sm transition-colors hover:bg-accent active:bg-accent/80',
+        destructive ? 'text-destructive' : 'text-foreground'
+      )}
+    >
+      <Icon className="size-5" aria-hidden />
+      {label}
+    </button>
   )
 }
 
