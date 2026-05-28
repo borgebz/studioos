@@ -286,8 +286,9 @@ EMAIL_BACKEND = config(
 EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 # TLS (STARTTLS on port 587) and SSL (implicit on port 465) are mutually exclusive
-# — only one of them may be True. Resend supports both; we use SSL/465 by default
-# in staging because some hosts block 587.
+# — only one of them may be True. Resend supports both, but several VPS providers
+# (Hetzner included) block port 465 outbound as an anti-spam measure, so 587 with
+# EMAIL_USE_TLS=True is the safer default for staging.
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
 EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
