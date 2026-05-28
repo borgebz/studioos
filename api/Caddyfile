@@ -1,5 +1,9 @@
 # =============================================================================
-# Caddyfile — staging (st.studioos.club + api.st.studioos.club)
+# Caddyfile — staging (st.studioos.club only, same-origin)
+#
+# Single vhost serves the SPA and proxies /api, /ws, /admin, /static, /media
+# to the api container. API is reached at https://st.studioos.club/api/... —
+# no separate api subdomain (Cloudflare Free Universal SSL would not cover it).
 #
 # Caddy automatically:
 #  - obtains and renews Let's Encrypt certs for the domains below
@@ -16,7 +20,7 @@
 
 
 # -----------------------------------------------------------------------------
-# Primary host: SPA + same-origin API proxy (no CORS needed for the frontend)
+# st.studioos.club — SPA + same-origin API proxy
 # -----------------------------------------------------------------------------
 st.studioos.club {
     encode zstd gzip
@@ -35,11 +39,6 @@ st.studioos.club {
         header Cache-Control "public, max-age=86400"
     }
 
-    # Django admin
-    handle /admin/* {
-        reverse_proxy api:8000
-    }
-
     # API (REST)
     handle /api/* {
         reverse_proxy api:8000
@@ -53,29 +52,5 @@ st.studioos.club {
     # Everything else → SPA (React)
     handle {
         reverse_proxy web:80
-    }
-}
-
-
-# -----------------------------------------------------------------------------
-# API host: direct access for Postman, Swagger UI, mobile clients
-# -----------------------------------------------------------------------------
-api.st.studioos.club {
-    encode zstd gzip
-
-    handle_path /static/* {
-        root * /srv/static
-        file_server
-        header Cache-Control "public, max-age=31536000, immutable"
-    }
-
-    handle_path /media/* {
-        root * /srv/media
-        file_server
-        header Cache-Control "public, max-age=86400"
-    }
-
-    handle {
-        reverse_proxy api:8000
     }
 }

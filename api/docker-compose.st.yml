@@ -1,22 +1,17 @@
 # =============================================================================
-# Staging overrides — run on the VPS only.
+# Staging overrides — run on the VPS only. Build-on-VPS pattern (no registry).
 #
-# Usage on the VPS (with .env file at ./server/.env):
-#   GHCR_OWNER=<your-github-user> \
-#     docker compose -f docker-compose.yml -f docker-compose.st.yml pull
-#   GHCR_OWNER=<your-github-user> \
-#     docker compose -f docker-compose.yml -f docker-compose.st.yml up -d
+# Layout expected on the VPS:
+#   /srv/studioos/
+#     ├── docker-compose.yml
+#     ├── docker-compose.st.yml
+#     ├── Caddyfile
+#     ├── server/            (API code, Dockerfile)
+#     └── client/            (web code, Dockerfile, nginx.conf)
 #
-# Pulls images from GHCR instead of building. The CI/CD pipeline tags and
-# pushes ghcr.io/<owner>/studioos-{api,web}:st-<commit-sha> and :st.
-#
-# Image tag defaults to "st" (rolling latest staging). Pin to a specific
-# build with: IMAGE_TAG=st-a1b2c3d
-#
-# Note on build vs image precedence: when both are defined (build from base,
-# image here), `docker compose up` uses a local image if present, and only
-# falls back to building if not. After `pull` brings the image, `up` skips
-# the build context entirely.
+# Usage on the VPS:
+#   docker compose -f docker-compose.yml -f docker-compose.st.yml build
+#   docker compose -f docker-compose.yml -f docker-compose.st.yml up -d
 # =============================================================================
 
 services:
@@ -28,7 +23,6 @@ services:
     restart: unless-stopped
 
   api:
-    image: ghcr.io/${GHCR_OWNER}/studioos-api:${IMAGE_TAG:-st}
     restart: unless-stopped
     # Run migrate + collectstatic before starting daphne. Idempotent.
     command:
@@ -46,17 +40,16 @@ services:
       - "8000"
 
   worker:
-    image: ghcr.io/${GHCR_OWNER}/studioos-api:${IMAGE_TAG:-st}
     restart: unless-stopped
     volumes:
       - media_data:/app/media
 
   beat:
-    image: ghcr.io/${GHCR_OWNER}/studioos-api:${IMAGE_TAG:-st}
     restart: unless-stopped
 
   web:
-    image: ghcr.io/${GHCR_OWNER}/studioos-web:${IMAGE_TAG:-st}
+    build:
+      context: ./client
     restart: unless-stopped
     expose:
       - "80"
