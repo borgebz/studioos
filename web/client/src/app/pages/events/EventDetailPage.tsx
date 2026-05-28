@@ -7,26 +7,23 @@ import {
   Bell,
   Calendar,
   CalendarClock,
-  CalendarPlus,
   Check,
-  ChevronRight,
   Clock,
+  CornerDownRight,
+  Download,
   FileText,
   Heart,
   Image as ImageIcon,
   Inbox,
-  Link as LinkIcon,
   MapPin,
   Megaphone,
   MoreHorizontal,
   Pencil,
   Plus,
-  Printer,
   Send,
-  Share2,
   Sparkles,
   Trash2,
-  Users as UsersIcon,
+  X,
 } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
@@ -104,52 +101,7 @@ export function EventDetailPage() {
   >(null)
   const [actionBusy, setActionBusy] = useState(false)
   const [reschedAlert, setReschedAlert] = useState(false)
-
-  const sharePage = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href)
-      toast.success(t('events.actions.copyLink'))
-    } catch {
-      toast.error(t('common.unexpectedError'))
-    }
-  }
-
-  const addToCalendar = (ev: EventDetailAug) => {
-    if (!ev.event_date) return
-    const dt = (d: Date) =>
-      d
-        .toISOString()
-        .replace(/[-:]/g, '')
-        .replace(/\.\d{3}/, '')
-    const start = new Date(ev.event_date)
-    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
-    const lines = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      "PRODID:-//StudioOS//Events//EN",
-      'BEGIN:VEVENT',
-      `UID:event-${ev.id}@studioos`,
-      `DTSTAMP:${dt(new Date())}`,
-      `DTSTART:${dt(start)}`,
-      `DTEND:${dt(end)}`,
-      `SUMMARY:${(ev.title ?? '').replace(/[\r\n]+/g, ' ')}`,
-      ev.location ? `LOCATION:${ev.location.replace(/[\r\n]+/g, ' ')}` : '',
-      ev.description
-        ? `DESCRIPTION:${ev.description.replace(/[\r\n]+/g, ' ')}`
-        : '',
-      'END:VEVENT',
-      'END:VCALENDAR',
-    ]
-      .filter(Boolean)
-      .join('\r\n')
-    const blob = new Blob([lines], { type: 'text/calendar' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${(ev.title ?? 'event').replace(/\s+/g, '-')}.ics`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  const [replyTo, setReplyTo] = useState<EventComment | null>(null)
 
   const canEdit = can('events.change_event')
   const canPublish = can('events.can_publish_event')
@@ -277,31 +229,6 @@ export function EventDetailPage() {
     <PageLayout>
       <div className="mx-auto w-full max-w-6xl">
         <PageHeader title={t('events.title')} backTo={paths.events}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Share2 className="size-4" />
-                {t('events.share')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={sharePage}>
-                <LinkIcon className="size-4" />
-                {t('events.actions.copyLink')}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.print()}>
-                <Printer className="size-4" />
-                {t('events.actions.print')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!dl}
-                onClick={() => addToCalendar(event)}
-              >
-                <CalendarPlus className="size-4" />
-                {t('events.actions.addToCalendar')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           {isStaff && canEdit && (
             <Button
               variant="outline"
@@ -395,14 +322,9 @@ export function EventDetailPage() {
             {/* Files */}
             {files.length > 0 && (
               <section>
-                <div className="mb-3 flex items-baseline justify-between">
-                  <h2 className="text-lg font-semibold">
-                    {t('events.sections.files')}
-                  </h2>
-                  <span className="font-mono text-xs text-muted-foreground">
-                    {t('events.sections.filesCount', { count: files.length })}
-                  </span>
-                </div>
+                <h2 className="mb-3 text-lg font-semibold">
+                  {t('events.sections.files')}
+                </h2>
                 <div className="space-y-2">
                   {files.map((f) => (
                     <FileRow key={f.id} file={f} />
@@ -460,37 +382,50 @@ export function EventDetailPage() {
 
             {/* Comments */}
             <section>
-              <div className="mb-4 flex items-baseline justify-between">
-                <h2 className="text-lg font-semibold">
-                  {t('events.sections.comments')}{' '}
-                  <span className="text-muted-foreground">
-                    · {comments.length}
-                  </span>
-                </h2>
-              </div>
+              <h2 className="mb-4 text-lg font-semibold">
+                {t('events.sections.comments')}{' '}
+                <span className="font-mono text-sm font-normal text-muted-foreground">
+                  · {totalCommentCount(comments)}
+                </span>
+              </h2>
               {cancelled ? (
                 <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
                   {t('events.cancelled.commentsDisabled')}
                 </p>
-              ) : canComment ? (
+              ) : canComment && !replyTo ? (
                 <CommentComposer
                   eventId={event.id}
                   onPosted={(c) => setComments((p) => [c, ...p])}
                 />
-              ) : (
+              ) : !canComment ? (
                 <p className="text-sm text-muted-foreground italic">
                   {t('events.comments.loginToComment')}
                 </p>
-              )}
+              ) : null}
               {comments.length === 0 ? (
                 <p className="mt-4 text-sm text-muted-foreground italic">
                   {t('events.comments.empty')}
                 </p>
               ) : (
-                <div className="mt-5 space-y-5">
-                  {comments.map((c) => (
-                    <CommentItem key={c.id} comment={c} />
-                  ))}
+                <div className="mt-6 space-y-6">
+                  {comments
+                    .filter((c) => !c.parent_comment)
+                    .map((c) => (
+                      <CommentThread
+                        key={c.id}
+                        comment={c}
+                        allComments={comments}
+                        eventId={event.id}
+                        canReply={canComment && !cancelled}
+                        replyToId={replyTo?.id ?? null}
+                        onStartReply={setReplyTo}
+                        onCancelReply={() => setReplyTo(null)}
+                        onReplyPosted={(c) => {
+                          setComments((prev) => [...prev, c])
+                          setReplyTo(null)
+                        }}
+                      />
+                    ))}
                 </div>
               )}
             </section>
@@ -530,164 +465,26 @@ export function EventDetailPage() {
                   link
                 />
               )}
-              <Field
-                label={t('events.details.organizer')}
-                value={t('events.details.organizerValue')}
-              />
             </div>
 
             {/* Staff manage rail */}
             {isStaff && (
-              <>
-                <div className="rounded-lg border border-border bg-card p-6">
-                  <div className="mb-4 text-sm font-semibold">
-                    {t('events.sections.manage')}
-                  </div>
-                  <div className="space-y-2.5">
-                    <RailRow
-                      label={t('events.details.visibility')}
-                      value={
-                        event.visibility_state ? (
-                          <EventVisibilityBadge
-                            value={event.visibility_state}
-                          />
-                        ) : null
-                      }
-                    />
-                    <RailRow
-                      label={t('events.details.state')}
-                      value={
-                        event.event_state ? (
-                          <EventStateBadge value={event.event_state} />
-                        ) : null
-                      }
-                    />
-                    {event.published_at && (
-                      <RailRow
-                        label={t('events.details.publishedAt')}
-                        value={
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {fmt.formatRelative(event.published_at)}
-                          </span>
-                        }
-                      />
-                    )}
-                    <RailRow
-                      label={t('events.details.updatedAt')}
-                      value={
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {fmt.formatRelative(event.updated_at)}
-                        </span>
-                      }
-                    />
-                  </div>
-
-                  <Separator className="my-4" />
-
-                  <div className="mb-2 text-xs font-medium text-muted-foreground">
-                    {t('events.sections.stateActions')}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {canPublish && !isPublished(event) && (
-                      <Button
-                        variant="outline"
-                        className="justify-between"
-                        onClick={() => setConfirmAction('publish')}
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <Megaphone className="size-4" />
-                          {t('events.actions.publishNow')}
-                        </span>
-                        <ChevronRight className="size-3.5" />
-                      </Button>
-                    )}
-                    {canSchedule &&
-                      (draft ||
-                        event.visibility_state ===
-                          VisibilityStateEnum.Scheduled) && (
-                        <Button
-                          variant="outline"
-                          className="justify-between"
-                          onClick={() =>
-                            navigate(
-                              paths.eventsEdit.replace(':id', String(event.id))
-                            )
-                          }
-                        >
-                          <span className="inline-flex items-center gap-2">
-                            <CalendarClock className="size-4" />
-                            {t('events.actions.schedulePublish')}
-                          </span>
-                          <ChevronRight className="size-3.5" />
-                        </Button>
-                      )}
-                    {canComplete && !completed && (
-                      <Button
-                        variant="outline"
-                        className="justify-start"
-                        onClick={() => setConfirmAction('complete')}
-                      >
-                        <Check className="size-4" />
-                        {t('events.actions.markCompleted')}
-                      </Button>
-                    )}
-                    {canCancel && !cancelled && (
-                      <Button
-                        variant="outline"
-                        className="justify-start text-destructive hover:text-destructive"
-                        onClick={() => setConfirmAction('cancel')}
-                      >
-                        <Ban className="size-4" />
-                        {t('events.actions.cancelEvent')}
-                      </Button>
-                    )}
-                    {canArchive &&
-                      event.visibility_state !==
-                        VisibilityStateEnum.Archived && (
-                        <Button
-                          variant="ghost"
-                          className="justify-start text-muted-foreground"
-                          onClick={() => setConfirmAction('archive')}
-                        >
-                          <Archive className="size-4" />
-                          {t('events.actions.archive')}
-                        </Button>
-                      )}
-                    {canDelete && (
-                      <Button
-                        variant="ghost"
-                        className="justify-start text-destructive hover:text-destructive"
-                        onClick={() => setConfirmAction('delete')}
-                      >
-                        <Trash2 className="size-4" />
-                        {t('events.actions.delete')}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-border bg-card p-6">
-                  <div className="mb-4 text-sm font-semibold">
-                    {t('events.sections.audit')}
-                  </div>
-                  <div className="space-y-2 text-xs text-muted-foreground">
-                    {event.published_at && (
-                      <AuditRow
-                        when={fmt.formatRelative(event.published_at)}
-                        text={t('events.audit.published')}
-                      />
-                    )}
-                    <AuditRow
-                      when={fmt.formatRelative(event.updated_at)}
-                      text={t('events.audit.edited')}
-                    />
-                    <AuditRow
-                      when={fmt.formatRelative(event.created_at)}
-                      text={t('events.audit.created')}
-                    />
-                  </div>
-                </div>
-              </>
+              <ManagePanel
+                event={event}
+                canPublish={canPublish}
+                canSchedule={canSchedule}
+                canCancel={canCancel}
+                canArchive={canArchive}
+                canComplete={canComplete}
+                canDelete={canDelete}
+                completed={completed}
+                cancelled={cancelled}
+                draft={draft}
+                onAction={setConfirmAction}
+                onSchedule={() =>
+                  navigate(paths.eventsEdit.replace(':id', String(event.id)))
+                }
+              />
             )}
           </aside>
         </div>
@@ -838,36 +635,38 @@ function PrimaryInterestCta({
 }) {
   const { t } = useTranslation()
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
       className={cn(
-        'inline-flex overflow-hidden rounded-md shadow-sm',
-        disabled && 'opacity-60'
+        'inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-semibold shadow-xs transition-colors',
+        active
+          ? 'border-border bg-background text-foreground hover:bg-accent'
+          : 'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+        disabled && 'cursor-not-allowed opacity-60'
       )}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className={cn(
-          'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors',
-          active
-            ? 'bg-background text-foreground border border-border hover:bg-accent'
-            : 'bg-primary text-primary-foreground border border-primary hover:bg-primary/90',
-          disabled && 'cursor-not-allowed'
-        )}
-      >
-        {active && <Check className="size-4" />}
-        <Heart className={cn('size-4', active && 'fill-current')} />
-        {t('events.interest.primary')}
-      </button>
-      <span
-        className="inline-flex items-center gap-1.5 border border-l-0 border-border bg-background px-3 py-2.5 font-mono text-xs text-muted-foreground"
-        aria-label={t('events.sections.interest', { count })}
-      >
-        <UsersIcon className="size-3.5" />
-        {count}
-      </span>
-    </div>
+      {active ? (
+        <Check className="size-4" />
+      ) : (
+        <Heart className="size-4" />
+      )}
+      <span>{t('events.interest.primary')}</span>
+      {count > 0 && (
+        <span
+          className={cn(
+            'ml-1 rounded px-1.5 py-0.5 font-mono text-[11px] font-medium',
+            active
+              ? 'bg-muted text-muted-foreground'
+              : 'bg-primary-foreground/15 text-primary-foreground'
+          )}
+          aria-label={t('events.sections.interest', { count })}
+        >
+          {count}
+        </span>
+      )}
+    </button>
   )
 }
 
@@ -911,13 +710,161 @@ function RailRow({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-function AuditRow({ when, text }: { when: string; text: string }) {
+// ─── Manage panel (staff) ─────────────────────────────────────────────────
+
+type ConfirmAction = 'cancel' | 'archive' | 'complete' | 'delete' | 'publish'
+
+function ManagePanel({
+  event,
+  canPublish,
+  canSchedule,
+  canCancel,
+  canArchive,
+  canComplete,
+  canDelete,
+  completed,
+  cancelled,
+  draft,
+  onAction,
+  onSchedule,
+}: {
+  event: EventDetailAug
+  canPublish: boolean
+  canSchedule: boolean
+  canCancel: boolean
+  canArchive: boolean
+  canComplete: boolean
+  canDelete: boolean
+  completed: boolean
+  cancelled: boolean
+  draft: boolean
+  onAction: (a: ConfirmAction) => void
+  onSchedule: () => void
+}) {
+  const { t } = useTranslation()
+  const fmt = useDateFormatter()
+  const published = isPublished(event)
+  const archived = event.visibility_state === VisibilityStateEnum.Archived
+  const scheduled = event.visibility_state === VisibilityStateEnum.Scheduled
+
+  const showPublish = canPublish && !published
+  const showSchedule = canSchedule && (draft || scheduled)
+  const showComplete = canComplete && !completed && !cancelled
+  const showCancel = canCancel && !cancelled
+  const showArchive = canArchive && !archived
+  const showDelete = canDelete
+
+  const hasOverflow = showCancel || showArchive || showDelete
+
   return (
-    <div className="grid grid-cols-[80px_1fr] gap-2">
-      <span className="font-mono text-[11px] text-muted-foreground">
-        {when}
-      </span>
-      <span>{text}</span>
+    <div className="rounded-lg border border-border bg-card p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-sm font-semibold">
+          {t('events.sections.manage')}
+        </div>
+        {hasOverflow && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t('events.actions.moreActions')}
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {showCancel && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onAction('cancel')}
+                >
+                  <Ban className="size-4" />
+                  {t('events.actions.cancelEvent')}
+                </DropdownMenuItem>
+              )}
+              {showArchive && (
+                <DropdownMenuItem onClick={() => onAction('archive')}>
+                  <Archive className="size-4" />
+                  {t('events.actions.archive')}
+                </DropdownMenuItem>
+              )}
+              {showDelete && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onAction('delete')}
+                >
+                  <Trash2 className="size-4" />
+                  {t('events.actions.delete')}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+
+      <div className="space-y-2.5">
+        <RailRow
+          label={t('events.details.visibility')}
+          value={
+            event.visibility_state ? (
+              <EventVisibilityBadge value={event.visibility_state} />
+            ) : null
+          }
+        />
+        <RailRow
+          label={t('events.details.state')}
+          value={
+            event.event_state ? (
+              <EventStateBadge value={event.event_state} />
+            ) : null
+          }
+        />
+        {event.published_at && (
+          <RailRow
+            label={t('events.details.publishedAt')}
+            value={
+              <span className="font-mono text-xs text-muted-foreground">
+                {fmt.formatRelative(event.published_at)}
+              </span>
+            }
+          />
+        )}
+        <RailRow
+          label={t('events.details.updatedAt')}
+          value={
+            <span className="font-mono text-xs text-muted-foreground">
+              {fmt.formatRelative(event.updated_at)}
+            </span>
+          }
+        />
+      </div>
+
+      {(showPublish || showSchedule || showComplete) && (
+        <>
+          <Separator className="my-4" />
+          <div className="flex flex-col gap-2">
+            {showPublish && (
+              <Button onClick={() => onAction('publish')}>
+                <Megaphone className="size-4" />
+                {t('events.actions.publishNow')}
+              </Button>
+            )}
+            {showSchedule && (
+              <Button variant="outline" onClick={onSchedule}>
+                <CalendarClock className="size-4" />
+                {t('events.actions.schedulePublish')}
+              </Button>
+            )}
+            {showComplete && (
+              <Button variant="outline" onClick={() => onAction('complete')}>
+                <Check className="size-4" />
+                {t('events.actions.markCompleted')}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -978,12 +925,12 @@ function FileRow({ file }: { file: EventFile }) {
   const { t } = useTranslation()
   const ext = (file.file_name ?? '').split('.').pop()?.toLowerCase() ?? ''
   const isImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)
-  const tag = isImg ? 'JPG' : ext.toUpperCase().slice(0, 4) || 'FILE'
+  const tag = isImg ? 'IMG' : ext.toUpperCase().slice(0, 4) || 'FILE'
   return (
     <div className="grid grid-cols-[40px_1fr_auto] items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5">
       <div
         className={cn(
-          'grid size-10 place-items-center rounded-md font-mono text-[10px] font-bold tracking-wider',
+          'grid size-10 place-items-center rounded-md',
           isImg
             ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
             : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
@@ -1003,14 +950,19 @@ function FileRow({ file }: { file: EventFile }) {
         <div className="font-mono text-[11px] text-muted-foreground">{tag}</div>
       </div>
       {file.file_url && (
-        <Button asChild variant="outline" size="sm">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          aria-label={t('events.files.download')}
+        >
           <a
             href={file.file_url}
             target="_blank"
             rel="noopener noreferrer"
             download
           >
-            {t('events.files.download')}
+            <Download className="size-4" />
           </a>
         </Button>
       )}
@@ -1020,12 +972,26 @@ function FileRow({ file }: { file: EventFile }) {
 
 // ─── Comments ─────────────────────────────────────────────────────────────
 
+function totalCommentCount(comments: EventComment[]): number {
+  return comments.length
+}
+
 function CommentComposer({
   eventId,
+  parentId,
+  parentAuthor,
+  placeholder,
+  autoFocus,
   onPosted,
+  onCancel,
 }: {
   eventId: number
+  parentId?: number | null
+  parentAuthor?: string
+  placeholder?: string
+  autoFocus?: boolean
   onPosted: (c: EventComment) => void
+  onCancel?: () => void
 }) {
   const { t } = useTranslation()
   const [value, setValue] = useState('')
@@ -1037,6 +1003,7 @@ function CommentComposer({
     try {
       const r = await apiClient.api.eventsCommentsCreate(eventId, {
         body: value.trim(),
+        ...(parentId ? { parent_comment_id: parentId } : {}),
       })
       onPosted(r.data)
       setValue('')
@@ -1048,49 +1015,172 @@ function CommentComposer({
   }
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-3">
-      <Avatar className="size-8 shrink-0">
-        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-          U
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex-1">
-        <textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          rows={2}
-          placeholder={t('events.comments.composerPlaceholder')}
-          className="w-full resize-none border-0 bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
-        />
-        <div className="flex justify-end pt-1">
-          <Button size="sm" onClick={submit} disabled={busy || !value.trim()}>
-            <Send className="size-4" />
-            {t('events.actions.publishComment')}
-          </Button>
+    <div className="rounded-lg border border-border bg-card">
+      {parentAuthor && (
+        <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <CornerDownRight className="size-3.5" />
+            {t('events.comments.replyingTo', { name: parentAuthor })}
+          </span>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3.5" />
+              {t('events.comments.cancelReply')}
+            </button>
+          )}
+        </div>
+      )}
+      <div className="flex items-start gap-3 p-3">
+        <Avatar className="size-8 shrink-0">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+            U
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            rows={2}
+            autoFocus={autoFocus}
+            placeholder={
+              placeholder ?? t('events.comments.composerPlaceholder')
+            }
+            className="w-full resize-none border-0 bg-transparent text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
+          />
+          <div className="flex justify-end pt-1">
+            <Button size="sm" onClick={submit} disabled={busy || !value.trim()}>
+              <Send className="size-4" />
+              {t('events.actions.publishComment')}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function CommentItem({ comment }: { comment: EventComment }) {
+function CommentBody({ comment }: { comment: EventComment }) {
   const fmt = useDateFormatter()
   return (
-    <div className="grid grid-cols-[36px_1fr] gap-3">
-      <Avatar className="size-9">
-        <AvatarFallback className="bg-muted text-foreground text-xs">
-          U
-        </AvatarFallback>
-      </Avatar>
-      <div>
-        <div className="mb-1 flex items-baseline gap-2">
-          <span className="text-sm font-semibold">#{comment.owner}</span>
-          <span className="font-mono text-xs text-muted-foreground">
-            · {fmt.formatRelative(comment.created_at)}
-          </span>
-        </div>
-        <SanitizedHtml html={comment.body} className="text-sm" />
+    <>
+      <div className="mb-1 flex items-baseline gap-2">
+        <span className="text-sm font-semibold">#{comment.owner}</span>
+        <span className="font-mono text-xs text-muted-foreground">
+          · {fmt.formatRelative(comment.created_at)}
+        </span>
       </div>
+      <SanitizedHtml html={comment.body} className="text-sm" />
+    </>
+  )
+}
+
+function CommentThread({
+  comment,
+  allComments,
+  eventId,
+  canReply,
+  replyToId,
+  onStartReply,
+  onCancelReply,
+  onReplyPosted,
+}: {
+  comment: EventComment
+  allComments: EventComment[]
+  eventId: number
+  canReply: boolean
+  replyToId: number | null
+  onStartReply: (c: EventComment) => void
+  onCancelReply: () => void
+  onReplyPosted: (c: EventComment) => void
+}) {
+  const { t } = useTranslation()
+  const [collapsed, setCollapsed] = useState(false)
+  const replies =
+    (comment.replies as EventComment[] | undefined) &&
+    comment.replies.length > 0
+      ? (comment.replies as EventComment[])
+      : allComments.filter((c) => c.parent_comment === comment.id)
+
+  const isReplying = replyToId === comment.id
+
+  return (
+    <div>
+      <div className="grid grid-cols-[36px_1fr] gap-3">
+        <Avatar className="size-9">
+          <AvatarFallback className="bg-muted text-foreground text-xs">
+            U
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <CommentBody comment={comment} />
+          {canReply && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() =>
+                  isReplying ? onCancelReply() : onStartReply(comment)
+                }
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <CornerDownRight className="size-3.5" />
+                {isReplying
+                  ? t('events.comments.cancelReply')
+                  : t('events.actions.reply')}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {(isReplying || replies.length > 0) && (
+        <div className="mt-4 ml-4 space-y-4 border-l border-border pl-5">
+          {isReplying && canReply && (
+            <CommentComposer
+              eventId={eventId}
+              parentId={comment.id}
+              parentAuthor={`#${comment.owner}`}
+              placeholder={t('events.comments.replyPlaceholder')}
+              autoFocus
+              onPosted={onReplyPosted}
+              onCancel={onCancelReply}
+            />
+          )}
+          {replies.length > 0 && (
+            <>
+              {replies.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setCollapsed((v) => !v)}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  {collapsed
+                    ? t('events.comments.showReplies', {
+                        count: replies.length,
+                      })
+                    : t('events.comments.hideReplies')}
+                </button>
+              )}
+              {!collapsed &&
+                replies.map((r) => (
+                  <div key={r.id} className="grid grid-cols-[28px_1fr] gap-3">
+                    <Avatar className="size-7">
+                      <AvatarFallback className="bg-muted text-foreground text-[10px]">
+                        U
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <CommentBody comment={r} />
+                    </div>
+                  </div>
+                ))}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
