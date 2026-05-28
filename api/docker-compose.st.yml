@@ -24,13 +24,28 @@ services:
 
   api:
     restart: unless-stopped
-    # Run migrate + collectstatic before starting daphne. Idempotent.
+    # Run migrate + idempotent reference seeds + (optional) demo seed +
+    # collectstatic before starting daphne. seed_demo_data is gated by env
+    # var so prod can opt out — st sets SEED_DEMO_DATA=true in its .env.
     command:
       - sh
       - -c
       - |
         set -e
         uv run python manage.py migrate --noinput
+
+        uv run python manage.py seed_roles
+        uv run python manage.py seed_permissions
+        uv run python manage.py seed_modalities
+        uv run python manage.py seed_categories
+        uv run python manage.py seed_size_systems
+        uv run python manage.py seed_sizes
+        uv run python manage.py seed_colors
+
+        if [ "$${SEED_DEMO_DATA:-false}" = "true" ]; then
+          uv run python manage.py seed_demo_data
+        fi
+
         uv run python manage.py collectstatic --noinput
         exec uv run daphne -b 0.0.0.0 -p 8000 config.asgi:application
     volumes:
