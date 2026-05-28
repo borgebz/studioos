@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: "{{base_url}}/inventory/sizes/?size_system_id=2"
+  url: "{{base_url}}/api/inventory/sizes/?size_system_id=2"
   params:
     - name: size_system_id
       value: "2"

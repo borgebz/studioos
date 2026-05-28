@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from unittest.mock import patch
 
 import pytest
@@ -44,12 +45,16 @@ class TestEventClassTargeting:
         resp = auth_client.post(
             "/api/events/",
             {
-                "title": "T",
-                "description": "D",
-                "notification_target": "classes",
-                "class_target_classe_ids": [c.pk],
+                "data": json.dumps(
+                    {
+                        "title": "T",
+                        "description": "D",
+                        "notification_target": "classes",
+                        "class_target_classe_ids": [c.pk],
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         assert resp.status_code == 201, resp.content
         data = resp.json()
@@ -77,24 +82,32 @@ class TestEventClassTargeting:
         resp = auth_client.post(
             "/api/events/",
             {
-                "title": "T",
-                "description": "D",
-                "notification_target": "classes",
-                "class_target_classe_ids": [c1.pk, c2.pk],
+                "data": json.dumps(
+                    {
+                        "title": "T",
+                        "description": "D",
+                        "notification_target": "classes",
+                        "class_target_classe_ids": [c1.pk, c2.pk],
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         pk = resp.json()["id"]
 
         resp = auth_client.put(
             f"/api/events/{pk}/",
             {
-                "title": "T",
-                "description": "D",
-                "notification_target": "classes",
-                "class_target_classe_ids": [c1.pk],
+                "data": json.dumps(
+                    {
+                        "title": "T",
+                        "description": "D",
+                        "notification_target": "classes",
+                        "class_target_classe_ids": [c1.pk],
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         assert resp.status_code == 200, resp.content
         assert resp.json()["class_target_classe_ids"] == [c1.pk]
@@ -119,12 +132,16 @@ class TestEventClassTargeting:
         resp = auth_client.put(
             f"/api/events/{e.pk}/",
             {
-                "title": "T",
-                "description": "D",
-                "notification_target": "classes",
-                "class_target_classe_ids": [],
+                "data": json.dumps(
+                    {
+                        "title": "T",
+                        "description": "D",
+                        "notification_target": "classes",
+                        "class_target_classe_ids": [],
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         assert resp.status_code == 400
         assert "CannotClearClassTargetsOnPublishedEvent" in str(resp.content)
@@ -133,12 +150,16 @@ class TestEventClassTargeting:
         resp = auth_client.post(
             "/api/events/",
             {
-                "title": "T",
-                "description": "D",
-                "notification_target": "classes",
-                "class_target_classe_ids": [999999],
+                "data": json.dumps(
+                    {
+                        "title": "T",
+                        "description": "D",
+                        "notification_target": "classes",
+                        "class_target_classe_ids": [999999],
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         assert resp.status_code == 400
         assert "InvalidClassTargetIds" in str(resp.content)
@@ -166,13 +187,17 @@ class TestEventClassTargeting:
         resp = auth_client.post(
             "/api/events/",
             {
-                "title": "Targeted",
-                "description": "D",
-                "body": "Body",
-                "notification_target": "classes",
-                "class_target_classe_ids": [c.pk],
+                "data": json.dumps(
+                    {
+                        "title": "Targeted",
+                        "description": "D",
+                        "body": "Body",
+                        "notification_target": "classes",
+                        "class_target_classe_ids": [c.pk],
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         pk = resp.json()["id"]
 
@@ -341,10 +366,14 @@ class TestEventsHttp:
         resp = student_auth_client.post(
             "/api/events/",
             {
-                "title": "X",
-                "description": "Y",
+                "data": json.dumps(
+                    {
+                        "title": "X",
+                        "description": "Y",
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         assert resp.status_code == 403
 
@@ -354,11 +383,15 @@ class TestEventsHttp:
         create = auth_client.post(
             "/api/events/",
             {
-                "title": "Show",
-                "description": "Short",
-                "body": "<p>Rich</p>",
+                "data": json.dumps(
+                    {
+                        "title": "Show",
+                        "description": "Short",
+                        "body": "<p>Rich</p>",
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         assert create.status_code == 201, create.content
         pk = create.json()["id"]
@@ -422,11 +455,15 @@ class TestEventsHttp:
         create = auth_client.post(
             "/api/events/",
             {
-                "title": "T",
-                "description": "D",
-                "body": "<p>Hello</p>",
+                "data": json.dumps(
+                    {
+                        "title": "T",
+                        "description": "D",
+                        "body": "<p>Hello</p>",
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         assert create.status_code == 201
         pk = create.json()["id"]
@@ -463,11 +500,15 @@ class TestEventsHttp:
         create = auth_client.post(
             "/api/events/",
             {
-                "title": "Ev",
-                "description": "d",
-                "body": "Plain",
+                "data": json.dumps(
+                    {
+                        "title": "Ev",
+                        "description": "d",
+                        "body": "Plain",
+                    }
+                )
             },
-            format="json",
+            format="multipart",
         )
         pk = create.json()["id"]
 

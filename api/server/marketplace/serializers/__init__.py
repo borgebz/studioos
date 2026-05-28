@@ -6,6 +6,7 @@ from marketplace.serializers.comment_serializers import (
 from marketplace.serializers.listing_serializers import (
     ListingCreateSerializer,
     ListingDetailSerializer,
+    ListingListQuerySerializer,
     ListingListSerializer,
     ListingUpdateSerializer,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "ListingCommentUpdateSerializer",
     "ListingCreateSerializer",
     "ListingDetailSerializer",
+    "ListingListQuerySerializer",
     "ListingListSerializer",
     "ListingUpdateSerializer",
     "TransactionDetailSerializer",

@@ -34,17 +34,12 @@ def list_size_systems(*, is_active=None):
     else:
         qs = qs.filter(is_active=True)
 
-    return (
-        qs.prefetch_related(
-            Prefetch(
-                "sizes",
-                queryset=Size.objects.filter(is_active=True).order_by(
-                    "sort_order", "name"
-                ),
-            )
+    return qs.prefetch_related(
+        Prefetch(
+            "sizes",
+            queryset=Size.objects.filter(is_active=True).order_by("sort_order", "name"),
         )
-        .order_by("name")
-    )
+    ).order_by("name")
 
 
 # CREATE

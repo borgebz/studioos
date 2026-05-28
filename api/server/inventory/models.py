@@ -133,6 +133,11 @@ class Product(BaseModel):
         INACTIVE = "inactive", "Inactive"
         ARCHIVED = "archived", "Archived"
 
+    class TargetGender(models.TextChoices):
+        FEMALE = "female", "Female"
+        MALE = "male", "Male"
+        UNISEX = "unisex", "Unisex"
+
     owner_type = models.CharField(max_length=20, choices=OwnerType.choices)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
@@ -145,7 +150,12 @@ class Product(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
-    target_gender = models.CharField(max_length=50, blank=True, null=True)
+    target_gender = models.CharField(
+        max_length=50,
+        choices=TargetGender.choices,
+        blank=True,
+        null=True,
+    )
     brand = models.CharField(max_length=255, blank=True, null=True)
     material = models.CharField(max_length=255, blank=True, null=True)
 
@@ -216,14 +226,6 @@ class ProductVariant(BaseModel):
     public_notes = models.TextField(blank=True, null=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["sku"],
-                condition=models.Q(deleted_at__isnull=True, sku__isnull=False)
-                & ~models.Q(sku=""),
-                name="inventory_productvariant_sku_active_uniq",
-            ),
-        ]
         permissions = [
             ("can_manage_variant_bookings", "Can manage variant bookings"),
         ]

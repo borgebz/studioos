@@ -179,7 +179,7 @@ class TestFineEndpoints:
         assert r.status_code == 200
         body = r.json()
         assert len(body) == 1
-        assert body[0]["student_id"] == owner.pk
+        assert body[0]["student"]["id"] == owner.pk
 
         intruder = _make_student("api_intruder")
         api_client.force_authenticate(user=intruder)

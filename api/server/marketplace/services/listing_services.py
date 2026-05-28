@@ -18,25 +18,44 @@ _NON_LISTABLE_STATUSES = (
     ProductVariant.Status.INACTIVE,
 )
 
+# Allowed ordering fields for listing list endpoints
+_LISTING_ALLOWED_ORDERING = {
+    "-created_at",
+    "created_at",
+    "asking_price",
+    "-asking_price",
+}
+
 # Booking statuses that represent an active hold on the variant
 _ACTIVE_BOOKING_STATUSES = VariantBooking.ACTIVE_HOLD_STATUSES
+
+# Shared eager-loading paths — avoids N+1 in every list/detail endpoint
+_LISTING_SELECT_RELATED = (
+    "variant__product__category",
+    "variant__size",
+)
+_LISTING_PREFETCH = ("variant__product__media",)
 
 
 def _get_listing_or_404(listing_id):
     try:
-        return Listing.objects.get(id=listing_id)
+        return (
+            Listing.objects.select_related(*_LISTING_SELECT_RELATED)
+            .prefetch_related(*_LISTING_PREFETCH)
+            .get(id=listing_id)
+        )
     except Listing.DoesNotExist:
         raise AppNotFound("ListingNotFound")
 
 
 def _assert_can_manage(*, user, listing):
-    """Owner check: member listings → only owner; school listings → manage_school_listings perm."""
+    """Owner check: member listings → product owner; school listings → manage_school_listings perm."""
     product = listing.variant.product
     if product.owner_type == Product.OwnerType.SCHOOL:
         if not user.has_perm("marketplace.manage_school_listings"):
             raise PermissionDenied()
     else:
-        if listing.created_by_id != user.id:
+        if product.owner_id != user.id:
             raise PermissionDenied()
 
 
@@ -67,16 +86,31 @@ def _check_date_overlap(*, variant, start_at, end_at, exclude_booking_id=None):
         raise ValidationError({"messages": ["BookingOverlap"]})
 
 
-def list_listings(*, user, filters=None):
-    qs = _exclude_stale_variants(
-        Listing.objects.filter(
-            status=Listing.ListingStatus.ACTIVE,
-            is_public=True,
-        )
-    ).select_related("variant__product__category", "variant__size").prefetch_related(
-        "variant__product__media"
-    ).order_by("-created_at")
+def _exclude_soft_deleted_relations(qs):
+    """Exclude listings whose variant or product has been soft-deleted.
 
+    Django FK joins do NOT apply the related model's SoftDeleteManager,
+    so we must guard explicitly.
+    """
+    return qs.exclude(variant__deleted_at__isnull=False).exclude(
+        variant__product__deleted_at__isnull=False
+    )
+
+
+def list_listings(*, user, filters=None):
+    qs = (
+        _exclude_soft_deleted_relations(
+            Listing.objects.filter(
+                status=Listing.ListingStatus.ACTIVE,
+                is_public=True,
+            )
+        )
+        .exclude(variant__status__in=_NON_LISTABLE_STATUSES)
+        .select_related(*_LISTING_SELECT_RELATED)
+        .prefetch_related(*_LISTING_PREFETCH)
+    )
+
+    ordering = "-created_at"
     if filters:
         if filters.get("search"):
             term = filters["search"]
@@ -97,33 +131,83 @@ def list_listings(*, user, filters=None):
             qs = qs.filter(variant__colors__color_id=filters["color_id"]).distinct()
         if filters.get("condition"):
             qs = qs.filter(variant__condition=filters["condition"])
+        if filters.get("ordering") and filters["ordering"] in _LISTING_ALLOWED_ORDERING:
+            ordering = filters["ordering"]
 
-    return qs
-
-
-def get_listing(*, listing_id):
-    return _get_listing_or_404(listing_id)
+    return qs.order_by(ordering)
 
 
-def _exclude_stale_variants(qs):
-    return (
-        qs.exclude(variant__status__in=_NON_LISTABLE_STATUSES)
-        .exclude(variant__deleted_at__isnull=False)
-        .exclude(variant__product__deleted_at__isnull=False)
+def get_listing(*, listing_id, user):
+    """Retrieve a single listing with visibility rules.
+
+    - Active + public → any authenticated user
+    - Owner → always
+    - Admin (view_productlisting) → always
+    - School manager → school-owned listings only
+    """
+    listing = _get_listing_or_404(listing_id)
+
+    if listing.status == Listing.ListingStatus.ACTIVE and listing.is_public:
+        return listing
+    if user.has_perm("marketplace.view_productlisting"):
+        return listing
+
+    product = listing.variant.product
+    if product.owner_type == Product.OwnerType.MEMBER and product.owner_id == user.id:
+        return listing
+    if product.owner_type == Product.OwnerType.SCHOOL and user.has_perm(
+        "marketplace.manage_school_listings"
+    ):
+        return listing
+
+    raise PermissionDenied()
+
+
+def list_my_listings(*, user, filters=None):
+    qs = (
+        _exclude_soft_deleted_relations(
+            Listing.objects.filter(
+                variant__product__owner=user,
+                variant__product__owner_type=Product.OwnerType.MEMBER,
+            )
+        )
+        .select_related(*_LISTING_SELECT_RELATED)
+        .prefetch_related(*_LISTING_PREFETCH)
     )
 
+    ordering = "-created_at"
+    if filters:
+        if filters.get("search"):
+            term = filters["search"]
+            from django.db.models import Q
 
-def list_my_listings(*, user):
-    qs = Listing.objects.filter(created_by=user).order_by("-created_at")
-    return _exclude_stale_variants(qs)
+            qs = qs.filter(
+                Q(title__icontains=term)
+                | Q(description__icontains=term)
+                | Q(variant__product__name__icontains=term)
+            )
+        if filters.get("listing_type"):
+            qs = qs.filter(listing_type=filters["listing_type"])
+        if filters.get("status"):
+            qs = qs.filter(status=filters["status"])
+        if filters.get("ordering") and filters["ordering"] in _LISTING_ALLOWED_ORDERING:
+            ordering = filters["ordering"]
+
+    return qs.order_by(ordering)
 
 
 def list_favorited_listings(*, user):
-    qs = Listing.objects.filter(
-        favorites__user=user,
-        favorites__deleted_at__isnull=True,
-    ).order_by("-created_at")
-    return _exclude_stale_variants(qs)
+    return (
+        _exclude_soft_deleted_relations(
+            Listing.objects.filter(
+                favorites__user=user,
+                favorites__deleted_at__isnull=True,
+            )
+        )
+        .select_related(*_LISTING_SELECT_RELATED)
+        .prefetch_related(*_LISTING_PREFETCH)
+        .order_by("-created_at")
+    )
 
 
 @transaction.atomic
@@ -259,7 +343,6 @@ def add_favorite(*, listing_id, user):
     fav, created = ListingFavorite.objects.get_or_create(
         listing=listing,
         user=user,
-        deleted_at__isnull=True,
         defaults={"created_by": user},
     )
     if not created:
@@ -269,19 +352,42 @@ def add_favorite(*, listing_id, user):
 
 def remove_favorite(*, listing_id, user):
     try:
-        fav = ListingFavorite.objects.get(
-            listing_id=listing_id, user=user, deleted_at__isnull=True
-        )
+        fav = ListingFavorite.objects.get(listing_id=listing_id, user=user)
     except ListingFavorite.DoesNotExist:
         raise AppNotFound("FavoriteNotFound")
     fav.delete(deleted_by=user)
 
 
-def list_school_listings():
-    qs = Listing.objects.filter(
-        variant__product__owner_type=Product.OwnerType.SCHOOL
-    ).order_by("-created_at")
-    return _exclude_stale_variants(qs)
+def list_school_listings(*, user, filters=None):
+    qs = (
+        _exclude_soft_deleted_relations(
+            Listing.objects.filter(
+                variant__product__owner_type=Product.OwnerType.SCHOOL
+            )
+        )
+        .select_related(*_LISTING_SELECT_RELATED)
+        .prefetch_related(*_LISTING_PREFETCH)
+    )
+
+    ordering = "-created_at"
+    if filters:
+        if filters.get("search"):
+            term = filters["search"]
+            from django.db.models import Q
+
+            qs = qs.filter(
+                Q(title__icontains=term)
+                | Q(description__icontains=term)
+                | Q(variant__product__name__icontains=term)
+            )
+        if filters.get("listing_type"):
+            qs = qs.filter(listing_type=filters["listing_type"])
+        if filters.get("status"):
+            qs = qs.filter(status=filters["status"])
+        if filters.get("ordering") and filters["ordering"] in _LISTING_ALLOWED_ORDERING:
+            ordering = filters["ordering"]
+
+    return qs.order_by(ordering)
 
 
 def get_availability(*, listing_id):

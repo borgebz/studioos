@@ -1,0 +1,15 @@
+info:
+  name: listing-favorite-post
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/listings/1/favorite/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

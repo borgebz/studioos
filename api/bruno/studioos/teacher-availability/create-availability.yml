@@ -5,7 +5,7 @@ info:
 
 http:
   method: post
-  url: "{{base_url}}/api/coachings/teachers/6/availability/"
+  url: "{{base_url}}/api/availability/teachers/6/"
   body:
     type: json
     data: |-

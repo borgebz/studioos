@@ -1,5 +1,9 @@
-from drf_spectacular.utils import extend_schema
-from rest_framework import status
+import json
+
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,18 +15,18 @@ from marketplace import services
 from marketplace.serializers import (
     ListingCreateSerializer,
     ListingDetailSerializer,
+    ListingListQuerySerializer,
     ListingListSerializer,
     ListingUpdateSerializer,
 )
 
 
-def _listing_filters(request):
-    q = request.query_params
-    out = {}
-    for key in ["search", "listing_type", "category_id", "size_id", "color_id", "condition"]:
-        if q.get(key):
-            out[key] = q.get(key)
-    return out or None
+def _validated_listing_filters(request):
+    """Parse and validate listing query params via serializer."""
+    q = ListingListQuerySerializer(data=request.query_params)
+    q.is_valid(raise_exception=True)
+    vd = q.validated_data
+    return vd or None
 
 
 class ListingListCreateView(APIView):
@@ -31,17 +35,18 @@ class ListingListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        parameters=[ListingListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="MarketplaceListingList",
                 results_serializer=ListingListSerializer,
             ),
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     def get(self, request):
         listings = services.list_listings(
-            user=request.user, filters=_listing_filters(request)
+            user=request.user, filters=_validated_listing_filters(request)
         )
         return paginated_response(
             request=request,
@@ -73,20 +78,7 @@ class ListingDetailView(APIView):
 
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request, listing_id):
-        listing = services.get_listing(listing_id=listing_id)
-        # Public + active listings are visible to any authenticated user
-        if not (
-            listing.status == "active" and listing.is_public
-        ):
-            # Not public — must be owner or have admin perm
-            is_owner = listing.created_by_id == request.user.id
-            has_admin_perm = request.user.has_perm(
-                "marketplace.view_productlisting"
-            )
-            if not is_owner and not has_admin_perm:
-                from rest_framework.exceptions import PermissionDenied
-
-                raise PermissionDenied()
+        listing = services.get_listing(listing_id=listing_id, user=request.user)
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data
         )
@@ -162,17 +154,20 @@ class MyListingsView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        parameters=[ListingListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="MyListingsList",
                 results_serializer=ListingListSerializer,
             ),
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     @require_perm("marketplace.view_own_listings")
     def get(self, request):
-        listings = services.list_my_listings(user=request.user)
+        listings = services.list_my_listings(
+            user=request.user, filters=_validated_listing_filters(request)
+        )
         return paginated_response(
             request=request,
             items=listings,
@@ -208,19 +203,23 @@ class FavoriteListingsView(APIView):
 
 class SchoolListingListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
+        parameters=[ListingListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="SchoolListingList",
                 results_serializer=ListingListSerializer,
             ),
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     @require_perm("marketplace.manage_school_listings")
     def get(self, request):
-        qs = services.list_school_listings()
+        qs = services.list_school_listings(
+            user=request.user, filters=_validated_listing_filters(request)
+        )
         return paginated_response(
             request=request,
             items=qs,
@@ -228,12 +227,55 @@ class SchoolListingListCreateView(APIView):
         )
 
     @extend_schema(
-        request=ListingCreateSerializer,
+        request={
+            "multipart/form-data": inline_serializer(
+                name="SchoolListingCreateMultipart",
+                fields={
+                    "payload": serializers.CharField(
+                        help_text=(
+                            "JSON-encoded ListingCreate payload. "
+                            "Files for product.media[i].image are sent as "
+                            "separate form fields named media_0, media_1, ..., "
+                            "matching the index of each media entry."
+                        ),
+                    ),
+                    "media_0": serializers.ImageField(required=False),
+                    "media_1": serializers.ImageField(required=False),
+                    "media_2": serializers.ImageField(required=False),
+                    "media_3": serializers.ImageField(required=False),
+                    "media_4": serializers.ImageField(required=False),
+                    "media_5": serializers.ImageField(required=False),
+                    "media_6": serializers.ImageField(required=False),
+                    "media_7": serializers.ImageField(required=False),
+                    "media_8": serializers.ImageField(required=False),
+                    "media_9": serializers.ImageField(required=False),
+                },
+            ),
+        },
         responses={201: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("marketplace.manage_school_listings")
     def post(self, request):
-        serializer = ListingCreateSerializer(data=request.data)
+        payload_raw = request.data.get("payload")
+        if not payload_raw:
+            raise ValidationError({"payload": ["This field is required."]})
+        try:
+            payload = json.loads(payload_raw)
+        except (TypeError, json.JSONDecodeError):
+            raise ValidationError({"payload": ["Invalid JSON."]})
+
+        product = payload.get("product")
+        if isinstance(product, dict) and isinstance(product.get("media"), list):
+            for i, media_item in enumerate(product["media"]):
+                if not isinstance(media_item, dict):
+                    continue
+                uploaded = request.FILES.get(f"media_{i}")
+                if uploaded is not None:
+                    media_item["image"] = uploaded
+                else:
+                    media_item.pop("image", None)
+
+        serializer = ListingCreateSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
         listing = services.create_listing(
             user=request.user, school_only=True, **serializer.validated_data
@@ -250,7 +292,7 @@ class SchoolListingDetailView(APIView):
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     @require_perm("marketplace.manage_school_listings")
     def get(self, request, listing_id):
-        listing = services.get_listing(listing_id=listing_id)
+        listing = services.get_listing(listing_id=listing_id, user=request.user)
         return Response(
             ListingDetailSerializer(listing, context={"request": request}).data
         )

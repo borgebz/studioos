@@ -5,14 +5,14 @@ info:
 
 http:
   method: POST
-  url: "{{base_url}}/api/studios/"
+  url: https://127.0.0.1:8000/api/studios/
   body:
     type: json
     data: |-
       {
-        "name": "Estúdio Principal",
+        "name": "Estúdio da tilde",
         "max_capacity": 25,
-        "description": "Sala principal com espelhos e chão de madeira.",
+        "description": "Sala de oba oba",
         "allowed_modality_ids": [1]
       }
   auth: inherit

@@ -27,13 +27,14 @@ urlpatterns = [
     path("api/studios/", include("studios.urls")),
     path("api/modalities/", include("modality.urls")),
     path("api/coachings/", include("coachings.urls")),
-    path("inventory/", include("inventory.urls")),
+    path("api/availability/", include("availability.urls")),
+    path("api/inventory/", include("inventory.urls")),
     path("api/events/", include("events.urls")),
     path("api/billing/", include("billing.urls")),
     path("api/classes/", include("classes.urls")),
     path("api/roles/", include("roles.urls")),
     path("api/messaging/", include("messaging.urls")),
-    path("marketplace/", include("marketplace.urls")),
+    path("api/marketplace/", include("marketplace.urls")),
 ]
 
 # Serve media files in development only

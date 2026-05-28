@@ -75,11 +75,8 @@ class TransactionDetailView(APIView):
     )
     @require_perm("marketplace.view_own_transactions")
     def get(self, request, transaction_id):
-        from django.db.models import Q
-
-        txn = services.get_transaction(
-            transaction_id=transaction_id,
-            qs_filter=Q(requester=request.user) | Q(owner=request.user),
+        txn = services.get_my_transaction(
+            transaction_id=transaction_id, user=request.user
         )
         return Response(TransactionDetailSerializer(txn).data)
 
@@ -155,9 +152,7 @@ class SchoolTransactionListView(APIView):
     )
     @require_perm("marketplace.manage_school_listings")
     def get(self, request):
-        txns = services.list_transactions(
-            user=request.user, filters=_transaction_filters(request)
-        )
+        txns = services.list_transactions(filters=_transaction_filters(request))
         return paginated_response(
             request=request,
             items=txns,

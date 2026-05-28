@@ -21,11 +21,36 @@ from enrollments.models import (
 
 
 class EnrollmentListQuerySerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=EnrollmentStatus.choices, required=False)
-    academic_year = serializers.CharField(required=False)
-    enrollment_type = serializers.ChoiceField(
-        choices=EnrollmentType.choices, required=False
+    """Query params for ``GET /api/enrollments/``.
+
+    ``status`` and ``enrollment_type`` accept multiple values (repeat the
+    param, e.g. ``?status=submitted&status=under_review``) and are translated
+    into ``__in`` lookups by the service.
+    """
+
+    _MULTI_FIELDS = ("status", "enrollment_type")
+
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=EnrollmentStatus.choices),
+        required=False,
     )
+    academic_year = serializers.CharField(required=False)
+    enrollment_type = serializers.ListField(
+        child=serializers.ChoiceField(choices=EnrollmentType.choices),
+        required=False,
+    )
+    student_id = serializers.IntegerField(required=False)
+
+    def to_internal_value(self, data):
+        if hasattr(data, "getlist"):
+            normalized = {}
+            for key in data.keys():
+                if key in self._MULTI_FIELDS:
+                    normalized[key] = data.getlist(key)
+                else:
+                    normalized[key] = data.get(key)
+            data = normalized
+        return super().to_internal_value(data)
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +114,8 @@ class EnrollmentConsentReadSerializer(serializers.ModelSerializer):
             "consent_type",
             "accepted",
             "accepted_at",
+            "ip_address",
+            "user_agent",
         ]
         read_only_fields = fields
 

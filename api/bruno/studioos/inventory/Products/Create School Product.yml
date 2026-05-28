@@ -5,7 +5,7 @@ info:
 
 http:
   method: post
-  url: "{{base_url}}/inventory/school/products/"
+  url: "{{base_url}}/api/inventory/school/products/"
   body:
     type: json
     data: |-

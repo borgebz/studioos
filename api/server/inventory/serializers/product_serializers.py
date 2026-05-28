@@ -39,6 +39,23 @@ class InlineVariantSerializer(serializers.Serializer):
     notes = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+_PRODUCT_ORDERING_CHOICES = [
+    ("-updated_at", "Recently updated"),
+    ("updated_at", "Oldest updated"),
+    ("name", "Name A-Z"),
+    ("-name", "Name Z-A"),
+]
+
+
+class ProductListQuerySerializer(serializers.Serializer):
+    name = serializers.CharField(required=False)
+    status = serializers.ChoiceField(choices=Product.Status.choices, required=False)
+    category_id = serializers.IntegerField(required=False)
+    ordering = serializers.ChoiceField(
+        choices=_PRODUCT_ORDERING_CHOICES, required=False
+    )
+
+
 class ProductCreateSerializer(serializers.Serializer):
     name = serializers.CharField()
     description = serializers.CharField(required=False, default="")

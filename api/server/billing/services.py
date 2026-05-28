@@ -377,10 +377,10 @@ def list_billing_entries(
 
     if coaching_class_id is not None:
         qs = qs.filter(coaching_class_id=coaching_class_id)
-    if status is not None:
-        qs = qs.filter(status=status)
-    if source_type is not None:
-        qs = qs.filter(source_type=source_type)
+    if status:
+        qs = qs.filter(status__in=status)
+    if source_type:
+        qs = qs.filter(source_type__in=source_type)
     if date_from is not None:
         qs = qs.filter(created_at__gte=date_from)
     if date_to is not None:
@@ -450,7 +450,7 @@ def list_fines(
         "coaching_class__teacher",
         "coaching_participant",
         "reviewed_by",
-    )
+    ).prefetch_related("billing_entries")
 
     if student_id is not None and not _staff_can_use_student_filters(
         user=requesting_user
@@ -465,24 +465,28 @@ def list_fines(
 
     if coaching_class_id is not None:
         qs = qs.filter(coaching_class_id=coaching_class_id)
-    if status is not None:
-        qs = qs.filter(status=status)
-    if reason is not None:
-        qs = qs.filter(reason=reason)
+    if status:
+        qs = qs.filter(status__in=status)
+    if reason:
+        qs = qs.filter(reason__in=reason)
 
     return qs.order_by("-created_at")
 
 
 def get_fine_for_request(*, pk, requesting_user):
     try:
-        fine = Fine.objects.select_related(
-            "student",
-            "coaching_class",
-            "coaching_class__modality",
-            "coaching_class__teacher",
-            "coaching_participant",
-            "reviewed_by",
-        ).get(pk=pk)
+        fine = (
+            Fine.objects.select_related(
+                "student",
+                "coaching_class",
+                "coaching_class__modality",
+                "coaching_class__teacher",
+                "coaching_participant",
+                "reviewed_by",
+            )
+            .prefetch_related("billing_entries")
+            .get(pk=pk)
+        )
     except Fine.DoesNotExist:
         raise AppNotFound("FineNotFound")
 

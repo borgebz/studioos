@@ -7,19 +7,31 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('coachings', '0017_coachingclass_recurring_fk'),
-        ('messaging', '0002_conversation_listing'),
+        ("coachings", "0017_coachingclass_recurring_fk"),
+        ("messaging", "0002_conversation_listing"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='conversation',
-            name='coaching',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='conversations', to='coachings.coachingclass'),
+            model_name="conversation",
+            name="coaching",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="conversations",
+                to="coachings.coachingclass",
+            ),
         ),
         migrations.AddField(
-            model_name='conversation',
-            name='recurring_coaching',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='conversations', to='coachings.recurringcoaching'),
+            model_name="conversation",
+            name="recurring_coaching",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="conversations",
+                to="coachings.recurringcoaching",
+            ),
         ),
     ]

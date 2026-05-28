@@ -102,12 +102,16 @@ def _get_open_period(*, enrollment_type):
         matching_period_types.append(PeriodType.RENEWAL)
 
     today = timezone.now().date()
-    period = EnrollmentPeriod.objects.filter(
-        is_open=True,
-        period_type__in=matching_period_types,
-        start_date__lte=today,
-        end_date__gte=today,
-    ).order_by("-start_date").first()
+    period = (
+        EnrollmentPeriod.objects.filter(
+            is_open=True,
+            period_type__in=matching_period_types,
+            start_date__lte=today,
+            end_date__gte=today,
+        )
+        .order_by("-start_date")
+        .first()
+    )
 
     if not period:
         raise ValidationError({"messages": ["NoOpenEnrollmentPeriod"]})
@@ -295,7 +299,10 @@ def get_enrollment(*, pk):
 @transaction.atomic
 def update_enrollment(*, enrollment, updated_by=None, **data):
     enrollment = Enrollment.objects.select_for_update().get(pk=enrollment.pk)
-    if enrollment.status not in (EnrollmentStatus.SUBMITTED, EnrollmentStatus.UNDER_REVIEW):
+    if enrollment.status not in (
+        EnrollmentStatus.SUBMITTED,
+        EnrollmentStatus.UNDER_REVIEW,
+    ):
         if enrollment.status == EnrollmentStatus.APPROVED:
             raise ValidationError({"messages": ["CannotUpdateApprovedEnrollment"]})
         raise ValidationError({"messages": ["EnrollmentNotEditable"]})

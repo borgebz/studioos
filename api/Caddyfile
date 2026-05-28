@@ -1,0 +1,56 @@
+# =============================================================================
+# Caddyfile — staging (st.studioos.club only, same-origin)
+#
+# Single vhost serves the SPA and proxies /api, /ws, /admin, /static, /media
+# to the api container. API is reached at https://st.studioos.club/api/... —
+# no separate api subdomain (Cloudflare Free Universal SSL would not cover it).
+#
+# Caddy automatically:
+#  - obtains and renews Let's Encrypt certs for the domains below
+#  - redirects HTTP → HTTPS
+#  - enables HTTP/2 and HTTP/3
+#  - sends X-Forwarded-* headers to upstreams
+# =============================================================================
+
+# Global options
+{
+    # Replace with a real address when you want LE expiry warnings by email
+    # email admin@studioos.club
+}
+
+
+# -----------------------------------------------------------------------------
+# st.studioos.club — SPA + same-origin API proxy
+# -----------------------------------------------------------------------------
+st.studioos.club {
+    encode zstd gzip
+
+    # Django static (collectstatic output) — served by Caddy directly
+    handle_path /static/* {
+        root * /srv/static
+        file_server
+        header Cache-Control "public, max-age=31536000, immutable"
+    }
+
+    # User-uploaded media — served by Caddy directly
+    handle_path /media/* {
+        root * /srv/media
+        file_server
+        header Cache-Control "public, max-age=86400"
+    }
+
+    # API (REST)
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+
+    # WebSockets (Django Channels)
+    handle /ws/* {
+        reverse_proxy api:8000
+    }
+
+    # Everything else → SPA (React)
+    handle {
+        reverse_proxy web:80
+    }
+}

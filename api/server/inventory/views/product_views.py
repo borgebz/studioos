@@ -12,39 +12,26 @@ from inventory import services
 from inventory.serializers.product_serializers import (
     ProductCreateSerializer,
     ProductDetailSerializer,
+    ProductListQuerySerializer,
     ProductUpdateSerializer,
     SchoolProductCreateSerializer,
     SchoolProductUpdateSerializer,
 )
 
 
-def _product_list_filters(request):
-    """Build validated filter dict from query params.  Returns (dict|None, error_response|None)."""
-    q = request.query_params
-    out = {}
-
-    raw_cat = q.get("category_id")
-    if raw_cat:
-        try:
-            out["category_id"] = int(raw_cat)
-        except (ValueError, TypeError):
-            from rest_framework.response import Response as _Resp
-
-            return None, _Resp(
-                {"category_id": ["Must be a valid integer."]}, status=400
-            )
-
-    if q.get("status"):
-        out["status"] = q.get("status")
-    if q.get("name"):
-        out["name"] = q.get("name")
-    return (out if out else None), None
+def _validated_product_filters(request):
+    """Parse and validate product query params via serializer."""
+    q = ProductListQuerySerializer(data=request.query_params)
+    q.is_valid(raise_exception=True)
+    vd = q.validated_data
+    return vd or None
 
 
 class ProductListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        parameters=[ProductListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="InventoryMemberProductList",
@@ -55,9 +42,7 @@ class ProductListCreateView(APIView):
     )
     @require_perm("inventory.view_product")
     def get(self, request):
-        filters, err = _product_list_filters(request)
-        if err is not None:
-            return err
+        filters = _validated_product_filters(request)
         products = services.list_products(user=request.user, filters=filters)
         return paginated_response(
             request=request,
@@ -118,6 +103,7 @@ class SchoolProductListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        parameters=[ProductListQuerySerializer],
         responses={
             200: paginated_list_schema(
                 name="InventorySchoolProductList",
@@ -128,9 +114,7 @@ class SchoolProductListCreateView(APIView):
     )
     @require_perm("inventory.view_school_product")
     def get(self, request):
-        filters, err = _product_list_filters(request)
-        if err is not None:
-            return err
+        filters = _validated_product_filters(request)
         products = services.list_school_products(user=request.user, filters=filters)
         return paginated_response(
             request=request,

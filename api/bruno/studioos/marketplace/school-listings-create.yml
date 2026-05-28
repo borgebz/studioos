@@ -1,0 +1,26 @@
+info:
+  name: school-listings-create
+  type: http
+  seq: 25
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/school/listings/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "variant_id": 1,
+          "listing_type": "sell",
+          "title": "School listing (Bruno)",
+          "description": "",
+          "asking_price": "20.00",
+          "is_public": false
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

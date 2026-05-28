@@ -8,32 +8,53 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('marketplace', '0001_initial'),
+        ("marketplace", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='listing',
-            options={'permissions': [('manage_school_listings', 'Can manage school-owned listings'), ('view_own_listings', 'Can view own listings'), ('view_productlisting', 'Can view any listing')]},
+            name="listing",
+            options={
+                "permissions": [
+                    ("manage_school_listings", "Can manage school-owned listings"),
+                    ("view_own_listings", "Can view own listings"),
+                    ("view_productlisting", "Can view any listing"),
+                ]
+            },
         ),
         migrations.AlterModelOptions(
-            name='producttransaction',
-            options={'permissions': [('view_own_transactions', 'Can view own transactions'), ('view_all_transactions', 'Can view any transaction')]},
+            name="producttransaction",
+            options={
+                "permissions": [
+                    ("view_own_transactions", "Can view own transactions"),
+                    ("view_all_transactions", "Can view any transaction"),
+                ]
+            },
         ),
         migrations.AlterField(
-            model_name='listing',
-            name='asking_price',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
+            model_name="listing",
+            name="asking_price",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=10, null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='producttransaction',
-            name='agreed_price',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True),
+            model_name="producttransaction",
+            name="agreed_price",
+            field=models.DecimalField(
+                blank=True, decimal_places=2, max_digits=10, null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='producttransaction',
-            name='owner',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='owned_transactions', to=settings.AUTH_USER_MODEL),
+            model_name="producttransaction",
+            name="owner",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="owned_transactions",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

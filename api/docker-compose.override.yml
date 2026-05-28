@@ -1,0 +1,90 @@
+# =============================================================================
+# Local dev overrides — auto-loaded by `docker compose up`.
+# Adds bind mounts (hot reload), exposed ports for host access, and the dev-only
+# observability/mail tooling.
+#
+# Do NOT load this in staging or prod.
+# =============================================================================
+
+services:
+
+  db:
+    ports:
+      - "5433:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  api:
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app
+      # Isolated from host .venv and from other services: concurrent `uv run`
+      # on a shared bind-mounted .venv causes "Directory not empty" / exit 2.
+      - api_venv:/app/.venv
+    depends_on:
+      mailpit:
+        condition: service_started
+
+  worker:
+    volumes:
+      - ./server:/app
+      - worker_venv:/app/.venv
+
+  beat:
+    volumes:
+      - ./server:/app
+      - beat_venv:/app/.venv
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  flower:
+    build:
+      context: ./server
+    command: uv run celery -A config flower --broker=redis://redis:6379/0 --port=5555 --persistent=True --db=/data/flower
+    env_file:
+      - ./server/.env
+    ports:
+      - "5555:5555"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - flower_venv:/app/.venv
+      - flower_data:/data
+
+  redisinsight:
+    image: redis/redisinsight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+
+  portainer:
+    image: portainer/portainer-ce
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+volumes:
+  api_venv:
+  worker_venv:
+  beat_venv:
+  flower_venv:
+  flower_data:
+  portainer_data:

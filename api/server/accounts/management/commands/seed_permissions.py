@@ -40,26 +40,52 @@ EVENTS_PERMISSIONS_MANAGEMENT = [
     "events.delete_eventinterest",
 ]
 
+# Community-level events access for non-staff roles (teachers, parents,
+# students, collaborators). Read-only on the event itself + the ability to
+# express interest and join the conversation.
+EVENTS_PERMISSIONS_COMMUNITY = [
+    "events.view_event",
+    "events.view_eventfile",
+    "events.view_eventpost",
+    "events.view_eventcomment",
+    "events.add_eventcomment",
+    "events.change_eventcomment",
+    "events.delete_eventcomment",
+    "events.view_eventinterest",
+    "events.add_eventinterest",
+    "events.delete_eventinterest",
+]
+
 MESSAGING_PERMISSIONS = [
     "messaging.can_send_message",
     "messaging.can_list_conversations",
 ]
 
-COACHINGS_PERMISSIONS = [
-    "coachings.view_teacheravailability",
-    "coachings.add_teacheravailability",
-    "coachings.change_teacheravailability",
-    "coachings.delete_teacheravailability",
-    "coachings.can_manage_teacher_availability_for_others",
+AVAILABILITY_PERMISSIONS = [
+    "availability.view_teacheravailability",
+    "availability.add_teacheravailability",
+    "availability.change_teacheravailability",
+    "availability.delete_teacheravailability",
+]
+
+AVAILABILITY_PERMISSIONS_MANAGEMENT = [
+    *AVAILABILITY_PERMISSIONS,
+    "availability.can_manage_teacher_availability_for_others",
+]
+
+COACHINGS_PERMISSIONS_MANAGEMENT = [
     "coachings.view_coachingclass",
     "coachings.add_coachingclass",
     "coachings.change_coachingclass",
     "coachings.delete_coachingclass",
-    "coachings.can_accept_coaching_as_teacher",
-    "coachings.can_reject_coaching_as_teacher",
     "coachings.view_coachingparticipant",
     "coachings.add_coachingparticipant",
     "coachings.change_coachingparticipant",
+]
+
+COACHINGS_PERMISSIONS_TEACHER = [
+    "coachings.can_accept_coaching_as_teacher",
+    "coachings.can_reject_coaching_as_teacher",
 ]
 
 CLASSES_PERMISSIONS = [
@@ -166,6 +192,8 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "accounts.can_list_users",
         "accounts.can_invite_user",
+        "accounts.can_deactivate_user",
+        "accounts.can_have_profile",
         "accounts.delete_user",
         "accounts.view_role",
         "accounts.add_role",
@@ -191,8 +219,10 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
-        # coachings (full management + scheduling)
-        *COACHINGS_PERMISSIONS,
+        # availability
+        *AVAILABILITY_PERMISSIONS_MANAGEMENT,
+        # coachings (full management + scheduling — no teacher-identity perms)
+        *COACHINGS_PERMISSIONS_MANAGEMENT,
         "coachings.can_schedule_coaching",
         # events
         *EVENTS_PERMISSIONS_MANAGEMENT,
@@ -223,6 +253,7 @@ ROLE_PERMISSIONS = {
         "accounts.view_role",
         "accounts.can_list_users",
         "accounts.can_invite_user",
+        "accounts.can_have_profile",
         # enrollments
         "enrollments.can_review_enrollment",
         "enrollments.can_approve_enrollment",
@@ -242,8 +273,10 @@ ROLE_PERMISSIONS = {
         "modality.delete_usermodality",
         "modality.view_modality",
         "modality.view_usermodality",
-        # coachings (full management + scheduling)
-        *COACHINGS_PERMISSIONS,
+        # availability
+        *AVAILABILITY_PERMISSIONS_MANAGEMENT,
+        # coachings (full management + scheduling — no teacher-identity perms)
+        *COACHINGS_PERMISSIONS_MANAGEMENT,
         "coachings.can_schedule_coaching",
         # events
         *EVENTS_PERMISSIONS_MANAGEMENT,
@@ -262,12 +295,16 @@ ROLE_PERMISSIONS = {
     ],
     "collaborator": [
         "accounts.view_user",
+        "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_modality",
+        "availability.view_teacheravailability",
         "coachings.view_coachingclass",
         "coachings.view_coachingparticipant",
         "classes.view_classe",
         "classes.view_classemember",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         *MESSAGING_PERMISSIONS,
     ],
     "teacher": [
@@ -278,18 +315,16 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         # own availability management
-        "coachings.view_teacheravailability",
-        "coachings.add_teacheravailability",
-        "coachings.change_teacheravailability",
-        "coachings.delete_teacheravailability",
+        *AVAILABILITY_PERMISSIONS,
         # coaching interaction
         "coachings.view_coachingclass",
-        "coachings.can_accept_coaching_as_teacher",
-        "coachings.can_reject_coaching_as_teacher",
+        *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
         # classes (read-only)
         "classes.view_classe",
         "classes.view_classemember",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         *MESSAGING_PERMISSIONS,
     ],
     "teacher_external": [
@@ -300,24 +335,25 @@ ROLE_PERMISSIONS = {
         "modality.view_modality",
         "modality.view_usermodality",
         # own availability management
-        "coachings.view_teacheravailability",
-        "coachings.add_teacheravailability",
-        "coachings.change_teacheravailability",
-        "coachings.delete_teacheravailability",
+        *AVAILABILITY_PERMISSIONS,
         # coaching interaction
         "coachings.view_coachingclass",
-        "coachings.can_accept_coaching_as_teacher",
-        "coachings.can_reject_coaching_as_teacher",
+        *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
         # classes (read-only)
         "classes.view_classe",
         "classes.view_classemember",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         *MESSAGING_PERMISSIONS,
     ],
     "parent": [
         "accounts.view_user",
+        "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_modality",
+        # availability (read-only — see teacher availability)
+        "availability.view_teacheravailability",
         # coaching: request on behalf of dependents + confirm attendance
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
@@ -329,15 +365,20 @@ ROLE_PERMISSIONS = {
         # billing (view own children's entries)
         "billing.view_billingentry",
         "billing.view_fine",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
     "student": [
         "accounts.view_user",
+        "accounts.can_have_profile",
         "accounts.can_participate_in_coaching",
         "studios.view_studio",
         "modality.view_modality",
+        # availability (read-only — see teacher availability)
+        "availability.view_teacheravailability",
         # coaching: request + participate
         "coachings.view_coachingclass",
         "coachings.add_coachingclass",
@@ -349,6 +390,8 @@ ROLE_PERMISSIONS = {
         # billing (view own entries)
         "billing.view_billingentry",
         "billing.view_fine",
+        # events (community view + interaction)
+        *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,

@@ -5,7 +5,7 @@ info:
 
 http:
   method: delete
-  url: "{{base_url}}/inventory/school/products/1/"
+  url: "{{base_url}}/api/inventory/school/products/1/"
   auth: inherit
 
 settings:

@@ -23,7 +23,6 @@ from coachings.models import (
     CoachingParticipantStatus,
     CoachingStatus,
     RecurringCoaching,
-    TeacherAvailability,
 )
 from modality.models import Modality
 from studios.models import Studio, StudioModality
@@ -136,6 +135,7 @@ def _student_ids_for_modality_roster(*, modality_id):
             status=EnrollmentStatus.APPROVED,
             student_id__isnull=False,
             enrollment_modalities__modality_id=modality_id,
+            enrollment_modalities__deleted_at__isnull=True,
         )
         .values_list("student_id", flat=True)
         .distinct()
@@ -151,21 +151,44 @@ def _student_ids_for_modality_roster(*, modality_id):
 
 
 def _bulk_roster_direct_coordination(
-    *, coaching, auto_confirm_participants, created_by, classe_id=None
+    *,
+    coaching,
+    auto_confirm_participants,
+    created_by,
+    classe_id=None,
+    participant_ids=None,
 ):
     """
-    Fill roster from approved enrollments for the coaching modality.
+    Fill roster from classe members and/or explicit participant IDs.
+
+    When both ``classe_id`` and ``participant_ids`` are provided the two sets are merged
+    and deduplicated — the frontend may send participants from the classe roster alongside
+    individually added students.
+
+    Falls back to modality-wide enrollment roster only when neither source is given.
 
     Validates every row before inserting any (no partial roster). All inserts run in the
     caller’s transaction — :func:`create_direct_coordination_coaching` is ``atomic``; any
     failure rolls back the coaching, recurrence row, and participants.
     """
-    if classe_id is not None:
-        from classes.services import get_student_ids_for_classe
+    has_classe = classe_id is not None
+    has_explicit = participant_ids is not None and len(participant_ids) > 0
 
-        student_ids = get_student_ids_for_classe(classe_id=classe_id)
-        if not student_ids:
-            raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+    if has_classe or has_explicit:
+        student_ids = set()
+
+        if has_classe:
+            from classes.services import get_student_ids_for_classe
+
+            classe_student_ids = get_student_ids_for_classe(classe_id=classe_id)
+            if not classe_student_ids and not has_explicit:
+                raise ValidationError({"messages": ["ClasseHasNoMembers"]})
+            student_ids.update(classe_student_ids)
+
+        if has_explicit:
+            student_ids.update(participant_ids)
+
+        student_ids = list(student_ids)
     else:
         student_ids = _student_ids_for_modality_roster(modality_id=coaching.modality_id)
     max_cap = coaching.modality.max_capacity
@@ -329,6 +352,7 @@ def _participant_row_for_add_participant(*, coaching, student_id, requesting_use
         and student_id != requesting_user.pk
     ):
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
         try:
             student_obj = User.objects.get(pk=student_id)
@@ -376,6 +400,9 @@ def _coaching_detail_queryset():
             _recurring_sessions_count=Count(
                 "recurring_coaching__sessions",
                 distinct=True,
+                filter=models.Q(
+                    recurring_coaching__sessions__deleted_at__isnull=True,
+                ),
             ),
         )
     )
@@ -435,20 +462,6 @@ def _validate_status_transition(coaching, target_status):
     allowed = _VALID_TRANSITIONS.get(coaching.status, [])
     if target_status not in allowed:
         raise ValidationError({"messages": ["InvalidStatusTransition"]})
-
-
-def _check_availability_overlap(
-    *, teacher_id, start_datetime, end_datetime, exclude_pk=None
-):
-    qs = TeacherAvailability.objects.filter(
-        teacher_id=teacher_id,
-        start_datetime__lt=end_datetime,
-        end_datetime__gt=start_datetime,
-    )
-    if exclude_pk:
-        qs = qs.exclude(pk=exclude_pk)
-    if qs.exists():
-        raise ValidationError({"messages": ["TeacherAvailabilityOverlap"]})
 
 
 def _assert_studio_modality_compatible(*, studio, modality):
@@ -571,7 +584,9 @@ def _generate_recurrence_dates(
 
     horizon = end_date
     if horizon is None:
-        horizon = (anchor_start + timedelta(days=_DEFAULT_RECURRING_HORIZON_DAYS)).date()
+        horizon = (
+            anchor_start + timedelta(days=_DEFAULT_RECURRING_HORIZON_DAYS)
+        ).date()
 
     dates = []
     count = 1  # anchor = 1
@@ -643,108 +658,6 @@ def _generate_recurrence_dates(
             count += 1
 
     return dates
-
-
-def list_teacher_availability(*, teacher_id, date_from=None, date_to=None):
-    qs = TeacherAvailability.objects.select_related("modality").filter(
-        teacher_id=teacher_id
-    )
-    if date_from:
-        qs = qs.filter(end_datetime__gte=date_from)
-    if date_to:
-        qs = qs.filter(start_datetime__lte=date_to)
-    return qs
-
-
-@transaction.atomic
-def create_teacher_availability(*, teacher_id, requesting_user, **data):
-    start = data.get("start_datetime")
-    end = data.get("end_datetime")
-    _validate_datetime_range(start=start, end=end)
-    _get_teacher_user(teacher_id=teacher_id)
-
-    data = {**data}
-    modality_id = data.pop("modality_id", None)
-    modality = None
-    if modality_id is not None:
-        try:
-            modality = Modality.objects.get(pk=modality_id)
-        except Modality.DoesNotExist:
-            raise AppNotFound("ModalityNotFound")
-
-    notes = data.get("notes", "")
-    _check_availability_overlap(
-        teacher_id=teacher_id, start_datetime=start, end_datetime=end
-    )
-
-    block = TeacherAvailability(
-        teacher_id=teacher_id,
-        modality=modality,
-        start_datetime=start,
-        end_datetime=end,
-        notes=notes,
-        created_by=requesting_user,
-    )
-    block.full_clean()
-    block.save()
-    logger.info(
-        "TeacherAvailability created for teacher=%s by user=%s",
-        teacher_id,
-        requesting_user.id,
-    )
-    return block
-
-
-@transaction.atomic
-def update_teacher_availability(*, teacher_id, pk, requesting_user, **data):
-    _get_teacher_user(teacher_id=teacher_id)
-    try:
-        block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
-    except TeacherAvailability.DoesNotExist:
-        raise AppNotFound("TeacherAvailabilityNotFound")
-
-    modality_id = data.pop("modality_id", "__unset__")
-    if modality_id != "__unset__":
-        if modality_id is not None:
-            try:
-                block.modality = Modality.objects.get(pk=modality_id)
-            except Modality.DoesNotExist:
-                raise AppNotFound("ModalityNotFound")
-        else:
-            block.modality = None
-
-    if "start_datetime" in data:
-        block.start_datetime = data["start_datetime"]
-    if "end_datetime" in data:
-        block.end_datetime = data["end_datetime"]
-    if "notes" in data:
-        block.notes = data["notes"]
-
-    _validate_datetime_range(start=block.start_datetime, end=block.end_datetime)
-
-    _check_availability_overlap(
-        teacher_id=teacher_id,
-        start_datetime=block.start_datetime,
-        end_datetime=block.end_datetime,
-        exclude_pk=pk,
-    )
-
-    block.updated_by = requesting_user
-    block.full_clean()
-    block.save()
-    logger.info("TeacherAvailability %s updated by user=%s", pk, requesting_user.id)
-    return block
-
-
-@transaction.atomic
-def delete_teacher_availability(*, teacher_id, pk, requesting_user):
-    _get_teacher_user(teacher_id=teacher_id)
-    try:
-        block = TeacherAvailability.objects.get(pk=pk, teacher_id=teacher_id)
-    except TeacherAvailability.DoesNotExist:
-        raise AppNotFound("TeacherAvailabilityNotFound")
-    block.delete(deleted_by=requesting_user)
-    logger.info("TeacherAvailability %s deleted by user=%s", pk, requesting_user.id)
 
 
 def get_coaching(*, pk):
@@ -888,6 +801,7 @@ def list_coachings(
     teacher_id=None,
     status=None,
     studio_id=None,
+    modality_id=None,
     requested_by_id=None,
     participant_id=None,
     recurring_coaching_id=None,
@@ -895,16 +809,21 @@ def list_coachings(
     date_to=None,
 ):
     qs = _coaching_detail_queryset()
-    if teacher_id is not None:
-        qs = qs.filter(teacher_id=teacher_id)
-    if status is not None:
-        qs = qs.filter(status=status)
-    if studio_id is not None:
-        qs = qs.filter(studio_id=studio_id)
+    if teacher_id:
+        qs = qs.filter(teacher_id__in=teacher_id)
+    if status:
+        qs = qs.filter(status__in=status)
+    if studio_id:
+        qs = qs.filter(studio_id__in=studio_id)
+    if modality_id:
+        qs = qs.filter(modality_id__in=modality_id)
     if requested_by_id is not None:
         qs = qs.filter(requested_by_id=requested_by_id)
     if participant_id is not None:
-        qs = qs.filter(participants__student_id=participant_id)
+        qs = qs.filter(
+            participants__student_id=participant_id,
+            participants__deleted_at__isnull=True,
+        )
     if recurring_coaching_id is not None:
         qs = qs.filter(recurring_coaching_id=recurring_coaching_id)
     if date_from is not None:
@@ -1034,6 +953,7 @@ def create_direct_coordination_coaching(
     recurring_data=None,
     classe_id=None,
     is_billable=True,
+    participant_ids=None,
 ):
     """
     Create a coordination-scheduled coaching and roster in one transaction.
@@ -1093,9 +1013,7 @@ def create_direct_coordination_coaching(
             raise ValidationError({"messages": messages}) from exc
         recurring_row.save()
 
-    coaching_status = (
-        CoachingStatus.SCHEDULED if schedule else CoachingStatus.REQUESTED
-    )
+    coaching_status = CoachingStatus.SCHEDULED if schedule else CoachingStatus.REQUESTED
 
     coaching = CoachingClass(
         teacher_id=teacher_id,
@@ -1119,6 +1037,7 @@ def create_direct_coordination_coaching(
         auto_confirm_participants=auto_confirm_participants,
         created_by=requesting_user,
         classe_id=classe_id,
+        participant_ids=participant_ids,
     )
 
     if recurring_row:
@@ -1165,6 +1084,7 @@ def create_direct_coordination_coaching(
                 auto_confirm_participants=auto_confirm_participants,
                 created_by=requesting_user,
                 classe_id=classe_id,
+                participant_ids=participant_ids,
             )
 
         logger.info(
@@ -1564,7 +1484,6 @@ def _active_participant_count(*, coaching_class):
     )
 
 
-
 def _enqueue_participant_cancel_side_effects(
     *,
     participant_id,
@@ -1898,7 +1817,9 @@ _CANCELLABLE_COACHING_STATUSES = frozenset(
 )
 
 
-def cancel_recurring_series(*, recurring_coaching_id, user, cancellation_reason="", cancel_past=False):
+def cancel_recurring_series(
+    *, recurring_coaching_id, user, cancellation_reason="", cancel_past=False
+):
     try:
         recurring = RecurringCoaching.objects.get(pk=recurring_coaching_id)
     except RecurringCoaching.DoesNotExist:
@@ -1914,7 +1835,9 @@ def cancel_recurring_series(*, recurring_coaching_id, user, cancellation_reason=
     cancelled_ids = []
     for session_pk in sessions.values_list("pk", flat=True):
         try:
-            cancel_coaching(pk=session_pk, user=user, cancellation_reason=cancellation_reason)
+            cancel_coaching(
+                pk=session_pk, user=user, cancellation_reason=cancellation_reason
+            )
             cancelled_ids.append(session_pk)
         except (ValidationError, AppNotFound):
             logger.warning(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 
 import pytest
@@ -9,7 +10,7 @@ import pytest
 
 @pytest.mark.django_db
 class TestEnrollmentSubmitHttp:
-    def test_json_submit_returns_201(
+    def test_multipart_data_field_submit_returns_201(
         self, api_client, open_enrollment_period, modality
     ):
         from enrollments.models import ConsentType, EnrollmentType
@@ -30,7 +31,9 @@ class TestEnrollmentSubmitHttp:
                 {"consent_type": ConsentType.INTERNAL_REGULATION, "accepted": True},
             ],
         }
-        resp = api_client.post("/api/enrollments/", payload, format="json")
+        resp = api_client.post(
+            "/api/enrollments/", {"data": json.dumps(payload)}, format="multipart"
+        )
         assert resp.status_code == 201, resp.content
         body = resp.json()
         assert body["student_email"] == sid

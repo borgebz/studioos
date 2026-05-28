@@ -37,5 +37,7 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(f"Done. Created {created}, updated {updated}, skipped {skipped}.")
+            self.style.SUCCESS(
+                f"Done. Created {created}, updated {updated}, skipped {skipped}."
+            )
         )

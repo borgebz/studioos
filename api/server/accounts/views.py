@@ -3,9 +3,8 @@ from rest_framework import status, serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.parsers import MultiPartParser
 from core.decorators import require_perm
-from .models import User
 from .serializers import (
     ActivateAccountSerializer,
     BulkInviteFileSerializer,
@@ -16,10 +15,14 @@ from .serializers import (
     LoginSerializer,
     MeSerializer,
     OnboardingPreviewResponse,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     ProfileSerializer,
+    PublicProfileSerializer,
     RefreshTokenSourceSerializer,
     TeacherSummarySerializer,
     UserCoreUpdateSerializer,
+    UserListQuerySerializer,
     UserResponseSerializer,
 )
 from .jwt_session import blacklist_refresh_token, refresh_session_tokens
@@ -27,20 +30,24 @@ from .services import (
     activate_account,
     bulk_invite_users,
     complete_onboarding,
+    complete_password_reset,
     create_profile_for_user,
     create_user,
+    deactivate_user,
     get_onboarding_preview,
     get_profile_for_user,
     invite_user,
     list_emails_for_export,
+    list_public_profiles,
     list_teachers,
     list_users,
+    request_password_reset,
     resend_invite,
     update_profile_for_user,
     update_user_core_fields,
 )
 from core.pagination import paginated_response
-from core.schemas import DEFAULT_ERROR_RESPONSES
+from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
 from drf_spectacular.utils import extend_schema, inline_serializer
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -194,14 +201,21 @@ class UserListView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id="ListUsers",
+        parameters=[UserListQuerySerializer],
         responses={
-            200: UserResponseSerializer(many=True),
+            200: paginated_list_schema(
+                name="UserList",
+                results_serializer=UserResponseSerializer,
+            ),
             **DEFAULT_ERROR_RESPONSES,
         },
     )
     @require_perm("accounts.can_list_users")
     def get(self, request):
-        users = list_users()
+        query = UserListQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        users = list_users(**query.validated_data)
         return paginated_response(
             request=request,
             items=users,
@@ -209,6 +223,7 @@ class UserListView(APIView):
         )
 
     @extend_schema(
+        operation_id="CreateUser",
         request=CreateUserSerializer,
         responses={
             201: UserResponseSerializer,
@@ -223,20 +238,37 @@ class UserListView(APIView):
         user = create_user(**serializer.validated_data, created_by=request.user)
 
         return Response(
-            UserResponseSerializer(user).data, status=status.HTTP_201_CREATED
+            UserResponseSerializer(user, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
         )
 
 
 class UserDetailView(APIView):
     """
+    GET   /api/accounts/users/<pk>/ — fetch a single user.
     PATCH /api/accounts/users/<pk>/ — update principal fields (direction only).
 
-    Requires ``accounts.change_user``.
+    Requires ``accounts.view_user`` (GET) / ``accounts.change_user`` (PATCH).
     """
 
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id="GetUser",
+        responses={
+            200: UserResponseSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.view_user")
+    def get(self, request, pk):
+        from accounts.services import get_user_with_roles_prefetched
+
+        user = get_user_with_roles_prefetched(pk=int(pk))
+        return Response(UserResponseSerializer(user, context={"request": request}).data)
+
+    @extend_schema(
+        operation_id="UpdateUser",
         request=UserCoreUpdateSerializer,
         responses={
             200: UserResponseSerializer,
@@ -256,7 +288,7 @@ class UserDetailView(APIView):
             updated_by=request.user,
             **serializer.validated_data,
         )
-        return Response(UserResponseSerializer(user).data)
+        return Response(UserResponseSerializer(user, context={"request": request}).data)
 
 
 class TeacherListView(APIView):
@@ -295,6 +327,46 @@ class MeView(APIView):
         return Response(serializer.data)
 
 
+class PublicProfileListView(APIView):
+    """
+    GET /api/accounts/profiles/ — discovery list for messaging.
+
+    Open to any authenticated user. Returns profiles only — users who haven't
+    created one are intentionally invisible. The requester is excluded.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            inline_serializer(
+                name="PublicProfileListQuery",
+                fields={
+                    "search": serializers.CharField(required=False, allow_blank=True),
+                },
+            ),
+        ],
+        responses={
+            200: paginated_list_schema(
+                name="PublicProfileList",
+                results_serializer=PublicProfileSerializer,
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def get(self, request):
+        search = request.query_params.get("search") or None
+        profiles = list_public_profiles(
+            requesting_user=request.user,
+            search=search,
+        )
+        return paginated_response(
+            request=request,
+            items=profiles,
+            serializer_class=PublicProfileSerializer,
+        )
+
+
 class MyProfileView(APIView):
     """
     GET  /api/accounts/profile/me/ — retrieve own profile
@@ -303,9 +375,7 @@ class MyProfileView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
-    # MultiPartParser and FormParser needed for file uploads
-    # JSONParser kept for non-file updates
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(responses={200: ProfileSerializer, **DEFAULT_ERROR_RESPONSES})
     @require_perm("accounts.can_have_profile")
@@ -385,6 +455,61 @@ class ActivateAccountView(APIView):
         return Response({"message": "AccountActivated"})
 
 
+class PasswordResetRequestView(APIView):
+    """
+    POST /api/accounts/auth/password-reset/
+    Accepts an email and enqueues a password-reset email (if the account exists).
+    Always returns 200 to prevent email enumeration.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
+
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={
+            200: inline_serializer(
+                name="PasswordResetRequestSuccess",
+                fields={"detail": serializers.CharField()},
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        request_password_reset(email=serializer.validated_data["email"])
+        return Response({"detail": "PasswordResetEmailSent"})
+
+
+class PasswordResetConfirmView(APIView):
+    """
+    POST /api/accounts/auth/password-reset/confirm/
+    Validates uid + token and sets the new password.
+    """
+
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
+
+    @extend_schema(
+        request=PasswordResetConfirmSerializer,
+        responses={
+            200: inline_serializer(
+                name="PasswordResetConfirmSuccess",
+                fields={"detail": serializers.CharField()},
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        complete_password_reset(**serializer.validated_data)
+        return Response({"detail": "PasswordResetComplete"})
+
+
 BulkInviteUsersListSchema = inline_serializer(
     name="BulkInviteUsersListPayload",
     fields={
@@ -437,7 +562,7 @@ class BulkInviteCreateView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         request=BulkInviteFileSerializer,
@@ -529,6 +654,29 @@ class ResendInviteView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
+class DeactivateUserView(APIView):
+    """
+    POST /api/accounts/users/{pk}/deactivate/
+
+    Sets ``is_active=False`` on the user. Re-activation is handled by re-issuing an
+    invite (``resend-invite``) so the user resets their password through onboarding.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="DeactivateUser",
+        responses={
+            200: UserResponseSerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("accounts.can_deactivate_user")
+    def post(self, request, pk):
+        user = deactivate_user(pk=int(pk), deactivated_by=request.user)
+        return Response(UserResponseSerializer(user, context={"request": request}).data)
+
+
 class EmailExportView(APIView):
     """
     GET /api/accounts/emails/export/
@@ -569,12 +717,14 @@ class EmailExportView(APIView):
                 role = getattr(group, "role", None)
                 if role:
                     role_codes.append(role.code)
-            writer.writerow([
-                user.email,
-                user.first_name,
-                user.last_name,
-                ",".join(role_codes),
-                user.is_active,
-            ])
+            writer.writerow(
+                [
+                    user.email,
+                    user.first_name,
+                    user.last_name,
+                    ",".join(role_codes),
+                    user.is_active,
+                ]
+            )
 
         return response

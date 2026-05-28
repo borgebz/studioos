@@ -1,0 +1,15 @@
+info:
+  name: school-transaction-unblock
+  type: http
+  seq: 36
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/school/transactions/1/unblock/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

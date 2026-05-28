@@ -1,8 +1,10 @@
+import json
 import logging
 
-from drf_spectacular.utils import extend_schema
-from rest_framework import status
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,10 +14,16 @@ from core.schemas import DEFAULT_ERROR_RESPONSES
 
 from . import services
 from .serializers import (
+    AddParticipantsSerializer,
     ConversationSerializer,
     CreateConversationSerializer,
+    CreateGroupConversationSerializer,
+    EditMessageSerializer,
     MessageSerializer,
+    ReactionInputSerializer,
+    RenameConversationSerializer,
     SendMessageSerializer,
+    UnreadCountSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,7 +69,7 @@ class ConversationListView(APIView):
 
 class MessageListView(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         responses={200: MessageSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
@@ -77,7 +85,22 @@ class MessageListView(APIView):
         )
 
     @extend_schema(
-        request=SendMessageSerializer,
+        request={
+            "multipart/form-data": inline_serializer(
+                name="SendMessageMultipart",
+                fields={
+                    "data": serializers.CharField(
+                        required=False,
+                        help_text=(
+                            "JSON-encoded SendMessage payload "
+                            "(body, original_filename, mime_type). "
+                            "Optional when only a file is sent."
+                        ),
+                    ),
+                    "file": serializers.FileField(required=False),
+                },
+            ),
+        },
         responses={201: MessageSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("messaging.can_send_message")
@@ -86,18 +109,21 @@ class MessageListView(APIView):
             conversation_id=conversation_id, user=request.user
         )
 
-        if "data" in request.data and isinstance(request.data["data"], str):
-            import json
-
-            payload = json.loads(request.data["data"])
+        raw = request.data.get("data")
+        if raw:
+            try:
+                payload = json.loads(raw)
+            except (TypeError, json.JSONDecodeError):
+                raise ValidationError({"data": ["InvalidJSON"]})
+            if not isinstance(payload, dict):
+                raise ValidationError({"data": ["MustBeJSONObject"]})
         else:
-            payload = request.data
+            payload = {}
 
-        data = {**payload}
         if "file" in request.FILES:
-            data["file"] = request.FILES["file"]
+            payload["file"] = request.FILES["file"]
 
-        serializer = SendMessageSerializer(data=data)
+        serializer = SendMessageSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
 
         msg = services.send_message(
@@ -114,4 +140,248 @@ class MessageListView(APIView):
         return Response(
             MessageSerializer(msg, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class CreateGroupConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=CreateGroupConversationSerializer,
+        responses={201: ConversationSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request):
+        serializer = CreateGroupConversationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        conv = services.create_group_conversation(
+            name=serializer.validated_data["name"],
+            participant_ids=serializer.validated_data["participant_ids"],
+            created_by=request.user,
+        )
+        return Response(
+            ConversationSerializer(conv, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ConversationDetailView(APIView):
+    """PATCH to rename a group conversation. Admin-gated server-side."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=RenameConversationSerializer,
+        responses={200: ConversationSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def patch(self, request, conversation_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        serializer = RenameConversationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        conv = services.rename_conversation(
+            conversation=conv,
+            name=serializer.validated_data["name"],
+            updated_by=request.user,
+        )
+        return Response(
+            ConversationSerializer(conv, context={"request": request}).data,
+        )
+
+
+class ConversationParticipantsView(APIView):
+    """POST to add one or more members to a group conversation. Any member
+    can add; backend enforces."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=AddParticipantsSerializer,
+        responses={200: ConversationSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request, conversation_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        serializer = AddParticipantsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.add_participants(
+            conversation=conv,
+            user_ids=serializer.validated_data["user_ids"],
+            added_by=request.user,
+        )
+        # Refresh from DB so the response includes the new participant list.
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        return Response(
+            ConversationSerializer(conv, context={"request": request}).data,
+        )
+
+
+class ConversationParticipantDetailView(APIView):
+    """DELETE to remove a member from a group conversation (admin only)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(responses={204: None, **DEFAULT_ERROR_RESPONSES})
+    @require_perm("messaging.can_send_message")
+    def delete(self, request, conversation_id, user_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        target = services.get_user_for_conversation(user_id=user_id)
+        services.remove_participant(
+            conversation=conv,
+            target_user=target,
+            removed_by=request.user,
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class LeaveConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={204: None, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request, conversation_id):
+        conv = services.get_conversation(
+            conversation_id=conversation_id, user=request.user
+        )
+        services.leave_conversation(conversation=conv, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MarkConversationReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={204: None, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_list_conversations")
+    def post(self, request, conversation_id):
+        # get_conversation raises 404 if the caller isn't a participant.
+        services.get_conversation(conversation_id=conversation_id, user=request.user)
+        services.mark_read(conversation_id=conversation_id, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class UnreadCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={200: UnreadCountSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_list_conversations")
+    def get(self, request):
+        data = services.get_unread_counts(user=request.user)
+        return Response(UnreadCountSerializer(data).data)
+
+
+class MessageDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=EditMessageSerializer,
+        responses={200: MessageSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def patch(self, request, message_id):
+        message = services.get_message(message_id=message_id, user=request.user)
+        serializer = EditMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message = services.edit_message(
+            message=message,
+            user=request.user,
+            body=serializer.validated_data["body"],
+        )
+        return Response(MessageSerializer(message, context={"request": request}).data)
+
+    @extend_schema(
+        responses={204: None, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def delete(self, request, message_id):
+        message = services.get_message(message_id=message_id, user=request.user)
+        services.delete_message(message=message, user=request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PinMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={200: MessageSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request, message_id):
+        message = services.get_message(message_id=message_id, user=request.user)
+        message, _ = services.pin_message(message=message, user=request.user)
+        message = services.get_message(message_id=message_id, user=request.user)
+        return Response(MessageSerializer(message, context={"request": request}).data)
+
+
+class UnpinMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=None,
+        responses={200: MessageSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request, message_id):
+        message = services.get_message(message_id=message_id, user=request.user)
+        message, _ = services.unpin_message(message=message, user=request.user)
+        message = services.get_message(message_id=message_id, user=request.user)
+        return Response(MessageSerializer(message, context={"request": request}).data)
+
+
+class MessageReactionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=ReactionInputSerializer,
+        responses={201: MessageSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def post(self, request, message_id):
+        message = services.get_message(message_id=message_id, user=request.user)
+        serializer = ReactionInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.add_reaction(
+            message=message,
+            user=request.user,
+            emoji=serializer.validated_data["emoji"],
+        )
+        message = services.get_message(message_id=message_id, user=request.user)
+        return Response(
+            MessageSerializer(message, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(
+        request=ReactionInputSerializer,
+        responses={200: MessageSerializer, **DEFAULT_ERROR_RESPONSES},
+    )
+    @require_perm("messaging.can_send_message")
+    def delete(self, request, message_id):
+        message = services.get_message(message_id=message_id, user=request.user)
+        serializer = ReactionInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.remove_reaction(
+            message=message,
+            user=request.user,
+            emoji=serializer.validated_data["emoji"],
+        )
+        message = services.get_message(message_id=message_id, user=request.user)
+        return Response(
+            MessageSerializer(message, context={"request": request}).data,
         )

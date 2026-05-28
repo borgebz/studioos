@@ -39,43 +39,6 @@ class RecurrenceType(models.TextChoices):
     MONTHLY = "monthly", "Monthly"
 
 
-class TeacherAvailability(BaseModel):
-    """
-    A time window during which a teacher is open for coaching requests.
-    Informational only — not a gate. Requests can be made outside these windows.
-    """
-
-    teacher = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="availability_blocks",
-    )
-    modality = models.ForeignKey(
-        Modality,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="availability_blocks",
-        help_text="If set, this window is specific to this modality. Null means any modality.",
-    )
-    start_datetime = models.DateTimeField()
-    end_datetime = models.DateTimeField()
-    notes = models.TextField(blank=True, default="")
-
-    class Meta:
-        db_table = "teacher_availability"
-        ordering = ["start_datetime"]
-        permissions = [
-            (
-                "can_manage_teacher_availability_for_others",
-                "Can view and manage availability for any teacher",
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.teacher_id} | {self.start_datetime} – {self.end_datetime}"
-
-
 class CoachingClass(BaseModel):
     """
     A single coaching session — either a regular timetable entry (scheduled directly

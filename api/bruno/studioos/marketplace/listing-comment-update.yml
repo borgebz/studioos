@@ -1,0 +1,21 @@
+info:
+  name: listing-comment-update
+  type: http
+  seq: 15
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/marketplace/listings/1/comments/1/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "body": "Updated comment text"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

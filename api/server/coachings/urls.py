@@ -7,17 +7,6 @@ from django.urls import path
 from coachings import views
 
 urlpatterns = [
-    # --- Teacher availability (per teacher user) ---
-    path(
-        "teachers/<int:user_id>/availability/<int:pk>/",
-        views.TeacherAvailabilityDetailView.as_view(),
-        name="teacher-availability-detail",
-    ),
-    path(
-        "teachers/<int:user_id>/availability/",
-        views.TeacherAvailabilityListCreateView.as_view(),
-        name="teacher-availability-list-create",
-    ),
     # --- Coaching participants ---
     path(
         "<int:coaching_id>/participants/<int:pk>/approve/",

@@ -33,17 +33,53 @@ SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 
+# When Caddy (or any reverse proxy) terminates TLS in front of Django, the
+# request arrives over plain HTTP from the proxy. Trust the X-Forwarded-Proto
+# header so request.is_secure() returns True and cookie Secure flags are honoured.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Defence-in-depth: Caddy already redirects HTTP→HTTPS at the edge, so this only
+# fires if a request bypasses Caddy and hits Django directly (e.g., container
+# port accidentally exposed). With SECURE_PROXY_SSL_HEADER set above, normal
+# Caddy traffic carries X-Forwarded-Proto=https and never triggers the redirect.
+#
+# CI sets this to False explicitly: tests use the Django test client which
+# makes plain-HTTP requests and would receive 301s instead of the expected
+# status codes. Defaults to `not DEBUG` so st/prod don't need to opt in.
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=not DEBUG, cast=bool)
+
+# Use the X-Forwarded-Host header to build absolute URLs (so request.get_host()
+# returns the public hostname like "st.studioos.club" rather than the internal
+# container name "api").
+USE_X_FORWARDED_HOST = True
+
+# Built-in Django cookie hardening. Auth (JWT) cookies are configured separately
+# in accounts/auth_cookies.py and already mirror this pattern.
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
 
 # -----------------------------------------------------------------------------
-# CORS
+# CORS / CSRF
 # -----------------------------------------------------------------------------
 
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default="http://localhost:3000,http://localhost:5173",
-    cast=lambda v: [o.strip() for o in v.split(",")],
+    cast=lambda v: [o.strip() for o in v.split(",") if o.strip()],
 )
 CORS_ALLOW_CREDENTIALS = True
+
+# Origins (scheme + host) allowed to send unsafe HTTP methods (POST/PUT/DELETE).
+# Django rejects any cross-origin POST if the Origin header isn't in this list.
+# Staging: "https://st.studioos.club,https://api.st.studioos.club"
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="",
+    cast=lambda v: [o.strip() for o in v.split(",") if o.strip()],
+)
 
 
 # -----------------------------------------------------------------------------
@@ -70,6 +106,7 @@ INSTALLED_APPS = [
     "studios",
     "enrollments",
     "coachings",
+    "availability",
     "inventory",
     "events",
     "billing",
@@ -165,6 +202,61 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "StudioOS API",
     "DESCRIPTION": "School dance management platform",
     "VERSION": "1.0.0",
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+    ],
+    # Several models declare an inner `Status` TextChoices class. Without
+    # explicit names drf-spectacular falls back to hash-suffixed names like
+    # `StatusDc4Enum`, `Status421Enum`, … which surface in the generated
+    # TypeScript client and force the frontend to import obscure enums.
+    # Map each value set to a human-readable name so the generated client
+    # exports `ProductStatusEnum`, `ListingStatusEnum`, etc.
+    # Inner Choices classes (e.g. Product.Status) can't be referenced by dotted
+    # path because Python's import_string only walks modules. Pass the literal
+    # value list for those; use the dotted path for top-level Choices classes.
+    "ENUM_NAME_OVERRIDES": {
+        "ProductStatusEnum": [
+            ("active", "Active"),
+            ("inactive", "Inactive"),
+            ("archived", "Archived"),
+        ],
+        "TargetGenderEnum": [
+            ("female", "Female"),
+            ("male", "Male"),
+            ("unisex", "Unisex"),
+        ],
+        "ProductVariantStatusEnum": [
+            ("available", "Available"),
+            ("maintenance", "Maintenance"),
+            ("inactive", "Inactive"),
+            ("sold", "Sold"),
+            ("donated", "Donated"),
+            ("archived", "Archived"),
+        ],
+        "VariantBookingStatusEnum": [
+            ("pending", "Pending"),
+            ("confirmed", "Confirmed"),
+            ("completed", "Completed"),
+            ("blocked", "Blocked"),
+            ("cancelled", "Cancelled"),
+        ],
+        "ListingStatusEnum": [
+            ("draft", "Draft"),
+            ("active", "Active"),
+            ("closed", "Closed"),
+        ],
+        "TransactionStatusEnum": [
+            ("pending", "Pending"),
+            ("accepted", "Accepted"),
+            ("completed", "Completed"),
+            ("rejected", "Rejected"),
+            ("cancelled", "Cancelled"),
+            ("blocked", "Blocked"),
+        ],
+        "BillingEntryStatusEnum": "billing.models.BillingEntryStatus.choices",
+        "FineStatusEnum": "billing.models.FineStatus.choices",
+        "CoachingParticipantStatusEnum": "coachings.models.CoachingParticipantStatus.choices",
+    },
 }
 
 # -----------------------------------------------------------------------------
@@ -220,13 +312,18 @@ COACHING_FINE_DEFAULT_AMOUNT = config("COACHING_FINE_DEFAULT_AMOUNT", default="2
 # WAITING_CONFIRMATION → attendance/teacher confirmation reminders.
 # Comma-separated "hours:final" pairs, e.g. "24:0,42:1" means:
 #   24h = first reminder (not final), 42h = final reminder.
-COACHING_REMINDER_WINDOWS_RAW = config(
-    "COACHING_REMINDER_WINDOWS", default="24:0,42:1"
-)
+COACHING_REMINDER_WINDOWS_RAW = config("COACHING_REMINDER_WINDOWS", default="24:0,42:1")
 COACHING_REMINDER_WINDOWS = []
 for _pair in COACHING_REMINDER_WINDOWS_RAW.split(","):
     _h, _f = _pair.strip().split(":")
     COACHING_REMINDER_WINDOWS.append((int(_h), bool(int(_f))))
+
+
+# Window (in minutes) during which a message sender can edit their own message
+# after it was sent. After this window, edits are rejected.
+MESSAGE_EDIT_WINDOW_MINUTES = config(
+    "MESSAGE_EDIT_WINDOW_MINUTES", default=15, cast=int
+)
 
 
 # -----------------------------------------------------------------------------
@@ -244,6 +341,7 @@ USE_TZ = True
 # -----------------------------------------------------------------------------
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 

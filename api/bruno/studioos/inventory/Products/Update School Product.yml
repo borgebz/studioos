@@ -5,7 +5,7 @@ info:
 
 http:
   method: patch
-  url: "{{base_url}}/inventory/school/products/1/"
+  url: "{{base_url}}/api/inventory/school/products/1/"
   body:
     type: json
     data: |-

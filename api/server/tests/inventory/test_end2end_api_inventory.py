@@ -34,7 +34,7 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
     """
     # Size System: create
     ss_create = inv_client.post(
-        "/inventory/size-systems/",
+        "/api/inventory/size-systems/",
         {"name": f"EU-{_uid()}"},
         format="json",
     )
@@ -43,13 +43,13 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
     assert ss_create.data["name"].startswith("EU-")
 
     # Size System: list contains it
-    ss_list = inv_client.get("/inventory/size-systems/")
+    ss_list = inv_client.get("/api/inventory/size-systems/")
     assert ss_list.status_code == 200
     assert any(x["id"] == size_system_id for x in ss_list.data)
 
     # Size System: update (PATCH)
     ss_patch = inv_client.patch(
-        f"/inventory/size-systems/{size_system_id}/",
+        f"/api/inventory/size-systems/{size_system_id}/",
         {"name": f"EU-UPDATED-{_uid()}"},
         format="json",
     )
@@ -59,7 +59,7 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
 
     # Size System: deactivate / activate
     ss_deactivate = inv_client.post(
-        f"/inventory/size-systems/{size_system_id}/deactivate/",
+        f"/api/inventory/size-systems/{size_system_id}/deactivate/",
         {},
         format="json",
     )
@@ -67,7 +67,7 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
     assert ss_deactivate.data["is_active"] is False
 
     ss_activate = inv_client.post(
-        f"/inventory/size-systems/{size_system_id}/activate/",
+        f"/api/inventory/size-systems/{size_system_id}/activate/",
         {},
         format="json",
     )
@@ -76,7 +76,7 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
 
     # Size: create two sizes under this size system
     s1 = inv_client.post(
-        "/inventory/sizes/",
+        "/api/inventory/sizes/",
         {"name": "M", "size_system_id": size_system_id},
         format="json",
     )
@@ -84,7 +84,7 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
     size1_id = s1.data["id"]
 
     s2 = inv_client.post(
-        "/inventory/sizes/",
+        "/api/inventory/sizes/",
         {"name": "L", "size_system_id": size_system_id},
         format="json",
     )
@@ -92,18 +92,18 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
     size2_id = s2.data["id"]
 
     # Sizes: list and list filtered by size_system_id
-    all_sizes = inv_client.get("/inventory/sizes/")
+    all_sizes = inv_client.get("/api/inventory/sizes/")
     assert all_sizes.status_code == 200
     assert any(x["id"] == size1_id for x in all_sizes.data)
     assert any(x["id"] == size2_id for x in all_sizes.data)
 
-    ss_sizes = inv_client.get(f"/inventory/sizes/?size_system_id={size_system_id}")
+    ss_sizes = inv_client.get(f"/api/inventory/sizes/?size_system_id={size_system_id}")
     assert ss_sizes.status_code == 200
     assert {x["id"] for x in ss_sizes.data} >= {size1_id, size2_id}
 
     # Size: deactivate one, ensure filter works
     s1_deactivate = inv_client.post(
-        f"/inventory/sizes/{size1_id}/deactivate/",
+        f"/api/inventory/sizes/{size1_id}/deactivate/",
         {},
         format="json",
     )
@@ -111,13 +111,13 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
     assert s1_deactivate.data["is_active"] is False
 
     active_sizes = inv_client.get(
-        f"/inventory/categories/?size_system_id={size_system_id}"
+        f"/api/inventory/categories/?size_system_id={size_system_id}"
     )
     assert active_sizes.status_code == 200
 
     # Size: activate again
     s1_activate = inv_client.post(
-        f"/inventory/sizes/{size1_id}/activate/",
+        f"/api/inventory/sizes/{size1_id}/activate/",
         {},
         format="json",
     )
@@ -125,13 +125,13 @@ def test_e2e_01_size_systems_and_sizes_full_lifecycle(inv_client):
     assert s1_activate.data["is_active"] is True
 
     # Size: delete both
-    s1_delete = inv_client.delete(f"/inventory/sizes/{size1_id}/")
+    s1_delete = inv_client.delete(f"/api/inventory/sizes/{size1_id}/")
     assert s1_delete.status_code == 204
-    s2_delete = inv_client.delete(f"/inventory/sizes/{size2_id}/")
+    s2_delete = inv_client.delete(f"/api/inventory/sizes/{size2_id}/")
     assert s2_delete.status_code == 204
 
     # Size System: delete
-    ss_delete = inv_client.delete(f"/inventory/size-systems/{size_system_id}/")
+    ss_delete = inv_client.delete(f"/api/inventory/size-systems/{size_system_id}/")
     assert ss_delete.status_code == 204
 
 
@@ -142,7 +142,7 @@ def test_e2e_02_categories_hierarchy_filters_and_activation(inv_client):
     and delete (soft-delete).
     """
     parent_resp = inv_client.post(
-        "/inventory/categories/",
+        "/api/inventory/categories/",
         {"name": f"Parent-{_uid()}"},
         format="json",
     )
@@ -151,7 +151,7 @@ def test_e2e_02_categories_hierarchy_filters_and_activation(inv_client):
     assert parent_resp.data["parent"] is None
 
     child_resp = inv_client.post(
-        "/inventory/categories/",
+        "/api/inventory/categories/",
         {"name": f"Child-{_uid()}", "parent_category_id": parent_id},
         format="json",
     )
@@ -159,7 +159,7 @@ def test_e2e_02_categories_hierarchy_filters_and_activation(inv_client):
     child_id = child_resp.data["id"]
     assert child_resp.data["parent"] == parent_id
 
-    all_categories = inv_client.get("/inventory/categories/")
+    all_categories = inv_client.get("/api/inventory/categories/")
     assert all_categories.status_code == 200
     ids = {c["id"] for c in all_categories.data}
     assert parent_id in ids
@@ -168,13 +168,13 @@ def test_e2e_02_categories_hierarchy_filters_and_activation(inv_client):
     assert any(sc["id"] == child_id for sc in parent_payload["subcategories"])
 
     children_only = inv_client.get(
-        f"/inventory/categories/?parent_category_id={parent_id}"
+        f"/api/inventory/categories/?parent_category_id={parent_id}"
     )
     assert children_only.status_code == 200
     assert {c["id"] for c in children_only.data} == {child_id}
 
     child_patch = inv_client.patch(
-        f"/inventory/categories/{child_id}/",
+        f"/api/inventory/categories/{child_id}/",
         {"name": f"Child-Renamed-{_uid()}"},
         format="json",
     )
@@ -183,7 +183,7 @@ def test_e2e_02_categories_hierarchy_filters_and_activation(inv_client):
     assert child_patch.data["name"].startswith("Child-Renamed-")
 
     child_deactivate = inv_client.post(
-        f"/inventory/categories/{child_id}/deactivate/",
+        f"/api/inventory/categories/{child_id}/deactivate/",
         {},
         format="json",
     )
@@ -193,13 +193,13 @@ def test_e2e_02_categories_hierarchy_filters_and_activation(inv_client):
     # Inactive filtering still respects hierarchical listing (roots by default),
     # so we query children scope explicitly.
     inactive_only = inv_client.get(
-        f"/inventory/categories/?parent_category_id={parent_id}&is_active=false"
+        f"/api/inventory/categories/?parent_category_id={parent_id}&is_active=false"
     )
     assert inactive_only.status_code == 200
     assert any(c["id"] == child_id for c in inactive_only.data)
 
     child_activate = inv_client.post(
-        f"/inventory/categories/{child_id}/activate/",
+        f"/api/inventory/categories/{child_id}/activate/",
         {},
         format="json",
     )
@@ -207,10 +207,10 @@ def test_e2e_02_categories_hierarchy_filters_and_activation(inv_client):
     assert child_activate.data["is_active"] is True
 
     # delete child then verify it's not returned by default list
-    child_delete = inv_client.delete(f"/inventory/categories/{child_id}/")
+    child_delete = inv_client.delete(f"/api/inventory/categories/{child_id}/")
     assert child_delete.status_code == 204
 
-    categories_after = inv_client.get("/inventory/categories/")
+    categories_after = inv_client.get("/api/inventory/categories/")
     assert categories_after.status_code == 200
     assert all(c["id"] != child_id for c in categories_after.data)
 
@@ -222,7 +222,7 @@ def test_e2e_03_colors_endpoints_validation_activation_and_filtering(inv_client)
     create -> list -> validate duplicate and invalid hex -> deactivate/activate -> filter -> delete.
     """
     c1 = inv_client.post(
-        "/inventory/colors/",
+        "/api/inventory/colors/",
         {"name": f"Black-{_uid()}", "hex_code": "#000000"},
         format="json",
     )
@@ -230,12 +230,12 @@ def test_e2e_03_colors_endpoints_validation_activation_and_filtering(inv_client)
     color_id = c1.data["id"]
     assert c1.data["is_active"] is True
 
-    all_colors = inv_client.get("/inventory/colors/")
+    all_colors = inv_client.get("/api/inventory/colors/")
     assert all_colors.status_code == 200
     assert any(c["id"] == color_id for c in all_colors.data)
 
     dup = inv_client.post(
-        "/inventory/colors/",
+        "/api/inventory/colors/",
         {"name": c1.data["name"], "hex_code": "#111111"},
         format="json",
     )
@@ -243,7 +243,7 @@ def test_e2e_03_colors_endpoints_validation_activation_and_filtering(inv_client)
     assert dup.data["errors"]["messages"] == ["DuplicateColorName"]
 
     invalid_hex = inv_client.post(
-        "/inventory/colors/",
+        "/api/inventory/colors/",
         {"name": f"BadHex-{_uid()}", "hex_code": "blue"},
         format="json",
     )
@@ -251,20 +251,22 @@ def test_e2e_03_colors_endpoints_validation_activation_and_filtering(inv_client)
     assert invalid_hex.data["errors"]["messages"] == ["InvalidHexCode"]
 
     deact = inv_client.post(
-        f"/inventory/colors/{color_id}/deactivate/", {}, format="json"
+        f"/api/inventory/colors/{color_id}/deactivate/", {}, format="json"
     )
     assert deact.status_code == 200
     assert deact.data["is_active"] is False
 
-    inactive_colors = inv_client.get("/inventory/colors/?is_active=false")
+    inactive_colors = inv_client.get("/api/inventory/colors/?is_active=false")
     assert inactive_colors.status_code == 200
     assert any(c["id"] == color_id for c in inactive_colors.data)
 
-    act = inv_client.post(f"/inventory/colors/{color_id}/activate/", {}, format="json")
+    act = inv_client.post(
+        f"/api/inventory/colors/{color_id}/activate/", {}, format="json"
+    )
     assert act.status_code == 200
     assert act.data["is_active"] is True
 
-    delete = inv_client.delete(f"/inventory/colors/{color_id}/")
+    delete = inv_client.delete(f"/api/inventory/colors/{color_id}/")
     assert delete.status_code == 204
 
 
@@ -278,7 +280,7 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     """
     # prerequisites: category, size system + size, color
     category = inv_client.post(
-        "/inventory/categories/",
+        "/api/inventory/categories/",
         {"name": f"Costumes-{_uid()}"},
         format="json",
     )
@@ -286,7 +288,7 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     category_id = category.data["id"]
 
     size_system = inv_client.post(
-        "/inventory/size-systems/",
+        "/api/inventory/size-systems/",
         {"name": f"Clothing-{_uid()}"},
         format="json",
     )
@@ -294,7 +296,7 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     size_system_id = size_system.data["id"]
 
     size = inv_client.post(
-        "/inventory/sizes/",
+        "/api/inventory/sizes/",
         {"name": "M", "size_system_id": size_system_id},
         format="json",
     )
@@ -302,7 +304,7 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     size_id = size.data["id"]
 
     color = inv_client.post(
-        "/inventory/colors/",
+        "/api/inventory/colors/",
         {"name": f"Blue-{_uid()}", "hex_code": "#0000FF"},
         format="json",
     )
@@ -311,7 +313,7 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
 
     # product: create
     product = inv_client.post(
-        "/inventory/products/",
+        "/api/inventory/products/",
         {
             "name": f"T-Shirt-{_uid()}",
             "description": "e2e member product",
@@ -325,17 +327,17 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     assert product.data["owner_type"] == "member"
 
     # product: list, detail, update
-    products = inv_client.get("/inventory/products/")
+    products = inv_client.get("/api/inventory/products/")
     assert products.status_code == 200
     assert "results" in products.data
     assert any(p["id"] == product_id for p in products.data["results"])
 
-    detail = inv_client.get(f"/inventory/products/{product_id}/")
+    detail = inv_client.get(f"/api/inventory/products/{product_id}/")
     assert detail.status_code == 200
     assert detail.data["id"] == product_id
 
     updated = inv_client.patch(
-        f"/inventory/products/{product_id}/",
+        f"/api/inventory/products/{product_id}/",
         {"description": "e2e member product updated", "brand": "E2E Brand"},
         format="json",
     )
@@ -345,7 +347,7 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
 
     # variant: create via product variants endpoint
     variant = inv_client.post(
-        f"/inventory/products/{product_id}/variants/",
+        f"/api/inventory/products/{product_id}/variants/",
         {
             "sku": f"SKU-{_uid()}",
             "size_id": size_id,
@@ -360,18 +362,18 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     variant_id = variant.data["id"]
 
     # variant: list for product + detail + update
-    v_list = inv_client.get(f"/inventory/products/{product_id}/variants/")
+    v_list = inv_client.get(f"/api/inventory/products/{product_id}/variants/")
     assert v_list.status_code == 200
     assert "results" in v_list.data
     assert any(v["id"] == variant_id for v in v_list.data["results"])
 
-    v_detail = inv_client.get(f"/inventory/variants/{variant_id}/")
+    v_detail = inv_client.get(f"/api/inventory/variants/{variant_id}/")
     assert v_detail.status_code == 200
     assert v_detail.data["id"] == variant_id
     assert v_detail.data["size"]["id"] == size_id
 
     v_patch = inv_client.patch(
-        f"/inventory/variants/{variant_id}/",
+        f"/api/inventory/variants/{variant_id}/",
         {"internal_notes": "internal", "public_notes": "public"},
         format="json",
     )
@@ -383,7 +385,7 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     start_at = timezone.now()
     end_at = start_at + timedelta(days=2)
     booking = inv_client.post(
-        f"/inventory/variants/{variant_id}/bookings/",
+        f"/api/inventory/variants/{variant_id}/bookings/",
         {
             "booking_type": "rent",
             "start_at": start_at.isoformat(),
@@ -397,17 +399,17 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     booking_id = booking.data["id"]
     assert booking.data["variant"] == variant_id
 
-    b_list = inv_client.get(f"/inventory/variants/{variant_id}/bookings/")
+    b_list = inv_client.get(f"/api/inventory/variants/{variant_id}/bookings/")
     assert b_list.status_code == 200
     assert "results" in b_list.data
     assert any(b["id"] == booking_id for b in b_list.data["results"])
 
-    b_detail = inv_client.get(f"/inventory/bookings/{booking_id}/")
+    b_detail = inv_client.get(f"/api/inventory/bookings/{booking_id}/")
     assert b_detail.status_code == 200
     assert b_detail.data["id"] == booking_id
 
     b_patch = inv_client.patch(
-        f"/inventory/bookings/{booking_id}/",
+        f"/api/inventory/bookings/{booking_id}/",
         {"notes": "updated", "status": "confirmed"},
         format="json",
     )
@@ -416,19 +418,19 @@ def test_e2e_04_member_products_variants_bookings_full_roundtrip(inv_client):
     assert b_patch.data["status"] == "confirmed"
 
     # variant delete must be blocked while booking is active/confirmed
-    v_delete_blocked = inv_client.delete(f"/inventory/variants/{variant_id}/")
+    v_delete_blocked = inv_client.delete(f"/api/inventory/variants/{variant_id}/")
     assert v_delete_blocked.status_code == 400
     assert v_delete_blocked.data["errors"]["messages"] == ["VariantHasActiveBookings"]
 
     # delete booking then delete variant
-    b_delete = inv_client.delete(f"/inventory/bookings/{booking_id}/")
+    b_delete = inv_client.delete(f"/api/inventory/bookings/{booking_id}/")
     assert b_delete.status_code == 204
 
-    v_delete = inv_client.delete(f"/inventory/variants/{variant_id}/")
+    v_delete = inv_client.delete(f"/api/inventory/variants/{variant_id}/")
     assert v_delete.status_code == 204
 
     # delete product
-    p_delete = inv_client.delete(f"/inventory/products/{product_id}/")
+    p_delete = inv_client.delete(f"/api/inventory/products/{product_id}/")
     assert p_delete.status_code == 204
 
 
@@ -443,7 +445,7 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     """
     # prerequisites
     category = inv_client.post(
-        "/inventory/categories/",
+        "/api/inventory/categories/",
         {"name": f"School-Cat-{_uid()}"},
         format="json",
     )
@@ -451,7 +453,7 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     category_id = category.data["id"]
 
     size_system = inv_client.post(
-        "/inventory/size-systems/",
+        "/api/inventory/size-systems/",
         {"name": f"School-Sizes-{_uid()}"},
         format="json",
     )
@@ -459,7 +461,7 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     size_system_id = size_system.data["id"]
 
     size = inv_client.post(
-        "/inventory/sizes/",
+        "/api/inventory/sizes/",
         {"name": "XL", "size_system_id": size_system_id},
         format="json",
     )
@@ -468,7 +470,7 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
 
     # school product: create
     school_product = inv_client.post(
-        "/inventory/school/products/",
+        "/api/inventory/school/products/",
         {
             "name": f"School-Prod-{_uid()}",
             "description": "e2e school product",
@@ -486,17 +488,19 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     assert school_product.data["owner_type"] == "school"
 
     # school product: list + detail + update
-    list_school = inv_client.get("/inventory/school/products/")
+    list_school = inv_client.get("/api/inventory/school/products/")
     assert list_school.status_code == 200
     assert "results" in list_school.data
     assert any(p["id"] == school_product_id for p in list_school.data["results"])
 
-    school_detail = inv_client.get(f"/inventory/school/products/{school_product_id}/")
+    school_detail = inv_client.get(
+        f"/api/inventory/school/products/{school_product_id}/"
+    )
     assert school_detail.status_code == 200
     assert school_detail.data["id"] == school_product_id
 
     school_update = inv_client.patch(
-        f"/inventory/school/products/{school_product_id}/",
+        f"/api/inventory/school/products/{school_product_id}/",
         {
             "description": "updated school description",
             "school_details": {"storage_location": "Room B"},
@@ -508,7 +512,7 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
 
     # create variant for this school product
     variant = inv_client.post(
-        f"/inventory/products/{school_product_id}/variants/",
+        f"/api/inventory/products/{school_product_id}/variants/",
         {
             "sku": f"SCH-{_uid()}",
             "size_id": size_id,
@@ -525,7 +529,7 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     start_at = timezone.now()
     end_at = start_at + timedelta(days=1)
     booking = inv_client.post(
-        f"/inventory/variants/{variant_id}/bookings/",
+        f"/api/inventory/variants/{variant_id}/bookings/",
         {
             "booking_type": "school_use",
             "start_at": start_at.isoformat(),
@@ -537,14 +541,14 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     assert booking.status_code == 201
     booking_id = booking.data["id"]
 
-    delete_booking = inv_client.delete(f"/inventory/bookings/{booking_id}/")
+    delete_booking = inv_client.delete(f"/api/inventory/bookings/{booking_id}/")
     assert delete_booking.status_code == 204
 
     # delete variant then delete school product
-    delete_variant = inv_client.delete(f"/inventory/variants/{variant_id}/")
+    delete_variant = inv_client.delete(f"/api/inventory/variants/{variant_id}/")
     assert delete_variant.status_code == 204
 
     delete_school = inv_client.delete(
-        f"/inventory/school/products/{school_product_id}/"
+        f"/api/inventory/school/products/{school_product_id}/"
     )
     assert delete_school.status_code == 204

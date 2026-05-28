@@ -5,13 +5,13 @@ info:
 
 http:
   method: GET
-  url: "{{base_url}}/api/coachings/teachers/6/availability/?date_from=2026-04-01T00:00:00Z&date_to=2026-04-10T23:59:59Z"
+  url: "{{base_url}}/api/availability/teachers/6/?date_from=2026-04-01T00:00:00Z&date_to=2026-04-30T23:59:59Z"
   params:
     - name: date_from
       value: 2026-04-01T00:00:00Z
       type: query
     - name: date_to
-      value: 2026-04-10T23:59:59Z
+      value: 2026-04-30T23:59:59Z
       type: query
   auth: inherit
 

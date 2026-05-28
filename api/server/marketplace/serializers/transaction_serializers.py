@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from marketplace.models import ProductTransaction
@@ -38,6 +39,7 @@ class TransactionDetailSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    @extend_schema_field(serializers.DictField())
     def get_requester_display(self, obj):
         profile = getattr(obj.requester, "profile", None)
         return {
@@ -45,9 +47,13 @@ class TransactionDetailSerializer(serializers.ModelSerializer):
             "display_name": profile.display_name if profile else None,
         }
 
+    @extend_schema_field(serializers.DictField())
     def get_owner_display(self, obj):
+        if obj.owner is None:
+            return {"type": "school"}
         profile = getattr(obj.owner, "profile", None)
         return {
+            "type": "member",
             "id": obj.owner_id,
             "display_name": profile.display_name if profile else None,
         }

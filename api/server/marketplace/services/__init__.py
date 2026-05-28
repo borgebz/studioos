@@ -1,4 +1,8 @@
-from marketplace.services import comment_services, listing_services, transaction_services
+from marketplace.services import (
+    comment_services,
+    listing_services,
+    transaction_services,
+)
 from marketplace.services.comment_services import (
     create_comment,
     delete_comment,
@@ -26,6 +30,7 @@ from marketplace.services.transaction_services import (
     block_transaction,
     cancel_transaction,
     complete_transaction,
+    get_my_transaction,
     get_transaction,
     list_my_transactions,
     list_transactions,
@@ -60,6 +65,7 @@ __all__ = [
     "block_transaction",
     "cancel_transaction",
     "complete_transaction",
+    "get_my_transaction",
     "get_transaction",
     "list_my_transactions",
     "list_transactions",

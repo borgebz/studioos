@@ -7,17 +7,21 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0013_categorysizesystem_created_at_and_more'),
+        ("inventory", "0013_categorysizesystem_created_at_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.RemoveConstraint(
-            model_name='categorysizesystem',
-            name='inventory_categorysizesystem_uniq',
+            model_name="categorysizesystem",
+            name="inventory_categorysizesystem_uniq",
         ),
         migrations.AddConstraint(
-            model_name='categorysizesystem',
-            constraint=models.UniqueConstraint(condition=models.Q(('deleted_at__isnull', True)), fields=('category', 'size_system'), name='inventory_categorysizesystem_uniq'),
+            model_name="categorysizesystem",
+            constraint=models.UniqueConstraint(
+                condition=models.Q(("deleted_at__isnull", True)),
+                fields=("category", "size_system"),
+                name="inventory_categorysizesystem_uniq",
+            ),
         ),
     ]

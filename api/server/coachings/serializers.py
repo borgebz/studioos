@@ -14,31 +14,11 @@ from coachings.models import (
     CoachingStatus,
     RecurrenceType,
     RecurringCoaching,
-    TeacherAvailability,
 )
 from modality.serializers import ModalitySerializer
 from studios.serializers import StudioSerializer
 
 # --- Teacher availability (slots): filters, body payloads, read model ---
-
-
-class TeacherAvailabilityQuerySerializer(serializers.Serializer):
-    date_from = serializers.DateTimeField(required=False)
-    date_to = serializers.DateTimeField(required=False)
-
-
-class TeacherAvailabilitySubmitSerializer(serializers.Serializer):
-    start_datetime = serializers.DateTimeField()
-    end_datetime = serializers.DateTimeField()
-    modality_id = serializers.IntegerField(required=False, allow_null=True)
-    notes = serializers.CharField(required=False, allow_blank=True)
-
-
-class TeacherAvailabilityUpdateSerializer(serializers.Serializer):
-    start_datetime = serializers.DateTimeField(required=False)
-    end_datetime = serializers.DateTimeField(required=False)
-    modality_id = serializers.IntegerField(required=False, allow_null=True)
-    notes = serializers.CharField(required=False, allow_blank=True)
 
 
 # --- Coaching session: create, schedule, workflow actions, patch ---
@@ -107,6 +87,12 @@ class DirectCoordinationCoachingCreateSerializer(serializers.Serializer):
         help_text="true = participants added as ACTIVE; false = participants added as INVITED (must accept).",
     )
     classe_id = serializers.IntegerField(required=False, allow_null=True)
+    participant_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+        help_text="Explicit student user IDs to add as participants. Merged with classe members when classe_id is also provided; duplicates are removed automatically.",
+    )
     recurring_coaching = RecurringCoachingSubmitSerializer(
         required=False,
         allow_null=True,
@@ -170,9 +156,24 @@ class ParticipantCancelSerializer(serializers.Serializer):
 
 
 class CoachingListQuerySerializer(serializers.Serializer):
-    teacher_id = serializers.IntegerField(required=False)
-    status = serializers.ChoiceField(choices=CoachingStatus.choices, required=False)
-    studio_id = serializers.IntegerField(required=False)
+    """Query params for ``GET /api/coachings/``.
+
+    ``teacher_id``, ``studio_id``, ``modality_id`` and ``status`` accept
+    multiple values (repeat the param, e.g. ``?status=scheduled&status=requested``)
+    and are translated into ``__in`` lookups by the service.
+    """
+
+    _MULTI_FIELDS = ("teacher_id", "studio_id", "modality_id", "status")
+
+    teacher_id = serializers.ListField(child=serializers.IntegerField(), required=False)
+    studio_id = serializers.ListField(child=serializers.IntegerField(), required=False)
+    modality_id = serializers.ListField(
+        child=serializers.IntegerField(), required=False
+    )
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=CoachingStatus.choices),
+        required=False,
+    )
     requested_by_id = serializers.IntegerField(required=False)
     participant_id = serializers.IntegerField(
         required=False,
@@ -182,23 +183,21 @@ class CoachingListQuerySerializer(serializers.Serializer):
     date_from = serializers.DateTimeField(required=False)
     date_to = serializers.DateTimeField(required=False)
 
+    def to_internal_value(self, data):
+        # QueryDict collapses repeated keys to the last value when iterated;
+        # use getlist() so multi-value filters survive.
+        if hasattr(data, "getlist"):
+            normalized = {}
+            for key in data.keys():
+                if key in self._MULTI_FIELDS:
+                    normalized[key] = data.getlist(key)
+                else:
+                    normalized[key] = data.get(key)
+            data = normalized
+        return super().to_internal_value(data)
+
 
 # --- Read models (nested resources for responses) ---
-
-
-class TeacherAvailabilitySerializer(serializers.ModelSerializer):
-    modality = ModalitySerializer(read_only=True)
-
-    class Meta:
-        model = TeacherAvailability
-        fields = [
-            "id",
-            "teacher_id",
-            "modality",
-            "start_datetime",
-            "end_datetime",
-            "notes",
-        ]
 
 
 class CoachingParticipantSerializer(serializers.ModelSerializer):

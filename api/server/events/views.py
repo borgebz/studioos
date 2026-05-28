@@ -4,7 +4,7 @@ from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -49,7 +49,7 @@ def _event_writable_payload(request):
 
 
 class EventListCreateView(APIView):
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -99,7 +99,7 @@ class EventListCreateView(APIView):
 
 
 class EventDetailView(APIView):
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     def get_permissions(self):
         if self.request.method == "GET":
@@ -520,7 +520,7 @@ class EventPostSchedulePublicationView(APIView):
 
 
 class EventFileListCreateView(APIView):
-    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    parser_classes = [MultiPartParser]
 
     def get_permissions(self):
         if self.request.method == "POST":

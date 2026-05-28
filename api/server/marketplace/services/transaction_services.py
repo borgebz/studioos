@@ -2,7 +2,6 @@ import logging
 from datetime import timedelta
 
 from django.db import transaction
-from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from core.exceptions import AppNotFound
@@ -33,10 +32,46 @@ _VARIANT_TERMINAL_STATUS_MAP = {
     ProductTransaction.TransactionType.DONATE: ProductVariant.Status.DONATED,
 }
 
+# ---------------------------------------------------------------------------
+# State machine — single source of truth
+# ---------------------------------------------------------------------------
+
+VALID_TRANSITIONS = {
+    ProductTransaction.TransactionStatus.PENDING: [
+        ProductTransaction.TransactionStatus.ACCEPTED,
+        ProductTransaction.TransactionStatus.REJECTED,
+        ProductTransaction.TransactionStatus.CANCELLED,
+    ],
+    ProductTransaction.TransactionStatus.ACCEPTED: [
+        ProductTransaction.TransactionStatus.COMPLETED,
+        ProductTransaction.TransactionStatus.CANCELLED,
+        ProductTransaction.TransactionStatus.BLOCKED,
+    ],
+    ProductTransaction.TransactionStatus.BLOCKED: [
+        ProductTransaction.TransactionStatus.ACCEPTED,
+    ],
+}
+
+
+def _validate_transition(txn, target_status):
+    allowed = VALID_TRANSITIONS.get(txn.status, [])
+    if target_status not in allowed:
+        raise ValidationError({"messages": ["InvalidStatusTransition"]})
+
 
 def _get_transaction_or_404(transaction_id):
     try:
-        return ProductTransaction.objects.get(id=transaction_id)
+        return ProductTransaction.objects.select_related(
+            "listing", "variant__product", "requester", "owner"
+        ).get(id=transaction_id)
+    except ProductTransaction.DoesNotExist:
+        raise AppNotFound("TransactionNotFound")
+
+
+def _get_transaction_for_update(transaction_id):
+    """Fetch with row-level lock for state transitions (prevents race conditions)."""
+    try:
+        return ProductTransaction.objects.select_for_update().get(id=transaction_id)
     except ProductTransaction.DoesNotExist:
         raise AppNotFound("TransactionNotFound")
 
@@ -62,7 +97,7 @@ def _assert_can_cancel(*, user, txn):
         raise PermissionDenied()
 
 
-def list_transactions(*, user, filters=None):
+def list_transactions(*, filters=None):
     qs = ProductTransaction.objects.select_related(
         "listing", "variant__product", "requester", "owner"
     ).order_by("-created_at")
@@ -80,19 +115,21 @@ def list_my_transactions(*, user):
 
     return (
         ProductTransaction.objects.filter(Q(requester=user) | Q(owner=user))
-        .select_related("listing", "variant__product")
+        .select_related("listing", "variant__product", "requester", "owner")
         .order_by("-created_at")
     )
 
 
-def get_transaction(*, transaction_id, qs_filter=None):
-    try:
-        qs = ProductTransaction.objects.all()
-        if qs_filter is not None:
-            qs = qs.filter(qs_filter)
-        return qs.get(id=transaction_id)
-    except ProductTransaction.DoesNotExist:
-        raise AppNotFound("TransactionNotFound")
+def get_transaction(*, transaction_id):
+    return _get_transaction_or_404(transaction_id)
+
+
+def get_my_transaction(*, transaction_id, user):
+    """Retrieve a transaction scoped to the requesting user (requester or owner)."""
+    txn = _get_transaction_or_404(transaction_id)
+    if txn.requester_id != user.id and txn.owner_id != user.id:
+        raise PermissionDenied()
+    return txn
 
 
 @transaction.atomic
@@ -168,11 +205,9 @@ def request_transaction(*, user, **data):
 
 @transaction.atomic
 def accept_transaction(*, transaction_id, user):
-    txn = _get_transaction_or_404(transaction_id)
+    txn = _get_transaction_for_update(transaction_id)
     _assert_can_accept(user=user, txn=txn)
-
-    if txn.status != ProductTransaction.TransactionStatus.PENDING:
-        raise ValidationError({"messages": ["TransactionNotPending"]})
+    _validate_transition(txn, ProductTransaction.TransactionStatus.ACCEPTED)
 
     txn.status = ProductTransaction.TransactionStatus.ACCEPTED
     txn.updated_by = user
@@ -189,11 +224,9 @@ def accept_transaction(*, transaction_id, user):
 
 @transaction.atomic
 def reject_transaction(*, transaction_id, user):
-    txn = _get_transaction_or_404(transaction_id)
+    txn = _get_transaction_for_update(transaction_id)
     _assert_can_accept(user=user, txn=txn)
-
-    if txn.status != ProductTransaction.TransactionStatus.PENDING:
-        raise ValidationError({"messages": ["TransactionNotPending"]})
+    _validate_transition(txn, ProductTransaction.TransactionStatus.REJECTED)
 
     txn.status = ProductTransaction.TransactionStatus.REJECTED
     txn.updated_by = user
@@ -210,11 +243,9 @@ def reject_transaction(*, transaction_id, user):
 
 @transaction.atomic
 def complete_transaction(*, transaction_id, user):
-    txn = _get_transaction_or_404(transaction_id)
+    txn = _get_transaction_for_update(transaction_id)
     _assert_can_accept(user=user, txn=txn)
-
-    if txn.status != ProductTransaction.TransactionStatus.ACCEPTED:
-        raise ValidationError({"messages": ["TransactionNotAccepted"]})
+    _validate_transition(txn, ProductTransaction.TransactionStatus.COMPLETED)
 
     txn.status = ProductTransaction.TransactionStatus.COMPLETED
     txn.recorded_by = user
@@ -229,12 +260,13 @@ def complete_transaction(*, transaction_id, user):
     # Update variant status for terminal types
     terminal_status = _VARIANT_TERMINAL_STATUS_MAP.get(txn.transaction_type)
     if terminal_status:
-        txn.variant.status = terminal_status
-        txn.variant.updated_by = user
-        txn.variant.save()
+        variant = ProductVariant.objects.select_for_update().get(id=txn.variant_id)
+        variant.status = terminal_status
+        variant.updated_by = user
+        variant.save()
 
         if txn.listing_id:
-            listing = Listing.objects.get(id=txn.listing_id)
+            listing = Listing.objects.select_for_update().get(id=txn.listing_id)
             listing.status = Listing.ListingStatus.CLOSED
             listing.is_public = False
             listing.updated_by = user
@@ -251,14 +283,9 @@ def complete_transaction(*, transaction_id, user):
 
 @transaction.atomic
 def cancel_transaction(*, transaction_id, user):
-    txn = _get_transaction_or_404(transaction_id)
+    txn = _get_transaction_for_update(transaction_id)
     _assert_can_cancel(user=user, txn=txn)
-
-    if txn.status not in (
-        ProductTransaction.TransactionStatus.PENDING,
-        ProductTransaction.TransactionStatus.ACCEPTED,
-    ):
-        raise ValidationError({"messages": ["TransactionCannotBeCancelled"]})
+    _validate_transition(txn, ProductTransaction.TransactionStatus.CANCELLED)
 
     txn.status = ProductTransaction.TransactionStatus.CANCELLED
     txn.updated_by = user
@@ -275,11 +302,9 @@ def cancel_transaction(*, transaction_id, user):
 
 @transaction.atomic
 def block_transaction(*, transaction_id, user):
-    txn = _get_transaction_or_404(transaction_id)
+    txn = _get_transaction_for_update(transaction_id)
     _assert_can_accept(user=user, txn=txn)
-
-    if txn.status != ProductTransaction.TransactionStatus.ACCEPTED:
-        raise ValidationError({"messages": ["TransactionNotAccepted"]})
+    _validate_transition(txn, ProductTransaction.TransactionStatus.BLOCKED)
 
     txn.status = ProductTransaction.TransactionStatus.BLOCKED
     txn.updated_by = user
@@ -296,11 +321,9 @@ def block_transaction(*, transaction_id, user):
 
 @transaction.atomic
 def unblock_transaction(*, transaction_id, user):
-    txn = _get_transaction_or_404(transaction_id)
+    txn = _get_transaction_for_update(transaction_id)
     _assert_can_accept(user=user, txn=txn)
-
-    if txn.status != ProductTransaction.TransactionStatus.BLOCKED:
-        raise ValidationError({"messages": ["TransactionNotBlocked"]})
+    _validate_transition(txn, ProductTransaction.TransactionStatus.ACCEPTED)
 
     txn.status = ProductTransaction.TransactionStatus.ACCEPTED
     txn.updated_by = user
