@@ -285,7 +285,11 @@ EMAIL_BACKEND = config(
 )
 EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+# TLS (STARTTLS on port 587) and SSL (implicit on port 465) are mutually exclusive
+# — only one of them may be True. Resend supports both; we use SSL/465 by default
+# in staging because some hosts block 587.
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@studioos.dev")
