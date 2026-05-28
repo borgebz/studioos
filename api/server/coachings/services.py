@@ -352,6 +352,7 @@ def _participant_row_for_add_participant(*, coaching, student_id, requesting_use
         and student_id != requesting_user.pk
     ):
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
         try:
             student_obj = User.objects.get(pk=student_id)
@@ -583,7 +584,9 @@ def _generate_recurrence_dates(
 
     horizon = end_date
     if horizon is None:
-        horizon = (anchor_start + timedelta(days=_DEFAULT_RECURRING_HORIZON_DAYS)).date()
+        horizon = (
+            anchor_start + timedelta(days=_DEFAULT_RECURRING_HORIZON_DAYS)
+        ).date()
 
     dates = []
     count = 1  # anchor = 1
@@ -1010,9 +1013,7 @@ def create_direct_coordination_coaching(
             raise ValidationError({"messages": messages}) from exc
         recurring_row.save()
 
-    coaching_status = (
-        CoachingStatus.SCHEDULED if schedule else CoachingStatus.REQUESTED
-    )
+    coaching_status = CoachingStatus.SCHEDULED if schedule else CoachingStatus.REQUESTED
 
     coaching = CoachingClass(
         teacher_id=teacher_id,
@@ -1483,7 +1484,6 @@ def _active_participant_count(*, coaching_class):
     )
 
 
-
 def _enqueue_participant_cancel_side_effects(
     *,
     participant_id,
@@ -1817,7 +1817,9 @@ _CANCELLABLE_COACHING_STATUSES = frozenset(
 )
 
 
-def cancel_recurring_series(*, recurring_coaching_id, user, cancellation_reason="", cancel_past=False):
+def cancel_recurring_series(
+    *, recurring_coaching_id, user, cancellation_reason="", cancel_past=False
+):
     try:
         recurring = RecurringCoaching.objects.get(pk=recurring_coaching_id)
     except RecurringCoaching.DoesNotExist:
@@ -1833,7 +1835,9 @@ def cancel_recurring_series(*, recurring_coaching_id, user, cancellation_reason=
     cancelled_ids = []
     for session_pk in sessions.values_list("pk", flat=True):
         try:
-            cancel_coaching(pk=session_pk, user=user, cancellation_reason=cancellation_reason)
+            cancel_coaching(
+                pk=session_pk, user=user, cancellation_reason=cancellation_reason
+            )
             cancelled_ids.append(session_pk)
         except (ValidationError, AppNotFound):
             logger.warning(

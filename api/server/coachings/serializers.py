@@ -165,12 +165,8 @@ class CoachingListQuerySerializer(serializers.Serializer):
 
     _MULTI_FIELDS = ("teacher_id", "studio_id", "modality_id", "status")
 
-    teacher_id = serializers.ListField(
-        child=serializers.IntegerField(), required=False
-    )
-    studio_id = serializers.ListField(
-        child=serializers.IntegerField(), required=False
-    )
+    teacher_id = serializers.ListField(child=serializers.IntegerField(), required=False)
+    studio_id = serializers.ListField(child=serializers.IntegerField(), required=False)
     modality_id = serializers.ListField(
         child=serializers.IntegerField(), required=False
     )

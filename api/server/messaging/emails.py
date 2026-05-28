@@ -30,9 +30,7 @@ def send_unread_messages_digest(*, recipient, messages):
     for msg in messages:
         sender = msg.sender
         sender_name = (
-            getattr(sender, "first_name", None)
-            or getattr(sender, "email", None)
-            or "—"
+            getattr(sender, "first_name", None) or getattr(sender, "email", None) or "—"
         )
         preview = (msg.body or "").strip()
         if not preview and msg.original_filename:

@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser
 from core.decorators import require_perm
-from .models import User
 from .serializers import (
     ActivateAccountSerializer,
     BulkInviteFileSerializer,
@@ -358,7 +357,8 @@ class PublicProfileListView(APIView):
     def get(self, request):
         search = request.query_params.get("search") or None
         profiles = list_public_profiles(
-            requesting_user=request.user, search=search,
+            requesting_user=request.user,
+            search=search,
         )
         return paginated_response(
             request=request,
@@ -717,12 +717,14 @@ class EmailExportView(APIView):
                 role = getattr(group, "role", None)
                 if role:
                     role_codes.append(role.code)
-            writer.writerow([
-                user.email,
-                user.first_name,
-                user.last_name,
-                ",".join(role_codes),
-                user.is_active,
-            ])
+            writer.writerow(
+                [
+                    user.email,
+                    user.first_name,
+                    user.last_name,
+                    ",".join(role_codes),
+                    user.is_active,
+                ]
+            )
 
         return response

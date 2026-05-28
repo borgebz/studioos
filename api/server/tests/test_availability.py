@@ -107,7 +107,9 @@ class TestCreateAvailability:
             )
         assert "InvalidTimeRange" in str(exc.value.detail)
 
-    def test_create_recurring_invalid_validity_range(self, direction_user, teacher_user):
+    def test_create_recurring_invalid_validity_range(
+        self, direction_user, teacher_user
+    ):
         with pytest.raises(ValidationError) as exc:
             services.create_availability(
                 teacher_id=teacher_user.pk,
@@ -255,7 +257,9 @@ class TestDeleteAvailability:
         assert not TeacherAvailability.objects.filter(pk=block.pk).exists()
         assert TeacherAvailability.all_objects.filter(pk=block.pk).exists()
 
-    def test_delete_recurring_also_soft_deletes_rule(self, direction_user, teacher_user):
+    def test_delete_recurring_also_soft_deletes_rule(
+        self, direction_user, teacher_user
+    ):
         block = services.create_availability(
             teacher_id=teacher_user.pk,
             requesting_user=direction_user,
@@ -456,7 +460,9 @@ class TestAvailabilityEndpoints:
         )
         assert resp.status_code == 400
 
-    def test_list_returns_expanded_slots(self, api_client, teacher_user, direction_user):
+    def test_list_returns_expanded_slots(
+        self, api_client, teacher_user, direction_user
+    ):
         services.create_availability(
             teacher_id=teacher_user.pk,
             requesting_user=direction_user,
@@ -521,7 +527,9 @@ class TestAvailabilityEndpoints:
         assert resp.status_code == 200
         assert resp.data["id"] == block.pk
 
-    def test_other_teacher_cannot_manage(self, api_client, teacher_user, direction_user):
+    def test_other_teacher_cannot_manage(
+        self, api_client, teacher_user, direction_user
+    ):
         from tests.conftest import make_user_with_role
 
         other_teacher = make_user_with_role("teacher")

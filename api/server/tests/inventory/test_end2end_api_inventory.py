@@ -260,7 +260,9 @@ def test_e2e_03_colors_endpoints_validation_activation_and_filtering(inv_client)
     assert inactive_colors.status_code == 200
     assert any(c["id"] == color_id for c in inactive_colors.data)
 
-    act = inv_client.post(f"/api/inventory/colors/{color_id}/activate/", {}, format="json")
+    act = inv_client.post(
+        f"/api/inventory/colors/{color_id}/activate/", {}, format="json"
+    )
     assert act.status_code == 200
     assert act.data["is_active"] is True
 
@@ -491,7 +493,9 @@ def test_e2e_05_school_products_and_cross_endpoints_roundtrip(inv_client):
     assert "results" in list_school.data
     assert any(p["id"] == school_product_id for p in list_school.data["results"])
 
-    school_detail = inv_client.get(f"/api/inventory/school/products/{school_product_id}/")
+    school_detail = inv_client.get(
+        f"/api/inventory/school/products/{school_product_id}/"
+    )
     assert school_detail.status_code == 200
     assert school_detail.data["id"] == school_product_id
 

@@ -1,6 +1,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
-
+from coachings.models import CoachingClass, CoachingParticipant
+from modality.serializers import ModalitySerializer
 from accounts.serializers import UserResponseSerializer
 from billing.models import (
     BillingEntry,
@@ -20,8 +21,7 @@ def _linked_billing_entry(fine):
     Returns None for pending or waived fines.
     """
     return fine.billing_entries.first()
-from coachings.models import CoachingClass, CoachingParticipant
-from modality.serializers import ModalitySerializer
+
 
 # -----------------------------------------------------------------------------
 # Billing entry serializers

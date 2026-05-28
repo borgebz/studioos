@@ -146,14 +146,18 @@ def test_e2e_01_school_rent_two_non_overlapping_requests(db):
     # staff creates listing (draft)
     listing_resp = sc.post(
         "/api/marketplace/school/listings/",
-        {"payload": json.dumps({
-            "variant_id": variant_id,
-            "listing_type": "rent",
-            "title": "Ballet tutu — rent",
-            "description": "Available for weekend shows",
-            "asking_price": "5.00",
-            "is_public": False,
-        })},
+        {
+            "payload": json.dumps(
+                {
+                    "variant_id": variant_id,
+                    "listing_type": "rent",
+                    "title": "Ballet tutu — rent",
+                    "description": "Available for weekend shows",
+                    "asking_price": "5.00",
+                    "is_public": False,
+                }
+            )
+        },
         format="multipart",
     )
     assert listing_resp.status_code == 201
@@ -469,13 +473,17 @@ def test_e2e_03_school_lend_block_unblock_then_complete(db):
     # staff creates LEND listing
     listing_resp = cs.post(
         "/api/marketplace/school/listings/",
-        {"payload": json.dumps({
-            "variant_id": variant_id,
-            "listing_type": "lend",
-            "title": "Tap shoes — borrow",
-            "description": "School tap shoes available for loan",
-            "is_public": False,
-        })},
+        {
+            "payload": json.dumps(
+                {
+                    "variant_id": variant_id,
+                    "listing_type": "lend",
+                    "title": "Tap shoes — borrow",
+                    "description": "School tap shoes available for loan",
+                    "is_public": False,
+                }
+            )
+        },
         format="multipart",
     )
     assert listing_resp.status_code == 201
@@ -780,12 +788,16 @@ def test_e2e_05_browsing_filtering_favorites_overlap_rejection_cancellation(db):
     def _publish_listing(client, variant_id, listing_type, title):
         r = client.post(
             "/api/marketplace/school/listings/",
-            {"payload": json.dumps({
-                "variant_id": variant_id,
-                "listing_type": listing_type,
-                "title": title,
-                "asking_price": "3.00",
-            })},
+            {
+                "payload": json.dumps(
+                    {
+                        "variant_id": variant_id,
+                        "listing_type": listing_type,
+                        "title": title,
+                        "asking_price": "3.00",
+                    }
+                )
+            },
             format="multipart",
         )
         assert r.status_code == 201

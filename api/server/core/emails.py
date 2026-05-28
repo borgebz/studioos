@@ -75,7 +75,7 @@ def send_simple_email(*, to, subject, body, attachments=None):
     if "<" in body and ">" in body:
         msg.attach_alternative(body, "text/html")
 
-    for filename, content, mime_type in (attachments or []):
+    for filename, content, mime_type in attachments or []:
         msg.attach(filename, content, mime_type)
 
     try:

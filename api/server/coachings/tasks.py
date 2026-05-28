@@ -288,7 +288,11 @@ def notify_coordination_coaching_created(self, coaching_id):
     mentions the total session count so recipients aren't spammed per session.
     """
     try:
-        from coachings.models import CoachingClass, CoachingParticipantStatus, CoachingStatus
+        from coachings.models import (
+            CoachingClass,
+            CoachingParticipantStatus,
+            CoachingStatus,
+        )
         from coachings.emails import send_coordination_coaching_created_notification
 
         _NOTIFY_STATUSES = {

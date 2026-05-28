@@ -11,6 +11,7 @@ from utils.files import file_content_hash
 
 logger = logging.getLogger(__name__)
 
+
 def _validate_category(*, category_id):
     if not category_id:
         return None
@@ -55,7 +56,10 @@ def _full_clean_product(*, product):
 
 
 _PRODUCT_ALLOWED_ORDERING = {
-    "-updated_at", "updated_at", "name", "-name",
+    "-updated_at",
+    "updated_at",
+    "name",
+    "-name",
 }
 
 
@@ -206,7 +210,6 @@ def update_product(*, pk, user, **data):
 
     if product.owner_type != Product.OwnerType.MEMBER:
         raise PermissionDenied()
-
 
     if "category_id" in data:
         product.category = _validate_category(category_id=data.get("category_id"))

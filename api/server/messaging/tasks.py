@@ -62,7 +62,5 @@ def send_unread_message_digests(self):
         )
         return sent
     except Exception as exc:
-        logger.error(
-            "send_unread_message_digests failed: %s", exc, exc_info=True
-        )
+        logger.error("send_unread_message_digests failed: %s", exc, exc_info=True)
         raise self.retry(exc=exc)

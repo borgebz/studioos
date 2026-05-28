@@ -10,9 +10,7 @@ def backfill_kind(apps, schema_editor):
       - otherwise → 'direct' (the old default)
     """
     Conversation = apps.get_model("messaging", "Conversation")
-    Conversation.objects.filter(
-        coaching__isnull=False
-    ).update(kind="coaching")
+    Conversation.objects.filter(coaching__isnull=False).update(kind="coaching")
     Conversation.objects.filter(
         coaching__isnull=True, recurring_coaching__isnull=False
     ).update(kind="coaching")

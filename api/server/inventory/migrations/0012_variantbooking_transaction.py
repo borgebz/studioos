@@ -7,14 +7,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0011_alter_categorysizesystem_id'),
-        ('marketplace', '0002_alter_listing_options_and_more'),
+        ("inventory", "0011_alter_categorysizesystem_id"),
+        ("marketplace", "0002_alter_listing_options_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='variantbooking',
-            name='transaction',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='bookings', to='marketplace.producttransaction'),
+            model_name="variantbooking",
+            name="transaction",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="bookings",
+                to="marketplace.producttransaction",
+            ),
         ),
     ]

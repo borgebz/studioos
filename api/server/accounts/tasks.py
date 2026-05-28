@@ -60,9 +60,7 @@ def send_password_reset_email_task(self, user_id):
         from accounts.emails import send_password_reset_email
 
         send_password_reset_email(user)
-        logger.info(
-            "send_password_reset_email_task: email sent to user %s.", user_id
-        )
+        logger.info("send_password_reset_email_task: email sent to user %s.", user_id)
 
     except Exception as exc:
         logger.error(

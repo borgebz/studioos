@@ -72,7 +72,6 @@ from inventory.models import (
     ProductVariant,
     SchoolProductDetails,
     Size,
-    SizeSystem,
     VariantBooking,
     VariantColor,
 )
@@ -93,18 +92,18 @@ DEFAULT_HOST = "studioos.dev"
 
 # Email handle → (first_name, last_name, role_code, extra fields)
 USER_SPECS = [
-    ("direction",      "Diana",  "Director",   "direction"),
-    ("coordination",   "Carla",  "Coord",      "coordination"),
-    ("collaborator",   "Caio",   "Helper",     "collaborator"),
-    ("teacher1",       "Tomas",  "Almeida",    "teacher"),
-    ("teacher2",       "Teresa", "Santos",     "teacher"),
-    ("teacherext",     "Tiago",  "Ribeiro",    "teacher_external"),
-    ("parent1",        "Patricia", "Pereira",  "parent"),
-    ("parent2",        "Paulo",  "Costa",      "parent"),
-    ("student1",       "Sofia",  "Lima",       "student"),
-    ("student2",       "Sara",   "Martins",    "student"),
-    ("student3",       "Simao",  "Ferreira",   "student"),
-    ("student4",       "Sabrina","Gomes",      "student"),
+    ("direction", "Diana", "Director", "direction"),
+    ("coordination", "Carla", "Coord", "coordination"),
+    ("collaborator", "Caio", "Helper", "collaborator"),
+    ("teacher1", "Tomas", "Almeida", "teacher"),
+    ("teacher2", "Teresa", "Santos", "teacher"),
+    ("teacherext", "Tiago", "Ribeiro", "teacher_external"),
+    ("parent1", "Patricia", "Pereira", "parent"),
+    ("parent2", "Paulo", "Costa", "parent"),
+    ("student1", "Sofia", "Lima", "student"),
+    ("student2", "Sara", "Martins", "student"),
+    ("student3", "Simao", "Ferreira", "student"),
+    ("student4", "Sabrina", "Gomes", "student"),
 ]
 
 
@@ -164,7 +163,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.MIGRATE_HEADING("→ Classes"))
         classes = self._seed_classes(users=users, actor=actor)
 
-        self.stdout.write(self.style.MIGRATE_HEADING("→ Enrollment period + enrollments"))
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("→ Enrollment period + enrollments")
+        )
         period = self._seed_enrollment_period(actor=actor)
         self._seed_enrollments(period=period, users=users, actor=actor)
 
@@ -185,7 +186,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.MIGRATE_HEADING("→ School inventory + variants"))
         school_variants = self._seed_school_inventory(actor=actor)
 
-        self.stdout.write(self.style.MIGRATE_HEADING("→ Member inventory (for marketplace)"))
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("→ Member inventory (for marketplace)")
+        )
         member_variants = self._seed_member_inventory(users=users)
 
         self.stdout.write(self.style.MIGRATE_HEADING("→ Marketplace listings"))
@@ -201,7 +204,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("\n✓ Demo data seeded."))
         self.stdout.write(
-            f"\n  Login at the web client with any of:\n"
+            "\n  Login at the web client with any of:\n"
             + "\n".join(f"    {h}@{host}  /  {password}" for h, *_ in USER_SPECS)
         )
 
@@ -236,7 +239,9 @@ class Command(BaseCommand):
                 user.last_name = last_name
                 user.is_active = True
                 user.set_password(password)
-                user.save(update_fields=["first_name", "last_name", "is_active", "password"])
+                user.save(
+                    update_fields=["first_name", "last_name", "is_active", "password"]
+                )
                 self.stdout.write(f"  · {email} (updated)")
 
             user.groups.clear()
@@ -261,8 +266,8 @@ class Command(BaseCommand):
     def _seed_studios(self, *, actor: User) -> list[Studio]:
         defs = [
             ("Sala A — Espelhos", 25, "Sala principal com chão de linóleo."),
-            ("Sala B — Barre",    18, "Sala dedicada a clássico e barre."),
-            ("Sala C — Acro",     12, "Sala com tapetes para acrobática."),
+            ("Sala B — Barre", 18, "Sala dedicada a clássico e barre."),
+            ("Sala C — Acro", 12, "Sala com tapetes para acrobática."),
         ]
         studios = []
         for name, cap, desc in defs:
@@ -331,7 +336,12 @@ class Command(BaseCommand):
             ("Turma A — Ballet Infantil", "Crianças entre os 5 e 7 anos."),
             ("Turma B — Contemporâneo Juvenil", "Dança contemporânea, 12-15 anos."),
         ]
-        students = [users["student1"], users["student2"], users["student3"], users["student4"]]
+        students = [
+            users["student1"],
+            users["student2"],
+            users["student3"],
+            users["student4"],
+        ]
         classes = []
         for name, desc in defs:
             classe, _ = Classe.objects.get_or_create(
@@ -384,9 +394,24 @@ class Command(BaseCommand):
 
         rows = [
             # (parent, student, status, payment_status)
-            (users["parent1"], users["student1"], EnrollmentStatus.APPROVED, PaymentStatus.CONFIRMED),
-            (users["parent1"], users["student2"], EnrollmentStatus.UNDER_REVIEW, PaymentStatus.PENDING),
-            (users["parent2"], users["student3"], EnrollmentStatus.SUBMITTED, PaymentStatus.PENDING),
+            (
+                users["parent1"],
+                users["student1"],
+                EnrollmentStatus.APPROVED,
+                PaymentStatus.CONFIRMED,
+            ),
+            (
+                users["parent1"],
+                users["student2"],
+                EnrollmentStatus.UNDER_REVIEW,
+                PaymentStatus.PENDING,
+            ),
+            (
+                users["parent2"],
+                users["student3"],
+                EnrollmentStatus.SUBMITTED,
+                PaymentStatus.PENDING,
+            ),
         ]
 
         for parent, student, status, pay_status in rows:
@@ -444,7 +469,9 @@ class Command(BaseCommand):
     ) -> None:
         teachers = [users["teacher1"], users["teacher2"], users["teacherext"]]
         now = timezone.now()
-        base = (now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+        base = (now + timedelta(days=1)).replace(
+            hour=9, minute=0, second=0, microsecond=0
+        )
 
         for idx, teacher in enumerate(teachers):
             start = base + timedelta(days=idx)
@@ -490,13 +517,19 @@ class Command(BaseCommand):
         )
 
         now = timezone.now()
-        scheduled_start = (now + timedelta(days=2)).replace(hour=15, minute=0, second=0, microsecond=0)
+        scheduled_start = (now + timedelta(days=2)).replace(
+            hour=15, minute=0, second=0, microsecond=0
+        )
         scheduled_end = scheduled_start + timedelta(hours=1)
 
-        requested_start = (now + timedelta(days=3)).replace(hour=11, minute=0, second=0, microsecond=0)
+        requested_start = (now + timedelta(days=3)).replace(
+            hour=11, minute=0, second=0, microsecond=0
+        )
         requested_end = requested_start + timedelta(hours=1)
 
-        past_start = (now - timedelta(days=3)).replace(hour=10, minute=0, second=0, microsecond=0)
+        past_start = (now - timedelta(days=3)).replace(
+            hour=10, minute=0, second=0, microsecond=0
+        )
         past_end = past_start + timedelta(hours=1)
 
         coachings: dict[str, CoachingClass] = {}
@@ -585,7 +618,11 @@ class Command(BaseCommand):
         roster = [
             (student1, CoachingParticipantStatus.ATTENDED, None),
             (student2, CoachingParticipantStatus.ABSENT, FineReason.ABSENCE),
-            (student3, CoachingParticipantStatus.LATE_CANCELLED, FineReason.LATE_CANCELLATION),
+            (
+                student3,
+                CoachingParticipantStatus.LATE_CANCELLED,
+                FineReason.LATE_CANCELLATION,
+            ),
         ]
         for student, status, _ in roster:
             CoachingParticipant.objects.get_or_create(
@@ -654,12 +691,17 @@ class Command(BaseCommand):
             )
 
             # Approve one of them so the FINE-sourced billing entry has data.
-            if fine_reason == FineReason.LATE_CANCELLATION and fine.status == FineStatus.PENDING_REVIEW:
+            if (
+                fine_reason == FineReason.LATE_CANCELLATION
+                and fine.status == FineStatus.PENDING_REVIEW
+            ):
                 fine.status = FineStatus.APPROVED
                 fine.amount = Decimal("10.00")
                 fine.reviewed_at = timezone.now()
                 fine.reviewed_by = users["coordination"]
-                fine.save(update_fields=["status", "amount", "reviewed_at", "reviewed_by"])
+                fine.save(
+                    update_fields=["status", "amount", "reviewed_at", "reviewed_by"]
+                )
 
                 BillingEntry.objects.get_or_create(
                     source_type=BillingEntrySourceType.FINE,
@@ -771,7 +813,7 @@ class Command(BaseCommand):
 
         defs = [
             ("Collant Negro Adulto", "Collant clássico em malha matte.", "SCH-COL-001"),
-            ("Sapatilhas de Meia-Ponta", "Sapatilhas em pele rosa.",      "SCH-SAP-002"),
+            ("Sapatilhas de Meia-Ponta", "Sapatilhas em pele rosa.", "SCH-SAP-002"),
         ]
         variants: list[ProductVariant] = []
         for name, description, sku in defs:
@@ -825,8 +867,18 @@ class Command(BaseCommand):
         color = self._pick_color()
 
         defs = [
-            (users["parent1"], "Tutu Branco — usado", "Tutu de qualidade, pouco uso.", "MBR-TUT-001"),
-            (users["student2"], "Sapatilhas Pontas Tam.36", "Sapatilhas usadas algumas vezes.", "MBR-PON-002"),
+            (
+                users["parent1"],
+                "Tutu Branco — usado",
+                "Tutu de qualidade, pouco uso.",
+                "MBR-TUT-001",
+            ),
+            (
+                users["student2"],
+                "Sapatilhas Pontas Tam.36",
+                "Sapatilhas usadas algumas vezes.",
+                "MBR-PON-002",
+            ),
         ]
         variants: list[ProductVariant] = []
         for owner, name, description, sku in defs:
@@ -879,45 +931,53 @@ class Command(BaseCommand):
     ) -> None:
         listings_to_make = []
         if school_variants:
-            listings_to_make.append({
-                "variant": school_variants[0],
-                "listing_type": Listing.ListingType.RENT,
-                "title": "Aluguer — Collant Adulto",
-                "description": "Disponível para alugar para espetáculos.",
-                "asking_price": Decimal("8.00"),
-                "is_public": True,
-                "owner_user": users["direction"],
-            })
+            listings_to_make.append(
+                {
+                    "variant": school_variants[0],
+                    "listing_type": Listing.ListingType.RENT,
+                    "title": "Aluguer — Collant Adulto",
+                    "description": "Disponível para alugar para espetáculos.",
+                    "asking_price": Decimal("8.00"),
+                    "is_public": True,
+                    "owner_user": users["direction"],
+                }
+            )
         if len(school_variants) > 1:
-            listings_to_make.append({
-                "variant": school_variants[1],
-                "listing_type": Listing.ListingType.LEND,
-                "title": "Empréstimo — Sapatilhas Meia-Ponta",
-                "description": "Empréstimo gratuito a alunas da escola.",
-                "asking_price": None,
-                "is_public": True,
-                "owner_user": users["direction"],
-            })
+            listings_to_make.append(
+                {
+                    "variant": school_variants[1],
+                    "listing_type": Listing.ListingType.LEND,
+                    "title": "Empréstimo — Sapatilhas Meia-Ponta",
+                    "description": "Empréstimo gratuito a alunas da escola.",
+                    "asking_price": None,
+                    "is_public": True,
+                    "owner_user": users["direction"],
+                }
+            )
         if member_variants:
-            listings_to_make.append({
-                "variant": member_variants[0],
-                "listing_type": Listing.ListingType.SELL,
-                "title": "Venda — Tutu Branco",
-                "description": "Pouco uso, ótimo estado.",
-                "asking_price": Decimal("45.00"),
-                "is_public": True,
-                "owner_user": users["parent1"],
-            })
+            listings_to_make.append(
+                {
+                    "variant": member_variants[0],
+                    "listing_type": Listing.ListingType.SELL,
+                    "title": "Venda — Tutu Branco",
+                    "description": "Pouco uso, ótimo estado.",
+                    "asking_price": Decimal("45.00"),
+                    "is_public": True,
+                    "owner_user": users["parent1"],
+                }
+            )
         if len(member_variants) > 1:
-            listings_to_make.append({
-                "variant": member_variants[1],
-                "listing_type": Listing.ListingType.DONATE,
-                "title": "Doação — Sapatilhas de Pontas",
-                "description": "Já não servem cá em casa.",
-                "asking_price": None,
-                "is_public": True,
-                "owner_user": users["student2"],
-            })
+            listings_to_make.append(
+                {
+                    "variant": member_variants[1],
+                    "listing_type": Listing.ListingType.DONATE,
+                    "title": "Doação — Sapatilhas de Pontas",
+                    "description": "Já não servem cá em casa.",
+                    "asking_price": None,
+                    "is_public": True,
+                    "owner_user": users["student2"],
+                }
+            )
 
         for spec in listings_to_make:
             owner_user = spec.pop("owner_user")

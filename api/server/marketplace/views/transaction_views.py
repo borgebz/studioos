@@ -152,9 +152,7 @@ class SchoolTransactionListView(APIView):
     )
     @require_perm("marketplace.manage_school_listings")
     def get(self, request):
-        txns = services.list_transactions(
-            filters=_transaction_filters(request)
-        )
+        txns = services.list_transactions(filters=_transaction_filters(request))
         return paginated_response(
             request=request,
             items=txns,

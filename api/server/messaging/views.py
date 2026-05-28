@@ -268,9 +268,7 @@ class MarkConversationReadView(APIView):
     @require_perm("messaging.can_list_conversations")
     def post(self, request, conversation_id):
         # get_conversation raises 404 if the caller isn't a participant.
-        services.get_conversation(
-            conversation_id=conversation_id, user=request.user
-        )
+        services.get_conversation(conversation_id=conversation_id, user=request.user)
         services.mark_read(conversation_id=conversation_id, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -304,9 +302,7 @@ class MessageDetailView(APIView):
             user=request.user,
             body=serializer.validated_data["body"],
         )
-        return Response(
-            MessageSerializer(message, context={"request": request}).data
-        )
+        return Response(MessageSerializer(message, context={"request": request}).data)
 
     @extend_schema(
         responses={204: None, **DEFAULT_ERROR_RESPONSES},
@@ -330,9 +326,7 @@ class PinMessageView(APIView):
         message = services.get_message(message_id=message_id, user=request.user)
         message, _ = services.pin_message(message=message, user=request.user)
         message = services.get_message(message_id=message_id, user=request.user)
-        return Response(
-            MessageSerializer(message, context={"request": request}).data
-        )
+        return Response(MessageSerializer(message, context={"request": request}).data)
 
 
 class UnpinMessageView(APIView):
@@ -347,9 +341,7 @@ class UnpinMessageView(APIView):
         message = services.get_message(message_id=message_id, user=request.user)
         message, _ = services.unpin_message(message=message, user=request.user)
         message = services.get_message(message_id=message_id, user=request.user)
-        return Response(
-            MessageSerializer(message, context={"request": request}).data
-        )
+        return Response(MessageSerializer(message, context={"request": request}).data)
 
 
 class MessageReactionView(APIView):

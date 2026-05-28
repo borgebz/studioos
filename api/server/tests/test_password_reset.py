@@ -158,6 +158,7 @@ def _disable_throttle(settings):
         "DEFAULT_THROTTLE_RATES": {"anon": "1000/min"},
     }
     from django.core.cache import cache
+
     cache.clear()
 
 
@@ -180,9 +181,7 @@ class TestPasswordResetRequestEndpoint:
 
     def test_returns_200_for_unknown_email(self, api_client):
         """Must not leak whether the email exists."""
-        resp = api_client.post(
-            self.URL, {"email": "nobody@test.local"}
-        )
+        resp = api_client.post(self.URL, {"email": "nobody@test.local"})
         assert resp.status_code == status.HTTP_200_OK
         assert resp.data["detail"] == "PasswordResetEmailSent"
 

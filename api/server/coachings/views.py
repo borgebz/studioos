@@ -43,7 +43,12 @@ class CoachingCollectionView(APIView):
     @extend_schema(
         operation_id="GetAllCoachings",
         parameters=[CoachingListQuerySerializer],
-        responses={200: paginated_list_schema(name="ListCoachingClasses", results_serializer=CoachingClassSerializer), **DEFAULT_ERROR_RESPONSES},
+        responses={
+            200: paginated_list_schema(
+                name="ListCoachingClasses", results_serializer=CoachingClassSerializer
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
     )
     @require_perm("coachings.view_coachingclass")
     def get(self, request):
@@ -447,10 +452,12 @@ class RecurringSeriesCancelView(APIView):
     def post(self, request, recurring_id):
         serializer = RecurringSeriesCancelSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        cancelled_ids = services.cancel_recurring_series(
+        services.cancel_recurring_series(
             recurring_coaching_id=recurring_id,
             user=request.user,
-            cancellation_reason=serializer.validated_data.get("cancellation_reason", ""),
+            cancellation_reason=serializer.validated_data.get(
+                "cancellation_reason", ""
+            ),
             cancel_past=serializer.validated_data.get("cancel_past", False),
         )
         coachings = services.list_coachings(recurring_coaching_id=recurring_id)

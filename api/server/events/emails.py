@@ -76,9 +76,7 @@ def _recipient_emails_for_delivery(*, requesting_user, delivery, event):
 def _build_event_attachments(event):
     """Read event files from storage and return as email attachment tuples."""
     attachments = []
-    event_files = EventFile.objects.filter(
-        event=event, deleted_at__isnull=True
-    )
+    event_files = EventFile.objects.filter(event=event, deleted_at__isnull=True)
 
     for ef in event_files:
         try:
@@ -101,15 +99,17 @@ def _build_event_attachments(event):
 
 def _build_file_links_section(event):
     """Build an HTML section with download links for event files."""
-    event_files = EventFile.objects.filter(
-        event=event, deleted_at__isnull=True
-    )
+    event_files = EventFile.objects.filter(event=event, deleted_at__isnull=True)
     if not event_files.exists():
         return ""
 
     backend_url = getattr(settings, "BACKEND_URL", "http://localhost:8000").rstrip("/")
-    links_html = '<hr style="margin: 24px 0; border: none; border-top: 1px solid #e0e0e0;">'
-    links_html += '<p style="font-weight: 600; margin-bottom: 8px;">Anexos / Attachments:</p>'
+    links_html = (
+        '<hr style="margin: 24px 0; border: none; border-top: 1px solid #e0e0e0;">'
+    )
+    links_html += (
+        '<p style="font-weight: 600; margin-bottom: 8px;">Anexos / Attachments:</p>'
+    )
     links_html += "<ul>"
     for ef in event_files:
         filename = ef.file_name or ef.file.name.split("/")[-1]

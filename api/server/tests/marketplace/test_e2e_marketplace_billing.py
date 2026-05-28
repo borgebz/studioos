@@ -211,11 +211,15 @@ def test_billing_01_sell_asking_price_entry_created_rejected_buyer_not_billed(db
     assert detail.data["listing_type"] == "sell"
 
     # both request
-    req_a = ca.post(f"/api/marketplace/listings/{listing_id}/request/", {}, format="json")
+    req_a = ca.post(
+        f"/api/marketplace/listings/{listing_id}/request/", {}, format="json"
+    )
     assert req_a.status_code == 201
     txn_a_id = req_a.data["id"]
 
-    req_b = cb.post(f"/api/marketplace/listings/{listing_id}/request/", {}, format="json")
+    req_b = cb.post(
+        f"/api/marketplace/listings/{listing_id}/request/", {}, format="json"
+    )
     assert req_b.status_code == 201
     txn_b_id = req_b.data["id"]
 

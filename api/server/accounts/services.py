@@ -73,17 +73,15 @@ def list_users(*, search=None, is_active=None, role_code=None):
 
 
 def get_me_user(*, pk):
-    return (
-        User.objects.prefetch_related(
-            Prefetch(
-                "groups",
-                queryset=Group.objects.select_related("role").prefetch_related(
-                    "permissions"
-                ),
+    return User.objects.prefetch_related(
+        Prefetch(
+            "groups",
+            queryset=Group.objects.select_related("role").prefetch_related(
+                "permissions"
             ),
-            "user_permissions",
-        ).get(pk=pk)
-    )
+        ),
+        "user_permissions",
+    ).get(pk=pk)
 
 
 def get_user_with_roles_prefetched(*, pk):
@@ -313,8 +311,15 @@ def update_profile_for_user(*, profile, updated_by=None, **fields):
 
 
 ALLOWED_USER_UPDATE_FIELDS = {
-    "first_name", "last_name", "email", "phone", "phone_country_code",
-    "language", "parent_id", "address", "postal_code",
+    "first_name",
+    "last_name",
+    "email",
+    "phone",
+    "phone_country_code",
+    "language",
+    "parent_id",
+    "address",
+    "postal_code",
 }
 
 
@@ -405,9 +410,7 @@ def _replace_user_permissions(*, user, permission_ids):
     if ids:
         perms = list(Permission.objects.filter(pk__in=ids))
         if len(perms) != len(ids):
-            raise ValidationError(
-                {"permission_ids": ["InvalidPermissionIds"]}
-            )
+            raise ValidationError({"permission_ids": ["InvalidPermissionIds"]})
         user.user_permissions.set(perms)
     else:
         user.user_permissions.clear()
@@ -910,7 +913,9 @@ def resend_invite(*, user_pk, requesting_user):
     )
 
 
-def list_emails_for_export(*, role=None, classe_ids=None, modality_ids=None, is_active=None):
+def list_emails_for_export(
+    *, role=None, classe_ids=None, modality_ids=None, is_active=None
+):
     """
     Return a queryset of users filtered by the given criteria, for email export.
     Only returns users with a non-empty email.

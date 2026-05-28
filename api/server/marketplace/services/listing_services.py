@@ -20,7 +20,10 @@ _NON_LISTABLE_STATUSES = (
 
 # Allowed ordering fields for listing list endpoints
 _LISTING_ALLOWED_ORDERING = {
-    "-created_at", "created_at", "asking_price", "-asking_price",
+    "-created_at",
+    "created_at",
+    "asking_price",
+    "-asking_price",
 }
 
 # Booking statuses that represent an active hold on the variant
@@ -150,14 +153,10 @@ def get_listing(*, listing_id, user):
         return listing
 
     product = listing.variant.product
-    if (
-        product.owner_type == Product.OwnerType.MEMBER
-        and product.owner_id == user.id
-    ):
+    if product.owner_type == Product.OwnerType.MEMBER and product.owner_id == user.id:
         return listing
-    if (
-        product.owner_type == Product.OwnerType.SCHOOL
-        and user.has_perm("marketplace.manage_school_listings")
+    if product.owner_type == Product.OwnerType.SCHOOL and user.has_perm(
+        "marketplace.manage_school_listings"
     ):
         return listing
 

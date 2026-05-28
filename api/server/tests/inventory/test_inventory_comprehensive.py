@@ -23,7 +23,6 @@ from datetime import timedelta
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
@@ -98,18 +97,21 @@ def _uid() -> str:
 def _make_member(*, extra_codenames: list[str] | None = None) -> User:
     """Direction user — needs inventory permissions for member-owned product CRUD."""
     from tests.conftest import make_user_with_role
+
     return make_user_with_role("direction")
 
 
 def _make_school_manager() -> User:
     """Direction user — has all inventory + school inventory permissions via seed."""
     from tests.conftest import make_user_with_role
+
     return make_user_with_role("direction")
 
 
 def _make_non_staff_user() -> User:
     """Student user — has no inventory permissions. Used for negative permission tests."""
     from tests.conftest import make_user_with_role
+
     return make_user_with_role("student")
 
 

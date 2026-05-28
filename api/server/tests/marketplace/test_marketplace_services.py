@@ -167,7 +167,15 @@ def _make_variant(product, *, status=ProductVariant.Status.AVAILABLE):
     )
 
 
-def _make_listing(variant, user, *, listing_type="sell", status="draft", is_public=False, asking_price=None):
+def _make_listing(
+    variant,
+    user,
+    *,
+    listing_type="sell",
+    status="draft",
+    is_public=False,
+    asking_price=None,
+):
     return Listing.objects.create(
         variant=variant,
         listing_type=listing_type,
@@ -197,17 +205,20 @@ def _future(days=1, hours=0):
 # LISTING SERVICE TESTS
 # ===========================================================================
 
+
 @pytest.mark.django_db
 class TestCreateListing:
 
     def test_no_variant_no_product_raises(self):
         from marketplace.services import create_listing
+
         user = _member_user()
         with pytest.raises(ValidationError, match="VariantIdOrProductRequired"):
             create_listing(user=user, listing_type="sell", title="T")
 
     def test_variant_not_found_raises(self):
         from marketplace.services import create_listing
+
         user = _member_user()
         with pytest.raises(AppNotFound, match="VariantNotFound"):
             create_listing(user=user, variant_id=99999, listing_type="sell", title="T")
@@ -215,38 +226,55 @@ class TestCreateListing:
     @pytest.mark.parametrize("status", ["sold", "donated", "archived", "inactive"])
     def test_non_listable_variant_raises(self, status):
         from marketplace.services import create_listing
+
         user = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=user)
         variant = _make_variant(product, status=status)
         with pytest.raises(ValidationError, match="VariantNotListable"):
-            create_listing(user=user, variant_id=variant.id, listing_type="sell", title="T")
+            create_listing(
+                user=user, variant_id=variant.id, listing_type="sell", title="T"
+            )
 
     def test_school_only_rejects_member_variant(self):
         from marketplace.services import create_listing
+
         staff = _staff_user()
         member = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=member)
         variant = _make_variant(product)
         with pytest.raises(ValidationError, match="VariantMustBeSchoolOwned"):
-            create_listing(user=staff, variant_id=variant.id, listing_type="sell", title="T", school_only=True)
+            create_listing(
+                user=staff,
+                variant_id=variant.id,
+                listing_type="sell",
+                title="T",
+                school_only=True,
+            )
 
     def test_member_variant_non_owner_raises(self):
         from marketplace.services import create_listing
+
         owner = _member_user()
         stranger = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
         with pytest.raises(ValidationError, match="VariantOwnershipRequired"):
-            create_listing(user=stranger, variant_id=variant.id, listing_type="sell", title="T")
+            create_listing(
+                user=stranger, variant_id=variant.id, listing_type="sell", title="T"
+            )
 
     def test_member_variant_owner_creates(self):
         from marketplace.services import create_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
         listing = create_listing(
-            user=owner, variant_id=variant.id, listing_type="sell",
-            title="My Item", asking_price=Decimal("10.00"),
+            user=owner,
+            variant_id=variant.id,
+            listing_type="sell",
+            title="My Item",
+            asking_price=Decimal("10.00"),
         )
         assert listing.pk is not None
         assert listing.listing_type == "sell"
@@ -256,31 +284,42 @@ class TestCreateListing:
 
     def test_school_variant_staff_creates(self):
         from marketplace.services import create_listing
+
         staff = _staff_user()
         product = _make_product(owner_type=Product.OwnerType.SCHOOL)
         variant = _make_variant(product)
         listing = create_listing(
-            user=staff, variant_id=variant.id, listing_type="lend", title="School Item",
+            user=staff,
+            variant_id=variant.id,
+            listing_type="lend",
+            title="School Item",
         )
         assert listing.pk is not None
         assert listing.listing_type == "lend"
 
     def test_school_variant_no_perm_raises(self):
         from marketplace.services import create_listing
+
         user = _member_user()
         product = _make_product(owner_type=Product.OwnerType.SCHOOL)
         variant = _make_variant(product)
         with pytest.raises(ValidationError, match="VariantOwnershipRequired"):
-            create_listing(user=user, variant_id=variant.id, listing_type="sell", title="T")
+            create_listing(
+                user=user, variant_id=variant.id, listing_type="sell", title="T"
+            )
 
     @pytest.mark.parametrize("listing_type", ["sell", "rent", "lend", "donate"])
     def test_all_listing_types(self, listing_type):
         from marketplace.services import create_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
         listing = create_listing(
-            user=owner, variant_id=variant.id, listing_type=listing_type, title="T",
+            user=owner,
+            variant_id=variant.id,
+            listing_type=listing_type,
+            title="T",
         )
         assert listing.listing_type == listing_type
 
@@ -290,12 +329,14 @@ class TestUpdateListing:
 
     def test_not_found_raises(self):
         from marketplace.services import update_listing
+
         user = _member_user()
         with pytest.raises(AppNotFound, match="ListingNotFound"):
             update_listing(listing_id=99999, user=user, title="X")
 
     def test_non_owner_raises(self):
         from marketplace.services import update_listing
+
         owner = _member_user()
         stranger = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -306,6 +347,7 @@ class TestUpdateListing:
 
     def test_closed_listing_raises(self):
         from marketplace.services import update_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -315,13 +357,16 @@ class TestUpdateListing:
 
     def test_owner_updates_fields(self):
         from marketplace.services import update_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
         listing = _make_listing(variant, owner)
         updated = update_listing(
-            listing_id=listing.id, user=owner,
-            title="New Title", asking_price=Decimal("5.00"),
+            listing_id=listing.id,
+            user=owner,
+            title="New Title",
+            asking_price=Decimal("5.00"),
         )
         assert updated.title == "New Title"
         assert updated.asking_price == Decimal("5.00")
@@ -329,6 +374,7 @@ class TestUpdateListing:
 
     def test_school_staff_updates(self):
         from marketplace.services import update_listing
+
         staff = _staff_user()
         product = _make_product(owner_type=Product.OwnerType.SCHOOL)
         variant = _make_variant(product)
@@ -342,11 +388,13 @@ class TestPublishListing:
 
     def test_not_found_raises(self):
         from marketplace.services import publish_listing
+
         with pytest.raises(AppNotFound):
             publish_listing(listing_id=99999, user=_member_user())
 
     def test_non_owner_raises(self):
         from marketplace.services import publish_listing
+
         owner = _member_user()
         stranger = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -357,6 +405,7 @@ class TestPublishListing:
 
     def test_already_active_raises(self):
         from marketplace.services import publish_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -366,6 +415,7 @@ class TestPublishListing:
 
     def test_variant_now_sold_raises(self):
         from marketplace.services import publish_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -377,6 +427,7 @@ class TestPublishListing:
 
     def test_happy_path(self):
         from marketplace.services import publish_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -391,6 +442,7 @@ class TestUnpublishListing:
 
     def test_unpublish_sets_draft(self):
         from marketplace.services import unpublish_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -401,6 +453,7 @@ class TestUnpublishListing:
 
     def test_non_owner_raises(self):
         from marketplace.services import unpublish_listing
+
         owner = _member_user()
         stranger = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -415,6 +468,7 @@ class TestDeleteListing:
 
     def test_soft_deletes(self):
         from marketplace.services import delete_listing
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -425,6 +479,7 @@ class TestDeleteListing:
 
     def test_non_owner_raises(self):
         from marketplace.services import delete_listing
+
         owner = _member_user()
         stranger = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -439,6 +494,7 @@ class TestFavorites:
 
     def test_add_and_remove(self):
         from marketplace.services import add_favorite, remove_favorite
+
         owner = _member_user()
         user = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -459,6 +515,7 @@ class TestFavorites:
 
     def test_double_favorite_raises(self):
         from marketplace.services import add_favorite
+
         owner = _member_user()
         user = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -470,6 +527,7 @@ class TestFavorites:
 
     def test_remove_not_found_raises(self):
         from marketplace.services import remove_favorite
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -479,6 +537,7 @@ class TestFavorites:
 
     def test_listing_not_found_raises(self):
         from marketplace.services import add_favorite
+
         with pytest.raises(AppNotFound, match="ListingNotFound"):
             add_favorite(listing_id=99999, user=_member_user())
 
@@ -495,13 +554,18 @@ class TestListListings:
 
         listing_ok = _make_active_listing(variant_ok, owner, listing_type="sell")
         listing_sold = _make_active_listing(variant_sold, owner, listing_type="sell")
-        listing_archived = _make_active_listing(variant_archived, owner, listing_type="sell")
-        listing_draft = _make_listing(variant_ok, owner, listing_type="rent", status="draft")
+        listing_archived = _make_active_listing(
+            variant_archived, owner, listing_type="sell"
+        )
+        listing_draft = _make_listing(
+            variant_ok, owner, listing_type="rent", status="draft"
+        )
 
         return owner, listing_ok, listing_sold, listing_archived, listing_draft
 
     def test_only_active_public_returned(self):
         from marketplace.services import list_listings
+
         owner, listing_ok, _, _, listing_draft = self._setup_listings()
         results = list(list_listings(user=owner))
         ids = [r.id for r in results]
@@ -510,6 +574,7 @@ class TestListListings:
 
     def test_sold_variant_excluded(self):
         from marketplace.services import list_listings
+
         owner, _, listing_sold, _, _ = self._setup_listings()
         results = list(list_listings(user=owner))
         ids = [r.id for r in results]
@@ -517,6 +582,7 @@ class TestListListings:
 
     def test_archived_variant_excluded(self):
         from marketplace.services import list_listings
+
         owner, _, _, listing_archived, _ = self._setup_listings()
         results = list(list_listings(user=owner))
         ids = [r.id for r in results]
@@ -524,6 +590,7 @@ class TestListListings:
 
     def test_soft_deleted_variant_excluded(self):
         from marketplace.services import list_listings
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -534,6 +601,7 @@ class TestListListings:
 
     def test_soft_deleted_product_excluded(self):
         from marketplace.services import list_listings
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -544,6 +612,7 @@ class TestListListings:
 
     def test_filter_listing_type(self):
         from marketplace.services import list_listings
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         v1 = _make_variant(product)
@@ -557,27 +626,39 @@ class TestListListings:
 
     def test_search_by_title(self):
         from marketplace.services import list_listings
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
         listing = Listing.objects.create(
-            variant=variant, listing_type="sell", status="active",
-            title="UniqueSearchTerm XYZ", is_public=True, created_by=owner,
+            variant=variant,
+            listing_type="sell",
+            status="active",
+            title="UniqueSearchTerm XYZ",
+            is_public=True,
+            created_by=owner,
         )
-        results = list(list_listings(user=owner, filters={"search": "UniqueSearchTerm"}))
+        results = list(
+            list_listings(user=owner, filters={"search": "UniqueSearchTerm"})
+        )
         assert listing.id in [r.id for r in results]
 
     def test_search_by_product_name(self):
         from marketplace.services import list_listings
+
         owner = _member_user()
         product = Product.objects.create(
             name=f"SearchableProduct-{_uid()}",
             owner_type=Product.OwnerType.MEMBER,
-            owner=owner, status=Product.Status.ACTIVE, created_by=owner,
+            owner=owner,
+            status=Product.Status.ACTIVE,
+            created_by=owner,
         )
         variant = _make_variant(product)
         listing = _make_active_listing(variant, owner)
-        results = list(list_listings(user=owner, filters={"search": "SearchableProduct"}))
+        results = list(
+            list_listings(user=owner, filters={"search": "SearchableProduct"})
+        )
         assert listing.id in [r.id for r in results]
 
 
@@ -587,6 +668,7 @@ class TestListMyListings:
     def test_returns_own_includes_all_statuses(self):
         """My listings shows everything — including sold/donated — for history."""
         from marketplace.services import list_my_listings
+
         owner = _member_user()
         other = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -594,7 +676,9 @@ class TestListMyListings:
         v_sold = _make_variant(product, status=ProductVariant.Status.SOLD)
         listing_ok = _make_listing(v_ok, owner)
         listing_sold = _make_listing(v_sold, owner)
-        listing_other_product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=other)
+        listing_other_product = _make_product(
+            owner_type=Product.OwnerType.MEMBER, owner=other
+        )
         listing_other = _make_listing(_make_variant(listing_other_product), other)
 
         results = list(list_my_listings(user=owner))
@@ -610,6 +694,7 @@ class TestListFavoritedListings:
     def test_returns_favorited_includes_all_statuses(self):
         """Favorites shows everything — user should see items even after sold."""
         from marketplace.services import list_favorited_listings, add_favorite
+
         owner = _member_user()
         user = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
@@ -633,6 +718,7 @@ class TestListSchoolListings:
     def test_returns_all_school_listings(self):
         """Admin endpoint returns everything — no status filtering."""
         from marketplace.services import list_school_listings
+
         staff = _staff_user()
         product = _make_product(owner_type=Product.OwnerType.SCHOOL)
         v_ok = _make_variant(product)
@@ -651,6 +737,7 @@ class TestGetAvailability:
 
     def test_returns_active_bookings(self):
         from marketplace.services import get_availability
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -659,9 +746,13 @@ class TestGetAvailability:
         start = _future(days=1)
         end = _future(days=5)
         VariantBooking.objects.create(
-            variant=variant, booking_type=VariantBooking.BookingType.RENT,
+            variant=variant,
+            booking_type=VariantBooking.BookingType.RENT,
             status=VariantBooking.Status.CONFIRMED,
-            start_at=start, end_at=end, title="Test Booking", created_by=owner,
+            start_at=start,
+            end_at=end,
+            title="Test Booking",
+            created_by=owner,
         )
 
         windows = get_availability(listing_id=listing.id)
@@ -695,13 +786,17 @@ def _make_sell_listing_setup(*, school=False, asking_price=None):
         staff = _staff_user()
         product = _make_product(owner_type=Product.OwnerType.SCHOOL)
         variant = _make_variant(product)
-        listing = _make_active_listing(variant, staff, listing_type="sell", asking_price=asking_price)
+        listing = _make_active_listing(
+            variant, staff, listing_type="sell", asking_price=asking_price
+        )
         return listing, staff, variant
     else:
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
-        listing = _make_active_listing(variant, owner, listing_type="sell", asking_price=asking_price)
+        listing = _make_active_listing(
+            variant, owner, listing_type="sell", asking_price=asking_price
+        )
         return listing, owner, variant
 
 
@@ -710,11 +805,13 @@ class TestRequestTransaction:
 
     def test_listing_not_found(self):
         from marketplace.services import request_transaction
+
         with pytest.raises(AppNotFound, match="ListingNotFound"):
             request_transaction(user=_member_user(), listing_id=99999)
 
     def test_listing_not_active(self):
         from marketplace.services import request_transaction
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -724,46 +821,61 @@ class TestRequestTransaction:
 
     def test_rent_missing_dates(self):
         from marketplace.services import request_transaction
+
         listing, _, _ = _make_rent_listing_setup()
         with pytest.raises(ValidationError, match="DatesRequiredForRentOrLend"):
             request_transaction(user=_member_user(), listing_id=listing.id)
 
     def test_rent_invalid_date_range(self):
         from marketplace.services import request_transaction
+
         listing, _, _ = _make_rent_listing_setup()
         start = _future(days=5)
         end = _future(days=1)
         with pytest.raises(ValidationError, match="InvalidDateRange"):
             request_transaction(
-                user=_member_user(), listing_id=listing.id,
-                start_at=start, end_at=end,
+                user=_member_user(),
+                listing_id=listing.id,
+                start_at=start,
+                end_at=end,
             )
 
     def test_rent_date_overlap(self):
         from marketplace.services import request_transaction
+
         listing, _, variant = _make_rent_listing_setup()
         start = _future(days=1)
         end = _future(days=5)
         VariantBooking.objects.create(
-            variant=variant, booking_type=VariantBooking.BookingType.RENT,
+            variant=variant,
+            booking_type=VariantBooking.BookingType.RENT,
             status=VariantBooking.Status.CONFIRMED,
-            start_at=start, end_at=end, title="Existing", created_by=listing.created_by,
+            start_at=start,
+            end_at=end,
+            title="Existing",
+            created_by=listing.created_by,
         )
         with pytest.raises(ValidationError, match="BookingOverlap"):
             request_transaction(
-                user=_member_user(), listing_id=listing.id,
-                start_at=start + timedelta(days=1), end_at=end - timedelta(days=1),
+                user=_member_user(),
+                listing_id=listing.id,
+                start_at=start + timedelta(days=1),
+                end_at=end - timedelta(days=1),
             )
 
     def test_rent_happy_path(self):
         from marketplace.services import request_transaction
+
         listing, owner, variant = _make_rent_listing_setup()
         requester = _member_user()
         start = _future(days=10)
         end = _future(days=15)
         txn = request_transaction(
-            user=requester, listing_id=listing.id,
-            start_at=start, end_at=end, notes="Please!",
+            user=requester,
+            listing_id=listing.id,
+            start_at=start,
+            end_at=end,
+            notes="Please!",
         )
         assert txn.status == ProductTransaction.TransactionStatus.PENDING
         assert txn.transaction_type == "rent"
@@ -779,6 +891,7 @@ class TestRequestTransaction:
 
     def test_sell_auto_dates(self):
         from marketplace.services import request_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -788,6 +901,7 @@ class TestRequestTransaction:
 
     def test_school_item_owner_is_none(self):
         from marketplace.services import request_transaction
+
         listing, _, _ = _make_sell_listing_setup(school=True)
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -795,6 +909,7 @@ class TestRequestTransaction:
 
     def test_member_item_owner_is_product_owner(self):
         from marketplace.services import request_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -803,6 +918,7 @@ class TestRequestTransaction:
     @pytest.mark.parametrize("listing_type", ["lend"])
     def test_lend_requires_dates(self, listing_type):
         from marketplace.services import request_transaction
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -812,6 +928,7 @@ class TestRequestTransaction:
 
     def test_donate_auto_dates(self):
         from marketplace.services import request_transaction
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -826,11 +943,13 @@ class TestAcceptTransaction:
 
     def test_not_found(self):
         from marketplace.services import accept_transaction
+
         with pytest.raises(AppNotFound):
             accept_transaction(transaction_id=99999, user=_staff_user())
 
     def test_school_item_non_staff_raises(self):
         from marketplace.services import request_transaction, accept_transaction
+
         listing, _, _ = _make_sell_listing_setup(school=True)
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -839,6 +958,7 @@ class TestAcceptTransaction:
 
     def test_member_item_non_owner_raises(self):
         from marketplace.services import request_transaction, accept_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         stranger = _member_user()
@@ -848,6 +968,7 @@ class TestAcceptTransaction:
 
     def test_not_pending_raises(self):
         from marketplace.services import request_transaction, accept_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -857,6 +978,7 @@ class TestAcceptTransaction:
 
     def test_happy_path_member(self):
         from marketplace.services import request_transaction, accept_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -867,6 +989,7 @@ class TestAcceptTransaction:
 
     def test_happy_path_school(self):
         from marketplace.services import request_transaction, accept_transaction
+
         listing, staff, _ = _make_sell_listing_setup(school=True)
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -878,7 +1001,12 @@ class TestAcceptTransaction:
 class TestRejectTransaction:
 
     def test_not_pending_raises(self):
-        from marketplace.services import request_transaction, accept_transaction, reject_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            reject_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -888,6 +1016,7 @@ class TestRejectTransaction:
 
     def test_happy_path(self):
         from marketplace.services import request_transaction, reject_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -902,6 +1031,7 @@ class TestCompleteTransaction:
 
     def test_not_accepted_raises(self):
         from marketplace.services import request_transaction, complete_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -909,8 +1039,15 @@ class TestCompleteTransaction:
             complete_transaction(transaction_id=txn.id, user=owner)
 
     def test_sell_marks_variant_sold_and_listing_closed(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction
-        listing, owner, variant = _make_sell_listing_setup(asking_price=Decimal("15.00"))
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+        )
+
+        listing, owner, variant = _make_sell_listing_setup(
+            asking_price=Decimal("15.00")
+        )
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
         accept_transaction(transaction_id=txn.id, user=owner)
@@ -928,7 +1065,12 @@ class TestCompleteTransaction:
         assert booking.status == VariantBooking.Status.COMPLETED
 
     def test_donate_marks_variant_donated_and_listing_closed(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+        )
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
@@ -945,12 +1087,19 @@ class TestCompleteTransaction:
         assert listing.status == Listing.ListingStatus.CLOSED
 
     def test_rent_variant_stays_available(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+        )
+
         listing, owner, variant = _make_rent_listing_setup()
         requester = _member_user()
         txn = request_transaction(
-            user=requester, listing_id=listing.id,
-            start_at=_future(days=1), end_at=_future(days=5),
+            user=requester,
+            listing_id=listing.id,
+            start_at=_future(days=1),
+            end_at=_future(days=5),
         )
         accept_transaction(transaction_id=txn.id, user=owner)
         complete_transaction(transaction_id=txn.id, user=owner)
@@ -962,15 +1111,22 @@ class TestCompleteTransaction:
         assert listing.status == Listing.ListingStatus.ACTIVE
 
     def test_lend_variant_stays_available(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+        )
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
         listing = _make_active_listing(variant, owner, listing_type="lend")
         requester = _member_user()
         txn = request_transaction(
-            user=requester, listing_id=listing.id,
-            start_at=_future(days=1), end_at=_future(days=5),
+            user=requester,
+            listing_id=listing.id,
+            start_at=_future(days=1),
+            end_at=_future(days=5),
         )
         accept_transaction(transaction_id=txn.id, user=owner)
         complete_transaction(transaction_id=txn.id, user=owner)
@@ -979,8 +1135,13 @@ class TestCompleteTransaction:
         assert variant.status == ProductVariant.Status.AVAILABLE
 
     def test_priced_sell_creates_billing_entry(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+        )
         from billing.models import BillingEntry, BillingEntrySourceType
+
         listing, owner, _ = _make_sell_listing_setup(asking_price=Decimal("20.00"))
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -996,8 +1157,13 @@ class TestCompleteTransaction:
         assert entry.student_id == requester.id
 
     def test_no_price_no_billing_entry(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+        )
         from billing.models import BillingEntry, BillingEntrySourceType
+
         listing, owner, _ = _make_sell_listing_setup(asking_price=None)
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1010,12 +1176,19 @@ class TestCompleteTransaction:
         ).exists()
 
     def test_donate_no_billing_entry_even_with_price(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+        )
         from billing.models import BillingEntry, BillingEntrySourceType
+
         owner = _member_user()
         product = _make_product(owner_type=Product.OwnerType.MEMBER, owner=owner)
         variant = _make_variant(product)
-        listing = _make_active_listing(variant, owner, listing_type="donate", asking_price=Decimal("10.00"))
+        listing = _make_active_listing(
+            variant, owner, listing_type="donate", asking_price=Decimal("10.00")
+        )
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
         accept_transaction(transaction_id=txn.id, user=owner)
@@ -1032,6 +1205,7 @@ class TestCancelTransaction:
 
     def test_requester_can_cancel_pending(self):
         from marketplace.services import request_transaction, cancel_transaction
+
         listing, _, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1041,7 +1215,12 @@ class TestCancelTransaction:
         assert booking.status == VariantBooking.Status.CANCELLED
 
     def test_requester_can_cancel_accepted(self):
-        from marketplace.services import request_transaction, accept_transaction, cancel_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            cancel_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1051,6 +1230,7 @@ class TestCancelTransaction:
 
     def test_owner_can_cancel_member_item(self):
         from marketplace.services import request_transaction, cancel_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1059,6 +1239,7 @@ class TestCancelTransaction:
 
     def test_staff_can_cancel_school_item(self):
         from marketplace.services import request_transaction, cancel_transaction
+
         listing, staff, _ = _make_sell_listing_setup(school=True)
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1067,6 +1248,7 @@ class TestCancelTransaction:
 
     def test_random_user_cannot_cancel(self):
         from marketplace.services import request_transaction, cancel_transaction
+
         listing, _, _ = _make_sell_listing_setup()
         requester = _member_user()
         stranger = _member_user()
@@ -1075,7 +1257,13 @@ class TestCancelTransaction:
             cancel_transaction(transaction_id=txn.id, user=stranger)
 
     def test_cannot_cancel_completed(self):
-        from marketplace.services import request_transaction, accept_transaction, complete_transaction, cancel_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
+            cancel_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1085,7 +1273,12 @@ class TestCancelTransaction:
             cancel_transaction(transaction_id=txn.id, user=requester)
 
     def test_cannot_cancel_rejected(self):
-        from marketplace.services import request_transaction, reject_transaction, cancel_transaction
+        from marketplace.services import (
+            request_transaction,
+            reject_transaction,
+            cancel_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1099,6 +1292,7 @@ class TestBlockUnblockTransaction:
 
     def test_block_not_accepted_raises(self):
         from marketplace.services import request_transaction, block_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1106,7 +1300,12 @@ class TestBlockUnblockTransaction:
             block_transaction(transaction_id=txn.id, user=owner)
 
     def test_block_happy_path(self):
-        from marketplace.services import request_transaction, accept_transaction, block_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            block_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1117,7 +1316,12 @@ class TestBlockUnblockTransaction:
         assert booking.status == VariantBooking.Status.BLOCKED
 
     def test_unblock_not_blocked_raises(self):
-        from marketplace.services import request_transaction, accept_transaction, unblock_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            unblock_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1126,7 +1330,13 @@ class TestBlockUnblockTransaction:
             unblock_transaction(transaction_id=txn.id, user=owner)
 
     def test_unblock_happy_path(self):
-        from marketplace.services import request_transaction, accept_transaction, block_transaction, unblock_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            block_transaction,
+            unblock_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1138,7 +1348,12 @@ class TestBlockUnblockTransaction:
         assert booking.status == VariantBooking.Status.CONFIRMED
 
     def test_block_non_owner_raises(self):
-        from marketplace.services import request_transaction, accept_transaction, block_transaction
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            block_transaction,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         stranger = _member_user()
@@ -1158,10 +1373,14 @@ class TestFullLifecycle:
 
     def test_sell_full_flow_member_owned(self):
         """Owner creates listing → requester requests → owner accepts → completes.
-        Verify: variant SOLD, listing CLOSED, booking COMPLETED, billing entry created."""
+        Verify: variant SOLD, listing CLOSED, booking COMPLETED, billing entry created.
+        """
         from marketplace.services import (
-            create_listing, publish_listing, request_transaction,
-            accept_transaction, complete_transaction,
+            create_listing,
+            publish_listing,
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
         )
         from billing.models import BillingEntry, BillingEntrySourceType
 
@@ -1171,8 +1390,11 @@ class TestFullLifecycle:
         variant = _make_variant(product)
 
         listing = create_listing(
-            user=owner, variant_id=variant.id, listing_type="sell",
-            title="Full Flow Sell", asking_price=Decimal("50.00"),
+            user=owner,
+            variant_id=variant.id,
+            listing_type="sell",
+            title="Full Flow Sell",
+            asking_price=Decimal("50.00"),
         )
         publish_listing(listing_id=listing.id, user=owner)
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1199,7 +1421,9 @@ class TestFullLifecycle:
         """Two renters book non-overlapping periods on the same listing.
         Both complete successfully. Variant stays AVAILABLE."""
         from marketplace.services import (
-            request_transaction, accept_transaction, complete_transaction,
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
         )
 
         listing, owner, variant = _make_rent_listing_setup()
@@ -1207,12 +1431,16 @@ class TestFullLifecycle:
         requester_b = _member_user()
 
         txn_a = request_transaction(
-            user=requester_a, listing_id=listing.id,
-            start_at=_future(days=1), end_at=_future(days=5),
+            user=requester_a,
+            listing_id=listing.id,
+            start_at=_future(days=1),
+            end_at=_future(days=5),
         )
         txn_b = request_transaction(
-            user=requester_b, listing_id=listing.id,
-            start_at=_future(days=6), end_at=_future(days=10),
+            user=requester_b,
+            listing_id=listing.id,
+            start_at=_future(days=6),
+            end_at=_future(days=10),
         )
 
         accept_transaction(transaction_id=txn_a.id, user=owner)
@@ -1222,19 +1450,26 @@ class TestFullLifecycle:
 
         variant.refresh_from_db()
         assert variant.status == ProductVariant.Status.AVAILABLE
-        assert VariantBooking.objects.filter(
-            transaction__in=[txn_a, txn_b],
-            status=VariantBooking.Status.COMPLETED,
-        ).count() == 2
+        assert (
+            VariantBooking.objects.filter(
+                transaction__in=[txn_a, txn_b],
+                status=VariantBooking.Status.COMPLETED,
+            ).count()
+            == 2
+        )
 
     def test_reject_then_accept_different_requester(self):
         """First request rejected, second accepted and completed."""
         from marketplace.services import (
-            request_transaction, accept_transaction, reject_transaction,
+            request_transaction,
+            accept_transaction,
+            reject_transaction,
             complete_transaction,
         )
 
-        listing, owner, variant = _make_sell_listing_setup(asking_price=Decimal("10.00"))
+        listing, owner, variant = _make_sell_listing_setup(
+            asking_price=Decimal("10.00")
+        )
         user_a = _member_user()
         user_b = _member_user()
 
@@ -1258,8 +1493,11 @@ class TestFullLifecycle:
     def test_block_unblock_then_complete(self):
         """Accept → block → unblock → complete."""
         from marketplace.services import (
-            request_transaction, accept_transaction, block_transaction,
-            unblock_transaction, complete_transaction,
+            request_transaction,
+            accept_transaction,
+            block_transaction,
+            unblock_transaction,
+            complete_transaction,
         )
 
         listing, owner, variant = _make_sell_listing_setup()
@@ -1280,8 +1518,11 @@ class TestFullLifecycle:
         """School item: staff creates listing, member requests, staff accepts/completes.
         Owner on txn is None. Staff uses permission to manage."""
         from marketplace.services import (
-            create_listing, publish_listing, request_transaction,
-            accept_transaction, complete_transaction,
+            create_listing,
+            publish_listing,
+            request_transaction,
+            accept_transaction,
+            complete_transaction,
         )
 
         staff = _staff_user()
@@ -1290,8 +1531,12 @@ class TestFullLifecycle:
         variant = _make_variant(product)
 
         listing = create_listing(
-            user=staff, variant_id=variant.id, listing_type="sell",
-            title="School Costume", asking_price=Decimal("30.00"), school_only=True,
+            user=staff,
+            variant_id=variant.id,
+            listing_type="sell",
+            title="School Costume",
+            asking_price=Decimal("30.00"),
+            school_only=True,
         )
         publish_listing(listing_id=listing.id, user=staff)
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1306,7 +1551,8 @@ class TestFullLifecycle:
     def test_cancel_frees_booking_window(self):
         """Cancel a pending rent transaction, then re-request the same window."""
         from marketplace.services import (
-            request_transaction, cancel_transaction,
+            request_transaction,
+            cancel_transaction,
         )
 
         listing, owner, variant = _make_rent_listing_setup()
@@ -1315,13 +1561,19 @@ class TestFullLifecycle:
         end = _future(days=5)
 
         txn = request_transaction(
-            user=requester, listing_id=listing.id, start_at=start, end_at=end,
+            user=requester,
+            listing_id=listing.id,
+            start_at=start,
+            end_at=end,
         )
         cancel_transaction(transaction_id=txn.id, user=requester)
 
         new_requester = _member_user()
         txn2 = request_transaction(
-            user=new_requester, listing_id=listing.id, start_at=start, end_at=end,
+            user=new_requester,
+            listing_id=listing.id,
+            start_at=start,
+            end_at=end,
         )
         assert txn2.status == ProductTransaction.TransactionStatus.PENDING
 
@@ -1336,6 +1588,7 @@ class TestListingTransactionQueries:
 
     def test_list_my_transactions_includes_requester_and_owner(self):
         from marketplace.services import request_transaction, list_my_transactions
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1347,6 +1600,7 @@ class TestListingTransactionQueries:
 
     def test_list_my_transactions_school_item_owner_none(self):
         from marketplace.services import request_transaction, list_my_transactions
+
         listing, staff, _ = _make_sell_listing_setup(school=True)
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1355,7 +1609,12 @@ class TestListingTransactionQueries:
         assert txn.id in [t.id for t in requester_txns]
 
     def test_list_transactions_filters(self):
-        from marketplace.services import request_transaction, accept_transaction, list_transactions
+        from marketplace.services import (
+            request_transaction,
+            accept_transaction,
+            list_transactions,
+        )
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1373,6 +1632,7 @@ class TestListingTransactionQueries:
     def test_get_my_transaction_scoped_to_user(self):
         from marketplace.services import request_transaction, get_my_transaction
         from rest_framework.exceptions import PermissionDenied
+
         listing, owner, _ = _make_sell_listing_setup()
         requester = _member_user()
         txn = request_transaction(user=requester, listing_id=listing.id)
@@ -1396,6 +1656,7 @@ class TestBookingTransactionIntegrity:
     def test_each_transaction_has_its_own_booking(self):
         """Multiple transactions on the same listing create independent bookings."""
         from marketplace.services import request_transaction
+
         listing, _, variant = _make_sell_listing_setup()
         requester_a = _member_user()
         requester_b = _member_user()
@@ -1409,6 +1670,7 @@ class TestBookingTransactionIntegrity:
     def test_accept_only_updates_own_booking(self):
         """Accepting one transaction doesn't affect another's booking."""
         from marketplace.services import request_transaction, accept_transaction
+
         listing, owner, _ = _make_sell_listing_setup()
         requester_a = _member_user()
         requester_b = _member_user()

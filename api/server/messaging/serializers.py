@@ -81,7 +81,11 @@ class MessageSerializer(serializers.ModelSerializer):
             g = groups.setdefault(r.emoji, {"emoji": r.emoji, "user_ids": []})
             g["user_ids"].append(r.user_id)
         return [
-            {"emoji": g["emoji"], "count": len(g["user_ids"]), "user_ids": g["user_ids"]}
+            {
+                "emoji": g["emoji"],
+                "count": len(g["user_ids"]),
+                "user_ids": g["user_ids"],
+            }
             for g in groups.values()
         ]
 
@@ -135,6 +139,7 @@ class ConversationSerializer(serializers.ModelSerializer):
         # Only meaningful on GROUP conversations; for DMs/coaching/listing
         # it's always False (no member-management surface).
         from .models import ConversationKind, ConversationParticipant
+
         if obj.kind != ConversationKind.GROUP:
             return False
         cp = ConversationParticipant.objects.filter(
@@ -147,9 +152,9 @@ class ConversationSerializer(serializers.ModelSerializer):
         # Active participants only — soft-deleted rows linger in the M2M
         # through table for audit purposes but must not show in the UI.
         return list(
-            obj.conversation_participants
-            .filter(deleted_at__isnull=True)
-            .values_list("user_id", flat=True)
+            obj.conversation_participants.filter(deleted_at__isnull=True).values_list(
+                "user_id", flat=True
+            )
         )
 
     @extend_schema_field(ConversationParticipantSummarySerializer(many=True))
@@ -158,13 +163,12 @@ class ConversationSerializer(serializers.ModelSerializer):
         # Use the through manager so we can scope to active rows. Without
         # this, removed-then-re-added users would double-count.
         active_user_ids = list(
-            obj.conversation_participants
-            .filter(deleted_at__isnull=True)
-            .values_list("user_id", flat=True)
+            obj.conversation_participants.filter(deleted_at__isnull=True).values_list(
+                "user_id", flat=True
+            )
         )
-        users = (
-            obj.participants.filter(pk__in=active_user_ids)
-            .select_related("profile")
+        users = obj.participants.filter(pk__in=active_user_ids).select_related(
+            "profile"
         )
         out = []
         for u in users:

@@ -86,9 +86,7 @@ class Command(BaseCommand):
 
             if obj.is_deleted:
                 skipped += 1
-                self.stdout.write(
-                    f"Skipped (deleted): {obj.name} ({size_system.name})"
-                )
+                self.stdout.write(f"Skipped (deleted): {obj.name} ({size_system.name})")
             elif was_created:
                 created += 1
                 self.stdout.write(

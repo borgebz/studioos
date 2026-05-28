@@ -42,7 +42,7 @@ class ListingListCreateView(APIView):
                 results_serializer=ListingListSerializer,
             ),
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     def get(self, request):
         listings = services.list_listings(
@@ -161,7 +161,7 @@ class MyListingsView(APIView):
                 results_serializer=ListingListSerializer,
             ),
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     @require_perm("marketplace.view_own_listings")
     def get(self, request):
@@ -213,7 +213,7 @@ class SchoolListingListCreateView(APIView):
                 results_serializer=ListingListSerializer,
             ),
             **DEFAULT_ERROR_RESPONSES,
-        }
+        },
     )
     @require_perm("marketplace.manage_school_listings")
     def get(self, request):

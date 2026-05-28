@@ -82,12 +82,9 @@ def list_conversations(*, user):
     # Pull the profile alongside each participant so the serializer's
     # photo_url lookup doesn't N+1.
     participants_qs = User.objects.select_related("profile")
-    return (
-        Conversation.objects.filter(participants=user)
-        .prefetch_related(
-            Prefetch("participants", queryset=participants_qs),
-            "messages",
-        )
+    return Conversation.objects.filter(participants=user).prefetch_related(
+        Prefetch("participants", queryset=participants_qs),
+        "messages",
     )
 
 
@@ -103,9 +100,9 @@ def get_messages(*, conversation_id, user):
     # Use all_objects so soft-deleted messages still appear as tombstones in
     # the conversation history. The serializer hides body/file when deleted_at
     # is set.
-    return Message.all_objects.filter(
-        conversation_id=conversation_id
-    ).prefetch_related("reactions")
+    return Message.all_objects.filter(conversation_id=conversation_id).prefetch_related(
+        "reactions"
+    )
 
 
 def get_message(*, message_id, user):
@@ -201,9 +198,7 @@ def send_message(
 
     file_url = msg.file.url if msg.file else None
     transaction.on_commit(
-        lambda cid=conversation.pk, mid=msg.pk, sid=sender.id, b=msg.body,
-        fu=file_url, ofn=msg.original_filename, ca=msg.created_at:
-        _broadcast_message_event(
+        lambda cid=conversation.pk, mid=msg.pk, sid=sender.id, b=msg.body, fu=file_url, ofn=msg.original_filename, ca=msg.created_at: _broadcast_message_event(
             conversation_id=cid,
             event_type="chat.message",
             payload={
@@ -225,8 +220,7 @@ def send_message(
         .values_list("user_id", flat=True)
     )
     transaction.on_commit(
-        lambda cid=conversation.pk, mid=msg.pk, sid=sender.id, rids=recipient_ids:
-        _broadcast_user_notifications(
+        lambda cid=conversation.pk, mid=msg.pk, sid=sender.id, rids=recipient_ids: _broadcast_user_notifications(
             recipient_ids=rids,
             conversation_id=cid,
             message_id=mid,
@@ -259,7 +253,9 @@ def get_unread_counts(*, user):
         .values("conversation_id")
         .annotate(unread=models.Count("id", distinct=True))
     )
-    by_conversation = {str(r["conversation_id"]): r["unread"] for r in rows if r["unread"] > 0}
+    by_conversation = {
+        str(r["conversation_id"]): r["unread"] for r in rows if r["unread"] > 0
+    }
     total = sum(by_conversation.values())
     return {"total": total, "by_conversation": by_conversation}
 
@@ -294,8 +290,7 @@ def edit_message(*, message, user, body):
     message.save(update_fields=["body", "edited_at", "updated_by", "updated_at"])
 
     transaction.on_commit(
-        lambda cid=message.conversation_id, mid=message.pk, b=message.body,
-        ea=message.edited_at: _broadcast_message_event(
+        lambda cid=message.conversation_id, mid=message.pk, b=message.body, ea=message.edited_at: _broadcast_message_event(
             conversation_id=cid,
             event_type="message.edited",
             payload={
@@ -349,7 +344,9 @@ def delete_message(*, message, user):
 
     logger.info(
         "delete_message: message %s deleted by user %s (was_pinned=%s)",
-        message.pk, user.pk, was_pinned,
+        message.pk,
+        user.pk,
+        was_pinned,
     )
     return message
 
@@ -392,8 +389,7 @@ def add_reaction(*, message, user, emoji):
         created = True
 
     transaction.on_commit(
-        lambda cid=message.conversation_id, mid=message.pk, uid=user.id, e=emoji:
-        _broadcast_message_event(
+        lambda cid=message.conversation_id, mid=message.pk, uid=user.id, e=emoji: _broadcast_message_event(
             conversation_id=cid,
             event_type="reaction.added",
             payload={"message_id": mid, "user_id": uid, "emoji": e},
@@ -402,7 +398,10 @@ def add_reaction(*, message, user, emoji):
 
     logger.info(
         "add_reaction: message=%s user=%s emoji=%s created=%s",
-        message.pk, user.pk, emoji, created,
+        message.pk,
+        user.pk,
+        emoji,
+        created,
     )
     return reaction, created
 
@@ -422,8 +421,7 @@ def remove_reaction(*, message, user, emoji):
     reaction.delete(deleted_by=user)
 
     transaction.on_commit(
-        lambda cid=message.conversation_id, mid=message.pk, uid=user.id, e=emoji:
-        _broadcast_message_event(
+        lambda cid=message.conversation_id, mid=message.pk, uid=user.id, e=emoji: _broadcast_message_event(
             conversation_id=cid,
             event_type="reaction.removed",
             payload={"message_id": mid, "user_id": uid, "emoji": e},
@@ -432,7 +430,9 @@ def remove_reaction(*, message, user, emoji):
 
     logger.info(
         "remove_reaction: message=%s user=%s emoji=%s",
-        message.pk, user.pk, emoji,
+        message.pk,
+        user.pk,
+        emoji,
     )
     return True
 
@@ -453,8 +453,7 @@ def pin_message(*, message, user):
     message.save(update_fields=["pinned_at", "pinned_by", "updated_by", "updated_at"])
 
     transaction.on_commit(
-        lambda cid=message.conversation_id, mid=message.pk, uid=user.id,
-        pa=message.pinned_at: _broadcast_message_event(
+        lambda cid=message.conversation_id, mid=message.pk, uid=user.id, pa=message.pinned_at: _broadcast_message_event(
             conversation_id=cid,
             event_type="message.pinned",
             payload={"id": mid, "pinned_by_id": uid, "pinned_at": pa.isoformat()},
@@ -476,8 +475,7 @@ def unpin_message(*, message, user):
     message.save(update_fields=["pinned_at", "pinned_by", "updated_by", "updated_at"])
 
     transaction.on_commit(
-        lambda cid=message.conversation_id, mid=message.pk:
-        _broadcast_message_event(
+        lambda cid=message.conversation_id, mid=message.pk: _broadcast_message_event(
             conversation_id=cid,
             event_type="message.unpinned",
             payload={"id": mid},
@@ -657,8 +655,7 @@ def _emit_system_message(*, conversation, actor, event, **fields):
     conversation.save(update_fields=["updated_at", "updated_by"])
 
     transaction.on_commit(
-        lambda cid=conversation.pk, mid=msg.pk, sid=actor.id,
-        b=msg.body, ca=msg.created_at: _broadcast_message_event(
+        lambda cid=conversation.pk, mid=msg.pk, sid=actor.id, b=msg.body, ca=msg.created_at: _broadcast_message_event(
             conversation_id=cid,
             event_type="chat.message",
             payload={
@@ -697,9 +694,7 @@ def create_group_conversation(*, name, participant_ids, created_by):
 
     with transaction.atomic():
         others = list(
-            User.objects.filter(pk__in=unique_others)
-            .select_for_update()
-            .order_by("pk")
+            User.objects.filter(pk__in=unique_others).select_for_update().order_by("pk")
         )
         if len(others) != len(unique_others):
             # Some ids didn't resolve to real users.
@@ -742,14 +737,18 @@ def create_group_conversation(*, name, participant_ids, created_by):
         name=name,
     )
     transaction.on_commit(
-        lambda cid=conv.pk, rids=[u.id for u in others]:
-        _notify_users_conversation_added(
-            recipient_ids=rids, conversation_id=cid,
+        lambda cid=conv.pk, rids=[
+            u.id for u in others
+        ]: _notify_users_conversation_added(
+            recipient_ids=rids,
+            conversation_id=cid,
         )
     )
     logger.info(
         "create_group_conversation: %s by user %s with %d members",
-        conv.pk, created_by.id, total_members,
+        conv.pk,
+        created_by.id,
+        total_members,
     )
     return conv
 
@@ -761,9 +760,7 @@ def _require_group(conversation):
 
 def _participant_for(conversation, user):
     try:
-        return ConversationParticipant.objects.get(
-            conversation=conversation, user=user
-        )
+        return ConversationParticipant.objects.get(conversation=conversation, user=user)
     except ConversationParticipant.DoesNotExist:
         return None
 
@@ -813,7 +810,8 @@ def rename_conversation(*, conversation, name, updated_by):
     )
     logger.info(
         "rename_conversation: %s renamed by user %s",
-        conversation.pk, updated_by.id,
+        conversation.pk,
+        updated_by.id,
     )
     return conversation
 
@@ -835,9 +833,9 @@ def add_participants(*, conversation, user_ids, added_by):
         raise ValidationError({"user_ids": ["UnknownParticipant"]})
 
     existing_ids = set(
-        ConversationParticipant.objects.filter(
-            conversation=conversation
-        ).values_list("user_id", flat=True)
+        ConversationParticipant.objects.filter(conversation=conversation).values_list(
+            "user_id", flat=True
+        )
     )
     new_targets = [u for u in targets if u.id not in existing_ids]
     if not new_targets:
@@ -875,8 +873,7 @@ def add_participants(*, conversation, user_ids, added_by):
             target_id=u.id,
         )
         transaction.on_commit(
-            lambda cid=conversation.pk, uid=u.id, by=added_by.id:
-            _broadcast_conversation_event(
+            lambda cid=conversation.pk, uid=u.id, by=added_by.id: _broadcast_conversation_event(
                 conversation_id=cid,
                 event_type="participant.added",
                 payload={"conversation_id": cid, "user_id": uid, "added_by_id": by},
@@ -884,15 +881,19 @@ def add_participants(*, conversation, user_ids, added_by):
         )
 
     transaction.on_commit(
-        lambda cid=conversation.pk, rids=[u.id for u in added]:
-        _notify_users_conversation_added(
-            recipient_ids=rids, conversation_id=cid,
+        lambda cid=conversation.pk, rids=[
+            u.id for u in added
+        ]: _notify_users_conversation_added(
+            recipient_ids=rids,
+            conversation_id=cid,
         )
     )
 
     logger.info(
         "add_participants: %d added to conv %s by user %s",
-        len(added), conversation.pk, added_by.id,
+        len(added),
+        conversation.pk,
+        added_by.id,
     )
     return added
 
@@ -921,8 +922,7 @@ def remove_participant(*, conversation, target_user, removed_by):
         target_id=target_user.id,
     )
     transaction.on_commit(
-        lambda cid=conversation.pk, uid=target_user.id, by=removed_by.id:
-        _broadcast_conversation_event(
+        lambda cid=conversation.pk, uid=target_user.id, by=removed_by.id: _broadcast_conversation_event(
             conversation_id=cid,
             event_type="participant.removed",
             payload={"conversation_id": cid, "user_id": uid, "removed_by_id": by},
@@ -930,14 +930,16 @@ def remove_participant(*, conversation, target_user, removed_by):
     )
     # Tell the removed user's inbox to refresh (so the convo disappears).
     transaction.on_commit(
-        lambda cid=conversation.pk, uid=target_user.id:
-        _notify_users_conversation_added(
-            recipient_ids=[uid], conversation_id=cid,
+        lambda cid=conversation.pk, uid=target_user.id: _notify_users_conversation_added(
+            recipient_ids=[uid],
+            conversation_id=cid,
         )
     )
     logger.info(
         "remove_participant: user %s removed from conv %s by user %s",
-        target_user.id, conversation.pk, removed_by.id,
+        target_user.id,
+        conversation.pk,
+        removed_by.id,
     )
 
 
@@ -955,7 +957,8 @@ def leave_conversation(*, conversation, user):
 
         if was_admin:
             remaining_admins = ConversationParticipant.objects.filter(
-                conversation=conversation, is_admin=True,
+                conversation=conversation,
+                is_admin=True,
             ).exists()
             if not remaining_admins:
                 next_admin = (
@@ -992,13 +995,15 @@ def leave_conversation(*, conversation, user):
         )
     )
     transaction.on_commit(
-        lambda cid=conversation.pk, uid=user.id:
-        _notify_users_conversation_added(
-            recipient_ids=[uid], conversation_id=cid,
+        lambda cid=conversation.pk, uid=user.id: _notify_users_conversation_added(
+            recipient_ids=[uid],
+            conversation_id=cid,
         )
     )
     logger.info(
-        "leave_conversation: user %s left conv %s", user.id, conversation.pk,
+        "leave_conversation: user %s left conv %s",
+        user.id,
+        conversation.pk,
     )
 
 
