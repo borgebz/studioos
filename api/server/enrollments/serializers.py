@@ -116,6 +116,9 @@ class EnrollmentConsentReadSerializer(serializers.ModelSerializer):
             "accepted_at",
             "ip_address",
             "user_agent",
+            "policy_version",
+            "locale",
+            "device",
         ]
         read_only_fields = fields
 

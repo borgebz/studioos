@@ -231,6 +231,9 @@ def submit_enrollment(
             accepted_at=now if consent.get("accepted") else None,
             ip_address=consent.get("ip_address", ""),
             user_agent=consent.get("user_agent", ""),
+            policy_version=consent.get("policy_version", ""),
+            locale=consent.get("locale", ""),
+            device=consent.get("device") or {},
             created_by=created_by,
         )
 

@@ -523,3 +523,201 @@ class TestPayments:
         )
         assert out.status == PaymentStatus.CONFIRMED
         assert out.confirmed_by_id == direction_user.pk
+
+
+@pytest.mark.django_db
+class TestConsentAuditMetadata:
+    """New consent audit fields: policy_version, locale, device."""
+
+    def _kwargs_with_consent_meta(self, modality_id, **consent_meta):
+        from enrollments.models import ConsentType
+
+        kwargs = enrollment_submit_kwargs(modality_id=modality_id)
+        kwargs["consents"] = [
+            {
+                "consent_type": ConsentType.RGPD,
+                "accepted": True,
+                "ip_address": "127.0.0.1",
+                "user_agent": "pytest",
+                **consent_meta,
+            },
+            {
+                "consent_type": ConsentType.INTERNAL_REGULATION,
+                "accepted": True,
+                "ip_address": "127.0.0.1",
+                "user_agent": "pytest",
+                **consent_meta,
+            },
+        ]
+        return kwargs
+
+    def test_persists_policy_version_locale_and_device(
+        self, open_enrollment_period, modality
+    ):
+        from enrollments import services
+        from enrollments.models import EnrollmentConsent
+
+        device = {
+            "device_type": "desktop",
+            "os": "macOS",
+            "browser": "Chrome",
+            "browser_version": "120.0",
+        }
+        kwargs = self._kwargs_with_consent_meta(
+            modality.pk,
+            policy_version="2026-05-28",
+            locale="pt-PT",
+            device=device,
+        )
+        e = services.submit_enrollment(**kwargs)
+        consents = EnrollmentConsent.objects.filter(enrollment=e)
+        assert consents.count() == 2
+        for c in consents:
+            assert c.policy_version == "2026-05-28"
+            assert c.locale == "pt-PT"
+            assert c.device == device
+
+    def test_defaults_when_metadata_missing(self, open_enrollment_period, modality):
+        """Submitting without new fields keeps backward-compatible defaults."""
+        from enrollments import services
+        from enrollments.models import EnrollmentConsent
+
+        e = services.submit_enrollment(
+            **enrollment_submit_kwargs(modality_id=modality.pk),
+        )
+        for c in EnrollmentConsent.objects.filter(enrollment=e):
+            assert c.policy_version == ""
+            assert c.locale == ""
+            assert c.device == {}
+
+    def test_none_device_coerced_to_empty_dict(
+        self, open_enrollment_period, modality
+    ):
+        from enrollments import services
+        from enrollments.models import EnrollmentConsent
+
+        kwargs = self._kwargs_with_consent_meta(modality.pk, device=None)
+        e = services.submit_enrollment(**kwargs)
+        for c in EnrollmentConsent.objects.filter(enrollment=e):
+            assert c.device == {}
+
+
+class TestParseUserAgent:
+    """Unit tests for the lightweight UA parser used to fill consent.device."""
+
+    def test_empty_returns_empty_fields(self):
+        from enrollments.consent_utils import parse_user_agent
+
+        assert parse_user_agent("") == {
+            "device_type": "",
+            "os": "",
+            "browser": "",
+            "browser_version": "",
+        }
+
+    def test_chrome_on_macos_desktop(self):
+        from enrollments.consent_utils import parse_user_agent
+
+        ua = (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36"
+        )
+        result = parse_user_agent(ua)
+        assert result["os"] == "macOS"
+        assert result["browser"] == "Chrome"
+        assert result["browser_version"].startswith("120")
+        assert result["device_type"] == "desktop"
+
+    def test_safari_on_iphone_mobile(self):
+        from enrollments.consent_utils import parse_user_agent
+
+        ua = (
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) "
+            "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+            "Version/17.2 Mobile/15E148 Safari/604.1"
+        )
+        result = parse_user_agent(ua)
+        assert result["os"] == "iOS"
+        assert result["browser"] == "Safari"
+        assert result["device_type"] == "mobile"
+
+    def test_ipad_classifies_as_tablet(self):
+        from enrollments.consent_utils import parse_user_agent
+
+        ua = (
+            "Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) "
+            "AppleWebKit/605.1.15 Version/17.2 Safari/604.1"
+        )
+        result = parse_user_agent(ua)
+        assert result["device_type"] == "tablet"
+        assert result["os"] == "iOS"
+
+    def test_firefox_on_windows(self):
+        from enrollments.consent_utils import parse_user_agent
+
+        ua = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) "
+            "Gecko/20100101 Firefox/121.0"
+        )
+        result = parse_user_agent(ua)
+        assert result["os"] == "Windows"
+        assert result["browser"] == "Firefox"
+        assert result["device_type"] == "desktop"
+
+    def test_edge_takes_precedence_over_chrome(self):
+        from enrollments.consent_utils import parse_user_agent
+
+        ua = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0"
+        )
+        result = parse_user_agent(ua)
+        assert result["browser"] == "Edge"
+
+    def test_googlebot_classified_as_bot(self):
+        from enrollments.consent_utils import parse_user_agent
+
+        ua = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+        result = parse_user_agent(ua)
+        assert result["device_type"] == "bot"
+
+
+class TestConsentUtilsRequestHelpers:
+    def test_get_client_ip_prefers_forwarded_for(self):
+        from enrollments.consent_utils import get_client_ip
+
+        request = type(
+            "R",
+            (),
+            {
+                "META": {
+                    "HTTP_X_FORWARDED_FOR": "203.0.113.10, 10.0.0.1",
+                    "REMOTE_ADDR": "10.0.0.1",
+                }
+            },
+        )()
+        assert get_client_ip(request) == "203.0.113.10"
+
+    def test_get_client_ip_falls_back_to_remote_addr(self):
+        from enrollments.consent_utils import get_client_ip
+
+        request = type("R", (), {"META": {"REMOTE_ADDR": "10.0.0.5"}})()
+        assert get_client_ip(request) == "10.0.0.5"
+
+    def test_get_locale_picks_primary_language(self):
+        from enrollments.consent_utils import get_locale
+
+        request = type(
+            "R",
+            (),
+            {"META": {"HTTP_ACCEPT_LANGUAGE": "pt-PT,pt;q=0.9,en-US;q=0.8"}},
+        )()
+        assert get_locale(request) == "pt-PT"
+
+    def test_get_locale_empty_when_missing(self):
+        from enrollments.consent_utils import get_locale
+
+        request = type("R", (), {"META": {}})()
+        assert get_locale(request) == ""

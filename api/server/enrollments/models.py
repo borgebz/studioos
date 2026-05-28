@@ -265,6 +265,13 @@ class EnrollmentConsent(BaseModel):
     accepted_at = models.DateTimeField(null=True, blank=True)
     user_agent = models.TextField(blank=True, default="")
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    # Version of the policy text the user accepted. Without this, we cannot
+    # prove which version of the RGPD / internal regulation was shown.
+    policy_version = models.CharField(max_length=50, blank=True, default="")
+    # Locale the consent text was displayed in (e.g. "pt-PT", "en-US").
+    locale = models.CharField(max_length=10, blank=True, default="")
+    # Parsed user agent: {device_type, os, browser, browser_version}.
+    device = models.JSONField(default=dict, blank=True)
 
     class Meta:
         constraints = [

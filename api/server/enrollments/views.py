@@ -11,6 +11,12 @@ from core.decorators import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES
 from drf_spectacular.utils import extend_schema
 from enrollments import services
+from enrollments.consent_utils import (
+    get_client_ip,
+    get_locale,
+    parse_user_agent,
+    policy_version_for,
+)
 from enrollments.serializers import (
     EnrollmentListQuerySerializer,
     EnrollmentPaymentCreateSerializer,
@@ -225,14 +231,21 @@ class EnrollmentSubmitView(APIView):
             uploaded_files = files_data
 
         # --- Build consent dicts with request metadata ---
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        ip_address = get_client_ip(request)
+        locale = get_locale(request)
+        device = parse_user_agent(user_agent)
         consents = []
         for consent in serializer.validated_data["consents"]:
             consents.append(
                 {
                     "consent_type": consent["consent_type"],
                     "accepted": consent["accepted"],
-                    "ip_address": self._get_client_ip(request),
-                    "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+                    "ip_address": ip_address,
+                    "user_agent": user_agent,
+                    "policy_version": policy_version_for(consent["consent_type"]),
+                    "locale": locale,
+                    "device": device,
                 }
             )
 
@@ -252,13 +265,6 @@ class EnrollmentSubmitView(APIView):
             EnrollmentReadSerializer(enrollment).data,
             status=status.HTTP_201_CREATED,
         )
-
-    def _get_client_ip(self, request):
-        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded_for:
-            return x_forwarded_for.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR")
-
 
 class EnrollmentListView(APIView):
     """
