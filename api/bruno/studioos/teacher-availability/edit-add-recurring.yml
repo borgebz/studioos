@@ -1,0 +1,27 @@
+info:
+  name: edit-add-recurring
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: "{{base_url}}/api/availability/teachers/6/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "recurring": {
+          "days_of_week": "1,3",
+          "start_time": "10:00",
+          "end_time": "13:00",
+          "valid_from": "2026-05-01",
+          "valid_until": "2026-08-01"
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

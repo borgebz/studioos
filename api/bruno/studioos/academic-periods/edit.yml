@@ -1,0 +1,31 @@
+info:
+  name: edit
+  type: http
+  seq: 4
+
+http:
+  method: patch
+  url: "{{base_url}}/api/enrollments/periods/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "id": 1,
+        "academic_year": "2026/2027",
+        "period_type": "both",
+        "start_date": "2025-09-01",
+        "end_date": "2026-06-30",
+        "is_open": true,
+        "enrollment_fee": "50.00",
+        "insurance_general": "10.00",
+        "insurance_intensive": "15.00",
+        "created_at": "2026-09-29T15:17:18.715524Z",
+        "updated_at": "2026-01-29T15:17:18.715557Z"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

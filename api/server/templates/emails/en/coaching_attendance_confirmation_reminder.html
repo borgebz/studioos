@@ -1,0 +1,48 @@
+{% extends "emails/base.html" %}
+{% block title %}Confirm your attendance — StudioOS{% endblock %}
+{% block preheader %}Please confirm your attendance for the {{ modality }} class on {{ coaching_date }}.{% endblock %}
+
+{% block banner %}
+  <tr>
+    <td style="padding:0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fff6e0;">
+        <tr>
+          <td class="ea-pad" style="padding:18px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="28" style="width:28px; height:28px; background-color:#9a6b00; border-radius:50%; text-align:center; vertical-align:middle; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:700; color:#ffffff; line-height:28px; mso-line-height-rule:exactly;">!</td>
+                <td style="width:12px; line-height:1px; font-size:0;">&nbsp;</td>
+                <td style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; font-weight:600; line-height:1.4; color:#6e4d00;">
+                  {% if is_final_reminder %}Final reminder — confirm your attendance{% else %}Confirm your attendance{% endif %}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+{% endblock %}
+
+{% block content %}
+  <h1 style="margin:0 0 12px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:1.3; color:#1a8280;" class="ea-h1">
+    Hello, {{ recipient.first_name }}
+  </h1>
+  <p style="margin:0 0 20px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; color:#2a2a3a;">
+    Your private <strong style="color:#1a8280;">{{ modality }}</strong> class is scheduled for <strong style="color:#1a8280;">{{ coaching_date }}</strong>. Please confirm your attendance at least 24 hours before it starts.
+  </p>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px 0;">
+    <tr>
+      <td class="ea-btn-cell" style="background-color:#1a8280; border-radius:6px;">
+        <a href="{{ coaching_url }}" target="_blank" class="ea-btn" style="display:inline-block; padding:14px 28px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:600; letter-spacing:0.02em; color:#ffffff; text-decoration:none; border-radius:6px;">
+          Confirm attendance
+        </a>
+      </td>
+    </tr>
+  </table>
+{% endblock %}
+
+{% block footer_extra %}
+  You received this email because you have an account on the StudioOS platform.
+{% endblock %}

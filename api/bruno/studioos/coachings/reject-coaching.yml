@@ -1,0 +1,15 @@
+info:
+  name: reject-coaching
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{base_url}}/api/coachings/17/reject/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

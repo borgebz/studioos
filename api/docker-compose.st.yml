@@ -1,0 +1,81 @@
+# =============================================================================
+# Staging overrides — run on the VPS only. Build-on-VPS pattern (no registry).
+#
+# Layout expected on the VPS:
+#   /srv/studioos/
+#     ├── docker-compose.yml
+#     ├── docker-compose.st.yml
+#     ├── Caddyfile
+#     ├── server/            (API code, Dockerfile)
+#     └── client/            (web code, Dockerfile, nginx.conf)
+#
+# Usage on the VPS:
+#   docker compose -f docker-compose.yml -f docker-compose.st.yml build
+#   docker compose -f docker-compose.yml -f docker-compose.st.yml up -d
+# =============================================================================
+
+services:
+
+  db:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  api:
+    restart: unless-stopped
+    # Run migrate + collectstatic before starting daphne. Idempotent.
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        uv run python manage.py migrate --noinput
+        uv run python manage.py collectstatic --noinput
+        exec uv run daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    expose:
+      - "8000"
+
+  worker:
+    restart: unless-stopped
+    volumes:
+      - media_data:/app/media
+
+  beat:
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./client
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"     # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      # Read-only mounts so Caddy can serve Django static + user media directly
+      - static_data:/srv/static:ro
+      - media_data:/srv/media:ro
+    depends_on:
+      - api
+      - web
+
+volumes:
+  media_data:
+  static_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,15 @@
+info:
+  name: accept-coaching
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{base_url}}/api/coachings/17/accept/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

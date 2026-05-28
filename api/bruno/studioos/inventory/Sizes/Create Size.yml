@@ -1,0 +1,25 @@
+info:
+  name: Create Size
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{base_url}}/api/inventory/sizes/"
+  body:
+    type: json
+    data: |-
+      {
+
+        "name": "XS",
+
+        "size_system_id": 1
+
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

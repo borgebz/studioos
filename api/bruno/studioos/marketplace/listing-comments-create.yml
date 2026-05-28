@@ -1,0 +1,21 @@
+info:
+  name: listing-comments-create
+  type: http
+  seq: 14
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/listings/1/comments/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "body": "Question about this listing"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

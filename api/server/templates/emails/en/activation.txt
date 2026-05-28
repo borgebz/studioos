@@ -1,0 +1,14 @@
+Hello {{ user.first_name }},
+
+Welcome to StudioOS!
+
+Your account has been created. To activate it and set your password, click the link below:
+
+{{ activation_url }}
+
+This link is valid for 3 days. After that, you will need to request a new one.
+
+If you did not request this account, you can ignore this email.
+
+Best regards,
+StudioOS — Dance School

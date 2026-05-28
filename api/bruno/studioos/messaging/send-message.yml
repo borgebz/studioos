@@ -1,0 +1,21 @@
+info:
+  name: send-message
+  type: http
+  seq: 4
+
+http:
+  method: post
+  url: "{{base_url}}/api/messaging/conversations/1/messages/"
+  body:
+    type: multipart-form
+    data:
+      - name: body
+        type: text
+        value: Hello from Bruno REST
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

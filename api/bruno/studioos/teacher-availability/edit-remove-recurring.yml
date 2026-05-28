@@ -1,0 +1,21 @@
+info:
+  name: edit-remove-recurring
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: "{{base_url}}/api/availability/teachers/6/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "recurring": null
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

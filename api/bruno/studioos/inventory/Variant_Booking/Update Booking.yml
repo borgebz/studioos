@@ -1,0 +1,27 @@
+info:
+  name: Update Booking
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/inventory/bookings/5/"
+  body:
+    type: json
+    data: |-
+      {
+
+        "title": "Aula de Ballet em grupo - Atualizada",
+
+        "notes": "Aluno confirmado",
+
+        "status": "confirmed"
+
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,22 @@
+info:
+  name: approve-coaching
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{base_url}}/api/coachings/17/approve/"
+  body:
+    type: json
+    data: |-
+      {
+        "studio_id": 1,
+        "total_price": "100.00"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

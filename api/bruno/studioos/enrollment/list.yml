@@ -1,0 +1,15 @@
+info:
+  name: list-enrollments
+  type: http
+  seq: 2
+
+http:
+  method: get
+  url: "{{base_url}}/api/enrollments/list/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

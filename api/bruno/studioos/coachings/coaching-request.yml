@@ -1,0 +1,26 @@
+info:
+  name: coaching-request
+  type: http
+  seq: 11
+
+http:
+  method: post
+  url: "{{base_url}}/api/coachings/request/"
+  body:
+    type: json
+    data: |-
+      {
+        "teacher_id": 6,
+        "modality_id": 1,
+        "studio_id": 1,
+        "start_datetime": "2026-04-20T10:00:00Z",
+        "end_datetime": "2026-04-20T11:30:00Z",
+        "notes": ""
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

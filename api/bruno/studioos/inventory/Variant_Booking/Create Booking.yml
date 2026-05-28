@@ -1,0 +1,29 @@
+info:
+  name: Create Booking
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base_url}}/api/inventory/variants/1/bookings/"
+  body:
+    type: json
+    data: |-
+      {
+
+        "booking_type": "reservation",
+
+        "start_at": "2026-05-20T10:00:00Z",
+
+        "end_at": "2026-05-20T12:00:00Z",
+
+        "title": "Aula de Hip-Hop"
+
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,25 @@
+info:
+  name: submit-enrollment
+  type: http
+  seq: 1
+
+http:
+  method: post
+  url: "{{base_url}}/api/enrollments/"
+  body:
+    type: multipart-form
+    data:
+      - name: data
+        type: text
+        value: '{"enrollment_type":"new","student_email":"student1@example.com","student_name":"Student Name","student_date_of_birth":"2010-05-15","parent_name":"Parent Name","parent_email":"parent@example.com","parent_phone":"912345678","parent_phone_country_code":"+351","modality_ids":[1],"consents":[{"consent_type":"rgpd","accepted":true},{"consent_type":"internal_regulation","accepted":true}]}'
+      - name: payment_proof
+        type: file
+        value:
+          - ./files/payment-proof.png
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

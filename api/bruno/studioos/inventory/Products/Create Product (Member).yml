@@ -1,0 +1,27 @@
+info:
+  name: Create Product (Member)
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base_url}}/api/inventory/products/"
+  body:
+    type: json
+    data: |-
+      {
+
+        "name": "T-Shirt Test",
+
+        "description": "Produto de teste",
+
+        "price": 19.99
+
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

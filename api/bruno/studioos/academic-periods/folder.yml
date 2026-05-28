@@ -1,0 +1,7 @@
+info:
+  name: academic-periods
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit

@@ -1,0 +1,15 @@
+info:
+  name: activate-category
+  type: http
+  seq: 7
+
+http:
+  method: post
+  url: "{{base_url}}/api/inventory/categories/1/activate/"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

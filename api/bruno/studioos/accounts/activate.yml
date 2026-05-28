@@ -1,0 +1,23 @@
+info:
+  name: activate
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{base_url}}/api/accounts/activate/"
+  body:
+    type: json
+    data: |-
+      {
+        "uid": "NQ",
+        "token": "d67kt1-14ac4a89e5c3f87b2bdc37fa1cde69af",
+        "password": "OlaMundo123"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

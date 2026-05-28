@@ -1,0 +1,14 @@
+Olá {{ user.first_name }},
+
+Bem-vindo(a) à StudioOS!
+
+A sua conta foi criada. Para a ativar e definir a sua palavra-passe, clique no link abaixo:
+
+{{ activation_url }}
+
+Este link é válido por 3 dias. Após esse período, terá de solicitar um novo.
+
+Se não solicitou esta conta, pode ignorar este email.
+
+Cumprimentos,
+StudioOS — Escola de Dança

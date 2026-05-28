@@ -1,0 +1,22 @@
+info:
+  name: schedule-post-publication
+  type: http
+  seq: 23
+
+http:
+  method: POST
+  url: "{{base_url}}/api/events/1/posts/1/schedule-publication/"
+  body:
+    type: json
+    data: |-
+      {
+        "publication_scheduled_at": "2027-06-01T12:00:00Z",
+        "notification": "none"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

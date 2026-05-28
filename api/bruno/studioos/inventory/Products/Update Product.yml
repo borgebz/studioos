@@ -1,0 +1,26 @@
+info:
+  name: Update Product
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/inventory/products/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "T-Shirt Test Updated",
+        "description": "Produto de Teste",
+        "price": 19.99,
+        "brand": "Adidas",
+        "owner_type": "member",
+        "status": "active"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,22 @@
+info:
+  name: cancel-recurring-series
+  type: http
+  seq: 13
+
+http:
+  method: POST
+  url: "{{base_url}}/api/coachings/recurring/1/cancel/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "cancellation_reason": "",
+          "cancel_past": false
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -15,9 +15,29 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
-from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("api/accounts/", include("accounts.urls")),
+    path("api/enrollments/", include("enrollments.urls")),
+    path("api/studios/", include("studios.urls")),
+    path("api/modalities/", include("modality.urls")),
+    path("api/coachings/", include("coachings.urls")),
+    path("api/availability/", include("availability.urls")),
+    path("api/inventory/", include("inventory.urls")),
+    path("api/events/", include("events.urls")),
+    path("api/billing/", include("billing.urls")),
+    path("api/classes/", include("classes.urls")),
+    path("api/roles/", include("roles.urls")),
+    path("api/messaging/", include("messaging.urls")),
+    path("api/marketplace/", include("marketplace.urls")),
 ]
+
+# Serve media files in development only
+# In production, Nginx handles this
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

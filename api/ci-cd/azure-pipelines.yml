@@ -1,3 +1,13 @@
+# =============================================================================
+# StudioOS API — CI + CD
+#
+# • Stage Test (always): lint, format, migrations check, pytest
+# • Stage Deploy (only on push to main): tar code → scp → ssh build & up on st
+#
+# The deploy stage uses the "st-studioos-ssh" service connection (SSH).
+# Service Connection setup: Project Settings → Service Connections → New → SSH
+# =============================================================================
+
 trigger:
   branches:
     include:
@@ -9,82 +19,259 @@ pr:
     include:
       - "*"
 
-pool:
-  vmImage: ubuntu-latest
-
 variables:
   pythonVersion: "3.13"
   DJANGO_SETTINGS_MODULE: "config.settings"
   PYTHONUNBUFFERED: "1"
+  UV_CACHE_DIR: "$(Agent.HomeDirectory)/.cache/uv"
+  # Database — matches service container below
+  DB_ENGINE: "django.db.backends.postgresql"
+  DB_NAME: "studioos"
+  DB_USER: "studioos"
+  DB_PASSWORD: "studioos"
+  DB_HOST: "localhost"
+  DB_PORT: "5432"
+  # Redis — matches service container below
+  CELERY_BROKER_URL: "redis://localhost:6379/0"
+  CELERY_RESULT_BACKEND: "redis://localhost:6379/0"
+  # Email — console backend in CI, no real emails
+  EMAIL_BACKEND: "django.core.mail.backends.console.EmailBackend"
+  EMAIL_HOST: "localhost"
+  EMAIL_PORT: "1025"
+  EMAIL_USE_TLS: "False"
+  EMAIL_HOST_USER: ""
+  EMAIL_HOST_PASSWORD: ""
+  DEFAULT_FROM_EMAIL: "noreply@studioos.dev"
+  # Django
+  SECRET_KEY: "ci-secret-key-not-used-in-production"
+  DEBUG: "False"
+  ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+  CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+  FRONTEND_URL: "http://localhost:3000"
+  # Tests use the Django test client over plain HTTP; SECURE_SSL_REDIRECT=True
+  # (the prod default when DEBUG=False) would 301 every request before it
+  # reaches the view, breaking the entire suite.
+  SECURE_SSL_REDIRECT: "False"
+  # JWT
+  JWT_ACCESS_TOKEN_LIFETIME_MINUTES: "60"
+  JWT_REFRESH_TOKEN_LIFETIME_DAYS: "7"
+  # Postgres service container vars (used by the postgres container itself)
+  POSTGRES_DB: "studioos"
+  POSTGRES_USER: "studioos"
+  POSTGRES_PASSWORD: "studioos"
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: $(pythonVersion)
-  displayName: "Use Python $(pythonVersion)"
+stages:
+  # =============================================================================
+  # CI — runs on every push and PR
+  # =============================================================================
+  - stage: Test
+    displayName: "Test"
+    jobs:
+      - job: CI
+        displayName: "Lint + tests"
+        pool:
+          vmImage: ubuntu-latest
+        services:
+          postgres:
+            image: postgres:16-alpine
+            env:
+              POSTGRES_DB: $(POSTGRES_DB)
+              POSTGRES_USER: $(POSTGRES_USER)
+              POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
+            ports:
+              - 5432:5432
+          redis:
+            image: redis:7-alpine
+            ports:
+              - 6379:6379
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+            displayName: "Use Python $(pythonVersion)"
 
-# Install uv (fast Python package manager)
-- bash: |
-    set -euxo pipefail
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
-    export PATH="$HOME/.cargo/bin:$PATH"
-    uv --version
-  displayName: "Install uv"
+          - bash: |
+              set -euxo pipefail
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+              export PATH="$HOME/.cargo/bin:$PATH"
+              uv --version
+            displayName: "Install uv"
 
-# Cache uv downloads for faster CI
-- task: Cache@2
-  inputs:
-    key: 'uv | "$(Agent.OS)" | server/uv.lock'
-    restoreKeys: |
-      uv | "$(Agent.OS)"
-    path: $(HOME)/.cache/uv
-  displayName: "Cache uv"
+          - task: Cache@2
+            inputs:
+              key: 'uv | "$(Agent.OS)" | server/uv.lock'
+              restoreKeys: |
+                uv | "$(Agent.OS)"
+              path: "$(Agent.HomeDirectory)/.cache/uv"
+            displayName: "Cache uv"
 
-# Install deps from lockfile (server/ has pyproject.toml and uv.lock)
-- bash: |
-    set -euxo pipefail
-    export PATH="$HOME/.cargo/bin:$PATH"
-    cd server
-    uv sync --frozen
-  displayName: "Install dependencies (uv sync --frozen)"
+          - bash: |
+              set -euxo pipefail
+              export PATH="$HOME/.cargo/bin:$PATH"
+              cd server
+              uv sync --frozen
+            displayName: "Install dependencies (uv sync --frozen)"
 
-# Format check
-- bash: |
-    set -euxo pipefail
-    export PATH="$HOME/.cargo/bin:$PATH"
-    cd server
-    uv run black --check .
-  displayName: "Format check (black)"
+          - bash: |
+              set -euxo pipefail
+              export PATH="$HOME/.cargo/bin:$PATH"
+              cd server
+              uv run black --check .
+            displayName: "Format check (black)"
 
-# Lint
-- bash: |
-    set -euxo pipefail
-    export PATH="$HOME/.cargo/bin:$PATH"
-    cd server
-    uv run ruff check .
-  displayName: "Lint (ruff)"
+          - bash: |
+              set -euxo pipefail
+              export PATH="$HOME/.cargo/bin:$PATH"
+              cd server
+              uv run ruff check .
+            displayName: "Lint (ruff)"
 
-# Django "safe build" checks (ensures project imports & settings are valid)
-- bash: |
-    set -euxo pipefail
-    export PATH="$HOME/.cargo/bin:$PATH"
-    cd server
-    uv run python manage.py check
-  displayName: "Django system check"
+          - bash: |
+              set -euxo pipefail
+              export PATH="$HOME/.cargo/bin:$PATH"
+              cd server
+              uv run python manage.py check
+            displayName: "Django system check"
+            env:
+              DB_ENGINE: $(DB_ENGINE)
+              DB_NAME: $(DB_NAME)
+              DB_USER: $(DB_USER)
+              DB_PASSWORD: $(DB_PASSWORD)
+              DB_HOST: $(DB_HOST)
+              DB_PORT: $(DB_PORT)
 
-# Ensure no missing migrations (helps avoid broken deploys)
-- bash: |
-    set -euxo pipefail
-    export PATH="$HOME/.cargo/bin:$PATH"
-    cd server
-    uv run python manage.py makemigrations --check --dry-run
-  displayName: "Check migrations are committed"
+          - bash: |
+              set -euxo pipefail
+              export PATH="$HOME/.cargo/bin:$PATH"
+              cd server
+              uv run python manage.py migrate --noinput
+            displayName: "Run migrations"
+            env:
+              DB_ENGINE: $(DB_ENGINE)
+              DB_NAME: $(DB_NAME)
+              DB_USER: $(DB_USER)
+              DB_PASSWORD: $(DB_PASSWORD)
+              DB_HOST: $(DB_HOST)
+              DB_PORT: $(DB_PORT)
 
-# Run tests
-- bash: |
-    set -euxo pipefail
-    export PATH="$HOME/.cargo/bin:$PATH"
-    cd server
-    uv run pytest -q
-  displayName: "Run tests (pytest)"
+          - bash: |
+              set -euxo pipefail
+              export PATH="$HOME/.cargo/bin:$PATH"
+              cd server
+              uv run python manage.py makemigrations --check --dry-run
+            displayName: "Check migrations are committed"
+            env:
+              DB_ENGINE: $(DB_ENGINE)
+              DB_NAME: $(DB_NAME)
+              DB_USER: $(DB_USER)
+              DB_PASSWORD: $(DB_PASSWORD)
+              DB_HOST: $(DB_HOST)
+              DB_PORT: $(DB_PORT)
+
+          - bash: |
+              set -euxo pipefail
+              export PATH="$HOME/.cargo/bin:$PATH"
+              cd server
+              uv run pytest -q
+            displayName: "Run tests (pytest)"
+            env:
+              DB_ENGINE: $(DB_ENGINE)
+              DB_NAME: $(DB_NAME)
+              DB_USER: $(DB_USER)
+              DB_PASSWORD: $(DB_PASSWORD)
+              DB_HOST: $(DB_HOST)
+              DB_PORT: $(DB_PORT)
+              CELERY_BROKER_URL: $(CELERY_BROKER_URL)
+              CELERY_RESULT_BACKEND: $(CELERY_RESULT_BACKEND)
+
+  # =============================================================================
+  # CD — deploys to st only on push to main
+  # =============================================================================
+  - stage: Deploy
+    displayName: "Deploy to st"
+    dependsOn: Test
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: DeployToST
+        displayName: "Build & up on VPS"
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: self
+            displayName: "Checkout source"
+
+          - bash: |
+              set -euxo pipefail
+              cd $(Build.SourcesDirectory)
+              mkdir -p $(Build.ArtifactStagingDirectory)
+              tar --no-xattrs -czf $(Build.ArtifactStagingDirectory)/studioos-api.tar.gz \
+                --exclude='.git' \
+                --exclude='.github' \
+                --exclude='.claude' \
+                --exclude='.cursorrules' \
+                --exclude='.pytest_cache' \
+                --exclude='.DS_Store' \
+                --exclude='server/.venv' \
+                --exclude='server/.env' \
+                --exclude='server/db.sqlite3' \
+                --exclude='server/media' \
+                --exclude='server/logs' \
+                --exclude='**/__pycache__' \
+                --exclude='**/*.pyc' \
+                --exclude='bruno' \
+                --exclude='postman' \
+                --exclude='docs' \
+                --exclude='mcp-server' \
+                --exclude='ci-cd' \
+                --exclude='docker-compose.override.yml' \
+                Caddyfile \
+                docker-compose.yml \
+                docker-compose.st.yml \
+                server
+              ls -lh $(Build.ArtifactStagingDirectory)/studioos-api.tar.gz
+            displayName: "Package API code"
+
+          - task: CopyFilesOverSSH@0
+            displayName: "SCP tarball to VPS"
+            inputs:
+              sshEndpoint: "st-studioos-ssh"
+              sourceFolder: "$(Build.ArtifactStagingDirectory)"
+              contents: "studioos-api.tar.gz"
+              targetFolder: "/tmp/"
+              overwrite: true
+
+          - task: SSH@0
+            displayName: "Extract, rebuild api/worker/beat, up"
+            inputs:
+              sshEndpoint: "st-studioos-ssh"
+              runOptions: inline
+              failOnStdErr: false
+              inline: |
+                set -e
+                cd /srv/studioos
+
+                # Preserve .env (lives outside git/tarball, owned by deploy)
+                cp server/.env /tmp/env-backup
+
+                # Remove the parts we re-ship; volumes, .env, client/ stay
+                rm -rf server Caddyfile docker-compose.yml docker-compose.st.yml
+
+                tar xzf /tmp/studioos-api.tar.gz
+                cp /tmp/env-backup server/.env
+                chmod 600 server/.env
+                rm /tmp/studioos-api.tar.gz /tmp/env-backup
+
+                # Reload Caddy if Caddyfile changed (no downtime)
+                docker exec studioos-caddy-1 caddy reload --config /etc/caddy/Caddyfile || true
+
+                # Rebuild & up the API stack (web untouched — separate pipeline owns it)
+                docker compose -f docker-compose.yml -f docker-compose.st.yml build api worker beat
+                docker compose -f docker-compose.yml -f docker-compose.st.yml up -d
+
+                # Wait a few seconds for migrate/collectstatic in the api startup command
+                sleep 10
+                docker compose -f docker-compose.yml -f docker-compose.st.yml ps
+
+                # Smoke test (fail the deploy if API is not healthy)
+                curl -fsS -o /dev/null https://st.studioos.club/api/schema/ && echo "✓ API responding"

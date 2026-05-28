@@ -1,0 +1,26 @@
+info:
+  name: create
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{base_url}}/api/modalities/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Ballet Clássico Kids",
+        "description": "Ballet initiation for children.",
+        "max_capacity": 15,
+        "min_age_months": 48,
+        "max_age_months": 72,
+        "allowed_studio_ids": [1]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

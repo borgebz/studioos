@@ -1,0 +1,22 @@
+info:
+  name: edit
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{base_url}}/api/studios/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "max_capacity": 30,
+        "allowed_modality_ids": [1]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

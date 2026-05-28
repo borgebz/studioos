@@ -1,0 +1,31 @@
+info:
+  name: create-profile
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{base_url}}/api/accounts/profile/me/"
+  body:
+    type: multipart-form
+    data:
+      - name: photo
+        type: file
+        value:
+          - ./files/profile-photo.jpeg
+      - name: display_name
+        type: text
+        value: Jorge
+      - name: bio
+        type: text
+        value: Bio text
+      - name: is_public
+        type: text
+        value: "true"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

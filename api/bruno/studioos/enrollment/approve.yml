@@ -1,0 +1,18 @@
+info:
+  name: approve-enrollment
+  type: http
+  seq: 5
+
+http:
+  method: post
+  url: "{{base_url}}/api/enrollments/1/approve/"
+  body:
+    type: json
+    data: "{}"
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

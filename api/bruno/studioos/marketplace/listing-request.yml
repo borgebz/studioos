@@ -1,0 +1,21 @@
+info:
+  name: listing-request
+  type: http
+  seq: 17
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/listings/1/request/"
+  auth: inherit
+  body:
+    type: json
+    data: |-
+      {
+          "notes": ""
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

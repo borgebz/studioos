@@ -1,0 +1,29 @@
+info:
+  name: Create SubCategories
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base_url}}/api/inventory/categories/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Calçado",
+        "subcategories": [
+          {
+            "name": "Ténis"
+          },
+          {
+            "name": "Botas"
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

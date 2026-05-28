@@ -1,0 +1,21 @@
+info:
+  name: Update
+  type: http
+  seq: 1
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/inventory/size-systems/1/"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Roupa Atualizada"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

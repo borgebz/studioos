@@ -1,0 +1,15 @@
+info:
+  name: school-listing-unpublish
+  type: http
+  seq: 29
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/school/listings/1/unpublish/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

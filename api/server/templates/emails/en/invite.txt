@@ -1,0 +1,16 @@
+Hello,
+
+You've been invited to StudioOS with the role: {{ role_display }}.
+
+Account email: {{ invitee_email }}
+
+Complete your registration using the link below (valid for {{ expires_days }} days, single use):
+
+{{ onboarding_url }}
+
+After {{ expires_days }} days the link stops working; ask direction or coordination for a new invite.
+
+If you weren't expecting this invitation, you can ignore this email.
+
+Best regards,
+StudioOS — Dance School

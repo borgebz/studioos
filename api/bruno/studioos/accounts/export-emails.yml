@@ -1,0 +1,29 @@
+info:
+  name: export-emails
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{base_url}}/api/accounts/emails/export/"
+  auth: inherit
+
+query:
+  - name: role
+    value: ""
+    enabled: false
+  - name: classe_ids
+    value: ""
+    enabled: false
+  - name: modality_ids
+    value: ""
+    enabled: false
+  - name: is_active
+    value: "true"
+    enabled: false
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

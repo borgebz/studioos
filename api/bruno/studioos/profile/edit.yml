@@ -1,0 +1,28 @@
+info:
+  name: patch-profile
+  type: http
+  seq: 3
+
+http:
+  method: patch
+  url: "{{base_url}}/api/accounts/profile/me/"
+  body:
+    type: multipart-form
+    data:
+      - name: photo
+        type: file
+        value:
+          - ./files/profile-photo.jpeg
+      - name: display_name
+        type: text
+        value: Jorge Updated
+      - name: bio
+        type: text
+        value: Updated bio
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

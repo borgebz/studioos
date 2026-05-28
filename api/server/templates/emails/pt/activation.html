@@ -1,0 +1,29 @@
+{% extends "emails/base.html" %}
+{% block title %}Ative a sua conta — StudioOS{% endblock %}
+{% block preheader %}Confirme o seu email para ativar a sua conta na plataforma StudioOS.{% endblock %}
+
+{% block content %}
+  <h1 style="margin:0 0 16px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; font-weight:700; line-height:1.3; color:#1a8280;" class="ea-h1">
+    Bem-vindo(a) à StudioOS
+  </h1>
+  <p style="margin:0 0 20px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; color:#2a2a3a;">
+    A sua conta foi criada. Para começar a usar a plataforma, ative-a através do botão abaixo.
+  </p>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px 0;">
+    <tr>
+      <td class="ea-btn-cell" style="background-color:#1a8280; border-radius:6px;">
+        <a href="{{ activation_url }}" target="_blank" class="ea-btn" style="display:inline-block; padding:14px 28px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:600; letter-spacing:0.02em; color:#ffffff; text-decoration:none; border-radius:6px;">
+          Ativar Conta
+        </a>
+      </td>
+    </tr>
+  </table>
+
+  <p style="margin:0 0 8px 0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.5; color:#5b5b6b;">
+    Se o botão não funcionar, copie e cole este link no seu navegador:
+  </p>
+  <p style="margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.5; color:#1a8280; word-break:break-all;">
+    <a href="{{ activation_url }}" class="ea-link" style="color:#1a8280; text-decoration:underline;">{{ activation_url }}</a>
+  </p>
+{% endblock %}

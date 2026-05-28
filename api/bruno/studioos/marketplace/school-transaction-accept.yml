@@ -1,0 +1,15 @@
+info:
+  name: school-transaction-accept
+  type: http
+  seq: 32
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/school/transactions/1/accept/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

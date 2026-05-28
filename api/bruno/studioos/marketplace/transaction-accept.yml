@@ -1,0 +1,15 @@
+info:
+  name: transaction-accept
+  type: http
+  seq: 21
+
+http:
+  method: POST
+  url: "{{base_url}}/api/marketplace/transactions/1/accept/"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

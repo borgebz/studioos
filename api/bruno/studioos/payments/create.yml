@@ -1,0 +1,23 @@
+info:
+  name: create-enrollment-payment
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{base_url}}/api/enrollments/1/payments/"
+  body:
+    type: json
+    data: |-
+      {
+        "payment_type": "enrollment_fee",
+        "amount": "50.00",
+        "notes": ""
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

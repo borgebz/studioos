@@ -1,0 +1,24 @@
+info:
+  name: create
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: https://127.0.0.1:8000/api/studios/
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Estúdio da tilde",
+        "max_capacity": 25,
+        "description": "Sala de oba oba",
+        "allowed_modality_ids": [1]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

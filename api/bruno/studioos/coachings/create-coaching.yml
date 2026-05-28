@@ -1,0 +1,31 @@
+info:
+  name: create-coaching-coordination
+  type: http
+  seq: 2
+
+http:
+  method: post
+  url: "{{base_url}}/api/coachings/"
+  body:
+    type: json
+    data: |-
+      {
+        "teacher_id": 6,
+        "modality_id": 1,
+        "studio_id": 1,
+        "total_price": "50.00",
+        "start_datetime": "2026-04-28T14:00:00Z",
+        "end_datetime": "2026-04-28T15:30:00Z",
+        "is_billable": true,
+        "notes": "Coordination-scheduled session",
+        "schedule": true,
+        "classe_id": null,
+        "recurring_coaching": null
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,25 @@
+info:
+  name: Create Color
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base_url}}/api/inventory/colors/"
+  body:
+    type: json
+    data: |-
+      {
+
+        "name": "Preto",
+
+        "hex_code": "#000000"
+
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
