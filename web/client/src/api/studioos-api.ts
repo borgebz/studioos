@@ -925,6 +925,14 @@ export interface EnrollmentConsentRead {
   accepted_at: string | null
   ip_address: string | null
   user_agent: string
+  policy_version: string
+  locale: string
+  device: {
+    device_type?: string
+    os?: string
+    browser?: string
+    browser_version?: string
+  }
 }
 
 export interface EnrollmentFileRead {

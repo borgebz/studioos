@@ -16,6 +16,7 @@ import {
   CalendarDays,
   ClipboardList,
   ExternalLink,
+  FileQuestion,
   Globe,
   GraduationCap,
   IdCard,
@@ -68,6 +69,12 @@ const pages = [
     label: 'Home',
     description: 'Dashboard home page.',
     icon: ClipboardList,
+  },
+  {
+    to: '/404',
+    label: 'Not Found',
+    description: 'Fallback page rendered for unmatched URLs.',
+    icon: FileQuestion,
   },
 ] as const
 

@@ -116,6 +116,16 @@ function ColGroup<TData>({ table }: { table: TanstackTable<TData> }) {
   )
 }
 
+const STICKY_TH_CLASS = cn(
+  TH_CLASS,
+  // The header must be fully opaque so scrolled rows don't bleed through —
+  // sticky positioning keeps the th painted, but a translucent background
+  // would still let the underlying rows show. Inset shadow (not border) keeps
+  // the divider clipped to the cell — a sticky element's border isn't
+  // clipped by the scroll container.
+  'sticky top-0 z-10 bg-muted shadow-[inset_0_-1px_0_var(--border)]'
+)
+
 // ---------------------------------------------------------------------------
 // DataTable
 // ---------------------------------------------------------------------------
@@ -255,10 +265,9 @@ export function DataTable<TData>({
   ) : null
 
   // -----------------------------------------------------------------------
-  // fillHeight → split header / scrolling body / footer
-  // The header lives OUTSIDE the scroll container so it never bounces.
-  // Both tables share `table-layout: fixed` + identical <colgroup> for
-  // column alignment.
+  // fillHeight → single table with sticky thead in a scroll container.
+  // The container scrolls on both axes: vertical for rows, horizontal when
+  // the natural column widths exceed the viewport (typical on mobile).
   // -----------------------------------------------------------------------
   if (fillHeight) {
     return (
@@ -268,9 +277,11 @@ export function DataTable<TData>({
           className
         )}
       >
-        {/* Pinned header */}
-        <div className="shrink-0 border-b border-border bg-muted/40">
-          <table className="w-full table-fixed text-sm">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 min-h-0 overflow-auto overscroll-contain"
+        >
+          <table className="w-full text-sm">
             <ColGroup table={table} />
             <thead>
               {table.getHeaderGroups().map((hg) => (
@@ -279,7 +290,7 @@ export function DataTable<TData>({
                     <th
                       key={header.id}
                       colSpan={header.colSpan}
-                      className={TH_CLASS}
+                      className={STICKY_TH_CLASS}
                     >
                       <HeaderCellContent header={header} />
                     </th>
@@ -287,16 +298,6 @@ export function DataTable<TData>({
                 </tr>
               ))}
             </thead>
-          </table>
-        </div>
-
-        {/* Scrolling body */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 min-h-0 overflow-y-auto overscroll-contain"
-        >
-          <table className="w-full table-fixed text-sm">
-            <ColGroup table={table} />
             <tbody className="[&_tr:last-child]:border-0">{bodyContent}</tbody>
           </table>
         </div>

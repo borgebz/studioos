@@ -30,6 +30,7 @@ import { ToastPage } from '@/app/pages/design-system/ToastPage'
 import { RichTextEditorPage } from '@/app/pages/design-system/RichTextEditorPage'
 import { HomePage } from '@/app/pages/HomePage'
 import { LandingPage } from '@/app/pages/LandingPage'
+import { NotFoundPage } from '@/app/pages/NotFoundPage'
 import { CalendarPage } from '@/app/pages/coachings/CalendarPage'
 import { CreateCoachingPage } from '@/app/pages/coachings/CreateCoachingPage'
 import { EditCoachingPage } from '@/app/pages/coachings/EditCoachingPage'
@@ -382,6 +383,7 @@ export function AppRoutes() {
           element={<RichTextEditorPage />}
         />
       </Route>
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }

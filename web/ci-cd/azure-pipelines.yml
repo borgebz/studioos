@@ -19,9 +19,12 @@ pr:
 
 stages:
   # =============================================================================
-  # CI — runs on every push and PR
+  # CI — runs on every PR and on pushes to non-main branches.
+  # Skipped on direct pushes to main: tests already ran when the PR was opened,
+  # and admin direct-merges to main bypass them intentionally during iteration.
   # =============================================================================
   - stage: Test
+    condition: ne(variables['Build.SourceBranch'], 'refs/heads/main')
     displayName: "Test"
     jobs:
       - job: Build
@@ -63,7 +66,10 @@ stages:
   - stage: Deploy
     displayName: "Deploy to st"
     dependsOn: Test
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    # Run on main even when Test was skipped (it always is on main pushes — see
+    # the Test stage condition above). `succeeded()` does NOT treat Skipped as
+    # success, so we check the result enum explicitly.
+    condition: and(in(dependencies.Test.result, 'Succeeded', 'Skipped'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: DeployToST
         displayName: "Build & up web on VPS"
