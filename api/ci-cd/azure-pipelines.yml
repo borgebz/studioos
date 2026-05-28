@@ -269,9 +269,20 @@ stages:
                 docker compose -f docker-compose.yml -f docker-compose.st.yml build api worker beat
                 docker compose -f docker-compose.yml -f docker-compose.st.yml up -d
 
-                # Wait a few seconds for migrate/collectstatic in the api startup command
-                sleep 10
-                docker compose -f docker-compose.yml -f docker-compose.st.yml ps
+                # The api container runs migrate + collectstatic + daphne in series.
+                # Daphne only opens port 8000 after both finish, which can take a
+                # while on cold start. Poll the public endpoint for up to 2 minutes.
+                echo "Waiting for API to become healthy…"
+                for i in $(seq 1 40); do
+                  if curl -fsS -o /dev/null https://st.studioos.club/api/schema/ 2>/dev/null; then
+                    echo "✓ API responding after $((i * 3))s"
+                    docker compose -f docker-compose.yml -f docker-compose.st.yml ps
+                    exit 0
+                  fi
+                  sleep 3
+                done
 
-                # Smoke test (fail the deploy if API is not healthy)
-                curl -fsS -o /dev/null https://st.studioos.club/api/schema/ && echo "✓ API responding"
+                echo "✗ API not responding after 120s — printing container state for debug:"
+                docker compose -f docker-compose.yml -f docker-compose.st.yml ps
+                docker compose -f docker-compose.yml -f docker-compose.st.yml logs api --tail=40
+                exit 1
