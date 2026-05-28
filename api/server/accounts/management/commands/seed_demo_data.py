@@ -371,7 +371,6 @@ class Command(BaseCommand):
                     defaults={
                         "display_name": f"{first_name} {last_name}",
                         "bio": PROFILE_BIOS.get(handle, ""),
-                        "is_public": role_code in {"teacher", "teacher_external"},
                     },
                 )
                 # Refresh bio + display_name on each run.
