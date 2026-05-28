@@ -8,9 +8,12 @@ import {
   CheckCircle2,
   Download,
   FileText,
+  FileBadge,
   Globe,
+  Languages,
   Monitor,
   Plus,
+  Smartphone,
   ShieldCheck,
   Trash2,
   X,
@@ -660,8 +663,53 @@ export function EnrollmentReviewPage() {
                             })}
                           </p>
                         )}
-                        {(consent?.ip_address || consent?.user_agent) && (
+                        {(consent?.ip_address ||
+                          consent?.user_agent ||
+                          consent?.policy_version ||
+                          consent?.locale ||
+                          consent?.device?.browser ||
+                          consent?.device?.os) && (
                           <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                            {consent?.policy_version && (
+                              <div className="flex items-center gap-1.5">
+                                <FileBadge className="h-3 w-3 shrink-0" />
+                                <span>
+                                  {t('enrollmentReview.policyVersion', {
+                                    version: consent.policy_version,
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                            {consent?.locale && (
+                              <div className="flex items-center gap-1.5">
+                                <Languages className="h-3 w-3 shrink-0" />
+                                <span className="font-mono">
+                                  {consent.locale}
+                                </span>
+                              </div>
+                            )}
+                            {(consent?.device?.browser ||
+                              consent?.device?.os ||
+                              consent?.device?.device_type) && (
+                              <div className="flex items-center gap-1.5">
+                                <Smartphone className="h-3 w-3 shrink-0" />
+                                <span>
+                                  {[
+                                    consent.device.browser &&
+                                      [
+                                        consent.device.browser,
+                                        consent.device.browser_version,
+                                      ]
+                                        .filter(Boolean)
+                                        .join(' '),
+                                    consent.device.os,
+                                    consent.device.device_type,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                                </span>
+                              </div>
+                            )}
                             {consent?.ip_address && (
                               <div className="flex items-center gap-1.5">
                                 <Globe className="h-3 w-3 shrink-0" />

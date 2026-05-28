@@ -152,9 +152,6 @@ function LandingNav({
           <a href="#projetos" className="hover:text-foreground">
             {t('landing.navProjects')}
           </a>
-          <a href="#plataforma" className="italic hover:text-foreground">
-            StudioOS
-          </a>
         </div>
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1">
@@ -229,15 +226,7 @@ function Hero({ t }: { t: (key: string) => string }) {
           <TreatmentDraw />
 
           {/* Overlaid editorial type */}
-          <div className="pointer-events-none absolute inset-0 grid grid-rows-[auto_1fr_auto] p-6">
-            <div className="flex justify-between">
-              <span className="landing-eyebrow text-muted-foreground">
-                {t('landing.heroEyebrowLeft')}
-              </span>
-              <span className="landing-eyebrow hidden text-muted-foreground sm:block">
-                RAD® Registered · N.º 24116
-              </span>
-            </div>
+          <div className="pointer-events-none absolute inset-0 grid grid-rows-[1fr_auto] p-6">
             <div className="flex items-center justify-center text-center">
               <div className="px-[4%]">
                 <h1 className="landing-display text-[clamp(56px,11vw,168px)]">
@@ -446,19 +435,6 @@ function Awards({ t }: { t: (key: string) => string }) {
             </div>
           </div>
         </div>
-
-        {/* Marquee */}
-        <div className="mt-20 overflow-hidden border-t border-background/18 pt-6 whitespace-nowrap">
-          <div className="landing-display landing-marquee-track text-[56px] text-background/40">
-            {Array(2)
-              .fill(
-                'Youth America Grand Prix · TanzOlymp · European Grand Prix · Dance World Cup · All Dance · Global Dance Open · '
-              )
-              .map((s, i) => (
-                <span key={i}>{s}</span>
-              ))}
-          </div>
-        </div>
       </div>
     </section>
   )
@@ -529,10 +505,10 @@ function Team({ t }: { t: (key: string) => string }) {
           </h2>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-[920px] gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {team.map((p) => (
-            <Card key={p.name} className="gap-4 py-0 overflow-hidden">
-              <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+            <Card key={p.name} className="gap-3 py-0 overflow-hidden">
+              <div className="relative aspect-square overflow-hidden bg-muted">
                 <img
                   src={p.photo}
                   alt={p.name}
@@ -541,12 +517,9 @@ function Team({ t }: { t: (key: string) => string }) {
                   loading="lazy"
                 />
               </div>
-              <CardContent className="pb-6">
-                <Badge variant="secondary" className="mb-2">
-                  {p.role}
-                </Badge>
-                <h3 className="landing-display text-[26px]">{p.name}</h3>
-                <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground">
+              <CardContent className="pb-5">
+                <h3 className="landing-display text-[20px]">{p.name}</h3>
+                <p className="landing-mono mt-1.5 text-muted-foreground">
                   {p.cred}
                 </p>
               </CardContent>
@@ -643,127 +616,6 @@ function Projetos({ t }: { t: (key: string) => string }) {
               </div>
             </article>
           ))}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// StudioOS Features – Bento grid
-// ---------------------------------------------------------------------------
-function BentoCard({
-  tag,
-  en,
-  className,
-}: {
-  tag: string
-  en: string
-  className?: string
-}) {
-  return (
-    <Card
-      className={`gap-0 overflow-hidden rounded-none border-border py-0 shadow-none ${className ?? ''}`}
-    >
-      <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
-        <span className="landing-mono text-primary">{tag}</span>
-        <span className="landing-mono text-muted-foreground/60">{en}</span>
-      </div>
-      <CardContent className="flex flex-1 items-center justify-center pb-4">
-        <span className="landing-display text-[20px] text-muted-foreground">
-          {en} module
-        </span>
-      </CardContent>
-    </Card>
-  )
-}
-
-function PlatformBento() {
-  const { t } = useTranslation()
-  return (
-    <section id="plataforma" className="py-20 md:py-28">
-      <div className="mx-auto max-w-[1440px] px-5 md:px-10">
-        <div className="mb-14 flex flex-wrap items-end justify-between gap-10">
-          <div>
-            <span className="landing-eyebrow mb-4 block text-muted-foreground">
-              {t('landing.bentoChapter')}
-            </span>
-            <h2 className="landing-display text-[clamp(44px,6.5vw,100px)]">
-              <span className="font-normal italic">Powered by</span>
-              <br />
-              StudioOS<span className="text-primary">.</span>
-            </h2>
-            <p className="mt-6 max-w-[520px] text-base leading-relaxed text-muted-foreground">
-              {t('landing.bentoDescription')}
-            </p>
-          </div>
-          <div className="min-w-[240px]">
-            <span className="landing-mono text-muted-foreground">
-              {t('landing.bentoSubtitle')}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid auto-rows-[120px] grid-cols-6 gap-4 lg:grid-cols-12">
-          <BentoCard
-            tag="Inscrições"
-            en="Enrollments"
-            className="col-span-6 row-span-4"
-          />
-
-          <BentoCard
-            tag="Calendário"
-            en="Calendar"
-            className="col-span-6 row-span-4"
-          />
-
-          <BentoCard
-            tag="Aulas Privadas"
-            en="Coachings"
-            className="col-span-6 row-span-3 lg:col-span-4"
-          />
-
-          <BentoCard
-            tag="Eventos"
-            en="Events"
-            className="col-span-6 row-span-3 lg:col-span-4"
-          />
-
-          <BentoCard
-            tag="Faturação"
-            en="Billing"
-            className="col-span-6 row-span-3 lg:col-span-4"
-          />
-
-          <BentoCard
-            tag="Turmas"
-            en="Classes"
-            className="col-span-6 row-span-3 lg:col-span-4"
-          />
-
-          <BentoCard
-            tag="Inventário"
-            en="Inventory"
-            className="col-span-6 row-span-3 lg:col-span-4"
-          />
-
-          <BentoCard
-            tag="Mensagens"
-            en="Messaging"
-            className="col-span-6 row-span-3 lg:col-span-4"
-          />
-
-          <BentoCard
-            tag="Modalidades"
-            en="Modalities"
-            className="col-span-6 row-span-2"
-          />
-
-          <BentoCard
-            tag="Assiduidade"
-            en="Attendance"
-            className="col-span-6 row-span-2"
-          />
         </div>
       </div>
     </section>
@@ -917,7 +769,6 @@ export function LandingPage() {
       <Awards t={t} />
       <Team t={t} />
       <Projetos t={t} />
-      <PlatformBento />
       <CTA />
       <Footer />
     </div>

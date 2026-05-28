@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, useLocation } from 'react-router-dom'
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/AppSidebar'
+import { MobileTopBar } from '@/components/layout/MobileTopBar'
 import { AppRoutes } from '@/app/routes'
 import { paths } from '@/app/paths'
 import { useAuth } from '@/auth/useAuth'
@@ -42,7 +43,10 @@ function AppShell() {
     <SidebarProvider className="!h-svh !min-h-0 overflow-hidden">
       <AppSidebar />
       <SidebarInset className="grain overflow-hidden">
-        <AppRoutes />
+        <MobileTopBar />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <AppRoutes />
+        </div>
       </SidebarInset>
       <ProfileSetupPrompt />
     </SidebarProvider>

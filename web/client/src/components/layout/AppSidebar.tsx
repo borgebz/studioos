@@ -51,6 +51,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
@@ -155,6 +156,7 @@ export function AppSidebar() {
   const { user, logout } = useAuth()
   const { can, canAny } = usePermissions()
   const { theme, setTheme } = useTheme()
+  const { isMobile, setOpenMobile } = useSidebar()
   const { total: unreadMessages } = useUnreadMessages()
   const [shake, setShake] = useState(false)
   const shakeTimer = useRef<number | null>(null)
@@ -189,6 +191,15 @@ export function AppSidebar() {
       if (shakeTimer.current) window.clearTimeout(shakeTimer.current)
     }
   }, [])
+
+  // Auto-close the mobile drawer on navigation. Desktop is unaffected
+  // because setOpenMobile only controls the Sheet variant of the sidebar.
+  useEffect(() => {
+    if (isMobile) setOpenMobile(false)
+    // We intentionally depend only on the pathname so that opening the
+    // drawer (which toggles isMobile state internally) does not re-close it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   const currentLang = i18n.language.startsWith('pt') ? 'pt' : 'en'
 

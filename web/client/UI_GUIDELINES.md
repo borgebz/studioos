@@ -60,7 +60,7 @@ Use these only via CSS variables. For reference:
 
 ## 3. Layout Architecture
 
-The app shell is **sidebar + content** — there is no global top bar. Brand identity, theme/language toggles and user controls live in the sidebar footer (see §15). The only horizontal bars on a page are page-owned: an in-content `PageHeader` (back arrow + title + actions) at the top, and an **optional** sticky action footer at the bottom for forms and bulk-action pages.
+The app shell is **sidebar + content**. On **desktop** there is no global top bar — brand identity, theme/language toggles and user controls live in the sidebar footer (see §15). On **mobile** (`< md`) the sidebar collapses into a drawer (`Sheet`) and a slim **`MobileTopBar`** appears above the content with: hamburger trigger (left), StudioOS wordmark (center), unread-messages badge (right, when > 0). It is rendered once inside `SidebarInset` and is hidden on `md+` via `md:hidden`. The only other horizontal bars on a page are page-owned: an in-content `PageHeader` (back arrow + title + actions) at the top, and an **optional** sticky action footer at the bottom for forms and bulk-action pages.
 
 ```
 ┌────────┬────────────────────────────────────────┐
