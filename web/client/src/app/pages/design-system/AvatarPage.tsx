@@ -23,15 +23,24 @@ export function AvatarPage() {
           </h2>
           <div className="flex items-center gap-4">
             <Avatar className="h-8 w-8">
-              <AvatarImage src="https://api.dicebear.com/9.x/initials/svg?seed=AB" alt="AB" />
+              <AvatarImage
+                src="https://api.dicebear.com/9.x/initials/svg?seed=AB"
+                alt="AB"
+              />
               <AvatarFallback>AB</AvatarFallback>
             </Avatar>
             <Avatar className="h-10 w-10">
-              <AvatarImage src="https://api.dicebear.com/9.x/initials/svg?seed=CD" alt="CD" />
+              <AvatarImage
+                src="https://api.dicebear.com/9.x/initials/svg?seed=CD"
+                alt="CD"
+              />
               <AvatarFallback>CD</AvatarFallback>
             </Avatar>
             <Avatar className="h-16 w-16">
-              <AvatarImage src="https://api.dicebear.com/9.x/initials/svg?seed=EF" alt="EF" />
+              <AvatarImage
+                src="https://api.dicebear.com/9.x/initials/svg?seed=EF"
+                alt="EF"
+              />
               <AvatarFallback>EF</AvatarFallback>
             </Avatar>
           </div>

@@ -116,13 +116,16 @@ export function EventDetailPage() {
   const addToCalendar = (ev: EventDetailAug) => {
     if (!ev.event_date) return
     const dt = (d: Date) =>
-      d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+      d
+        .toISOString()
+        .replace(/[-:]/g, '')
+        .replace(/\.\d{3}/, '')
     const start = new Date(ev.event_date)
     const end = new Date(start.getTime() + 2 * 60 * 60 * 1000)
     const lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Ent\'Artes//Events//EN',
+      "PRODID:-//StudioOS//Events//EN",
       'BEGIN:VEVENT',
       `UID:event-${ev.id}@studioos`,
       `DTSTAMP:${dt(new Date())}`,
@@ -190,9 +193,12 @@ export function EventDetailPage() {
         ? {
             ...prev,
             interested: next,
-            interest_count: Math.max(0, (prev.interest_count ?? 0) + (next ? 1 : -1)),
+            interest_count: Math.max(
+              0,
+              (prev.interest_count ?? 0) + (next ? 1 : -1)
+            ),
           }
-        : prev,
+        : prev
     )
     try {
       if (next) await apiClient.api.eventsInterestsCreate(event.id)
@@ -204,9 +210,12 @@ export function EventDetailPage() {
           ? {
               ...prev,
               interested: !next,
-              interest_count: Math.max(0, (prev.interest_count ?? 0) + (next ? -1 : 1)),
+              interest_count: Math.max(
+                0,
+                (prev.interest_count ?? 0) + (next ? -1 : 1)
+              ),
             }
-          : prev,
+          : prev
       )
       toast.error(t('common.unexpectedError'))
     }
@@ -356,7 +365,9 @@ export function EventDetailPage() {
           <div className="mt-4 flex items-center gap-2 rounded-md border border-emerald-200/60 bg-emerald-50 px-4 py-2 text-sm text-emerald-900 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-200">
             <Check className="size-4" />
             <span>
-              <strong className="font-semibold">{t('events.completedBanner.label')}.</strong>{' '}
+              <strong className="font-semibold">
+                {t('events.completedBanner.label')}.
+              </strong>{' '}
               {t('events.completedBanner.subtitle')}
             </span>
           </div>
@@ -411,10 +422,7 @@ export function EventDetailPage() {
                     size="sm"
                     onClick={() =>
                       navigate(
-                        paths.eventsPostCreate.replace(
-                          ':id',
-                          String(event.id),
-                        ),
+                        paths.eventsPostCreate.replace(':id', String(event.id))
                       )
                     }
                   >
@@ -439,7 +447,7 @@ export function EventDetailPage() {
                               navigate(
                                 paths.eventsPostEdit
                                   .replace(':id', String(event.id))
-                                  .replace(':postId', String(p.id)),
+                                  .replace(':postId', String(p.id))
                               )
                           : undefined
                       }
@@ -454,7 +462,9 @@ export function EventDetailPage() {
               <div className="mb-4 flex items-baseline justify-between">
                 <h2 className="text-lg font-semibold">
                   {t('events.sections.comments')}{' '}
-                  <span className="text-muted-foreground">· {comments.length}</span>
+                  <span className="text-muted-foreground">
+                    · {comments.length}
+                  </span>
                 </h2>
               </div>
               {cancelled ? (
@@ -462,7 +472,10 @@ export function EventDetailPage() {
                   {t('events.cancelled.commentsDisabled')}
                 </p>
               ) : canComment ? (
-                <CommentComposer eventId={event.id} onPosted={(c) => setComments((p) => [c, ...p])} />
+                <CommentComposer
+                  eventId={event.id}
+                  onPosted={(c) => setComments((p) => [c, ...p])}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground italic">
                   {t('events.comments.loginToComment')}
@@ -492,11 +505,7 @@ export function EventDetailPage() {
               <Field
                 label={t('events.details.date')}
                 icon={<Calendar className="size-3.5" />}
-                value={
-                  dl
-                    ? `${dl.weekday}, ${dl.date}`
-                    : t('events.dateTbd')
-                }
+                value={dl ? `${dl.weekday}, ${dl.date}` : t('events.dateTbd')}
               />
               {dl && (
                 <Field
@@ -538,7 +547,9 @@ export function EventDetailPage() {
                       label={t('events.details.visibility')}
                       value={
                         event.visibility_state ? (
-                          <EventVisibilityBadge value={event.visibility_state} />
+                          <EventVisibilityBadge
+                            value={event.visibility_state}
+                          />
                         ) : null
                       }
                     />
@@ -589,21 +600,26 @@ export function EventDetailPage() {
                         <ChevronRight className="size-3.5" />
                       </Button>
                     )}
-                    {canSchedule && (draft || event.visibility_state === VisibilityStateEnum.Scheduled) && (
-                      <Button
-                        variant="outline"
-                        className="justify-between"
-                        onClick={() =>
-                          navigate(paths.eventsEdit.replace(':id', String(event.id)))
-                        }
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          <CalendarClock className="size-4" />
-                          {t('events.actions.schedulePublish')}
-                        </span>
-                        <ChevronRight className="size-3.5" />
-                      </Button>
-                    )}
+                    {canSchedule &&
+                      (draft ||
+                        event.visibility_state ===
+                          VisibilityStateEnum.Scheduled) && (
+                        <Button
+                          variant="outline"
+                          className="justify-between"
+                          onClick={() =>
+                            navigate(
+                              paths.eventsEdit.replace(':id', String(event.id))
+                            )
+                          }
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <CalendarClock className="size-4" />
+                            {t('events.actions.schedulePublish')}
+                          </span>
+                          <ChevronRight className="size-3.5" />
+                        </Button>
+                      )}
                     {canComplete && !completed && (
                       <Button
                         variant="outline"
@@ -624,16 +640,18 @@ export function EventDetailPage() {
                         {t('events.actions.cancelEvent')}
                       </Button>
                     )}
-                    {canArchive && event.visibility_state !== VisibilityStateEnum.Archived && (
-                      <Button
-                        variant="ghost"
-                        className="justify-start text-muted-foreground"
-                        onClick={() => setConfirmAction('archive')}
-                      >
-                        <Archive className="size-4" />
-                        {t('events.actions.archive')}
-                      </Button>
-                    )}
+                    {canArchive &&
+                      event.visibility_state !==
+                        VisibilityStateEnum.Archived && (
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-muted-foreground"
+                          onClick={() => setConfirmAction('archive')}
+                        >
+                          <Archive className="size-4" />
+                          {t('events.actions.archive')}
+                        </Button>
+                      )}
                     {canDelete && (
                       <Button
                         variant="ghost"
@@ -675,14 +693,20 @@ export function EventDetailPage() {
       </div>
 
       {/* Confirmation dialog */}
-      <AlertDialog open={confirmAction !== null} onOpenChange={(o) => !o && setConfirmAction(null)}>
+      <AlertDialog
+        open={confirmAction !== null}
+        onOpenChange={(o) => !o && setConfirmAction(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction === 'cancel' && t('events.form.cancelConfirmTitle')}
-              {confirmAction === 'delete' && t('events.form.deleteConfirmTitle')}
+              {confirmAction === 'cancel' &&
+                t('events.form.cancelConfirmTitle')}
+              {confirmAction === 'delete' &&
+                t('events.form.deleteConfirmTitle')}
               {confirmAction === 'archive' && t('events.actions.archive')}
-              {confirmAction === 'complete' && t('events.actions.markCompleted')}
+              {confirmAction === 'complete' &&
+                t('events.actions.markCompleted')}
               {confirmAction === 'publish' && t('events.actions.publishNow')}
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -703,13 +727,14 @@ export function EventDetailPage() {
               disabled={actionBusy}
               className={cn(
                 (confirmAction === 'cancel' || confirmAction === 'delete') &&
-                  'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+                  'bg-destructive text-destructive-foreground hover:bg-destructive/90'
               )}
             >
               {confirmAction === 'publish' && t('events.actions.publishNow')}
               {confirmAction === 'cancel' && t('events.actions.cancelEvent')}
               {confirmAction === 'archive' && t('events.actions.archive')}
-              {confirmAction === 'complete' && t('events.actions.markCompleted')}
+              {confirmAction === 'complete' &&
+                t('events.actions.markCompleted')}
               {confirmAction === 'delete' && t('events.actions.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -765,7 +790,7 @@ function InsetHero({
           <h1
             className={cn(
               'font-serif text-3xl font-semibold italic leading-[1.08] tracking-tight text-foreground sm:text-4xl lg:text-5xl',
-              cancelled && 'line-through decoration-muted-foreground/40',
+              cancelled && 'line-through decoration-muted-foreground/40'
             )}
           >
             {event.title}
@@ -815,7 +840,7 @@ function PrimaryInterestCta({
     <div
       className={cn(
         'inline-flex overflow-hidden rounded-md shadow-sm',
-        disabled && 'opacity-60',
+        disabled && 'opacity-60'
       )}
     >
       <button
@@ -827,7 +852,7 @@ function PrimaryInterestCta({
           active
             ? 'bg-background text-foreground border border-border hover:bg-accent'
             : 'bg-primary text-primary-foreground border border-primary hover:bg-primary/90',
-          disabled && 'cursor-not-allowed',
+          disabled && 'cursor-not-allowed'
         )}
       >
         {active && <Check className="size-4" />}
@@ -867,7 +892,7 @@ function Field({
       <span
         className={cn(
           'text-right font-medium',
-          link && 'underline underline-offset-4 decoration-border',
+          link && 'underline underline-offset-4 decoration-border'
         )}
       >
         {value}
@@ -888,7 +913,9 @@ function RailRow({ label, value }: { label: string; value: React.ReactNode }) {
 function AuditRow({ when, text }: { when: string; text: string }) {
   return (
     <div className="grid grid-cols-[80px_1fr] gap-2">
-      <span className="font-mono text-[11px] text-muted-foreground">{when}</span>
+      <span className="font-mono text-[11px] text-muted-foreground">
+        {when}
+      </span>
       <span>{text}</span>
     </div>
   )
@@ -927,7 +954,12 @@ function PostCard({ post, onEdit }: { post: EventPost; onEdit?: () => void }) {
             </span>
           )}
           {onEdit && (
-            <Button variant="ghost" size="icon" onClick={onEdit} aria-label={t('events.edit')}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onEdit}
+              aria-label={t('events.edit')}
+            >
               <MoreHorizontal className="size-4" />
             </Button>
           )}
@@ -953,23 +985,30 @@ function FileRow({ file }: { file: EventFile }) {
           'grid size-10 place-items-center rounded-md font-mono text-[10px] font-bold tracking-wider',
           isImg
             ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+            : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
         )}
       >
-        {isImg ? <ImageIcon className="size-4" /> : <FileText className="size-4" />}
+        {isImg ? (
+          <ImageIcon className="size-4" />
+        ) : (
+          <FileText className="size-4" />
+        )}
         <span className="sr-only">{tag}</span>
       </div>
       <div className="min-w-0">
         <div className="truncate text-sm font-medium">
           {file.file_name || tag}
         </div>
-        <div className="font-mono text-[11px] text-muted-foreground">
-          {tag}
-        </div>
+        <div className="font-mono text-[11px] text-muted-foreground">{tag}</div>
       </div>
       {file.file_url && (
         <Button asChild variant="outline" size="sm">
-          <a href={file.file_url} target="_blank" rel="noopener noreferrer" download>
+          <a
+            href={file.file_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+          >
             {t('events.files.download')}
           </a>
         </Button>
@@ -1081,7 +1120,11 @@ function DetailSkeleton() {
 
 function arrayOf<T>(data: unknown): T[] {
   if (Array.isArray(data)) return data as T[]
-  if (data && typeof data === 'object' && 'results' in (data as Record<string, unknown>)) {
+  if (
+    data &&
+    typeof data === 'object' &&
+    'results' in (data as Record<string, unknown>)
+  ) {
     const r = (data as { results?: unknown }).results
     return Array.isArray(r) ? (r as T[]) : []
   }

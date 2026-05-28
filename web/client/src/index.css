@@ -191,14 +191,24 @@
 .auth-heading {
   font-family: Georgia, 'Times New Roman', serif;
   font-weight: 500;
-  line-height: 1.0;
+  line-height: 1;
   letter-spacing: -0.012em;
 }
-.auth-heading-xl { font-size: clamp(56px, 8vw, 96px); }
-.auth-heading-lg { font-size: clamp(42px, 5.5vw, 64px); }
-.auth-heading-md { font-size: clamp(36px, 4vw, 48px); }
-.auth-heading-sm { font-size: clamp(32px, 4vw, 48px); }
-.auth-heading-xs { font-size: clamp(28px, 3.5vw, 40px); }
+.auth-heading-xl {
+  font-size: clamp(56px, 8vw, 96px);
+}
+.auth-heading-lg {
+  font-size: clamp(42px, 5.5vw, 64px);
+}
+.auth-heading-md {
+  font-size: clamp(36px, 4vw, 48px);
+}
+.auth-heading-sm {
+  font-size: clamp(32px, 4vw, 48px);
+}
+.auth-heading-xs {
+  font-size: clamp(28px, 3.5vw, 40px);
+}
 .auth-wordmark {
   font-family: Georgia, serif;
   font-style: italic;
@@ -229,8 +239,12 @@
 
 /* Marquee animation */
 @keyframes landing-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 .landing-marquee-track {
   display: inline-flex;
@@ -240,35 +254,61 @@
 
 /* Typing-indicator dot bounce — three staggered dots next to "X is typing". */
 @keyframes typing-dot {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
-  30% { transform: translateY(-2px); opacity: 1; }
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  30% {
+    transform: translateY(-2px);
+    opacity: 1;
+  }
 }
 .animate-typing-dot {
   animation: typing-dot 1.05s ease-in-out infinite;
   will-change: transform, opacity;
 }
 @media (prefers-reduced-motion: reduce) {
-  .animate-typing-dot { animation: none; }
+  .animate-typing-dot {
+    animation: none;
+  }
 }
 
 /* Sidebar unread-badge shake — fires when a new message arrives over the
    user-channel WS. Short, low-amplitude wobble so it draws the eye without
    being obnoxious. */
 @keyframes unread-shake {
-  0%   { transform: translateX(0) rotate(0deg); }
-  15%  { transform: translateX(-2px) rotate(-6deg); }
-  30%  { transform: translateX(2px) rotate(6deg); }
-  45%  { transform: translateX(-2px) rotate(-4deg); }
-  60%  { transform: translateX(2px) rotate(4deg); }
-  75%  { transform: translateX(-1px) rotate(-2deg); }
-  100% { transform: translateX(0) rotate(0deg); }
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  15% {
+    transform: translateX(-2px) rotate(-6deg);
+  }
+  30% {
+    transform: translateX(2px) rotate(6deg);
+  }
+  45% {
+    transform: translateX(-2px) rotate(-4deg);
+  }
+  60% {
+    transform: translateX(2px) rotate(4deg);
+  }
+  75% {
+    transform: translateX(-1px) rotate(-2deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
 }
 .unread-shake {
   animation: unread-shake 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   transform-origin: center;
 }
 @media (prefers-reduced-motion: reduce) {
-  .unread-shake { animation: none; }
+  .unread-shake {
+    animation: none;
+  }
 }
 
 /* Paper grain texture — reusable */

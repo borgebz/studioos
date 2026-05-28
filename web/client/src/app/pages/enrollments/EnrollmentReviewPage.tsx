@@ -127,7 +127,7 @@ export function EnrollmentReviewPage() {
   // payments form
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const [paymentType, setPaymentType] = useState<PaymentTypeEnum>(
-    PaymentTypeEnum.EnrollmentFee,
+    PaymentTypeEnum.EnrollmentFee
   )
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentNotes, setPaymentNotes] = useState('')
@@ -218,14 +218,14 @@ export function EnrollmentReviewPage() {
       }
       const created = await apiClient.api.enrollmentsPaymentsCreate(
         enrollment.id,
-        payload,
+        payload
       )
       // Confirm immediately — direction records a snapshot of money already received.
       if (created.data?.id) {
         try {
           await apiClient.api.enrollmentsPaymentsConfirmCreate(
             enrollment.id,
-            created.data.id,
+            created.data.id
           )
         } catch {
           // confirm is best-effort; record exists either way
@@ -299,7 +299,7 @@ export function EnrollmentReviewPage() {
 
   const rgpd = enrollment.consents?.find((c) => c.consent_type === 'rgpd')
   const regulation = enrollment.consents?.find(
-    (c) => c.consent_type === 'internal_regulation',
+    (c) => c.consent_type === 'internal_regulation'
   )
 
   const totalConfirmed = (enrollment.payments ?? [])
@@ -477,7 +477,9 @@ export function EnrollmentReviewPage() {
                         className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
                       >
                         <span className="shrink-0 text-sm font-medium">
-                          {t(`enrollmentReview.payments.type.${p.payment_type}`)}
+                          {t(
+                            `enrollmentReview.payments.type.${p.payment_type}`
+                          )}
                         </span>
                         <span className="flex-1 text-sm tabular-nums">
                           {t('common.currencySymbol')}
@@ -494,7 +496,7 @@ export function EnrollmentReviewPage() {
                             p.status ===
                               EnrollmentPaymentReadStatusEnum.Confirmed
                               ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
+                              : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
                           )}
                         >
                           {t(`enrollmentReview.payments.status.${p.status}`)}
@@ -540,7 +542,7 @@ export function EnrollmentReviewPage() {
                           <SelectContent>
                             <SelectItem value={PaymentTypeEnum.EnrollmentFee}>
                               {t(
-                                'enrollmentReview.payments.type.enrollment_fee',
+                                'enrollmentReview.payments.type.enrollment_fee'
                               )}
                             </SelectItem>
                             <SelectItem value={PaymentTypeEnum.Insurance}>
@@ -577,7 +579,7 @@ export function EnrollmentReviewPage() {
                         id="payment-notes"
                         rows={2}
                         placeholder={t(
-                          'enrollmentReview.payments.notesPlaceholder',
+                          'enrollmentReview.payments.notesPlaceholder'
                         )}
                         value={paymentNotes}
                         onChange={(e) => setPaymentNotes(e.target.value)}
@@ -629,17 +631,14 @@ export function EnrollmentReviewPage() {
                     label: t('enrollments.consentRegulationLink'),
                   },
                 ].map(({ consent, label }, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg border border-border p-4"
-                  >
+                  <div key={i} className="rounded-lg border border-border p-4">
                     <div className="flex items-start gap-3">
                       <span
                         className={cn(
                           'mt-0.5 flex h-7 w-7 items-center justify-center rounded-full shrink-0',
                           consent?.accepted
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : 'bg-muted text-muted-foreground',
+                            : 'bg-muted text-muted-foreground'
                         )}
                       >
                         {consent?.accepted ? (
@@ -656,7 +655,7 @@ export function EnrollmentReviewPage() {
                               date: format(
                                 new Date(consent.accepted_at),
                                 'd MMM yyyy · HH:mm',
-                                { locale: dateLocale },
+                                { locale: dateLocale }
                               ),
                             })}
                           </p>
@@ -700,7 +699,7 @@ export function EnrollmentReviewPage() {
                 <FieldRow
                   label={t('enrollmentReview.enrollmentType')}
                   value={t(
-                    `enrollmentRequests.type.${enrollment.enrollment_type}`,
+                    `enrollmentRequests.type.${enrollment.enrollment_type}`
                   )}
                 />
                 <FieldRow
@@ -710,7 +709,7 @@ export function EnrollmentReviewPage() {
                       ? format(
                           new Date(enrollment.created_at),
                           'd MMM yyyy · HH:mm',
-                          { locale: dateLocale },
+                          { locale: dateLocale }
                         )
                       : null
                   }

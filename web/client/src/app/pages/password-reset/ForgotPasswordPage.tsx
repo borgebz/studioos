@@ -51,7 +51,10 @@ export function ForgotPasswordPage() {
       await apiClient.api.accountsAuthPasswordResetCreate({ email: data.email })
       setStep('sent')
     } catch (err) {
-      setSubmitError(parseApiError(err, t, 'auth.forgotPassword.error') ?? t('auth.forgotPassword.error'))
+      setSubmitError(
+        parseApiError(err, t, 'auth.forgotPassword.error') ??
+          t('auth.forgotPassword.error')
+      )
       setStep('form')
     }
   }
@@ -123,8 +126,7 @@ export function ForgotPasswordPage() {
                 <span>{t('auth.forgotPassword.sentTitle')}</span>
                 <span className="h-px flex-1 bg-border" />
               </div>
-              <h1
-                className="auth-heading auth-heading-sm mb-3.5"              >
+              <h1 className="auth-heading auth-heading-sm mb-3.5">
                 {t('auth.forgotPassword.sentTitle')}
               </h1>
               <p className="max-w-[50ch] text-[14.5px] leading-relaxed text-muted-foreground">
@@ -147,8 +149,7 @@ export function ForgotPasswordPage() {
                 <span>{t('auth.forgotPassword.overline')}</span>
                 <span className="h-px flex-1 bg-border" />
               </div>
-              <h1
-                className="auth-heading auth-heading-sm mb-3.5"              >
+              <h1 className="auth-heading auth-heading-sm mb-3.5">
                 {t('auth.forgotPassword.heroTitle')}
               </h1>
               <p className="max-w-[50ch] text-[14.5px] leading-relaxed text-muted-foreground">
@@ -156,7 +157,10 @@ export function ForgotPasswordPage() {
               </p>
             </div>
 
-            <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)}>
+            <form
+              className="flex flex-col gap-5"
+              onSubmit={handleSubmit(onSubmit)}
+            >
               <div>
                 <Label htmlFor="email">{t('auth.login.emailLabel')}</Label>
                 <Input

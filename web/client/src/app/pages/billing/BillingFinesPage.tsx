@@ -175,8 +175,14 @@ export function BillingFinesPage() {
             type: 'multi-select',
             label: t('billingFines.col.reason'),
             options: [
-              { value: ReasonEnum.Absence, label: t('billingFines.reason.absence') },
-              { value: ReasonEnum.LateCancellation, label: t('billingFines.reason.late_cancellation') },
+              {
+                value: ReasonEnum.Absence,
+                label: t('billingFines.reason.absence'),
+              },
+              {
+                value: ReasonEnum.LateCancellation,
+                label: t('billingFines.reason.late_cancellation'),
+              },
             ],
           },
         },
@@ -193,9 +199,7 @@ export function BillingFinesPage() {
         cell: (info) => {
           const value = info.getValue()
           if (!value) {
-            return (
-              <div className="text-right text-muted-foreground">—</div>
-            )
+            return <div className="text-right text-muted-foreground">—</div>
           }
           return (
             <div className="text-right font-medium tabular-nums">
@@ -213,9 +217,18 @@ export function BillingFinesPage() {
             type: 'multi-select',
             label: t('billingFines.col.status'),
             options: [
-              { value: FineStatusEnum.PendingReview, label: t('billingFines.status.pending_review') },
-              { value: FineStatusEnum.Approved, label: t('billingFines.status.approved') },
-              { value: FineStatusEnum.Waived, label: t('billingFines.status.waived') },
+              {
+                value: FineStatusEnum.PendingReview,
+                label: t('billingFines.status.pending_review'),
+              },
+              {
+                value: FineStatusEnum.Approved,
+                label: t('billingFines.status.approved'),
+              },
+              {
+                value: FineStatusEnum.Waived,
+                label: t('billingFines.status.waived'),
+              },
             ],
           },
         },
@@ -280,7 +293,7 @@ export function BillingFinesPage() {
         },
       }),
     ],
-    [columnHelper, t, canReview, currency],
+    [columnHelper, t, canReview, currency]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<FineList>({
@@ -294,23 +307,29 @@ export function BillingFinesPage() {
       (columnFilters.find((f) => f.id === 'status')?.value as
         | FineStatusEnum[]
         | undefined) ?? null,
-    [columnFilters],
+    [columnFilters]
   )
   const reasonFilter = useMemo(
     () =>
       (columnFilters.find((f) => f.id === 'reason')?.value as
         | ReasonEnum[]
         | undefined) ?? null,
-    [columnFilters],
+    [columnFilters]
   )
 
   const statusKey = statusFilter ? statusFilter.slice().sort().join(',') : ''
   const reasonKey = reasonFilter ? reasonFilter.slice().sort().join(',') : ''
 
-  const fetchPage = useCallback(async (): Promise<PaginatedResponse<FineList>> => {
+  const fetchPage = useCallback(async (): Promise<
+    PaginatedResponse<FineList>
+  > => {
     const res = await apiClient.api.billingFinesList({
-      ...(statusFilter && statusFilter.length > 0 ? { status: statusFilter } : {}),
-      ...(reasonFilter && reasonFilter.length > 0 ? { reason: reasonFilter } : {}),
+      ...(statusFilter && statusFilter.length > 0
+        ? { status: statusFilter }
+        : {}),
+      ...(reasonFilter && reasonFilter.length > 0
+        ? { reason: reasonFilter }
+        : {}),
     })
     const items = (res.data ?? []) as unknown as FineList[]
     return {
@@ -335,24 +354,27 @@ export function BillingFinesPage() {
     resetDeps: [statusKey, reasonKey],
   })
 
-  const detailToList = useCallback((detail: FineDetail): FineList => ({
-    id: detail.id,
-    reason: detail.reason,
-    status: detail.status,
-    amount: detail.amount,
-    student: detail.student,
-    coaching_class: detail.coaching_class
-      ? {
-          id: detail.coaching_class.id,
-          start_datetime: detail.coaching_class.start_datetime,
-          end_datetime: detail.coaching_class.end_datetime,
-          modality: detail.coaching_class.modality,
-        }
-      : (null as unknown as FineList['coaching_class']),
-    billing_entry: detail.billing_entry,
-    reviewed_at: detail.reviewed_at,
-    created_at: detail.created_at,
-  }), [])
+  const detailToList = useCallback(
+    (detail: FineDetail): FineList => ({
+      id: detail.id,
+      reason: detail.reason,
+      status: detail.status,
+      amount: detail.amount,
+      student: detail.student,
+      coaching_class: detail.coaching_class
+        ? {
+            id: detail.coaching_class.id,
+            start_datetime: detail.coaching_class.start_datetime,
+            end_datetime: detail.coaching_class.end_datetime,
+            modality: detail.coaching_class.modality,
+          }
+        : (null as unknown as FineList['coaching_class']),
+      billing_entry: detail.billing_entry,
+      reviewed_at: detail.reviewed_at,
+      created_at: detail.created_at,
+    }),
+    []
+  )
 
   const handleApproved = useCallback(
     (updated: FineDetail) => {
@@ -364,7 +386,7 @@ export function BillingFinesPage() {
       })
       toast.success(t('billingFines.approveSuccess'))
     },
-    [detailToList, statusFilter, t, setRows],
+    [detailToList, statusFilter, t, setRows]
   )
 
   const handleWaived = useCallback(
@@ -377,7 +399,7 @@ export function BillingFinesPage() {
       })
       toast.success(t('billingFines.waiveSuccess'))
     },
-    [detailToList, statusFilter, t, setRows],
+    [detailToList, statusFilter, t, setRows]
   )
 
   const table = useReactTable({

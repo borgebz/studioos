@@ -2,13 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import {
-  Mail,
-  FileSpreadsheet,
-  Upload,
-  X,
-  ArrowRight,
-} from 'lucide-react'
+import { Mail, FileSpreadsheet, Upload, X, ArrowRight } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { apiClient } from '@/api/api-client'
 import type { BulkInviteFile, RoleList, UserResponse } from '@/api/studioos-api'
@@ -66,9 +60,12 @@ export function InviteUsersPage() {
   useEffect(() => {
     if (rolesLoaded.current) return
     rolesLoaded.current = true
-    apiClient.api.rolesList().then((res) => {
-      setRoles(res.data)
-    }).catch(() => null)
+    apiClient.api
+      .rolesList()
+      .then((res) => {
+        setRoles(res.data)
+      })
+      .catch(() => null)
   }, [])
 
   const allInvited = [...invitedUsers, ...(bulkResult?.users ?? [])]
@@ -84,7 +81,9 @@ export function InviteUsersPage() {
       reset()
       toast.success(t('invites.inviteSent', { email: data.email }))
     } catch (err) {
-      toast.error(parseApiError(err, t, 'invites.inviteError') ?? t('invites.inviteError'))
+      toast.error(
+        parseApiError(err, t, 'invites.inviteError') ?? t('invites.inviteError')
+      )
     } finally {
       setSending(false)
     }
@@ -100,7 +99,7 @@ export function InviteUsersPage() {
       const formData = new FormData()
       formData.append('file', file)
       const res = await apiClient.api.accountsInvitesBulkCreate(
-        formData as unknown as BulkInviteFile,
+        formData as unknown as BulkInviteFile
       )
       const bulkData = res.data.data
       setBulkResult(bulkData)
@@ -108,7 +107,9 @@ export function InviteUsersPage() {
       if (fileInputRef.current) fileInputRef.current.value = ''
       toast.success(t('invites.bulkSuccess', { count: bulkData.count }))
     } catch (err) {
-      toast.error(parseApiError(err, t, 'invites.bulkError') ?? t('invites.bulkError'))
+      toast.error(
+        parseApiError(err, t, 'invites.bulkError') ?? t('invites.bulkError')
+      )
     } finally {
       setUploading(false)
     }
@@ -149,7 +150,9 @@ export function InviteUsersPage() {
           <form onSubmit={handleSubmit(onSingleInvite)} className="space-y-2">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
               <div className="flex-1">
-                <Label htmlFor="invite-email" className="sr-only">{t('invites.emailLabel')}</Label>
+                <Label htmlFor="invite-email" className="sr-only">
+                  {t('invites.emailLabel')}
+                </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -166,13 +169,18 @@ export function InviteUsersPage() {
                   </p>
                 )}
               </div>
-              <Label htmlFor="invite-role" className="sr-only">{t('invites.roleLabel')}</Label>
+              <Label htmlFor="invite-role" className="sr-only">
+                {t('invites.roleLabel')}
+              </Label>
               <Controller
                 name="role"
                 control={control}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger id="invite-role" className="w-full sm:w-[160px]">
+                    <SelectTrigger
+                      id="invite-role"
+                      className="w-full sm:w-[160px]"
+                    >
                       <SelectValue placeholder={t('invites.selectRole')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -262,7 +270,9 @@ export function InviteUsersPage() {
               {t('invites.fileRequirements')}
             </p>
             <Button onClick={handleBulkInvite} disabled={uploading || !file}>
-              {uploading ? t('invites.uploading') : t('invites.uploadAndInvite')}
+              {uploading
+                ? t('invites.uploading')
+                : t('invites.uploadAndInvite')}
             </Button>
           </div>
         </CardSection>
@@ -284,7 +294,9 @@ export function InviteUsersPage() {
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{u.email}</p>
-                      <p className="text-xs text-muted-foreground">{roleName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {roleName}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="size-2 rounded-full bg-emerald-500" />

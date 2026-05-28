@@ -48,7 +48,9 @@ export function ImageCropDialog({
 
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(
+    null
+  )
   const [saving, setSaving] = useState(false)
 
   const handleCropComplete = useCallback((_: Area, areaPixels: Area) => {
@@ -62,7 +64,7 @@ export function ImageCropDialog({
       const file = await getCroppedImageFile(
         imageSrc,
         croppedAreaPixels,
-        outputSize,
+        outputSize
       )
       onCropComplete(file)
     } catch {
@@ -132,7 +134,10 @@ export function ImageCropDialog({
           <Button variant="outline" onClick={onCancel} disabled={saving}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleConfirm} disabled={saving || !croppedAreaPixels}>
+          <Button
+            onClick={handleConfirm}
+            disabled={saving || !croppedAreaPixels}
+          >
             {saving ? t('imageCrop.saving') : t('imageCrop.confirm')}
           </Button>
         </DialogFooter>

@@ -2,7 +2,15 @@ import { useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { enUS, pt } from 'date-fns/locale'
-import { Check, HandHelping, MoreHorizontal, Pencil, Users, X, Inbox as InboxIcon } from 'lucide-react'
+import {
+  Check,
+  HandHelping,
+  MoreHorizontal,
+  Pencil,
+  Users,
+  X,
+  Inbox as InboxIcon,
+} from 'lucide-react'
 import { useNavigate, generatePath } from 'react-router-dom'
 import {
   createColumnHelper,
@@ -181,14 +189,38 @@ export function CoachingRequestsPage() {
             type: 'multi-select',
             label: t('coachingRequests.col.status'),
             options: [
-              { value: CoachingClassStatusEnum.Requested, label: t('coachingRequests.status.requested') },
-              { value: CoachingClassStatusEnum.PendingApproval, label: t('coachingRequests.status.pending_approval') },
-              { value: CoachingClassStatusEnum.Scheduled, label: t('coachingRequests.status.scheduled') },
-              { value: CoachingClassStatusEnum.WaitingConfirmation, label: t('coachingRequests.status.waiting_confirmation') },
-              { value: CoachingClassStatusEnum.PendingCompletionApproval, label: t('coachingRequests.status.pending_completion_approval') },
-              { value: CoachingClassStatusEnum.Completed, label: t('coachingRequests.status.completed') },
-              { value: CoachingClassStatusEnum.Cancelled, label: t('coachingRequests.status.cancelled') },
-              { value: CoachingClassStatusEnum.Rejected, label: t('coachingRequests.status.rejected') },
+              {
+                value: CoachingClassStatusEnum.Requested,
+                label: t('coachingRequests.status.requested'),
+              },
+              {
+                value: CoachingClassStatusEnum.PendingApproval,
+                label: t('coachingRequests.status.pending_approval'),
+              },
+              {
+                value: CoachingClassStatusEnum.Scheduled,
+                label: t('coachingRequests.status.scheduled'),
+              },
+              {
+                value: CoachingClassStatusEnum.WaitingConfirmation,
+                label: t('coachingRequests.status.waiting_confirmation'),
+              },
+              {
+                value: CoachingClassStatusEnum.PendingCompletionApproval,
+                label: t('coachingRequests.status.pending_completion_approval'),
+              },
+              {
+                value: CoachingClassStatusEnum.Completed,
+                label: t('coachingRequests.status.completed'),
+              },
+              {
+                value: CoachingClassStatusEnum.Cancelled,
+                label: t('coachingRequests.status.cancelled'),
+              },
+              {
+                value: CoachingClassStatusEnum.Rejected,
+                label: t('coachingRequests.status.rejected'),
+              },
             ],
           },
         },
@@ -249,7 +281,9 @@ export function CoachingRequestsPage() {
                   <DropdownMenuItem
                     onClick={() =>
                       navigate(
-                        generatePath(paths.coachingsEdit, { id: String(row.id) }),
+                        generatePath(paths.coachingsEdit, {
+                          id: String(row.id),
+                        })
                       )
                     }
                   >
@@ -294,7 +328,7 @@ export function CoachingRequestsPage() {
       (columnFilters.find((f) => f.id === 'status')?.value as
         | CoachingClassStatusEnum[]
         | undefined) ?? null,
-    [columnFilters],
+    [columnFilters]
   )
   const statusKey = statusFilter ? statusFilter.slice().sort().join(',') : ''
 
@@ -302,9 +336,7 @@ export function CoachingRequestsPage() {
     PaginatedResponse<CoachingClass>
   > => {
     const res = await apiClient.api.getAllCoachings(
-      statusFilter && statusFilter.length > 0
-        ? { status: statusFilter }
-        : {},
+      statusFilter && statusFilter.length > 0 ? { status: statusFilter } : {}
     )
     return res.data
   }, [statusFilter])
@@ -327,40 +359,46 @@ export function CoachingRequestsPage() {
     (next: CoachingClass[]) => {
       if (!statusFilter || statusFilter.length === 0) return next
       return next.filter((r) =>
-        statusFilter.includes(r.status ?? CoachingClassStatusEnum.Requested),
+        statusFilter.includes(r.status ?? CoachingClassStatusEnum.Requested)
       )
     },
-    [statusFilter],
+    [statusFilter]
   )
 
   const handleAccepted = useCallback(
     (updated: CoachingClass) => {
       setRows((prev) =>
-        filterAfterMutation(prev.map((r) => (r.id === updated.id ? updated : r))),
+        filterAfterMutation(
+          prev.map((r) => (r.id === updated.id ? updated : r))
+        )
       )
       toast.success(t('coachingRequests.acceptSuccess'))
     },
-    [filterAfterMutation, t, setRows],
+    [filterAfterMutation, t, setRows]
   )
 
   const handleApproved = useCallback(
     (updated: CoachingClass) => {
       setRows((prev) =>
-        filterAfterMutation(prev.map((r) => (r.id === updated.id ? updated : r))),
+        filterAfterMutation(
+          prev.map((r) => (r.id === updated.id ? updated : r))
+        )
       )
       toast.success(t('coachingRequests.approveSuccess'))
     },
-    [filterAfterMutation, t, setRows],
+    [filterAfterMutation, t, setRows]
   )
 
   const handleRejected = useCallback(
     (updated: CoachingClass) => {
       setRows((prev) =>
-        filterAfterMutation(prev.map((r) => (r.id === updated.id ? updated : r))),
+        filterAfterMutation(
+          prev.map((r) => (r.id === updated.id ? updated : r))
+        )
       )
       toast.success(t('coachingRequests.rejectSuccess'))
     },
-    [filterAfterMutation, t, setRows],
+    [filterAfterMutation, t, setRows]
   )
 
   const table = useReactTable({

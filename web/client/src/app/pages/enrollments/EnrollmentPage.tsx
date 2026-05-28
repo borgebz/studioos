@@ -101,7 +101,9 @@ export function EnrollmentPage() {
     control,
     formState: { errors, isSubmitting },
   } = useForm<EnrollmentFormValues>({
-    resolver: zodResolver(enrollmentSchema) as unknown as Resolver<EnrollmentFormValues>,
+    resolver: zodResolver(
+      enrollmentSchema
+    ) as unknown as Resolver<EnrollmentFormValues>,
     defaultValues: enrollmentDefaults,
   })
 
@@ -173,7 +175,10 @@ export function EnrollmentPage() {
       setSubmitted(res.data)
       toast.success(t('enrollments.successTitle'))
     } catch (err) {
-      toast.error(parseApiError(err, t, 'enrollments.submissionFailed') ?? t('enrollments.submissionFailed'))
+      toast.error(
+        parseApiError(err, t, 'enrollments.submissionFailed') ??
+          t('enrollments.submissionFailed')
+      )
     }
   }
 
@@ -291,9 +296,7 @@ export function EnrollmentPage() {
             <span>{t('enrollments.overline')}</span>
             <span className="h-px flex-1 bg-border" />
           </div>
-          <h1
-            className="auth-heading auth-heading-lg mb-3.5"
-          >
+          <h1 className="auth-heading auth-heading-lg mb-3.5">
             {t('enrollments.heroTitle')}
             <em className="text-primary">{t('enrollments.heroTitleEm')}</em>
             {t('enrollments.heroTitle2')}

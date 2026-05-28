@@ -18,7 +18,7 @@ export const eventFormSchema = z.object({
   publication_scheduled_time: z.string(),
   cover_file: z.custom<File | null>(
     (v) => v === null || v instanceof File,
-    'invalid file',
+    'invalid file'
   ),
 })
 

@@ -8,10 +8,10 @@ export function ToastPage() {
   return (
     <div className="space-y-12">
       <header>
-        <h1 className="text-3xl font-bold text-foreground">{t('designSystem.toast')}</h1>
-        <p className="mt-1 text-muted-foreground">
-          {t('toasts.description')}
-        </p>
+        <h1 className="text-3xl font-bold text-foreground">
+          {t('designSystem.toast')}
+        </h1>
+        <p className="mt-1 text-muted-foreground">{t('toasts.description')}</p>
       </header>
 
       <section className="space-y-8">
@@ -23,31 +23,51 @@ export function ToastPage() {
           <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
-              onClick={() => toast(t('toasts.defaultToast'), { description: t('toasts.defaultDesc') })}
+              onClick={() =>
+                toast(t('toasts.defaultToast'), {
+                  description: t('toasts.defaultDesc'),
+                })
+              }
             >
               {t('toasts.default')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.success(t('toasts.success'), { description: t('toasts.successDesc') })}
+              onClick={() =>
+                toast.success(t('toasts.success'), {
+                  description: t('toasts.successDesc'),
+                })
+              }
             >
               {t('toasts.success')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.error(t('toasts.error'), { description: t('toasts.errorDesc') })}
+              onClick={() =>
+                toast.error(t('toasts.error'), {
+                  description: t('toasts.errorDesc'),
+                })
+              }
             >
               {t('toasts.error')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.warning(t('toasts.warning'), { description: t('toasts.warningDesc') })}
+              onClick={() =>
+                toast.warning(t('toasts.warning'), {
+                  description: t('toasts.warningDesc'),
+                })
+              }
             >
               {t('toasts.warning')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.info(t('toasts.info'), { description: t('toasts.infoDesc') })}
+              onClick={() =>
+                toast.info(t('toasts.info'), {
+                  description: t('toasts.infoDesc'),
+                })
+              }
             >
               {t('toasts.info')}
             </Button>
@@ -84,12 +104,14 @@ export function ToastPage() {
             variant="outline"
             onClick={() =>
               toast.promise(
-                new Promise<string>((resolve) => setTimeout(() => resolve('Done'), 2000)),
+                new Promise<string>((resolve) =>
+                  setTimeout(() => resolve('Done'), 2000)
+                ),
                 {
                   loading: t('toasts.savingSession'),
                   success: t('toasts.sessionSaved'),
                   error: t('toasts.failedToSave'),
-                },
+                }
               )
             }
           >
@@ -105,13 +127,17 @@ export function ToastPage() {
           <div className="flex flex-wrap gap-3">
             <Button
               variant="outline"
-              onClick={() => toast.info(t('toasts.quickToast'), { duration: 1500 })}
+              onClick={() =>
+                toast.info(t('toasts.quickToast'), { duration: 1500 })
+              }
             >
               {t('toasts.short')}
             </Button>
             <Button
               variant="outline"
-              onClick={() => toast.info(t('toasts.persistentToast'), { duration: 10000 })}
+              onClick={() =>
+                toast.info(t('toasts.persistentToast'), { duration: 10000 })
+              }
             >
               {t('toasts.long')}
             </Button>

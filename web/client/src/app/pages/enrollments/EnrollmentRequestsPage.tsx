@@ -47,9 +47,7 @@ const REVIEWABLE_STATUSES: EnrollmentReadStatusEnum[] = [
   EnrollmentReadStatusEnum.UnderReview,
 ]
 
-function toPaginatedResponse(
-  data: unknown,
-): PaginatedResponse<EnrollmentRead> {
+function toPaginatedResponse(data: unknown): PaginatedResponse<EnrollmentRead> {
   if (Array.isArray(data)) {
     return {
       count: data.length,
@@ -123,19 +121,18 @@ export function EnrollmentRequestsPage() {
         await apiClient.api.enrollmentsStartReviewCreate(row.id)
       } catch (err) {
         // Navigate anyway — under_review is advisory.
-        toast.warning(parseApiError(err, t) ?? t('enrollmentRequests.startReviewWarning'))
+        toast.warning(
+          parseApiError(err, t) ?? t('enrollmentRequests.startReviewWarning')
+        )
       } finally {
         setStartingReviewId(null)
         navigate(target)
       }
     },
-    [navigate, t],
+    [navigate, t]
   )
 
-  const columnHelper = useMemo(
-    () => createColumnHelper<EnrollmentRead>(),
-    [],
-  )
+  const columnHelper = useMemo(() => createColumnHelper<EnrollmentRead>(), [])
 
   const columns = useMemo(
     () => [
@@ -189,19 +186,16 @@ export function EnrollmentRequestsPage() {
           </div>
         ),
       }),
-      columnHelper.accessor(
-        (row) => row.enrollment_modalities?.length ?? 0,
-        {
-          id: 'modalities',
-          header: () => t('enrollmentRequests.col.modalities'),
-          cell: (info) => (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <PersonStanding className="h-3.5 w-3.5" />
-              <span>{info.getValue()}</span>
-            </div>
-          ),
-        },
-      ),
+      columnHelper.accessor((row) => row.enrollment_modalities?.length ?? 0, {
+        id: 'modalities',
+        header: () => t('enrollmentRequests.col.modalities'),
+        cell: (info) => (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <PersonStanding className="h-3.5 w-3.5" />
+            <span>{info.getValue()}</span>
+          </div>
+        ),
+      }),
       columnHelper.accessor('enrollment_type', {
         header: () => t('enrollmentRequests.col.type'),
         meta: {
@@ -209,8 +203,14 @@ export function EnrollmentRequestsPage() {
             type: 'multi-select',
             label: t('enrollmentRequests.col.type'),
             options: [
-              { value: EnrollmentTypeEnum.New, label: t('enrollmentRequests.type.new') },
-              { value: EnrollmentTypeEnum.Renewal, label: t('enrollmentRequests.type.renewal') },
+              {
+                value: EnrollmentTypeEnum.New,
+                label: t('enrollmentRequests.type.new'),
+              },
+              {
+                value: EnrollmentTypeEnum.Renewal,
+                label: t('enrollmentRequests.type.renewal'),
+              },
             ],
           },
         },
@@ -231,11 +231,26 @@ export function EnrollmentRequestsPage() {
             type: 'multi-select',
             label: t('enrollmentRequests.col.status'),
             options: [
-              { value: EnrollmentReadStatusEnum.Submitted, label: t('enrollmentRequests.status.submitted') },
-              { value: EnrollmentReadStatusEnum.UnderReview, label: t('enrollmentRequests.status.under_review') },
-              { value: EnrollmentReadStatusEnum.Approved, label: t('enrollmentRequests.status.approved') },
-              { value: EnrollmentReadStatusEnum.Rejected, label: t('enrollmentRequests.status.rejected') },
-              { value: EnrollmentReadStatusEnum.Cancelled, label: t('enrollmentRequests.status.cancelled') },
+              {
+                value: EnrollmentReadStatusEnum.Submitted,
+                label: t('enrollmentRequests.status.submitted'),
+              },
+              {
+                value: EnrollmentReadStatusEnum.UnderReview,
+                label: t('enrollmentRequests.status.under_review'),
+              },
+              {
+                value: EnrollmentReadStatusEnum.Approved,
+                label: t('enrollmentRequests.status.approved'),
+              },
+              {
+                value: EnrollmentReadStatusEnum.Rejected,
+                label: t('enrollmentRequests.status.rejected'),
+              },
+              {
+                value: EnrollmentReadStatusEnum.Cancelled,
+                label: t('enrollmentRequests.status.cancelled'),
+              },
             ],
           },
         },
@@ -244,14 +259,12 @@ export function EnrollmentRequestsPage() {
       columnHelper.display({
         id: 'actions',
         header: () => (
-          <span className="sr-only">
-            {t('enrollmentRequests.col.actions')}
-          </span>
+          <span className="sr-only">{t('enrollmentRequests.col.actions')}</span>
         ),
         cell: (info) => {
           const row = info.row.original
           const isReviewable = REVIEWABLE_STATUSES.includes(
-            row.status ?? EnrollmentReadStatusEnum.Submitted,
+            row.status ?? EnrollmentReadStatusEnum.Submitted
           )
           const target = paths.enrollmentReview.replace(':id', String(row.id))
 
@@ -309,7 +322,7 @@ export function EnrollmentRequestsPage() {
         },
       }),
     ],
-    [columnHelper, dateLocale, handleStartReview, navigate, startingReviewId, t],
+    [columnHelper, dateLocale, handleStartReview, navigate, startingReviewId, t]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<EnrollmentRead>({
@@ -331,14 +344,14 @@ export function EnrollmentRequestsPage() {
       (columnFilters.find((f) => f.id === 'status')?.value as
         | EnrollmentReadStatusEnum[]
         | undefined) ?? null,
-    [columnFilters],
+    [columnFilters]
   )
   const typeFilter = useMemo(
     () =>
       (columnFilters.find((f) => f.id === 'enrollment_type')?.value as
         | EnrollmentTypeEnum[]
         | undefined) ?? null,
-    [columnFilters],
+    [columnFilters]
   )
   const statusKey = statusFilter ? statusFilter.slice().sort().join(',') : ''
   const typeKey = typeFilter ? typeFilter.slice().sort().join(',') : ''
@@ -347,7 +360,9 @@ export function EnrollmentRequestsPage() {
     PaginatedResponse<EnrollmentRead>
   > => {
     const res = await apiClient.api.enrollmentsListList({
-      ...(statusFilter && statusFilter.length > 0 ? { status: statusFilter } : {}),
+      ...(statusFilter && statusFilter.length > 0
+        ? { status: statusFilter }
+        : {}),
       ...(typeFilter && typeFilter.length > 0
         ? { enrollment_type: typeFilter }
         : {}),
@@ -380,10 +395,7 @@ export function EnrollmentRequestsPage() {
   return (
     <PageLayout fullHeight>
       <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
-        <PageHeader
-          title={t('enrollmentRequests.title')}
-          backTo={paths.home}
-        />
+        <PageHeader title={t('enrollmentRequests.title')} backTo={paths.home} />
 
         <p className="-mt-4 mb-6 text-sm text-muted-foreground shrink-0">
           {t('enrollmentRequests.subtitle')}

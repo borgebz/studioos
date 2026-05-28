@@ -32,11 +32,15 @@ export function RadioGroupPage() {
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="weekly" id="weekly" />
-              <Label htmlFor="weekly">{t('designSystem.radioGroupWeekly')}</Label>
+              <Label htmlFor="weekly">
+                {t('designSystem.radioGroupWeekly')}
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="monthly" id="monthly" />
-              <Label htmlFor="monthly">{t('designSystem.radioGroupMonthly')}</Label>
+              <Label htmlFor="monthly">
+                {t('designSystem.radioGroupMonthly')}
+              </Label>
             </div>
           </RadioGroup>
         </div>
@@ -49,11 +53,15 @@ export function RadioGroupPage() {
           <RadioGroup value="a" disabled>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="a" id="dis-a" />
-              <Label htmlFor="dis-a">{t('designSystem.radioGroupOptionA')}</Label>
+              <Label htmlFor="dis-a">
+                {t('designSystem.radioGroupOptionA')}
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="b" id="dis-b" />
-              <Label htmlFor="dis-b">{t('designSystem.radioGroupOptionB')}</Label>
+              <Label htmlFor="dis-b">
+                {t('designSystem.radioGroupOptionB')}
+              </Label>
             </div>
           </RadioGroup>
         </div>
@@ -63,14 +71,37 @@ export function RadioGroupPage() {
           <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.radioGroupWithDesc')}
           </h2>
-          <RadioGroup value={size} onValueChange={setSize} className="space-y-3">
+          <RadioGroup
+            value={size}
+            onValueChange={setSize}
+            className="space-y-3"
+          >
             {[
-              { value: 'sm', labelKey: 'designSystem.radioGroupSmall', descKey: 'designSystem.radioGroupSmallDesc' },
-              { value: 'md', labelKey: 'designSystem.radioGroupMedium', descKey: 'designSystem.radioGroupMediumDesc' },
-              { value: 'lg', labelKey: 'designSystem.radioGroupLarge', descKey: 'designSystem.radioGroupLargeDesc' },
+              {
+                value: 'sm',
+                labelKey: 'designSystem.radioGroupSmall',
+                descKey: 'designSystem.radioGroupSmallDesc',
+              },
+              {
+                value: 'md',
+                labelKey: 'designSystem.radioGroupMedium',
+                descKey: 'designSystem.radioGroupMediumDesc',
+              },
+              {
+                value: 'lg',
+                labelKey: 'designSystem.radioGroupLarge',
+                descKey: 'designSystem.radioGroupLargeDesc',
+              },
             ].map(({ value, labelKey, descKey }) => (
-              <div key={value} className="flex items-start gap-3 rounded-lg border border-border p-4 max-w-md">
-                <RadioGroupItem value={value} id={`size-${value}`} className="mt-0.5" />
+              <div
+                key={value}
+                className="flex items-start gap-3 rounded-lg border border-border p-4 max-w-md"
+              >
+                <RadioGroupItem
+                  value={value}
+                  id={`size-${value}`}
+                  className="mt-0.5"
+                />
                 <div className="space-y-0.5">
                   <Label htmlFor={`size-${value}`}>{t(labelKey)}</Label>
                   <p className="text-sm text-muted-foreground">{t(descKey)}</p>
@@ -85,18 +116,28 @@ export function RadioGroupPage() {
           <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.radioGroupHorizontal')}
           </h2>
-          <RadioGroup value={plan} onValueChange={setPlan} className="flex gap-4">
+          <RadioGroup
+            value={plan}
+            onValueChange={setPlan}
+            className="flex gap-4"
+          >
             <div className="flex items-center gap-2">
               <RadioGroupItem value="daily" id="h-daily" />
-              <Label htmlFor="h-daily">{t('designSystem.radioGroupDaily')}</Label>
+              <Label htmlFor="h-daily">
+                {t('designSystem.radioGroupDaily')}
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="weekly" id="h-weekly" />
-              <Label htmlFor="h-weekly">{t('designSystem.radioGroupWeekly')}</Label>
+              <Label htmlFor="h-weekly">
+                {t('designSystem.radioGroupWeekly')}
+              </Label>
             </div>
             <div className="flex items-center gap-2">
               <RadioGroupItem value="monthly" id="h-monthly" />
-              <Label htmlFor="h-monthly">{t('designSystem.radioGroupMonthly')}</Label>
+              <Label htmlFor="h-monthly">
+                {t('designSystem.radioGroupMonthly')}
+              </Label>
             </div>
           </RadioGroup>
         </div>

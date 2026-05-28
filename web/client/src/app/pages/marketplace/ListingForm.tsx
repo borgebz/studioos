@@ -92,13 +92,23 @@ export interface ListingFormProps {
 
 const LISTING_TYPES = enumOptions(ListingTypeEnum, 'marketplace.type')
 const CONDITIONS = enumOptions(ConditionEnum, 'marketplace.condition')
-const ACQUISITION_TYPES = enumOptions(AcquisitionTypeEnum, 'marketplace.acquisition')
+const ACQUISITION_TYPES = enumOptions(
+  AcquisitionTypeEnum,
+  'marketplace.acquisition'
+)
 
 // Variant status has more values in the API than the form exposes — listing
 // authors should only set `available`, `maintenance`, or `inactive` from the
 // UI; `sold`, `donated`, `archived` are reached by domain events.
-const VARIANT_STATUSES = enumOptions(ProductVariantStatusEnum, 'marketplace.variantStatus')
-  .filter((o) => o.value === 'available' || o.value === 'maintenance' || o.value === 'inactive')
+const VARIANT_STATUSES = enumOptions(
+  ProductVariantStatusEnum,
+  'marketplace.variantStatus'
+).filter(
+  (o) =>
+    o.value === 'available' ||
+    o.value === 'maintenance' ||
+    o.value === 'inactive'
+)
 
 const GENDERS = enumOptions(TargetGenderEnum, 'marketplace.gender')
 
@@ -215,10 +225,10 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
   // Non-form state (media, variants, UI)
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(() =>
-    isEdit && listing ? buildEditMedia(listing.product) : [],
+    isEdit && listing ? buildEditMedia(listing.product) : []
   )
   const [variants, setVariants] = useState<VariantData[]>(() =>
-    isEdit && listing?.variant ? [buildEditVariant(listing.variant)] : [],
+    isEdit && listing?.variant ? [buildEditVariant(listing.variant)] : []
   )
   const [discardOpen, setDiscardOpen] = useState(false)
   const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null)
@@ -262,7 +272,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
       if (c.id === Number(categoryId))
         return (c.size_systems as SizeSystem[]) ?? []
       const sub = (c.subcategories as Category[]).find(
-        (s) => s.id === Number(categoryId),
+        (s) => s.id === Number(categoryId)
       )
       if (sub) return (sub.size_systems as SizeSystem[]) ?? []
     }
@@ -274,13 +284,13 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
       for (const c of categories) {
         if (c.id === Number(id)) return c.name
         const sub = (c.subcategories as Category[]).find(
-          (s) => s.id === Number(id),
+          (s) => s.id === Number(id)
         )
         if (sub) return sub.name
       }
       return undefined
     },
-    [categories],
+    [categories]
   )
 
   // Load reference data
@@ -319,7 +329,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
           }
         }
         return v
-      }),
+      })
     )
   }, [isEdit, categories, listing])
 
@@ -338,7 +348,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
   const saveVariant = useCallback(() => {
     if (editingVariant) {
       setVariants((prev) =>
-        prev.map((v) => (v.id === editingVariant.id ? { ...draft } : v)),
+        prev.map((v) => (v.id === editingVariant.id ? { ...draft } : v))
       )
     } else {
       setVariants((prev) => [...prev, { ...draft }])
@@ -382,19 +392,19 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
       if (cond) parts.push(t(cond.labelKey))
       if (v.sizeId) {
         const ss = categorySizeSystems.find(
-          (s) => s.id === Number(v.sizeSystemId),
+          (s) => s.id === Number(v.sizeSystemId)
         )
         const size = ss?.sizes?.find((s) => s.id === Number(v.sizeId))
         if (size) parts.push(size.name)
       }
       if (v.selectedColorIds.length > 0) {
         parts.push(
-          t('marketplace.colorCount', { count: v.selectedColorIds.length }),
+          t('marketplace.colorCount', { count: v.selectedColorIds.length })
         )
       }
       return parts
     },
-    [t, categorySizeSystems],
+    [t, categorySizeSystems]
   )
 
   const onSubmit = async (data: CreateListingFormValues) => {
@@ -416,7 +426,9 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
             target_gender: data.target_gender || null,
             brand: data.brand || null,
             material: data.material || null,
-            ...(data.inventory_code || data.storage_location || data.school_notes
+            ...(data.inventory_code ||
+            data.storage_location ||
+            data.school_notes
               ? {
                   school_details: {
                     inventory_code: data.inventory_code || undefined,
@@ -446,7 +458,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
         await apiClient.api.marketplaceSchoolListingsPartialUpdate(
           listing.id,
-          payload,
+          payload
         )
         toast.success(t('marketplace.updateSuccess'))
         navigate(paths.schoolListings)
@@ -455,7 +467,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
       // ── POST (create) ──
       const filesToUpload = mediaFiles.filter(
-        (f): f is MediaFile & { file: File } => !!f.file,
+        (f): f is MediaFile & { file: File } => !!f.file
       )
 
       const payload = {
@@ -505,7 +517,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
       })
 
       await apiClient.api.marketplaceSchoolListingsCreate(
-        fd as unknown as SchoolListingCreateMultipart,
+        fd as unknown as SchoolListingCreateMultipart
       )
 
       toast.success(t('marketplace.createSuccess'))
@@ -558,7 +570,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
   }, [hasSingleSizeSystem, draft.sizeSystemId, sheetOpen, categorySizeSystems])
 
   const draftSizeSystem = categorySizeSystems.find(
-    (ss) => ss.id === Number(draft.sizeSystemId),
+    (ss) => ss.id === Number(draft.sizeSystemId)
   )
   const draftAvailableSizes = draftSizeSystem?.sizes ?? []
 
@@ -591,9 +603,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                   </Label>
                   <Textarea
                     id="product_description"
-                    placeholder={t(
-                      'marketplace.productDescriptionPlaceholder',
-                    )}
+                    placeholder={t('marketplace.productDescriptionPlaceholder')}
                     rows={3}
                     className="mt-1.5"
                     {...register('product_description')}
@@ -628,7 +638,10 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                       name="target_gender"
                       control={control}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
                           <SelectTrigger id="gender" className="mt-1.5">
                             <SelectValue
                               placeholder={t('marketplace.selectGender')}
@@ -700,7 +713,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                     {variants.map((variant, index) => {
                       const parts = getVariantSummaryParts(variant)
                       const variantMedia = mediaFiles.filter((m) =>
-                        variant.selectedMediaIds.includes(m.id),
+                        variant.selectedMediaIds.includes(m.id)
                       )
                       const thumbUrl = variantMedia[0]?.url
 
@@ -820,9 +833,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                     </Label>
                     <Input
                       id="storage_location"
-                      placeholder={t(
-                        'marketplace.storageLocationPlaceholder',
-                      )}
+                      placeholder={t('marketplace.storageLocationPlaceholder')}
                       className="mt-1.5"
                       {...register('storage_location')}
                     />
@@ -858,7 +869,10 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                     name="listing_type"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger id="listing_type" className="mt-1.5">
                           <SelectValue />
                         </SelectTrigger>
@@ -875,9 +889,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="title">
-                    {t('marketplace.listingTitle')}
-                  </Label>
+                  <Label htmlFor="title">{t('marketplace.listingTitle')}</Label>
                   <Input
                     id="title"
                     placeholder={t('marketplace.listingTitlePlaceholder')}
@@ -892,9 +904,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                   </Label>
                   <Textarea
                     id="description"
-                    placeholder={t(
-                      'marketplace.listingDescriptionPlaceholder',
-                    )}
+                    placeholder={t('marketplace.listingDescriptionPlaceholder')}
                     rows={3}
                     className="mt-1.5"
                     {...register('description')}
@@ -937,7 +947,10 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                     name="is_public"
                     control={control}
                     render={({ field }) => (
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     )}
                   />
                 </div>
@@ -953,7 +966,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                     listingType
                       ? t(
                           LISTING_TYPES.find((lt) => lt.value === listingType)
-                            ?.labelKey ?? '',
+                            ?.labelKey ?? ''
                         )
                       : undefined
                   }
@@ -986,7 +999,11 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                 <Separator />
                 <SummaryRow
                   label={t('marketplace.askingPrice')}
-                  value={askingPrice ? `${t('common.currencySymbol')}${askingPrice}` : undefined}
+                  value={
+                    askingPrice
+                      ? `${t('common.currencySymbol')}${askingPrice}`
+                      : undefined
+                  }
                 />
               </div>
             </CardSection>
@@ -996,7 +1013,10 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
       {/* Variant Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="sm:max-w-lg p-0 flex flex-col gap-0" showCloseButton={false}>
+        <SheetContent
+          className="sm:max-w-lg p-0 flex flex-col gap-0"
+          showCloseButton={false}
+        >
           {/* Sticky header */}
           <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
             <SheetTitle>
@@ -1015,11 +1035,14 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
               {/* ── Condition & Details ── */}
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-3">
-                  {t('marketplace.condition')} &amp; {t('marketplace.variantDetails')}
+                  {t('marketplace.condition')} &amp;{' '}
+                  {t('marketplace.variantDetails')}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="variant-condition">{t('marketplace.condition')}</Label>
+                    <Label htmlFor="variant-condition">
+                      {t('marketplace.condition')}
+                    </Label>
                     <Select
                       value={draft.condition}
                       onValueChange={(v) => updateDraft({ condition: v })}
@@ -1038,7 +1061,9 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                   </div>
 
                   <div>
-                    <Label htmlFor="variant-status">{t('marketplace.variantStatus')}</Label>
+                    <Label htmlFor="variant-status">
+                      {t('marketplace.variantStatus')}
+                    </Label>
                     <Select
                       value={draft.status}
                       onValueChange={(v) => updateDraft({ status: v })}
@@ -1059,12 +1084,17 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                   <div>
-                    <Label htmlFor="variant-acquisition-type">{t('marketplace.acquisitionType')}</Label>
+                    <Label htmlFor="variant-acquisition-type">
+                      {t('marketplace.acquisitionType')}
+                    </Label>
                     <Select
                       value={draft.acquisitionType}
                       onValueChange={(v) => updateDraft({ acquisitionType: v })}
                     >
-                      <SelectTrigger id="variant-acquisition-type" className="mt-1.5">
+                      <SelectTrigger
+                        id="variant-acquisition-type"
+                        className="mt-1.5"
+                      >
                         <SelectValue
                           placeholder={t('marketplace.selectAcquisition')}
                         />
@@ -1080,10 +1110,20 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                   </div>
 
                   <div>
-                    <Label htmlFor="variant-acquired-at">{t('marketplace.acquiredAt')}</Label>
+                    <Label htmlFor="variant-acquired-at">
+                      {t('marketplace.acquiredAt')}
+                    </Label>
                     <DatePicker
-                      value={draft.acquiredAt ? new Date(draft.acquiredAt) : undefined}
-                      onChange={(d) => updateDraft({ acquiredAt: d ? format(d, 'yyyy-MM-dd') : '' })}
+                      value={
+                        draft.acquiredAt
+                          ? new Date(draft.acquiredAt)
+                          : undefined
+                      }
+                      onChange={(d) =>
+                        updateDraft({
+                          acquiredAt: d ? format(d, 'yyyy-MM-dd') : '',
+                        })
+                      }
                       className="mt-1.5"
                     />
                   </div>
@@ -1118,7 +1158,9 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                       </div>
                     ) : hasSingleSizeSystem ? (
                       <div>
-                        <Label htmlFor="variant-size">{t('marketplace.size')}</Label>
+                        <Label htmlFor="variant-size">
+                          {t('marketplace.size')}
+                        </Label>
                         <Select
                           value={draft.sizeId}
                           onValueChange={(v) => updateDraft({ sizeId: v })}
@@ -1140,14 +1182,19 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="variant-size-system">{t('marketplace.sizeSystem')}</Label>
+                          <Label htmlFor="variant-size-system">
+                            {t('marketplace.sizeSystem')}
+                          </Label>
                           <Select
                             value={draft.sizeSystemId}
                             onValueChange={(v) =>
                               updateDraft({ sizeSystemId: v, sizeId: '' })
                             }
                           >
-                            <SelectTrigger id="variant-size-system" className="mt-1.5">
+                            <SelectTrigger
+                              id="variant-size-system"
+                              className="mt-1.5"
+                            >
                               <SelectValue
                                 placeholder={t('marketplace.selectSizeSystem')}
                               />
@@ -1163,7 +1210,9 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                         </div>
 
                         <div>
-                          <Label htmlFor="variant-size">{t('marketplace.size')}</Label>
+                          <Label htmlFor="variant-size">
+                            {t('marketplace.size')}
+                          </Label>
                           <Select
                             value={draft.sizeId}
                             onValueChange={(v) => updateDraft({ sizeId: v })}
@@ -1230,7 +1279,9 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {mediaFiles.map((media) => {
-                        const selected = draft.selectedMediaIds.includes(media.id)
+                        const selected = draft.selectedMediaIds.includes(
+                          media.id
+                        )
                         return (
                           <button
                             key={media.id}
@@ -1240,7 +1291,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                               'relative aspect-square rounded-lg border-2 overflow-hidden transition-all',
                               selected
                                 ? 'border-primary ring-1 ring-primary'
-                                : 'border-border hover:border-primary/50',
+                                : 'border-border hover:border-primary/50'
                             )}
                           >
                             <img
@@ -1314,9 +1365,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
       <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('marketplace.discardTitle')}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('marketplace.discardTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('marketplace.discardDesc')}
             </AlertDialogDescription>
@@ -1360,13 +1409,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
   )
 }
 
-function SummaryRow({
-  label,
-  value,
-}: {
-  label: string
-  value?: string
-}) {
+function SummaryRow({ label, value }: { label: string; value?: string }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-muted-foreground">{label}</span>

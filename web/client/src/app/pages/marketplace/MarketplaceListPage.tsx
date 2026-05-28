@@ -55,9 +55,12 @@ export function MarketplaceListPage() {
 
   const sortKeyToOrdering = (key: SortKey) => {
     switch (key) {
-      case 'priceAsc': return 'asking_price' as const
-      case 'priceDesc': return '-asking_price' as const
-      default: return '-created_at' as const
+      case 'priceAsc':
+        return 'asking_price' as const
+      case 'priceDesc':
+        return '-asking_price' as const
+      default:
+        return '-created_at' as const
     }
   }
 
@@ -134,9 +137,10 @@ export function MarketplaceListPage() {
       }),
       columnHelper.accessor('variant_condition', {
         id: 'condition',
-        header: () => t('marketplace.col.condition', {
-          defaultValue: 'Condition',
-        }),
+        header: () =>
+          t('marketplace.col.condition', {
+            defaultValue: 'Condition',
+          }),
         meta: {
           className: 'hidden lg:table-cell',
           filter: {
@@ -147,7 +151,10 @@ export function MarketplaceListPage() {
             anyLabel: t('marketplace.allConditions'),
             options: [
               { value: 'new', label: t('marketplace.conditionNew') },
-              { value: 'excellent', label: t('marketplace.conditionExcellent') },
+              {
+                value: 'excellent',
+                label: t('marketplace.conditionExcellent'),
+              },
               { value: 'good', label: t('marketplace.conditionGood') },
               { value: 'fair', label: t('marketplace.conditionFair') },
               { value: 'damaged', label: t('marketplace.conditionDamaged') },
@@ -172,7 +179,7 @@ export function MarketplaceListPage() {
         cell: (info) => <StatusBadge status={info.getValue()} t={t} />,
       }),
     ],
-    [columnHelper, t],
+    [columnHelper, t]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<ListingList>({
@@ -198,7 +205,7 @@ export function MarketplaceListPage() {
         return [...without, { id: 'listing_type', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const setConditionFilter = useCallback(
@@ -209,7 +216,7 @@ export function MarketplaceListPage() {
         return [...without, { id: 'condition', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const fetchPage = useCallback(() => {
@@ -280,7 +287,14 @@ export function MarketplaceListPage() {
         onClear: () => setSearchInput(''),
       })
     return list
-  }, [typeFilter, conditionFilter, searchInput, setTypeFilter, setConditionFilter, t])
+  }, [
+    typeFilter,
+    conditionFilter,
+    searchInput,
+    setTypeFilter,
+    setConditionFilter,
+    t,
+  ])
 
   const emptyBrowse = (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
@@ -318,9 +332,7 @@ export function MarketplaceListPage() {
             <>
               <Select
                 value={typeFilter ?? 'all'}
-                onValueChange={(v) =>
-                  setTypeFilter(v as ListingType | 'all')
-                }
+                onValueChange={(v) => setTypeFilter(v as ListingType | 'all')}
               >
                 <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue />
@@ -375,10 +387,7 @@ export function MarketplaceListPage() {
               </Select>
             </>
           )}
-          <Select
-            value={sortBy}
-            onValueChange={(v) => setSortBy(v as SortKey)}
-          >
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
             </SelectTrigger>
@@ -412,7 +421,7 @@ export function MarketplaceListPage() {
                 variant="browse"
                 onOpen={() =>
                   navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                    paths.marketplaceEdit.replace(':id', String(item.id))
                   )
                 }
               />

@@ -38,7 +38,7 @@ export function EventCard({
   return (
     <article
       className={cn(
-        'group flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md',
+        'group flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow hover:shadow-md'
       )}
     >
       <button
@@ -81,7 +81,7 @@ export function EventCard({
           <h3
             className={cn(
               'text-base font-semibold leading-snug tracking-tight text-foreground',
-              cancelled && 'line-through decoration-muted-foreground/60',
+              cancelled && 'line-through decoration-muted-foreground/60'
             )}
           >
             {event.title || t('events.noTitle')}
@@ -120,12 +120,10 @@ export function EventCard({
               }}
               className={cn(
                 'h-7 gap-1.5 px-2.5 text-xs',
-                interested && 'text-primary',
+                interested && 'text-primary'
               )}
             >
-              <Heart
-                className={cn('size-3.5', interested && 'fill-primary')}
-              />
+              <Heart className={cn('size-3.5', interested && 'fill-primary')} />
               {interested
                 ? t('events.interest.secondaryActive')
                 : t('events.interest.secondary')}

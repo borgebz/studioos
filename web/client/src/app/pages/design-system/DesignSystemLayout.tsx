@@ -52,7 +52,10 @@ const designSystemGroups: DSGroup[] = [
     labelKey: 'designSystem.groups.overlays',
     links: [
       { to: paths.designSystemDialog, labelKey: 'designSystem.dialog' },
-      { to: paths.designSystemAlertDialog, labelKey: 'designSystem.alertDialog' },
+      {
+        to: paths.designSystemAlertDialog,
+        labelKey: 'designSystem.alertDialog',
+      },
       { to: paths.designSystemSheet, labelKey: 'designSystem.sheet' },
       { to: paths.designSystemPopover, labelKey: 'designSystem.popover' },
       { to: paths.designSystemTooltip, labelKey: 'designSystem.tooltip' },
@@ -85,7 +88,10 @@ const designSystemGroups: DSGroup[] = [
     labelKey: 'designSystem.groups.playground',
     links: [
       { to: paths.designSystemPlayground, labelKey: 'designSystem.playground' },
-      { to: paths.designSystemRichTextEditor, labelKey: 'designSystem.richTextEditor' },
+      {
+        to: paths.designSystemRichTextEditor,
+        labelKey: 'designSystem.richTextEditor',
+      },
     ],
   },
 ]

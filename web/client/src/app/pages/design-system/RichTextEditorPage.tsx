@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { RichTextEditor, SanitizedHtml } from '@/components/shared/RichTextEditor'
+import {
+  RichTextEditor,
+  SanitizedHtml,
+} from '@/components/shared/RichTextEditor'
 
 const SEED_HTML = `
 <h2>Spring Showcase 2026</h2>
@@ -29,7 +32,8 @@ export function RichTextEditorPage() {
       <header>
         <h1 className="text-3xl font-bold text-foreground">Rich text editor</h1>
         <p className="mt-1 text-muted-foreground">
-          TipTap-based editor used for event promo content and other long-form fields.
+          TipTap-based editor used for event promo content and other long-form
+          fields.
         </p>
       </header>
 
@@ -44,7 +48,9 @@ export function RichTextEditorPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-foreground">Rendered output (SanitizedHtml)</h2>
+        <h2 className="text-sm font-semibold text-foreground">
+          Rendered output (SanitizedHtml)
+        </h2>
         <div className="rounded-md border border-border bg-background p-4">
           <SanitizedHtml html={html} />
         </div>

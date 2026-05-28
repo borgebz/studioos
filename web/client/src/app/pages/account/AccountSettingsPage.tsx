@@ -39,20 +39,15 @@ export function AccountSettingsPage() {
   const dataLoaded = useRef(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    watch,
-  } = useForm<AccountSettingsFormValues>({
-    resolver: zodResolver(accountSettingsSchema),
-    defaultValues: {
-      display_name: '',
-      bio: '',
-      is_public: true,
-    },
-  })
+  const { register, handleSubmit, control, reset, watch } =
+    useForm<AccountSettingsFormValues>({
+      resolver: zodResolver(accountSettingsSchema),
+      defaultValues: {
+        display_name: '',
+        bio: '',
+        is_public: true,
+      },
+    })
 
   const displayName = watch('display_name')
 
@@ -109,7 +104,7 @@ export function AccountSettingsPage() {
       // Open the crop dialog with the selected image
       setCropSrc(URL.createObjectURL(file))
     },
-    [t],
+    [t]
   )
 
   const handleCropComplete = useCallback((croppedFile: File) => {
@@ -137,7 +132,11 @@ export function AccountSettingsPage() {
             fd.append('photo', photoFile)
             return fd as unknown as Profile
           })()
-        : { display_name: data.display_name, bio: data.bio, is_public: data.is_public } as unknown as Profile
+        : ({
+            display_name: data.display_name,
+            bio: data.bio,
+            is_public: data.is_public,
+          } as unknown as Profile)
 
       if (hasProfile) {
         await apiClient.api.accountsProfileMePartialUpdate(payload)
@@ -150,7 +149,9 @@ export function AccountSettingsPage() {
       await refreshUser()
       toast.success(t('account.saved'))
     } catch (err) {
-      toast.error(parseApiError(err, t, 'account.saveError') ?? t('account.saveError'))
+      toast.error(
+        parseApiError(err, t, 'account.saveError') ?? t('account.saveError')
+      )
     } finally {
       setIsSaving(false)
     }
@@ -206,7 +207,9 @@ export function AccountSettingsPage() {
             >
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="display_name">{t('account.displayName')}</Label>
+                  <Label htmlFor="display_name">
+                    {t('account.displayName')}
+                  </Label>
                   <Input
                     id="display_name"
                     placeholder={t('account.displayNamePlaceholder')}
@@ -233,7 +236,10 @@ export function AccountSettingsPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label htmlFor="public-profile" className="text-sm font-medium">
+                    <Label
+                      htmlFor="public-profile"
+                      className="text-sm font-medium"
+                    >
                       {t('account.publicProfile')}
                     </Label>
                     <p className="text-xs text-muted-foreground">

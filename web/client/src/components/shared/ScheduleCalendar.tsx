@@ -345,7 +345,8 @@ function DayRoulette({
   const [rangeAfter, setRangeAfter] = useState(INITIAL_RANGE)
   const { t, i18n } = useTranslation()
   const [visibleMonth, setVisibleMonth] = useState(
-    () => `${t(`scheduleCalendar.months.${selectedDate.getMonth()}`)} ${selectedDate.getFullYear()}`
+    () =>
+      `${t(`scheduleCalendar.months.${selectedDate.getMonth()}`)} ${selectedDate.getFullYear()}`
   )
   const startSentinelRef = useRef<HTMLDivElement>(null)
   const endSentinelRef = useRef<HTMLDivElement>(null)
@@ -453,7 +454,9 @@ function DayRoulette({
             {visibleMonth}
           </span>
           <span className="text-xs text-muted-foreground">
-            {selectedDate.getDate()} {t(`scheduleCalendar.monthsShort.${selectedDate.getMonth()}`)} {t('scheduleCalendar.selected')}
+            {selectedDate.getDate()}{' '}
+            {t(`scheduleCalendar.monthsShort.${selectedDate.getMonth()}`)}{' '}
+            {t('scheduleCalendar.selected')}
           </span>
         </div>
         {!isSelectedToday && (
@@ -490,7 +493,13 @@ function DayRoulette({
               key={key}
               ref={isDaySelected ? selectedRef : undefined}
               type="button"
-              aria-label={t('calendar.selectDay', { date: day.toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' }) })}
+              aria-label={t('calendar.selectDay', {
+                date: day.toLocaleDateString(i18n.language, {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                }),
+              })}
               className={cn(
                 'flex min-w-[48px] shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 transition-colors',
                 isDaySelected
@@ -515,7 +524,9 @@ function DayRoulette({
                       : 'text-muted-foreground'
                 )}
               >
-                {isFirstOfMonth ? t(`scheduleCalendar.monthsShort.${day.getMonth()}`) : t(`scheduleCalendar.daysShort.${DAY_KEYS[day.getDay()]}`)}
+                {isFirstOfMonth
+                  ? t(`scheduleCalendar.monthsShort.${day.getMonth()}`)
+                  : t(`scheduleCalendar.daysShort.${DAY_KEYS[day.getDay()]}`)}
               </span>
               <span className="text-lg font-medium leading-none">
                 {day.getDate()}
@@ -570,7 +581,9 @@ function EventDrawer({
             {event.subtitle}
           </div>
           <SheetTitle className="text-xl">{event.title}</SheetTitle>
-          <SheetDescription className="sr-only">{t('scheduleCalendar.eventDetails')}</SheetDescription>
+          <SheetDescription className="sr-only">
+            {t('scheduleCalendar.eventDetails')}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-4 py-4">
@@ -708,10 +721,13 @@ export function ScheduleCalendar({
     [resources]
   )
 
-  const handleEventClick = useCallback((event: CalendarEvent) => {
-    onEventClick?.(event)
-    setDrawerEvent(event)
-  }, [onEventClick])
+  const handleEventClick = useCallback(
+    (event: CalendarEvent) => {
+      onEventClick?.(event)
+      setDrawerEvent(event)
+    },
+    [onEventClick]
+  )
 
   return (
     <div className="flex flex-col gap-4">
@@ -730,94 +746,111 @@ export function ScheduleCalendar({
       {filtersSlot}
 
       {/* Grid card — memoized so day-click re-renders don't touch the grid */}
-      {useMemo(() => (
-        <div className="rounded-lg border border-border bg-card overflow-x-auto overflow-y-hidden">
-          <div
-            className="flex flex-col"
-            style={{ minWidth: GUTTER_WIDTH + resources.length * COL_MIN_WIDTH }}
-          >
-            {/* Column headers */}
-            <div className="flex border-b border-border bg-card">
-              <div
-                className="sticky left-0 z-10 shrink-0 border-r border-border bg-card px-3 py-2.5"
-                style={{ width: GUTTER_WIDTH }}
-              >
-                <span className="text-[10px] font-medium text-muted-foreground">
-                  {t('scheduleCalendar.time')}
-                </span>
-              </div>
-              {resources.map((resource, idx) => (
+      {useMemo(
+        () => (
+          <div className="rounded-lg border border-border bg-card overflow-x-auto overflow-y-hidden">
+            <div
+              className="flex flex-col"
+              style={{
+                minWidth: GUTTER_WIDTH + resources.length * COL_MIN_WIDTH,
+              }}
+            >
+              {/* Column headers */}
+              <div className="flex border-b border-border bg-card">
                 <div
-                  key={resource.id}
-                  className={cn(
-                    'shrink-0 px-3 py-2.5',
-                    idx < resources.length - 1 && 'border-r border-border/50'
-                  )}
-                  style={{ minWidth: COL_MIN_WIDTH, flex: '1 0 0%' }}
+                  className="sticky left-0 z-10 shrink-0 border-r border-border bg-card px-3 py-2.5"
+                  style={{ width: GUTTER_WIDTH }}
                 >
-                  <div className="text-sm font-medium text-foreground">
-                    {resource.name}
-                  </div>
-                  {resource.subtitle && (
-                    <div className="text-[10px] text-muted-foreground">
-                      {resource.subtitle}
-                    </div>
-                  )}
-                  {resource.capacity != null && (
-                    <div className="text-[10px] text-muted-foreground">
-                      {t('scheduleCalendar.maxCap', { capacity: resource.capacity })}
-                    </div>
-                  )}
+                  <span className="text-[10px] font-medium text-muted-foreground">
+                    {t('scheduleCalendar.time')}
+                  </span>
                 </div>
-              ))}
-            </div>
-
-            {/* Time grid */}
-            <div className="relative flex">
-              <div className="sticky left-0 z-10">
-                <TimeGutter
-                  totalSlots={totalSlots}
-                  slotHeight={slotHeight}
-                  slotMinutes={slotMinutes}
-                  dayStartHour={dayStartHour}
-                />
-                {nowMinutes != null && (
-                  <div
-                    className="pointer-events-none absolute left-0 z-30 -translate-y-1/2"
-                    style={{ top: nowTop }}
-                  >
-                    <div className="h-2 w-2 rounded-full bg-destructive" />
-                  </div>
-                )}
-              </div>
-              <div className="relative flex flex-1">
                 {resources.map((resource, idx) => (
-                  <ResourceColumn
+                  <div
                     key={resource.id}
-                    resource={resource}
-                    events={eventsByResource[resource.id] || []}
+                    className={cn(
+                      'shrink-0 px-3 py-2.5',
+                      idx < resources.length - 1 && 'border-r border-border/50'
+                    )}
+                    style={{ minWidth: COL_MIN_WIDTH, flex: '1 0 0%' }}
+                  >
+                    <div className="text-sm font-medium text-foreground">
+                      {resource.name}
+                    </div>
+                    {resource.subtitle && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {resource.subtitle}
+                      </div>
+                    )}
+                    {resource.capacity != null && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {t('scheduleCalendar.maxCap', {
+                          capacity: resource.capacity,
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Time grid */}
+              <div className="relative flex">
+                <div className="sticky left-0 z-10">
+                  <TimeGutter
                     totalSlots={totalSlots}
                     slotHeight={slotHeight}
                     slotMinutes={slotMinutes}
                     dayStartHour={dayStartHour}
-                    isLast={idx === resources.length - 1}
-                    onEventClick={handleEventClick}
                   />
-                ))}
-              </div>
-
-              {nowMinutes != null && (
-                <div
-                  className="pointer-events-none absolute left-0 right-0 z-20"
-                  style={{ top: nowTop }}
-                >
-                  <div className="h-px bg-destructive/60" />
+                  {nowMinutes != null && (
+                    <div
+                      className="pointer-events-none absolute left-0 z-30 -translate-y-1/2"
+                      style={{ top: nowTop }}
+                    >
+                      <div className="h-2 w-2 rounded-full bg-destructive" />
+                    </div>
+                  )}
                 </div>
-              )}
+                <div className="relative flex flex-1">
+                  {resources.map((resource, idx) => (
+                    <ResourceColumn
+                      key={resource.id}
+                      resource={resource}
+                      events={eventsByResource[resource.id] || []}
+                      totalSlots={totalSlots}
+                      slotHeight={slotHeight}
+                      slotMinutes={slotMinutes}
+                      dayStartHour={dayStartHour}
+                      isLast={idx === resources.length - 1}
+                      onEventClick={handleEventClick}
+                    />
+                  ))}
+                </div>
+
+                {nowMinutes != null && (
+                  <div
+                    className="pointer-events-none absolute left-0 right-0 z-20"
+                    style={{ top: nowTop }}
+                  >
+                    <div className="h-px bg-destructive/60" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ), [resources, eventsByResource, totalSlots, slotHeight, slotMinutes, dayStartHour, nowMinutes, nowTop, handleEventClick])}
+        ),
+        [
+          resources,
+          eventsByResource,
+          totalSlots,
+          slotHeight,
+          slotMinutes,
+          dayStartHour,
+          nowMinutes,
+          nowTop,
+          handleEventClick,
+        ]
+      )}
 
       {/* Event detail drawer */}
       <EventDrawer

@@ -10,7 +10,11 @@ import { paths } from '@/app/paths'
 import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
-import { MessageKindEnum, type Conversation, type Message } from '@/api/studioos-api'
+import {
+  MessageKindEnum,
+  type Conversation,
+  type Message,
+} from '@/api/studioos-api'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,7 +42,11 @@ function dayLabel(iso: string, lang: string, t: (k: string) => string) {
   return format(d, 'PPP', { locale: dateLocale(lang) })
 }
 
-function lastTimeLabel(iso: string | null | undefined, lang: string, t: (k: string) => string) {
+function lastTimeLabel(
+  iso: string | null | undefined,
+  lang: string,
+  t: (k: string) => string
+) {
   if (!iso) return ''
   const d = new Date(iso)
   if (isToday(d)) return format(d, 'HH:mm', { locale: dateLocale(lang) })
@@ -53,7 +61,9 @@ export function MessagesPage() {
 
   const [loadingList, setLoadingList] = useState(true)
   const [conversations, setConversations] = useState<Conversation[]>([])
-  const [participants, setParticipants] = useState<Record<number, ConversationParticipant>>({})
+  const [participants, setParticipants] = useState<
+    Record<number, ConversationParticipant>
+  >({})
   const [activeId, setActiveId] = useState<number | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [loadingThread, setLoadingThread] = useState(false)
@@ -164,7 +174,7 @@ export function MessagesPage() {
 
   const activeConversation = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? null,
-    [conversations, activeId],
+    [conversations, activeId]
   )
 
   const meId = user?.id ?? null
@@ -179,7 +189,7 @@ export function MessagesPage() {
 
   function markUserTyping(userId: number) {
     setTypingUserIds((prev) =>
-      prev.includes(userId) ? prev : [...prev, userId],
+      prev.includes(userId) ? prev : [...prev, userId]
     )
     const existing = typingTimers.current.get(userId)
     if (existing) window.clearTimeout(existing)
@@ -226,17 +236,15 @@ export function MessagesPage() {
       })
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === activeId
-            ? { ...c, updated_at: e.created_at }
-            : c,
-        ),
+          c.id === activeId ? { ...c, updated_at: e.created_at } : c
+        )
       )
     },
     onMessageEdited: (e) => {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === e.id ? { ...m, body: e.body, edited_at: e.edited_at } : m,
-        ),
+          m.id === e.id ? { ...m, body: e.body, edited_at: e.edited_at } : m
+        )
       )
     },
     onMessageDeleted: (e) => {
@@ -253,18 +261,20 @@ export function MessagesPage() {
                 reactions: [],
                 pinned_at: null as unknown as string,
               }
-            : m,
-        ),
+            : m
+        )
       )
       setConversations((prev) =>
         prev.map((c) =>
           c.id === activeId
             ? {
                 ...c,
-                pinned_message_ids: c.pinned_message_ids.filter((id) => id !== e.id),
+                pinned_message_ids: c.pinned_message_ids.filter(
+                  (id) => id !== e.id
+                ),
               }
-            : c,
-        ),
+            : c
+        )
       )
     },
     onReactionAdded: (e) => {
@@ -284,7 +294,7 @@ export function MessagesPage() {
             groups.push({ emoji: e.emoji, user_ids: [e.user_id], count: 1 })
           }
           return { ...m, reactions: groups }
-        }),
+        })
       )
     },
     onReactionRemoved: (e) => {
@@ -299,18 +309,20 @@ export function MessagesPage() {
                     user_ids: g.user_ids.filter((u) => u !== e.user_id),
                     count: g.count - 1,
                   }
-                : g,
+                : g
             )
             .filter((g) => g.count > 0)
           return { ...m, reactions: groups }
-        }),
+        })
       )
     },
     onMessagePinned: (e) => {
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === e.id ? { ...m, pinned_at: e.pinned_at, pinned_by_id: e.pinned_by_id } : m,
-        ),
+          m.id === e.id
+            ? { ...m, pinned_at: e.pinned_at, pinned_by_id: e.pinned_by_id }
+            : m
+        )
       )
       setConversations((prev) =>
         prev.map((c) =>
@@ -322,8 +334,8 @@ export function MessagesPage() {
                   ...c.pinned_message_ids.filter((id) => id !== e.id),
                 ],
               }
-            : c,
-        ),
+            : c
+        )
       )
     },
     onMessageUnpinned: (e) => {
@@ -331,18 +343,20 @@ export function MessagesPage() {
         prev.map((m) =>
           m.id === e.id
             ? { ...m, pinned_at: null as unknown as string, pinned_by_id: null }
-            : m,
-        ),
+            : m
+        )
       )
       setConversations((prev) =>
         prev.map((c) =>
           c.id === activeId
             ? {
                 ...c,
-                pinned_message_ids: c.pinned_message_ids.filter((id) => id !== e.id),
+                pinned_message_ids: c.pinned_message_ids.filter(
+                  (id) => id !== e.id
+                ),
               }
-            : c,
-        ),
+            : c
+        )
       )
     },
     onParticipantAdded: () => {
@@ -356,7 +370,7 @@ export function MessagesPage() {
       if (e.user_id === meId) {
         // We were removed — drop the conversation from local state.
         setConversations((prev) =>
-          prev.filter((c) => c.id !== e.conversation_id),
+          prev.filter((c) => c.id !== e.conversation_id)
         )
         if (activeId === e.conversation_id) setActiveId(null)
         return
@@ -368,7 +382,7 @@ export function MessagesPage() {
     },
     onConversationRenamed: (e) => {
       setConversations((prev) =>
-        prev.map((c) => (c.id === e.id ? { ...c, name: e.name } : c)),
+        prev.map((c) => (c.id === e.id ? { ...c, name: e.name } : c))
       )
     },
     onTyping: (e) => {
@@ -414,13 +428,13 @@ export function MessagesPage() {
         // FormData isn't flexible enough to forward arbitrary File parts.
         form as unknown as Parameters<
           typeof apiClient.api.messagingConversationsMessagesCreate
-        >[1],
+        >[1]
       )
       // Dedup by id: the WS broadcast (fired on transaction commit) often
       // beats the REST response back to the client, so the message may
       // already be in state.
       setMessages((prev) =>
-        prev.some((m) => m.id === res.data.id) ? prev : [...prev, res.data],
+        prev.some((m) => m.id === res.data.id) ? prev : [...prev, res.data]
       )
       setConversations((prev) => bumpConversation(prev, activeId, res.data))
     } catch {
@@ -434,9 +448,11 @@ export function MessagesPage() {
     try {
       const res = await apiClient.api.messagingMessagesPartialUpdate(
         messageId,
-        { body },
+        { body }
       )
-      setMessages((prev) => prev.map((m) => (m.id === messageId ? res.data : m)))
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? res.data : m))
+      )
     } catch {
       toast.error(t('messages.errors.editFailed'))
     }
@@ -458,8 +474,8 @@ export function MessagesPage() {
                 reactions: [],
                 pinned_at: null as unknown as string,
               }
-            : m,
-        ),
+            : m
+        )
       )
       // Auto-unpin happens server-side; reflect it locally too.
       setConversations((prev) =>
@@ -468,11 +484,11 @@ export function MessagesPage() {
             ? {
                 ...c,
                 pinned_message_ids: c.pinned_message_ids.filter(
-                  (id) => id !== messageId,
+                  (id) => id !== messageId
                 ),
               }
-            : c,
-        ),
+            : c
+        )
       )
     } catch {
       toast.error(t('messages.errors.deleteFailed'))
@@ -484,7 +500,7 @@ export function MessagesPage() {
     const msg = messages.find((m) => m.id === messageId)
     if (!msg) return
     const userHasReacted = msg.reactions.some(
-      (g) => g.emoji === emoji && g.user_ids.includes(meId),
+      (g) => g.emoji === emoji && g.user_ids.includes(meId)
     )
     try {
       const res = userHasReacted
@@ -494,8 +510,12 @@ export function MessagesPage() {
           } as unknown as Parameters<
             typeof apiClient.api.messagingMessagesReactionsDestroy
           >[1])
-        : await apiClient.api.messagingMessagesReactionsCreate(messageId, { emoji })
-      setMessages((prev) => prev.map((m) => (m.id === messageId ? res.data : m)))
+        : await apiClient.api.messagingMessagesReactionsCreate(messageId, {
+            emoji,
+          })
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? res.data : m))
+      )
     } catch {
       toast.error(t('messages.errors.reactFailed'))
     }
@@ -506,18 +526,23 @@ export function MessagesPage() {
       const res = pin
         ? await apiClient.api.messagingMessagesPinCreate(messageId)
         : await apiClient.api.messagingMessagesUnpinCreate(messageId)
-      setMessages((prev) => prev.map((m) => (m.id === messageId ? res.data : m)))
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? res.data : m))
+      )
       setConversations((prev) =>
         prev.map((c) =>
           c.id === activeId
             ? {
                 ...c,
                 pinned_message_ids: pin
-                  ? [messageId, ...c.pinned_message_ids.filter((id) => id !== messageId)]
+                  ? [
+                      messageId,
+                      ...c.pinned_message_ids.filter((id) => id !== messageId),
+                    ]
                   : c.pinned_message_ids.filter((id) => id !== messageId),
               }
-            : c,
-        ),
+            : c
+        )
       )
     } catch {
       toast.error(t('messages.errors.pinFailed'))
@@ -551,7 +576,7 @@ export function MessagesPage() {
       })
       const conv = res.data
       setConversations((prev) =>
-        prev.some((c) => c.id === conv.id) ? prev : [conv, ...prev],
+        prev.some((c) => c.id === conv.id) ? prev : [conv, ...prev]
       )
       setActiveId(conv.id)
       setNewDialogOpen(false)
@@ -567,7 +592,9 @@ export function MessagesPage() {
   const visibleConversations = useMemo(() => {
     if (!search.trim()) return conversations
     const q = search.trim().toLowerCase()
-    return conversations.filter((c) => conversationLabel(c, participants, meId, t).toLowerCase().includes(q))
+    return conversations.filter((c) =>
+      conversationLabel(c, participants, meId, t).toLowerCase().includes(q)
+    )
   }, [conversations, participants, meId, search, t])
 
   const hasProfile = Boolean(user?.has_profile)
@@ -605,7 +632,7 @@ export function MessagesPage() {
       <div
         className={cn(
           'flex-1 min-h-0 overflow-hidden grid grid-cols-1 gap-4 md:grid-cols-[280px_1fr]',
-          detailsOpen && 'md:grid-cols-[280px_1fr_320px]',
+          detailsOpen && 'md:grid-cols-[280px_1fr_320px]'
         )}
       >
         {/* Rail — conversation list */}
@@ -695,8 +722,7 @@ export function MessagesPage() {
               meId={meId}
               onRefreshConversation={async () => {
                 try {
-                  const res =
-                    await apiClient.api.messagingConversationsList()
+                  const res = await apiClient.api.messagingConversationsList()
                   setConversations(res.data)
                 } catch {
                   // non-fatal — WS will eventually catch us up
@@ -704,7 +730,7 @@ export function MessagesPage() {
               }}
               onAfterLeave={() => {
                 setConversations((prev) =>
-                  prev.filter((c) => c.id !== activeConversation.id),
+                  prev.filter((c) => c.id !== activeConversation.id)
                 )
                 setActiveId(null)
                 setDetailsOpen(false)
@@ -766,8 +792,13 @@ function EmptyConversations() {
   const { t } = useTranslation()
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-      <MessageSquarePlus className="size-8 text-muted-foreground" aria-hidden="true" />
-      <p className="text-sm text-muted-foreground">{t('messages.empty.noConversations')}</p>
+      <MessageSquarePlus
+        className="size-8 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <p className="text-sm text-muted-foreground">
+        {t('messages.empty.noConversations')}
+      </p>
     </div>
   )
 }
@@ -776,8 +807,13 @@ function NoConversationSelected() {
   const { t } = useTranslation()
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-      <MessageSquarePlus className="size-10 text-muted-foreground" aria-hidden="true" />
-      <p className="text-base font-medium">{t('messages.empty.selectConversationTitle')}</p>
+      <MessageSquarePlus
+        className="size-10 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <p className="text-base font-medium">
+        {t('messages.empty.selectConversationTitle')}
+      </p>
       <p className="max-w-xs text-sm text-muted-foreground">
         {t('messages.empty.selectConversationHint')}
       </p>
@@ -788,21 +824,22 @@ function NoConversationSelected() {
 function bumpConversation(
   list: Conversation[],
   id: number,
-  lastMessage: Message,
+  lastMessage: Message
 ): Conversation[] {
   const next = list.map((c) =>
     c.id === id
       ? { ...c, last_message: lastMessage, updated_at: lastMessage.created_at }
-      : c,
+      : c
   )
   next.sort(
-    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+    (a, b) =>
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   )
   return next
 }
 
 function buildParticipantDict(
-  convs: Conversation[],
+  convs: Conversation[]
 ): Record<number, ConversationParticipant> {
   const dict: Record<number, ConversationParticipant> = {}
   for (const c of convs) {
@@ -825,7 +862,7 @@ function conversationLabel(
   c: Conversation,
   dict: Record<number, ConversationParticipant>,
   meId: number | null,
-  t: (k: string) => string,
+  t: (k: string) => string
 ): string {
   const others = c.participant_ids.filter((id) => id !== meId)
   if (others.length === 0) return t('messages.selfConversation')
@@ -836,4 +873,3 @@ function conversationLabel(
   const extra = others.length - names.length
   return extra > 0 ? `${names.join(', ')} +${extra}` : names.join(', ')
 }
-

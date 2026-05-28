@@ -27,7 +27,9 @@ export function BadgePage() {
             {variants.map((variant) => (
               <div key={variant} className="flex flex-col items-center gap-2">
                 <Badge variant={variant}>
-                  {t(`designSystem.variants.${variant === 'outline' ? 'outline' : variant}`)}
+                  {t(
+                    `designSystem.variants.${variant === 'outline' ? 'outline' : variant}`
+                  )}
                 </Badge>
                 <span className="text-xs text-muted-foreground">{variant}</span>
               </div>
@@ -76,19 +78,25 @@ export function BadgePage() {
           </h2>
           <div className="space-y-3 max-w-md">
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <span className="text-sm font-medium">{t('designSystem.badgeCoaching')}</span>
+              <span className="text-sm font-medium">
+                {t('designSystem.badgeCoaching')}
+              </span>
               <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100">
                 {t('designSystem.badgeActive')}
               </Badge>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <span className="text-sm font-medium">{t('designSystem.badgeEnrollment')}</span>
+              <span className="text-sm font-medium">
+                {t('designSystem.badgeEnrollment')}
+              </span>
               <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-100">
                 {t('designSystem.badgePending')}
               </Badge>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <span className="text-sm font-medium">{t('designSystem.badgeEvent')}</span>
+              <span className="text-sm font-medium">
+                {t('designSystem.badgeEvent')}
+              </span>
               <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-100">
                 {t('designSystem.badgeCancelled')}
               </Badge>

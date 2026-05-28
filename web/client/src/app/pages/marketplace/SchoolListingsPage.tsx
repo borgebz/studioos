@@ -78,9 +78,12 @@ export function SchoolListingsPage() {
 
   const sortKeyToOrdering = (key: SortKey) => {
     switch (key) {
-      case 'priceAsc': return 'asking_price' as const
-      case 'priceDesc': return '-asking_price' as const
-      default: return '-created_at' as const
+      case 'priceAsc':
+        return 'asking_price' as const
+      case 'priceDesc':
+        return '-asking_price' as const
+      default:
+        return '-created_at' as const
     }
   }
 
@@ -173,7 +176,10 @@ export function SchoolListingsPage() {
             anyLabel: t('marketplace.allConditions'),
             options: [
               { value: 'new', label: t('marketplace.conditionNew') },
-              { value: 'excellent', label: t('marketplace.conditionExcellent') },
+              {
+                value: 'excellent',
+                label: t('marketplace.conditionExcellent'),
+              },
               { value: 'good', label: t('marketplace.conditionGood') },
               { value: 'fair', label: t('marketplace.conditionFair') },
               { value: 'damaged', label: t('marketplace.conditionDamaged') },
@@ -221,7 +227,7 @@ export function SchoolListingsPage() {
                 <DropdownMenuItem
                   onClick={() =>
                     navigate(
-                      paths.marketplaceEdit.replace(':id', String(row.id)),
+                      paths.marketplaceEdit.replace(':id', String(row.id))
                     )
                   }
                 >
@@ -241,7 +247,7 @@ export function SchoolListingsPage() {
         },
       }),
     ],
-    [columnHelper, navigate, t],
+    [columnHelper, navigate, t]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<ListingList>({
@@ -275,7 +281,7 @@ export function SchoolListingsPage() {
         return [...without, { id: 'listing_type', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const setStatusFilter = useCallback(
@@ -286,7 +292,7 @@ export function SchoolListingsPage() {
         return [...without, { id: 'status', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const setConditionFilter = useCallback(
@@ -297,7 +303,7 @@ export function SchoolListingsPage() {
         return [...without, { id: 'condition', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const fetchPage = useCallback(() => {
@@ -342,7 +348,9 @@ export function SchoolListingsPage() {
     try {
       await apiClient.api.marketplaceSchoolListingsPartialUpdate(
         deleteTarget.id,
-        { status: 'closed' as ListingStatusEnum } as Parameters<typeof apiClient.api.marketplaceSchoolListingsPartialUpdate>[1],
+        { status: 'closed' as ListingStatusEnum } as Parameters<
+          typeof apiClient.api.marketplaceSchoolListingsPartialUpdate
+        >[1]
       )
       setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
       toast.success(t('marketplace.deleteSuccess'))
@@ -532,10 +540,7 @@ export function SchoolListingsPage() {
               </Select>
             </>
           )}
-          <Select
-            value={sortBy}
-            onValueChange={(v) => setSortBy(v as SortKey)}
-          >
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
             </SelectTrigger>
@@ -569,12 +574,12 @@ export function SchoolListingsPage() {
                 variant="owner"
                 onOpen={() =>
                   navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                    paths.marketplaceEdit.replace(':id', String(item.id))
                   )
                 }
                 onEdit={() =>
                   navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                    paths.marketplaceEdit.replace(':id', String(item.id))
                   )
                 }
                 onDelete={() => setDeleteTarget(item)}

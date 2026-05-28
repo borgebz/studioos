@@ -54,7 +54,7 @@ function StatusPill({ active }: { active?: boolean }) {
         'font-normal',
         active
           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-          : 'bg-muted text-muted-foreground',
+          : 'bg-muted text-muted-foreground'
       )}
     >
       {active ? t('users.status.active') : t('users.status.inactive')}
@@ -148,7 +148,10 @@ function LoadedUserDetail({
 
   const displayName = userName(user)
   const isActive = user.is_active !== false
-  const phone = [user.phone_country_code, user.phone].filter(Boolean).join(' ').trim()
+  const phone = [user.phone_country_code, user.phone]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
 
   return (
     <PageLayout>
@@ -308,7 +311,10 @@ function OverviewTab({
                   .trim() || null
               }
             />
-            <Row label={t('users.edit.language')} value={user.language ?? null} />
+            <Row
+              label={t('users.edit.language')}
+              value={user.language ?? null}
+            />
           </dl>
         </CardSection>
 
@@ -365,7 +371,7 @@ function Row({
       <dd
         className={cn(
           'text-foreground text-right truncate',
-          mono && 'font-mono',
+          mono && 'font-mono'
         )}
       >
         {value || '—'}
@@ -396,9 +402,7 @@ function CoachingsTab({
     if (loaded.current) return
     loaded.current = true
     Promise.all([
-      apiClient.api
-        .getAllCoachings({ teacher_id: [userId] })
-        .catch(() => null),
+      apiClient.api.getAllCoachings({ teacher_id: [userId] }).catch(() => null),
       apiClient.api
         .getAllCoachings({ requested_by_id: userId })
         .catch(() => null),
@@ -467,7 +471,7 @@ function CoachingsTab({
                             ? format(
                                 new Date(c.start_datetime),
                                 'd MMM yyyy · HH:mm',
-                                { locale: dateLocale },
+                                { locale: dateLocale }
                               )
                             : '—'}
                         </div>
@@ -489,7 +493,7 @@ function CoachingsTab({
                 </p>
               )}
             </CardSection>
-          ),
+          )
       )}
     </div>
   )
@@ -517,8 +521,11 @@ function EnrollmentsTab({
     apiClient.api
       .enrollmentsListList({ student_id: userId })
       .then((res) => {
-        const data = res.data as EnrollmentRead[] | { results?: EnrollmentRead[] } | undefined
-        setRows(Array.isArray(data) ? data : data?.results ?? [])
+        const data = res.data as
+          | EnrollmentRead[]
+          | { results?: EnrollmentRead[] }
+          | undefined
+        setRows(Array.isArray(data) ? data : (data?.results ?? []))
       })
       .catch(() => setRows([]))
       .finally(() => setLoading(false))
@@ -587,7 +594,9 @@ function BillingTab({
     if (loaded.current) return
     loaded.current = true
     Promise.all([
-      apiClient.api.billingEntriesList({ student_id: userId }).catch(() => null),
+      apiClient.api
+        .billingEntriesList({ student_id: userId })
+        .catch(() => null),
       apiClient.api.billingFinesList({ student_id: userId }).catch(() => null),
     ])
       .then(([eRes, fRes]) => {
@@ -771,9 +780,7 @@ function PermissionsTab({ user }: { user: UserResponse }) {
         description={t('users.permissions.rolesReadOnlyDesc')}
       >
         {(user.role ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            {t('users.noRole')}
-          </p>
+          <p className="text-sm text-muted-foreground">{t('users.noRole')}</p>
         ) : (
           <ul className="space-y-1 text-sm text-foreground">
             {(user.role ?? []).map((r) => (

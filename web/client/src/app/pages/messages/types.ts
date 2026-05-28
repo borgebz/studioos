@@ -14,7 +14,7 @@ export interface ConversationParticipant {
 export function participantName(
   p: ConversationParticipant | undefined,
   t: (k: string) => string,
-  fallbackId?: number,
+  fallbackId?: number
 ): string {
   if (!p) {
     return fallbackId !== undefined

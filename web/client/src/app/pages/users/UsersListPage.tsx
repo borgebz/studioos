@@ -3,7 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { enUS, pt } from 'date-fns/locale'
-import { Eye, Mail, Pencil, Plus, UserX, Users as UsersIcon } from 'lucide-react'
+import {
+  Eye,
+  Mail,
+  Pencil,
+  Plus,
+  UserX,
+  Users as UsersIcon,
+} from 'lucide-react'
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -52,7 +59,10 @@ function RolesText({ roles }: { roles: UserResponse['role'] }) {
     )
   }
   return (
-    <span className="text-sm text-foreground truncate" title={roles.map((r) => r.name).join(', ')}>
+    <span
+      className="text-sm text-foreground truncate"
+      title={roles.map((r) => r.name).join(', ')}
+    >
       {roles.map((r) => r.name).join(', ')}
     </span>
   )
@@ -66,7 +76,7 @@ function StatusPill({ active }: { active?: boolean }) {
         'font-normal',
         active
           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-          : 'bg-muted text-muted-foreground',
+          : 'bg-muted text-muted-foreground'
       )}
     >
       {active ? t('users.status.active') : t('users.status.inactive')}
@@ -92,8 +102,9 @@ export function UsersListPage() {
   const [roles, setRoles] = useState<RoleList[]>([])
   const rolesLoaded = useRef(false)
 
-  const [deactivateTarget, setDeactivateTarget] =
-    useState<UserResponse | null>(null)
+  const [deactivateTarget, setDeactivateTarget] = useState<UserResponse | null>(
+    null
+  )
   const [resendingId, setResendingId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -177,7 +188,7 @@ export function UsersListPage() {
               <span className="text-muted-foreground">—</span>
             )
           },
-        },
+        }
       ),
       columnHelper.accessor('created_at', {
         id: 'joined',
@@ -207,9 +218,7 @@ export function UsersListPage() {
       columnHelper.display({
         id: 'actions',
         size: 140,
-        header: () => (
-          <span className="sr-only">{t('users.col.actions')}</span>
-        ),
+        header: () => <span className="sr-only">{t('users.col.actions')}</span>,
         cell: (info) => {
           const user = info.row.original
           const showResend = canResendInvite && user.is_active === false
@@ -261,16 +270,14 @@ export function UsersListPage() {
                       aria-label={t('users.rowActions.view')}
                       onClick={() =>
                         navigate(
-                          paths.userDetail.replace(':id', String(user.id)),
+                          paths.userDetail.replace(':id', String(user.id))
                         )
                       }
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    {t('users.rowActions.view')}
-                  </TooltipContent>
+                  <TooltipContent>{t('users.rowActions.view')}</TooltipContent>
                 </Tooltip>
                 {canEdit && (
                   <Tooltip>
@@ -281,7 +288,7 @@ export function UsersListPage() {
                         aria-label={t('users.rowActions.edit')}
                         onClick={() =>
                           navigate(
-                            paths.userEdit.replace(':id', String(user.id)),
+                            paths.userEdit.replace(':id', String(user.id))
                           )
                         }
                       >
@@ -309,7 +316,7 @@ export function UsersListPage() {
       canResendInvite,
       resendingId,
       navigate,
-    ],
+    ]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<UserResponse>({
@@ -357,7 +364,7 @@ export function UsersListPage() {
     (updated: UserResponse) => {
       setRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))
     },
-    [setRows],
+    [setRows]
   )
 
   const table = useReactTable({

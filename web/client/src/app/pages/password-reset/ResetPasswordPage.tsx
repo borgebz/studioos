@@ -59,7 +59,10 @@ export function ResetPasswordPage() {
       })
       setStep('success')
     } catch (err) {
-      setSubmitError(parseApiError(err, t, 'auth.resetPassword.error') ?? t('auth.resetPassword.error'))
+      setSubmitError(
+        parseApiError(err, t, 'auth.resetPassword.error') ??
+          t('auth.resetPassword.error')
+      )
       setStep('form')
     }
   }
@@ -78,8 +81,7 @@ export function ResetPasswordPage() {
               <span>{t('auth.resetPassword.successTitle')}</span>
               <span className="h-px flex-1 bg-border" />
             </div>
-            <h1
-              className="auth-heading auth-heading-sm mb-3.5"            >
+            <h1 className="auth-heading auth-heading-sm mb-3.5">
               {t('auth.resetPassword.successTitle')}
             </h1>
             <p className="max-w-[50ch] text-[14.5px] leading-relaxed text-muted-foreground">
@@ -106,8 +108,7 @@ export function ResetPasswordPage() {
               <span>{t('auth.resetPassword.invalidTitle')}</span>
               <span className="h-px flex-1 bg-border" />
             </div>
-            <h1
-              className="auth-heading auth-heading-sm mb-3.5"            >
+            <h1 className="auth-heading auth-heading-sm mb-3.5">
               {t('auth.resetPassword.invalidTitle')}
             </h1>
             <p className="max-w-[50ch] text-[14.5px] leading-relaxed text-muted-foreground">
@@ -133,9 +134,7 @@ export function ResetPasswordPage() {
             <span>{t('auth.resetPassword.overline')}</span>
             <span className="h-px flex-1 bg-border" />
           </div>
-          <h1
-            className="auth-heading auth-heading-sm mb-3.5"
-          >
+          <h1 className="auth-heading auth-heading-sm mb-3.5">
             {t('auth.resetPassword.heroTitle')}
           </h1>
           <p className="max-w-[50ch] text-[14.5px] leading-relaxed text-muted-foreground">

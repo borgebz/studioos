@@ -136,7 +136,7 @@ export function SchoolInventoryPage() {
         cell: (info) => <ProductStatusBadge status={info.getValue()} />,
       }),
     ],
-    [columnHelper, t],
+    [columnHelper, t]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<ProductDetail>({
@@ -157,7 +157,7 @@ export function SchoolInventoryPage() {
         return [...without, { id: 'status', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const fetchPage = useCallback(() => {

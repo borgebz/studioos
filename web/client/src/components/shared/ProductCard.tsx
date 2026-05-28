@@ -51,7 +51,7 @@ export function ProductCard({
         'rounded-xl border border-border bg-card shadow-sm',
         'outline-none transition-shadow duration-150',
         'hover:shadow-md',
-        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       )}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-muted">
@@ -79,7 +79,7 @@ export function ProductCard({
                   className={cn(
                     'h-8 w-8 rounded-full backdrop-blur',
                     'bg-card/85 text-foreground hover:bg-card',
-                    'border border-border/40 shadow-sm',
+                    'border border-border/40 shadow-sm'
                   )}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={t('marketplace.actions')}

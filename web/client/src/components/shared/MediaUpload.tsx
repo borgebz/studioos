@@ -54,7 +54,7 @@ export function MediaUpload({
 
       onChange([...value, ...newMedia])
     },
-    [value, maxFiles, onChange],
+    [value, maxFiles, onChange]
   )
 
   const handleDrop = useCallback(
@@ -65,7 +65,7 @@ export function MediaUpload({
       const files = e.dataTransfer.files
       if (files.length > 0) addFiles(files)
     },
-    [canAddMore, addFiles],
+    [canAddMore, addFiles]
   )
 
   const handleFileChange = useCallback(
@@ -74,7 +74,7 @@ export function MediaUpload({
       if (files && files.length > 0) addFiles(files)
       e.target.value = ''
     },
-    [addFiles],
+    [addFiles]
   )
 
   const removeFile = useCallback(
@@ -85,16 +85,14 @@ export function MediaUpload({
       }
       onChange(updated)
     },
-    [value, onChange],
+    [value, onChange]
   )
 
   const setPrimary = useCallback(
     (id: string) => {
-      onChange(
-        value.map((f) => ({ ...f, isPrimary: f.id === id })),
-      )
+      onChange(value.map((f) => ({ ...f, isPrimary: f.id === id })))
     },
-    [value, onChange],
+    [value, onChange]
   )
 
   const handleItemDragStart = useCallback(
@@ -102,7 +100,7 @@ export function MediaUpload({
       setDraggedIndex(index)
       e.dataTransfer.effectAllowed = 'move'
     },
-    [],
+    []
   )
 
   const handleItemDragOver = useCallback(
@@ -111,7 +109,7 @@ export function MediaUpload({
       if (draggedIndex === null || draggedIndex === index) return
       setDragOverIndex(index)
     },
-    [draggedIndex],
+    [draggedIndex]
   )
 
   const handleItemDrop = useCallback(
@@ -129,7 +127,7 @@ export function MediaUpload({
       setDraggedIndex(null)
       setDragOverIndex(null)
     },
-    [draggedIndex, value, onChange],
+    [draggedIndex, value, onChange]
   )
 
   const handleItemDragEnd = useCallback(() => {
@@ -168,7 +166,7 @@ export function MediaUpload({
             'relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors',
             dragOver
               ? 'border-primary bg-primary/5'
-              : 'border-border bg-muted/30',
+              : 'border-border bg-muted/30'
           )}
         >
           <Upload className="h-10 w-10 text-muted-foreground/50 mb-3" />
@@ -215,7 +213,7 @@ export function MediaUpload({
                   'group relative aspect-square rounded-lg border overflow-hidden bg-muted/30 transition-all',
                   media.isPrimary && 'ring-2 ring-primary',
                   draggedIndex === index && 'opacity-40',
-                  dragOverIndex === index && 'ring-2 ring-primary/50',
+                  dragOverIndex === index && 'ring-2 ring-primary/50'
                 )}
               >
                 <img
@@ -246,7 +244,7 @@ export function MediaUpload({
                     'absolute bottom-1.5 left-1.5 rounded-full p-1 transition-all min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-6 md:w-6 flex items-center justify-center shadow-sm',
                     media.isPrimary
                       ? 'bg-primary text-white opacity-100'
-                      : 'bg-background/80 backdrop-blur-sm text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-primary',
+                      : 'bg-background/80 backdrop-blur-sm text-muted-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-primary'
                   )}
                 >
                   <Star
@@ -271,7 +269,7 @@ export function MediaUpload({
                   'flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors',
                   dragOver
                     ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/50',
+                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
                 )}
               >
                 <ImagePlus className="h-6 w-6 text-muted-foreground/50 mb-1" />

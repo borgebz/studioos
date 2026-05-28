@@ -2,7 +2,14 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
-import { CalendarClock, ChevronLeft, ChevronRight, Clock, Repeat, Trash2 } from 'lucide-react'
+import {
+  CalendarClock,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Repeat,
+  Trash2,
+} from 'lucide-react'
 import { enUS, pt } from 'date-fns/locale'
 import { toast } from 'sonner'
 
@@ -126,7 +133,7 @@ export function RequestCoachingPage() {
   const filteredStudios = useMemo(() => {
     if (!modalityId) return studios
     return studios.filter((s) =>
-      s.modalities.some((m) => m.id === Number(modalityId)),
+      s.modalities.some((m) => m.id === Number(modalityId))
     )
   }, [modalityId, studios])
 
@@ -233,10 +240,7 @@ export function RequestCoachingPage() {
                   <div>
                     <Label htmlFor="teacher">{t('coachings.teacher')}</Label>
                     <div className="flex gap-1.5 mt-1.5">
-                      <Select
-                        value={teacherId}
-                        onValueChange={setTeacherId}
-                      >
+                      <Select value={teacherId} onValueChange={setTeacherId}>
                         <SelectTrigger id="teacher">
                           <SelectValue
                             placeholder={t('coachings.selectTeacher')}
@@ -278,10 +282,7 @@ export function RequestCoachingPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {filteredStudios.map((studio) => (
-                          <SelectItem
-                            key={studio.id}
-                            value={String(studio.id)}
-                          >
+                          <SelectItem key={studio.id} value={String(studio.id)}>
                             {studio.name}
                           </SelectItem>
                         ))}
@@ -637,10 +638,7 @@ function TeacherAvailabilityDialog({
                                 <TooltipTrigger asChild>
                                   {slotContent}
                                 </TooltipTrigger>
-                                <TooltipContent
-                                  side="top"
-                                  className="max-w-xs"
-                                >
+                                <TooltipContent side="top" className="max-w-xs">
                                   <div className="space-y-1">
                                     <p className="font-medium">
                                       {format(start, 'HH:mm')}–

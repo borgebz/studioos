@@ -7,10 +7,7 @@ interface LogoLoaderProps {
 
 export function LogoLoader({ size = 64, className = '' }: LogoLoaderProps) {
   return (
-    <div
-      className={`logo-loader ${className}`}
-      style={{ height: size }}
-    >
+    <div className={`logo-loader ${className}`} style={{ height: size }}>
       <div className="logo-loader__outline" />
       <div className="logo-loader__fill" />
     </div>

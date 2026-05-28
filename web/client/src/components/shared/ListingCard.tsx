@@ -103,7 +103,7 @@ export function ListingCard({
         'rounded-xl border border-border bg-card shadow-sm',
         'outline-none transition-shadow duration-150',
         'hover:shadow-md',
-        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       )}
     >
       {/* Image / solid placeholder */}
@@ -135,7 +135,7 @@ export function ListingCard({
                   className={cn(
                     'h-8 w-8 rounded-full backdrop-blur',
                     'bg-card/85 text-foreground hover:bg-card',
-                    'border border-border/40 shadow-sm',
+                    'border border-border/40 shadow-sm'
                   )}
                   onClick={(e) => e.stopPropagation()}
                   aria-label={t('marketplace.actions')}
@@ -173,7 +173,7 @@ export function ListingCard({
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1',
               'text-[11px] font-semibold tracking-wide',
-              'bg-foreground/90 text-background backdrop-blur',
+              'bg-foreground/90 text-background backdrop-blur'
             )}
           >
             <TypeIcon className="size-3" />
@@ -199,7 +199,7 @@ export function ListingCard({
               priceDisplay.mode === 'free' &&
                 'text-sm font-medium text-primary',
               priceDisplay.mode === 'neg' &&
-                'text-xs font-medium italic text-muted-foreground',
+                'text-xs font-medium italic text-muted-foreground'
             )}
           >
             {priceDisplay.text}

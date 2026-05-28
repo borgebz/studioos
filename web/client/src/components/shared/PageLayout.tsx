@@ -23,7 +23,7 @@ export function PageLayout({
           fullHeight
             ? 'overflow-hidden flex flex-col min-h-0'
             : 'overflow-auto',
-          className,
+          className
         )}
       >
         {children}

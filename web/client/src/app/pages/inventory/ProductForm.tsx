@@ -81,8 +81,14 @@ export interface ProductFormProps {
 // ---------------------------------------------------------------------------
 
 const CONDITIONS = enumOptions(ConditionEnum, 'marketplace.condition')
-const ACQUISITION_TYPES = enumOptions(AcquisitionTypeEnum, 'marketplace.acquisition')
-const PRODUCT_STATUSES = enumOptions(ProductStatusEnum, 'schoolInventory.status')
+const ACQUISITION_TYPES = enumOptions(
+  AcquisitionTypeEnum,
+  'marketplace.acquisition'
+)
+const PRODUCT_STATUSES = enumOptions(
+  ProductStatusEnum,
+  'schoolInventory.status'
+)
 
 const GENDERS = enumOptions(TargetGenderEnum, 'marketplace.gender')
 
@@ -168,7 +174,7 @@ export function ProductForm({ context }: ProductFormProps) {
       if (c.id === Number(categoryId))
         return (c.size_systems as SizeSystem[]) ?? []
       const sub = (c.subcategories as Category[]).find(
-        (s) => s.id === Number(categoryId),
+        (s) => s.id === Number(categoryId)
       )
       if (sub) return (sub.size_systems as SizeSystem[]) ?? []
     }
@@ -180,13 +186,13 @@ export function ProductForm({ context }: ProductFormProps) {
       for (const c of categories) {
         if (c.id === Number(id)) return c.name
         const sub = (c.subcategories as Category[]).find(
-          (s) => s.id === Number(id),
+          (s) => s.id === Number(id)
         )
         if (sub) return sub.name
       }
       return undefined
     },
-    [categories],
+    [categories]
   )
 
   // Load reference data
@@ -220,7 +226,7 @@ export function ProductForm({ context }: ProductFormProps) {
   const saveVariant = useCallback(() => {
     if (editingVariant) {
       setVariants((prev) =>
-        prev.map((v) => (v.id === editingVariant.id ? { ...draft } : v)),
+        prev.map((v) => (v.id === editingVariant.id ? { ...draft } : v))
       )
     } else {
       setVariants((prev) => [...prev, { ...draft }])
@@ -255,19 +261,19 @@ export function ProductForm({ context }: ProductFormProps) {
       if (cond) parts.push(t(cond.labelKey))
       if (v.sizeId) {
         const ss = categorySizeSystems.find(
-          (s) => s.id === Number(v.sizeSystemId),
+          (s) => s.id === Number(v.sizeSystemId)
         )
         const size = ss?.sizes?.find((s) => s.id === Number(v.sizeId))
         if (size) parts.push(size.name)
       }
       if (v.selectedColorIds.length > 0) {
         parts.push(
-          t('marketplace.colorCount', { count: v.selectedColorIds.length }),
+          t('marketplace.colorCount', { count: v.selectedColorIds.length })
         )
       }
       return parts
     },
-    [t, categorySizeSystems],
+    [t, categorySizeSystems]
   )
 
   const onSubmit = async (data: CreateProductFormValues) => {
@@ -318,7 +324,7 @@ export function ProductForm({ context }: ProductFormProps) {
     } catch (err) {
       toast.error(
         parseApiError(err, t, 'inventory.createError') ??
-          t('inventory.createError'),
+          t('inventory.createError')
       )
     } finally {
       setIsSaving(false)
@@ -363,7 +369,7 @@ export function ProductForm({ context }: ProductFormProps) {
   }, [hasSingleSizeSystem, draft.sizeSystemId, sheetOpen, categorySizeSystems])
 
   const draftSizeSystem = categorySizeSystems.find(
-    (ss) => ss.id === Number(draft.sizeSystemId),
+    (ss) => ss.id === Number(draft.sizeSystemId)
   )
   const draftAvailableSizes = draftSizeSystem?.sizes ?? []
 
@@ -403,7 +409,9 @@ export function ProductForm({ context }: ProductFormProps) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="category">{t('marketplace.category')}</Label>
+                    <Label htmlFor="category">
+                      {t('marketplace.category')}
+                    </Label>
                     <Controller
                       name="category_id"
                       control={control}
@@ -427,7 +435,10 @@ export function ProductForm({ context }: ProductFormProps) {
                       name="target_gender"
                       control={control}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
                           <SelectTrigger id="gender" className="mt-1.5">
                             <SelectValue
                               placeholder={t('marketplace.selectGender')}
@@ -584,7 +595,9 @@ export function ProductForm({ context }: ProductFormProps) {
                       </Label>
                       <Input
                         id="storage_location"
-                        placeholder={t('marketplace.storageLocationPlaceholder')}
+                        placeholder={t(
+                          'marketplace.storageLocationPlaceholder'
+                        )}
                         className="mt-1.5"
                         {...register('storage_location')}
                       />
@@ -619,7 +632,10 @@ export function ProductForm({ context }: ProductFormProps) {
                     name="status"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger id="status" className="mt-1.5">
                           <SelectValue />
                         </SelectTrigger>
@@ -654,7 +670,7 @@ export function ProductForm({ context }: ProductFormProps) {
                     status
                       ? t(
                           PRODUCT_STATUSES.find((s) => s.value === status)
-                            ?.labelKey ?? '',
+                            ?.labelKey ?? ''
                         )
                       : undefined
                   }
@@ -907,9 +923,7 @@ export function ProductForm({ context }: ProductFormProps) {
       <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('marketplace.discardTitle')}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('marketplace.discardTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('marketplace.discardDesc')}
             </AlertDialogDescription>
@@ -953,13 +967,7 @@ export function ProductForm({ context }: ProductFormProps) {
   )
 }
 
-function SummaryRow({
-  label,
-  value,
-}: {
-  label: string
-  value?: string
-}) {
+function SummaryRow({ label, value }: { label: string; value?: string }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-muted-foreground">{label}</span>

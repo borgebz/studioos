@@ -36,7 +36,7 @@ export interface UserChannelHandlers {
  */
 export function useUserChannelSocket(
   enabled: boolean,
-  handlers: UserChannelHandlers,
+  handlers: UserChannelHandlers
 ) {
   const handlersRef = useRef(handlers)
   handlersRef.current = handlers

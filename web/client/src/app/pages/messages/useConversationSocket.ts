@@ -1,40 +1,92 @@
 import { useEffect, useRef } from 'react'
 
 type IncomingEvent =
-  | { type: 'message'; id: number; sender_id: number; body: string; file_url: string | null; original_filename: string; kind?: string; created_at: string }
+  | {
+      type: 'message'
+      id: number
+      sender_id: number
+      body: string
+      file_url: string | null
+      original_filename: string
+      kind?: string
+      created_at: string
+    }
   | { type: 'message.edited'; id: number; body: string; edited_at: string }
   | { type: 'message.deleted'; id: number }
-  | { type: 'reaction.added'; message_id: number; user_id: number; emoji: string }
-  | { type: 'reaction.removed'; message_id: number; user_id: number; emoji: string }
-  | { type: 'message.pinned'; id: number; pinned_by_id: number; pinned_at: string }
+  | {
+      type: 'reaction.added'
+      message_id: number
+      user_id: number
+      emoji: string
+    }
+  | {
+      type: 'reaction.removed'
+      message_id: number
+      user_id: number
+      emoji: string
+    }
+  | {
+      type: 'message.pinned'
+      id: number
+      pinned_by_id: number
+      pinned_at: string
+    }
   | { type: 'message.unpinned'; id: number }
-  | { type: 'participant.added'; conversation_id: number; user_id: number; added_by_id: number }
-  | { type: 'participant.removed'; conversation_id: number; user_id: number; removed_by_id: number }
+  | {
+      type: 'participant.added'
+      conversation_id: number
+      user_id: number
+      added_by_id: number
+    }
+  | {
+      type: 'participant.removed'
+      conversation_id: number
+      user_id: number
+      removed_by_id: number
+    }
   | { type: 'conversation.renamed'; id: number; name: string }
   | { type: 'typing'; user_id: number }
   | { type: 'typing_stopped'; user_id: number }
 
 export interface ConversationSocketHandlers {
   onMessage?: (e: Extract<IncomingEvent, { type: 'message' }>) => void
-  onMessageEdited?: (e: Extract<IncomingEvent, { type: 'message.edited' }>) => void
-  onMessageDeleted?: (e: Extract<IncomingEvent, { type: 'message.deleted' }>) => void
-  onReactionAdded?: (e: Extract<IncomingEvent, { type: 'reaction.added' }>) => void
-  onReactionRemoved?: (e: Extract<IncomingEvent, { type: 'reaction.removed' }>) => void
-  onMessagePinned?: (e: Extract<IncomingEvent, { type: 'message.pinned' }>) => void
-  onMessageUnpinned?: (e: Extract<IncomingEvent, { type: 'message.unpinned' }>) => void
-  onParticipantAdded?: (e: Extract<IncomingEvent, { type: 'participant.added' }>) => void
-  onParticipantRemoved?: (e: Extract<IncomingEvent, { type: 'participant.removed' }>) => void
-  onConversationRenamed?: (e: Extract<IncomingEvent, { type: 'conversation.renamed' }>) => void
+  onMessageEdited?: (
+    e: Extract<IncomingEvent, { type: 'message.edited' }>
+  ) => void
+  onMessageDeleted?: (
+    e: Extract<IncomingEvent, { type: 'message.deleted' }>
+  ) => void
+  onReactionAdded?: (
+    e: Extract<IncomingEvent, { type: 'reaction.added' }>
+  ) => void
+  onReactionRemoved?: (
+    e: Extract<IncomingEvent, { type: 'reaction.removed' }>
+  ) => void
+  onMessagePinned?: (
+    e: Extract<IncomingEvent, { type: 'message.pinned' }>
+  ) => void
+  onMessageUnpinned?: (
+    e: Extract<IncomingEvent, { type: 'message.unpinned' }>
+  ) => void
+  onParticipantAdded?: (
+    e: Extract<IncomingEvent, { type: 'participant.added' }>
+  ) => void
+  onParticipantRemoved?: (
+    e: Extract<IncomingEvent, { type: 'participant.removed' }>
+  ) => void
+  onConversationRenamed?: (
+    e: Extract<IncomingEvent, { type: 'conversation.renamed' }>
+  ) => void
   onTyping?: (e: Extract<IncomingEvent, { type: 'typing' }>) => void
-  onTypingStopped?: (e: Extract<IncomingEvent, { type: 'typing_stopped' }>) => void
+  onTypingStopped?: (
+    e: Extract<IncomingEvent, { type: 'typing_stopped' }>
+  ) => void
 }
 
 /** Outgoing message types the client can send over the conversation
  *  socket. Currently only typing pings — message persistence still flows
  *  through the REST API for now. */
-type OutgoingEvent =
-  | { type: 'typing' }
-  | { type: 'typing_stopped' }
+type OutgoingEvent = { type: 'typing' } | { type: 'typing_stopped' }
 
 /**
  * Opens a WebSocket against the messaging consumer for the given conversation
@@ -46,7 +98,7 @@ type OutgoingEvent =
  */
 export function useConversationSocket(
   conversationId: number | null,
-  handlers: ConversationSocketHandlers,
+  handlers: ConversationSocketHandlers
 ): { send: (event: OutgoingEvent) => void } {
   // Hold the latest handlers in a ref so we don't tear down the socket every
   // time the parent re-renders (handlers are usually inline closures).
@@ -64,7 +116,8 @@ export function useConversationSocket(
     // can forward the WS upgrade — that's also how the REST layer reaches
     // the API server, and it lets the httpOnly access cookie travel along.
     const base = window.location.origin
-    const wsUrl = base.replace(/^http/, 'ws') + `/ws/conversations/${conversationId}/`
+    const wsUrl =
+      base.replace(/^http/, 'ws') + `/ws/conversations/${conversationId}/`
 
     let ws: WebSocket | null = null
     let closedByUs = false

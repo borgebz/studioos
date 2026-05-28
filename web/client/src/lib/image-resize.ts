@@ -32,7 +32,7 @@ const DEFAULT_QUALITY = 0.85
  */
 export function resizeImageFile(
   file: File,
-  options: ResizeImageOptions = {},
+  options: ResizeImageOptions = {}
 ): Promise<File> {
   const {
     maxSize = DEFAULT_MAX_SIZE,
@@ -85,7 +85,7 @@ export function resizeImageFile(
           resolve(new File([blob], name, { type: outputType }))
         },
         outputType,
-        quality,
+        quality
       )
     }
 
@@ -121,7 +121,7 @@ export function getCroppedImageFile(
   crop: PixelCrop,
   outputSize = 512,
   fileName = 'photo.jpg',
-  quality = DEFAULT_QUALITY,
+  quality = DEFAULT_QUALITY
 ): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -147,7 +147,7 @@ export function getCroppedImageFile(
         0,
         0,
         outputSize,
-        outputSize,
+        outputSize
       )
 
       canvas.toBlob(
@@ -159,7 +159,7 @@ export function getCroppedImageFile(
           resolve(new File([blob], fileName, { type: 'image/jpeg' }))
         },
         'image/jpeg',
-        quality,
+        quality
       )
     }
 

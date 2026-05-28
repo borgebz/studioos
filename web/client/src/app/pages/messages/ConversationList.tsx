@@ -48,7 +48,7 @@ export function ConversationList({
                 'group relative grid w-full grid-cols-[auto_1fr_auto] items-center gap-2.5 px-3 py-2.5 text-left transition-colors',
                 isActive
                   ? 'bg-accent text-accent-foreground'
-                  : 'hover:bg-accent/40',
+                  : 'hover:bg-accent/40'
               )}
               aria-current={isActive ? 'true' : undefined}
             >
@@ -77,7 +77,7 @@ export function ConversationList({
                 <span
                   className={cn(
                     'truncate text-sm text-foreground',
-                    hasUnread ? 'font-semibold' : 'font-medium',
+                    hasUnread ? 'font-semibold' : 'font-medium'
                   )}
                 >
                   {label}
@@ -87,7 +87,7 @@ export function ConversationList({
                     'truncate text-xs',
                     hasUnread
                       ? 'font-medium text-foreground/80'
-                      : 'text-muted-foreground',
+                      : 'text-muted-foreground'
                   )}
                 >
                   {preview}
@@ -97,7 +97,9 @@ export function ConversationList({
                 <span
                   className={cn(
                     'text-[11px]',
-                    hasUnread ? 'font-medium text-primary' : 'text-muted-foreground',
+                    hasUnread
+                      ? 'font-medium text-primary'
+                      : 'text-muted-foreground'
                   )}
                 >
                   {lastTimeLabel(c.updated_at)}
@@ -123,7 +125,7 @@ function formatLabel(
   c: Conversation,
   dict: Record<number, ConversationParticipant>,
   meId: number | null,
-  t: (k: string) => string,
+  t: (k: string) => string
 ): string {
   // Groups are titled by the user-set name; fall back to a placeholder only
   // when somehow blank.
@@ -144,7 +146,7 @@ function formatPreview(
   c: Conversation,
   dict: Record<number, ConversationParticipant>,
   meId: number | null,
-  t: (k: string) => string,
+  t: (k: string) => string
 ): string {
   const m = c.last_message
   if (!m) return t('messages.noMessagesYet')
@@ -161,7 +163,8 @@ function formatPreview(
     m.sender_id === meId
       ? t('messages.youPrefix')
       : participantName(dict[m.sender_id], t, m.sender_id).split(' ')[0]
-  const body = m.body || (m.original_filename ? `📎 ${m.original_filename}` : '')
+  const body =
+    m.body || (m.original_filename ? `📎 ${m.original_filename}` : '')
   return senderName ? `${senderName}: ${body}` : body
 }
 
@@ -170,7 +173,7 @@ function formatSystemPreview(
   senderId: number,
   dict: Record<number, ConversationParticipant>,
   meId: number | null,
-  t: (k: string) => string,
+  t: (k: string) => string
 ): string {
   let parsed: { event?: string } = {}
   try {

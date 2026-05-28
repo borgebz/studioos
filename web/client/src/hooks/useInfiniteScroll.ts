@@ -59,7 +59,7 @@ export function useInfiniteScroll({
           fetchRef.current()
         }
       },
-      { root, rootMargin },
+      { root, rootMargin }
     )
 
     if (sentinelNodeRef.current) {

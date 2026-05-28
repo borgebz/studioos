@@ -290,7 +290,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
                     .join(' ') || m.student.email
                 return { id: m.student.id, name, email: m.student.email }
               }),
-            })),
+            }))
           )
         }
       }
@@ -311,7 +311,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
   const filteredStudios = useMemo(() => {
     if (!modalityId) return studios
     return studios.filter((s) =>
-      s.modalities.some((m) => m.id === Number(modalityId)),
+      s.modalities.some((m) => m.id === Number(modalityId))
     )
   }, [modalityId, studios])
 
@@ -326,7 +326,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
       'recurrence.selected_days',
       current.includes(day)
         ? current.filter((d) => d !== day)
-        : [...current, day],
+        : [...current, day]
     )
   }
 
@@ -391,7 +391,8 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
         participant_ids: participants.map((p) => p.id),
         recurring_coaching: data.is_recurring
           ? {
-              recurrence_type: data.recurrence.recurrence_type as RecurrenceTypeEnum,
+              recurrence_type: data.recurrence
+                .recurrence_type as RecurrenceTypeEnum,
               recurrence_interval: data.recurrence.recurrence_interval,
               days_of_week: data.recurrence.selected_days.join(','),
               end_date:
@@ -897,7 +898,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
                                           value={field.value}
                                           onChange={(e) =>
                                             field.onChange(
-                                              Number(e.target.value),
+                                              Number(e.target.value)
                                             )
                                           }
                                           className="w-20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -938,7 +939,9 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
                                         <DatePicker
                                           value={field.value}
                                           onChange={field.onChange}
-                                          placeholder={t('coachings.selectDate')}
+                                          placeholder={t(
+                                            'coachings.selectDate'
+                                          )}
                                         />
                                       )}
                                     />
@@ -1248,7 +1251,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
                   value={String(
                     isEdit
                       ? (coaching?.participants.length ?? 0)
-                      : participants.length,
+                      : participants.length
                   )}
                 />
                 <SummaryRow
@@ -1340,9 +1343,7 @@ const STATUS_STYLES: Record<string, string> = {
 function StatusBadge({ status }: { status: CoachingClassStatusEnum }) {
   const { t } = useTranslation()
   return (
-    <Badge
-      className={cn('font-normal cursor-default', STATUS_STYLES[status])}
-    >
+    <Badge className={cn('font-normal cursor-default', STATUS_STYLES[status])}>
       {t(`coachingRequests.status.${status}`)}
     </Badge>
   )
@@ -1368,7 +1369,7 @@ function AddParticipantDialog({
     const q = search.toLowerCase()
     return availableStudents.filter(
       (s) =>
-        s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q),
+        s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
     )
   }, [availableStudents, search])
 
@@ -1665,10 +1666,7 @@ function TeacherAvailabilityDialog({
                                 <TooltipTrigger asChild>
                                   {slotContent}
                                 </TooltipTrigger>
-                                <TooltipContent
-                                  side="top"
-                                  className="max-w-xs"
-                                >
+                                <TooltipContent side="top" className="max-w-xs">
                                   <div className="space-y-1">
                                     <p className="font-medium">
                                       {format(start, 'HH:mm')}–

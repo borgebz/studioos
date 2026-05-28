@@ -34,7 +34,9 @@ export function PopoverPage() {
             </PopoverTrigger>
             <PopoverContent className="w-80">
               <div className="space-y-2">
-                <h4 className="font-medium text-sm">{t('designSystem.popoverTitle')}</h4>
+                <h4 className="font-medium text-sm">
+                  {t('designSystem.popoverTitle')}
+                </h4>
                 <p className="text-sm text-muted-foreground">
                   {t('designSystem.popoverBody')}
                 </p>
@@ -56,13 +58,19 @@ export function PopoverPage() {
             </PopoverTrigger>
             <PopoverContent className="w-80">
               <div className="space-y-4">
-                <h4 className="font-medium text-sm">{t('designSystem.popoverSettings')}</h4>
+                <h4 className="font-medium text-sm">
+                  {t('designSystem.popoverSettings')}
+                </h4>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('designSystem.popoverWidth')}</label>
+                  <label className="text-sm font-medium">
+                    {t('designSystem.popoverWidth')}
+                  </label>
                   <Input defaultValue="100%" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('designSystem.popoverHeight')}</label>
+                  <label className="text-sm font-medium">
+                    {t('designSystem.popoverHeight')}
+                  </label>
                   <Input defaultValue="auto" />
                 </div>
               </div>

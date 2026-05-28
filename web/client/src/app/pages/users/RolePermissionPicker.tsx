@@ -55,7 +55,7 @@ export function RolePermissionPicker({
     onRolesChange(
       roleSet.has(code)
         ? selectedRoles.filter((c) => c !== code)
-        : [...selectedRoles, code],
+        : [...selectedRoles, code]
     )
   }
 
@@ -64,7 +64,7 @@ export function RolePermissionPicker({
     onPermsChange(
       permSet.has(id)
         ? selectedPerms.filter((x) => x !== id)
-        : [...selectedPerms, id],
+        : [...selectedPerms, id]
     )
   }
 
@@ -75,7 +75,7 @@ export function RolePermissionPicker({
       (p) =>
         p.codename.toLowerCase().includes(q) ||
         p.app_label.toLowerCase().includes(q) ||
-        p.name.toLowerCase().includes(q),
+        p.name.toLowerCase().includes(q)
     )
   }, [allPerms, search])
 
@@ -142,7 +142,10 @@ export function RolePermissionPicker({
                     {perms.map((p) => {
                       const checked = permSet.has(p.id)
                       return (
-                        <li key={p.id} className="flex items-start gap-3 py-1.5">
+                        <li
+                          key={p.id}
+                          className="flex items-start gap-3 py-1.5"
+                        >
                           <Checkbox
                             id={`perm-${p.id}`}
                             checked={checked}
@@ -154,7 +157,7 @@ export function RolePermissionPicker({
                             htmlFor={`perm-${p.id}`}
                             className={cn(
                               'flex-1 cursor-pointer text-sm',
-                              disabled && 'cursor-not-allowed',
+                              disabled && 'cursor-not-allowed'
                             )}
                           >
                             <div className="font-medium text-foreground">
@@ -201,7 +204,7 @@ export function RolePermissionPicker({
                     htmlFor={`role-${r.code}`}
                     className={cn(
                       'flex-1 cursor-pointer text-sm',
-                      disabled && 'cursor-not-allowed',
+                      disabled && 'cursor-not-allowed'
                     )}
                   >
                     <div className="font-medium text-foreground">{r.name}</div>

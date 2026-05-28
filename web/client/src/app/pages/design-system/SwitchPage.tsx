@@ -27,11 +27,15 @@ export function SwitchPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Switch checked={true} />
-              <span className="text-sm text-muted-foreground">{t('designSystem.switchOn')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('designSystem.switchOn')}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <Switch checked={false} />
-              <span className="text-sm text-muted-foreground">{t('designSystem.switchOff')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('designSystem.switchOff')}
+              </span>
             </div>
           </div>
         </div>
@@ -65,7 +69,9 @@ export function SwitchPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between rounded-lg border border-border p-4 max-w-md">
               <div className="space-y-0.5">
-                <Label htmlFor="notifications">{t('designSystem.switchNotifications')}</Label>
+                <Label htmlFor="notifications">
+                  {t('designSystem.switchNotifications')}
+                </Label>
                 <p className="text-sm text-muted-foreground">
                   {t('designSystem.switchNotificationsDesc')}
                 </p>
@@ -78,7 +84,9 @@ export function SwitchPage() {
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border p-4 max-w-md">
               <div className="space-y-0.5">
-                <Label htmlFor="marketing">{t('designSystem.switchMarketing')}</Label>
+                <Label htmlFor="marketing">
+                  {t('designSystem.switchMarketing')}
+                </Label>
                 <p className="text-sm text-muted-foreground">
                   {t('designSystem.switchMarketingDesc')}
                 </p>

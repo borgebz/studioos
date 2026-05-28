@@ -14,7 +14,12 @@ function AppShell() {
   const { isAuthenticated, isLoading } = useAuth()
   const isAuthPage = location.pathname === paths.login
   const isLandingPage = location.pathname === paths.landing
-  const isPublicPage = location.pathname === paths.enrollment || location.pathname.startsWith('/activate/') || location.pathname.startsWith('/onboarding/') || location.pathname === paths.forgotPassword || location.pathname.startsWith('/reset-password/')
+  const isPublicPage =
+    location.pathname === paths.enrollment ||
+    location.pathname.startsWith('/activate/') ||
+    location.pathname.startsWith('/onboarding/') ||
+    location.pathname === paths.forgotPassword ||
+    location.pathname.startsWith('/reset-password/')
   const isDesignSystem = location.pathname.startsWith(paths.designSystem)
 
   if (isAuthPage || isLandingPage || isPublicPage) {

@@ -27,7 +27,9 @@ export function ScrollAreaPage() {
           </h2>
           <ScrollArea className="h-72 w-48 rounded-md border border-border">
             <div className="p-4">
-              <h4 className="mb-4 text-sm font-medium">{t('designSystem.scrollAreaTags')}</h4>
+              <h4 className="mb-4 text-sm font-medium">
+                {t('designSystem.scrollAreaTags')}
+              </h4>
               {tags.map((tag, i) => (
                 <div key={tag}>
                   <div className="text-sm">{tag}</div>

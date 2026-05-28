@@ -14,11 +14,7 @@ import {
 import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
-import type {
-  Conversation,
-  Message,
-  PublicProfile,
-} from '@/api/studioos-api'
+import type { Conversation, Message, PublicProfile } from '@/api/studioos-api'
 import { ConversationKindEnum } from '@/api/studioos-api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -63,15 +59,15 @@ export function ConversationDetailsContent({
         .filter((id) => id !== meId)
         .map((id) => participants[id])
         .filter((p): p is ConversationParticipant => Boolean(p)),
-    [conversation.participant_ids, meId, participants],
+    [conversation.participant_ids, meId, participants]
   )
 
   const files = useMemo(
     () =>
       messages.filter(
-        (m) => Boolean(m.file_url) && !m.deleted_at && m.kind !== 'system',
+        (m) => Boolean(m.file_url) && !m.deleted_at && m.kind !== 'system'
       ),
-    [messages],
+    [messages]
   )
 
   const pinned = useMemo(
@@ -79,7 +75,7 @@ export function ConversationDetailsContent({
       conversation.pinned_message_ids
         .map((id) => messages.find((m) => m.id === id))
         .filter((m): m is Message => Boolean(m) && !m!.deleted_at),
-    [conversation.pinned_message_ids, messages],
+    [conversation.pinned_message_ids, messages]
   )
 
   const [renaming, setRenaming] = useState(false)
@@ -107,7 +103,7 @@ export function ConversationDetailsContent({
     try {
       await apiClient.api.messagingConversationsParticipantsDestroy(
         conversation.id,
-        userId,
+        userId
       )
       await onRefreshConversation?.()
     } catch {
@@ -319,7 +315,7 @@ function AddMemberPicker({
       setLoading(true)
       apiClient.api
         .accountsProfilesRetrieve(
-          query.trim() ? { search: query.trim() } : undefined,
+          query.trim() ? { search: query.trim() } : undefined
         )
         .then((res) => setResults(res.data.results))
         .catch(() => setResults([]))
@@ -330,7 +326,7 @@ function AddMemberPicker({
 
   const existing = useMemo(
     () => new Set(conversation.participant_ids),
-    [conversation.participant_ids],
+    [conversation.participant_ids]
   )
   const candidates = results.filter((p) => !existing.has(p.user_id))
 
@@ -338,7 +334,7 @@ function AddMemberPicker({
     try {
       await apiClient.api.messagingConversationsParticipantsCreate(
         conversation.id,
-        { user_ids: [userId] },
+        { user_ids: [userId] }
       )
       await onDone()
     } catch {
@@ -349,7 +345,10 @@ function AddMemberPicker({
   return (
     <div className="mt-3 rounded-md border border-border bg-background p-2.5">
       <div className="flex items-center gap-2">
-        <Users className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <Users
+          className="size-4 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
         <Input
           autoFocus
           value={query}
@@ -402,9 +401,7 @@ function AddMemberPicker({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-xs font-medium text-muted-foreground">
-      {children}
-    </div>
+    <div className="text-xs font-medium text-muted-foreground">{children}</div>
   )
 }
 
@@ -418,7 +415,7 @@ function FileChip({ message }: { message: Message }) {
       rel="noopener noreferrer"
       className={cn(
         'flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs',
-        'transition-colors hover:bg-accent',
+        'transition-colors hover:bg-accent'
       )}
     >
       <Icon

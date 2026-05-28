@@ -60,8 +60,7 @@ export function ActivateAccountPage() {
       setStep('success')
     } catch (err) {
       setSubmitError(
-        parseApiError(err, t, 'auth.activate.error') ??
-          t('auth.activate.error')
+        parseApiError(err, t, 'auth.activate.error') ?? t('auth.activate.error')
       )
       setStep('form')
     }

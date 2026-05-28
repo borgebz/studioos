@@ -28,7 +28,7 @@ export function ColorSwatchPicker({
             'flex min-h-[36px] items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors',
             selectedIds.includes(color.id)
               ? 'border-primary bg-muted text-primary'
-              : 'border-border bg-background text-foreground hover:bg-accent',
+              : 'border-border bg-background text-foreground hover:bg-accent'
           )}
         >
           <span

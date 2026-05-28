@@ -111,14 +111,17 @@ export function MessageThread({
     conversation,
     participants,
     meId,
-    t,
+    t
   )
   // Subtitle: group member count for groups; nothing for DMs since the
   // name in the header already says everything (the email used to live
   // here, but it's not exposed to non-admin users anymore).
-  const headerSub = others.length > 1
-    ? t('messages.groupParticipantCount', { count: conversation.participant_ids.length })
-    : ''
+  const headerSub =
+    others.length > 1
+      ? t('messages.groupParticipantCount', {
+          count: conversation.participant_ids.length,
+        })
+      : ''
 
   // ── pinned messages (resolved) ──────────────────────────────────────────
   const pinnedMessages = useMemo(
@@ -126,7 +129,7 @@ export function MessageThread({
       conversation.pinned_message_ids
         .map((id) => messages.find((m) => m.id === id))
         .filter((m): m is Message => Boolean(m) && !m!.deleted_at),
-    [conversation.pinned_message_ids, messages],
+    [conversation.pinned_message_ids, messages]
   )
 
   // ── day grouping ────────────────────────────────────────────────────────
@@ -156,7 +159,7 @@ export function MessageThread({
         onClick={onToggleDetails}
         className={cn(
           'flex shrink-0 items-center gap-3 border-b border-border px-6 py-4 text-left transition-colors hover:bg-accent/40',
-          detailsOpen && 'bg-accent/30',
+          detailsOpen && 'bg-accent/30'
         )}
         aria-label={t('messages.openDetails')}
         aria-expanded={detailsOpen}
@@ -197,7 +200,8 @@ export function MessageThread({
               {t('messages.pinnedCount', { count: pinnedMessages.length })}
             </span>
             <span className="truncate text-foreground/80">
-              · {pinnedMessages[0].body ||
+              ·{' '}
+              {pinnedMessages[0].body ||
                 pinnedMessages[0].original_filename ||
                 t('messages.attachment')}
             </span>
@@ -206,7 +210,10 @@ export function MessageThread({
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} className="relative flex-1 min-h-0 overflow-y-auto bg-muted/40 px-6 py-5">
+      <div
+        ref={scrollRef}
+        className="relative flex-1 min-h-0 overflow-y-auto bg-muted/40 px-6 py-5"
+      >
         {loading ? (
           <ThreadSkeleton />
         ) : messages.length === 0 ? (
@@ -218,68 +225,71 @@ export function MessageThread({
         ) : (
           <div>
             {groupedMessages.map((group) => (
-            <div key={group.key}>
-              <div className="my-6 text-center text-xs font-medium text-muted-foreground">
-                {group.day}
-              </div>
-              {group.items.map((m, i) => {
-                if (m.kind === 'system') {
+              <div key={group.key}>
+                <div className="my-6 text-center text-xs font-medium text-muted-foreground">
+                  {group.day}
+                </div>
+                {group.items.map((m, i) => {
+                  if (m.kind === 'system') {
+                    return (
+                      <SystemMessage
+                        key={m.id}
+                        message={m}
+                        participants={participants}
+                      />
+                    )
+                  }
+                  const prev = i > 0 ? group.items[i - 1] : null
+                  const next =
+                    i < group.items.length - 1 ? group.items[i + 1] : null
+                  const showAvatar = !prev || prev.sender_id !== m.sender_id
+                  const isLastOfRun = !next || next.sender_id !== m.sender_id
+                  // True only for the very last message in the entire thread.
+                  const isLastOverall =
+                    m.id === messages[messages.length - 1]?.id
                   return (
-                    <SystemMessage
+                    <Bubble
                       key={m.id}
                       message={m}
-                      participants={participants}
+                      mine={m.sender_id === meId}
+                      showAvatar={showAvatar}
+                      sender={participants[m.sender_id]}
+                      meId={meId}
+                      isPinned={conversation.pinned_message_ids.includes(m.id)}
+                      isEditing={editingId === m.id}
+                      editingBody={editingBody}
+                      setEditingBody={setEditingBody}
+                      onStartEdit={() => {
+                        setEditingId(m.id)
+                        setEditingBody(m.body)
+                      }}
+                      onCancelEdit={() => {
+                        setEditingId(null)
+                        setEditingBody('')
+                      }}
+                      onConfirmEdit={async () => {
+                        const body = editingBody.trim()
+                        if (!body || body === m.body) {
+                          setEditingId(null)
+                          return
+                        }
+                        await onEdit(m.id, body)
+                        setEditingId(null)
+                      }}
+                      onDelete={() => onDelete(m.id)}
+                      onReact={(emoji) => onReact(m.id, emoji)}
+                      onPin={(pin) => onPin(m.id, pin)}
+                      isLastOfRun={isLastOfRun}
+                      isLastOverall={isLastOverall}
+                      timeLabel={(iso) =>
+                        format(new Date(iso), timeFormat, {
+                          locale: timeLocale,
+                        })
+                      }
                     />
                   )
-                }
-                const prev = i > 0 ? group.items[i - 1] : null
-                const next = i < group.items.length - 1 ? group.items[i + 1] : null
-                const showAvatar = !prev || prev.sender_id !== m.sender_id
-                const isLastOfRun = !next || next.sender_id !== m.sender_id
-                // True only for the very last message in the entire thread.
-                const isLastOverall =
-                  m.id === messages[messages.length - 1]?.id
-                return (
-                  <Bubble
-                    key={m.id}
-                    message={m}
-                    mine={m.sender_id === meId}
-                    showAvatar={showAvatar}
-                    sender={participants[m.sender_id]}
-                    meId={meId}
-                    isPinned={conversation.pinned_message_ids.includes(m.id)}
-                    isEditing={editingId === m.id}
-                    editingBody={editingBody}
-                    setEditingBody={setEditingBody}
-                    onStartEdit={() => {
-                      setEditingId(m.id)
-                      setEditingBody(m.body)
-                    }}
-                    onCancelEdit={() => {
-                      setEditingId(null)
-                      setEditingBody('')
-                    }}
-                    onConfirmEdit={async () => {
-                      const body = editingBody.trim()
-                      if (!body || body === m.body) {
-                        setEditingId(null)
-                        return
-                      }
-                      await onEdit(m.id, body)
-                      setEditingId(null)
-                    }}
-                    onDelete={() => onDelete(m.id)}
-                    onReact={(emoji) => onReact(m.id, emoji)}
-                    onPin={(pin) => onPin(m.id, pin)}
-                    isLastOfRun={isLastOfRun}
-                    isLastOverall={isLastOverall}
-                    timeLabel={(iso) =>
-                      format(new Date(iso), timeFormat, { locale: timeLocale })
-                    }
-                  />
-                )
-              })}
-            </div>
+                })}
+              </div>
             ))}
           </div>
         )}
@@ -299,7 +309,7 @@ export function MessageThread({
       <div
         className={cn(
           'shrink-0 border-border bg-card px-7 py-4',
-          typingUserIds.length === 0 && 'border-t',
+          typingUserIds.length === 0 && 'border-t'
         )}
       >
         <div className="mx-auto max-w-[680px]">
@@ -400,7 +410,7 @@ function Bubble({
       <div
         className={cn(
           'flex w-full items-center gap-2',
-          mine ? 'justify-end' : 'justify-start',
+          mine ? 'justify-end' : 'justify-start'
         )}
       >
         {!mine && (
@@ -419,7 +429,7 @@ function Bubble({
         <div
           className={cn(
             'relative flex max-w-[78%] items-center gap-1',
-            mine ? 'flex-row-reverse' : 'flex-row',
+            mine ? 'flex-row-reverse' : 'flex-row'
           )}
         >
           <div
@@ -428,7 +438,8 @@ function Bubble({
               mine
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-card border border-border text-card-foreground',
-              deleted && 'italic text-muted-foreground border border-dashed bg-muted text-muted-foreground',
+              deleted &&
+                'italic text-muted-foreground border border-dashed bg-muted text-muted-foreground'
             )}
           >
             {deleted ? (
@@ -463,10 +474,12 @@ function Bubble({
             ) : (
               <>
                 {message.body && (
-                  <div className="whitespace-pre-wrap break-words">{message.body}</div>
+                  <div className="whitespace-pre-wrap break-words">
+                    {message.body}
+                  </div>
                 )}
-                {message.file_url && (
-                  isImageAttachment(message) ? (
+                {message.file_url &&
+                  (isImageAttachment(message) ? (
                     <a
                       href={message.file_url}
                       target="_blank"
@@ -474,9 +487,11 @@ function Bubble({
                       className={cn(
                         'block overflow-hidden rounded-md',
                         message.body ? 'mt-2' : '',
-                        '-mx-1 -mb-0.5 max-w-xs',
+                        '-mx-1 -mb-0.5 max-w-xs'
                       )}
-                      aria-label={message.original_filename || t('messages.attachment')}
+                      aria-label={
+                        message.original_filename || t('messages.attachment')
+                      }
                     >
                       <img
                         src={message.file_url}
@@ -494,15 +509,22 @@ function Bubble({
                         'mt-2 flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs no-underline',
                         mine
                           ? 'border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground'
-                          : 'border-border bg-muted text-foreground',
+                          : 'border-border bg-muted text-foreground'
                       )}
                     >
-                      <Paperclip className="size-3.5 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{message.original_filename || t('messages.attachment')}</span>
-                      <Download className="ml-auto size-3.5 shrink-0" aria-hidden="true" />
+                      <Paperclip
+                        className="size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
+                      <span className="truncate">
+                        {message.original_filename || t('messages.attachment')}
+                      </span>
+                      <Download
+                        className="ml-auto size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
                     </a>
-                  )
-                )}
+                  ))}
               </>
             )}
           </div>
@@ -526,7 +548,7 @@ function Bubble({
         <div
           className={cn(
             'mt-1 flex flex-wrap gap-1',
-            mine ? 'justify-end' : 'ml-10 justify-start',
+            mine ? 'justify-end' : 'ml-10 justify-start'
           )}
         >
           {message.reactions.map((g) => (
@@ -538,7 +560,7 @@ function Bubble({
                 'flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors',
                 g.user_ids.includes(meId)
                   ? 'border-primary/40 bg-primary/10 text-foreground'
-                  : 'border-border bg-card text-muted-foreground hover:bg-accent',
+                  : 'border-border bg-card text-muted-foreground hover:bg-accent'
               )}
             >
               <span>{g.emoji}</span>
@@ -553,14 +575,17 @@ function Bubble({
         <div
           className={cn(
             'mt-0.5 flex items-center gap-1.5 text-[10.5px] text-muted-foreground',
-            mine ? 'flex-row-reverse' : 'ml-10 flex-row',
+            mine ? 'flex-row-reverse' : 'ml-10 flex-row'
           )}
         >
           <span>{timeLabel(message.created_at)}</span>
-          {message.edited_at && !deleted && <span>· {t('messages.edited')}</span>}
+          {message.edited_at && !deleted && (
+            <span>· {t('messages.edited')}</span>
+          )}
           {isPinned && !deleted && (
             <span className="flex items-center gap-0.5">
-              · <Pin className="size-2.5" aria-hidden="true" /> {t('messages.pinned')}
+              · <Pin className="size-2.5" aria-hidden="true" />{' '}
+              {t('messages.pinned')}
             </span>
           )}
           {mine && !deleted && isLastOverall && (
@@ -593,93 +618,98 @@ function BubbleActions({
   const [openReact, setOpenReact] = useState(false)
   return (
     <TooltipProvider delayDuration={200}>
-    <div
-      className={cn(
-        // absolutely positioned so the actions don't reserve layout space
-        // when not hovered — keeps mine bubbles hugging the right edge.
-        'absolute top-1/2 z-10 -translate-y-1/2 flex shrink-0 items-center gap-0.5 rounded-md bg-card/95 px-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100',
-        mine ? 'right-full mr-1' : 'left-full ml-1',
-      )}
-    >
-      <DropdownMenu open={openReact} onOpenChange={setOpenReact}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 text-muted-foreground"
-            aria-label={t('messages.reactLabel')}
+      <div
+        className={cn(
+          // absolutely positioned so the actions don't reserve layout space
+          // when not hovered — keeps mine bubbles hugging the right edge.
+          'absolute top-1/2 z-10 -translate-y-1/2 flex shrink-0 items-center gap-0.5 rounded-md bg-card/95 px-0.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100',
+          mine ? 'right-full mr-1' : 'left-full ml-1'
+        )}
+      >
+        <DropdownMenu open={openReact} onOpenChange={setOpenReact}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground"
+              aria-label={t('messages.reactLabel')}
+            >
+              <SmilePlus className="size-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align={mine ? 'end' : 'start'}
+            className="flex gap-0.5 p-1"
           >
-            <SmilePlus className="size-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align={mine ? 'end' : 'start'} className="flex gap-0.5 p-1">
-          {QUICK_REACTIONS.map(({ emoji, key }) => (
-            <Tooltip key={emoji}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onReact(emoji)
-                    setOpenReact(false)
-                  }}
-                  className="rounded-md p-1.5 text-base transition-colors hover:bg-accent"
-                  aria-label={t(`messages.reactions.${key}`)}
-                >
-                  {emoji}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">{t(`messages.reactions.${key}`)}</TooltipContent>
-            </Tooltip>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+            {QUICK_REACTIONS.map(({ emoji, key }) => (
+              <Tooltip key={emoji}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onReact(emoji)
+                      setOpenReact(false)
+                    }}
+                    className="rounded-md p-1.5 text-base transition-colors hover:bg-accent"
+                    aria-label={t(`messages.reactions.${key}`)}
+                  >
+                    {emoji}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {t(`messages.reactions.${key}`)}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-6 text-muted-foreground"
-            aria-label={t('messages.moreLabel')}
-          >
-            <MoreHorizontal className="size-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align={mine ? 'end' : 'start'}>
-          <DropdownMenuItem onClick={() => onPin(!isPinned)}>
-            {isPinned ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground"
+              aria-label={t('messages.moreLabel')}
+            >
+              <MoreHorizontal className="size-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={mine ? 'end' : 'start'}>
+            <DropdownMenuItem onClick={() => onPin(!isPinned)}>
+              {isPinned ? (
+                <>
+                  <PinOff className="size-4" />
+                  {t('messages.unpin')}
+                </>
+              ) : (
+                <>
+                  <Pin className="size-4" />
+                  {t('messages.pin')}
+                </>
+              )}
+            </DropdownMenuItem>
+            {canEdit && (
+              <DropdownMenuItem onClick={onStartEdit}>
+                <Pencil className="size-4" />
+                {t('messages.edit')}
+              </DropdownMenuItem>
+            )}
+            {mine && (
               <>
-                <PinOff className="size-4" />
-                {t('messages.unpin')}
-              </>
-            ) : (
-              <>
-                <Pin className="size-4" />
-                {t('messages.pin')}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="size-4" />
+                  {t('messages.delete')}
+                </DropdownMenuItem>
               </>
             )}
-          </DropdownMenuItem>
-          {canEdit && (
-            <DropdownMenuItem onClick={onStartEdit}>
-              <Pencil className="size-4" />
-              {t('messages.edit')}
-            </DropdownMenuItem>
-          )}
-          {mine && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={onDelete}
-              >
-                <Trash2 className="size-4" />
-                {t('messages.delete')}
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </TooltipProvider>
   )
 }
@@ -809,14 +839,24 @@ function SystemMessage({
 }) {
   const { t } = useTranslation()
   // Body is JSON {"event": "...", ...fields}. Decode and localize.
-  let parsed: { event?: string; target_id?: number; name?: string; old_name?: string; new_name?: string } = {}
+  let parsed: {
+    event?: string
+    target_id?: number
+    name?: string
+    old_name?: string
+    new_name?: string
+  } = {}
   try {
     parsed = JSON.parse(message.body || '{}')
   } catch {
     // ignore
   }
 
-  const actorName = participantName(participants[message.sender_id], t, message.sender_id)
+  const actorName = participantName(
+    participants[message.sender_id],
+    t,
+    message.sender_id
+  )
   const targetName =
     parsed.target_id !== undefined
       ? participantName(participants[parsed.target_id], t, parsed.target_id)
@@ -825,16 +865,28 @@ function SystemMessage({
   let text = ''
   switch (parsed.event) {
     case 'group_created':
-      text = t('messages.system.groupCreated', { actor: actorName, name: parsed.name || '' })
+      text = t('messages.system.groupCreated', {
+        actor: actorName,
+        name: parsed.name || '',
+      })
       break
     case 'renamed':
-      text = t('messages.system.renamed', { actor: actorName, name: parsed.new_name || '' })
+      text = t('messages.system.renamed', {
+        actor: actorName,
+        name: parsed.new_name || '',
+      })
       break
     case 'participant_added':
-      text = t('messages.system.participantAdded', { actor: actorName, target: targetName })
+      text = t('messages.system.participantAdded', {
+        actor: actorName,
+        target: targetName,
+      })
       break
     case 'participant_removed':
-      text = t('messages.system.participantRemoved', { actor: actorName, target: targetName })
+      text = t('messages.system.participantRemoved', {
+        actor: actorName,
+        target: targetName,
+      })
       break
     case 'participant_left':
       text = t('messages.system.participantLeft', { actor: actorName })
@@ -871,13 +923,11 @@ function ThreadSkeleton() {
           key={i}
           className={cn(
             'flex items-center gap-2',
-            r.mine ? 'justify-end' : 'justify-start',
+            r.mine ? 'justify-end' : 'justify-start'
           )}
         >
           {!r.mine && <Skeleton className="size-8 shrink-0 rounded-full" />}
-          <Skeleton
-            className={cn('h-10 max-w-full rounded-lg', r.w)}
-          />
+          <Skeleton className={cn('h-10 max-w-full rounded-lg', r.w)} />
         </div>
       ))}
     </div>
@@ -888,7 +938,7 @@ function conversationHeaderLabel(
   c: Conversation,
   dict: Record<number, ConversationParticipant>,
   meId: number,
-  t: (k: string) => string,
+  t: (k: string) => string
 ): string {
   // Groups are titled by their user-set name. DMs derive from participants.
   if (c.kind === 'group') {
@@ -903,4 +953,3 @@ function conversationHeaderLabel(
   const extra = others.length - names.length
   return extra > 0 ? `${names.join(', ')} +${extra}` : names.join(', ')
 }
-

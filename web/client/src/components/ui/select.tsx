@@ -17,10 +17,7 @@ function SelectGroup({
   return (
     <SelectPrimitive.Group
       data-slot="select-group"
-      className={cn(
-        '[&_[data-slot=select-item]]:pl-5',
-        className
-      )}
+      className={cn('[&_[data-slot=select-item]]:pl-5', className)}
       {...props}
     />
   )

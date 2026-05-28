@@ -8,11 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 // ---------------------------------------------------------------------------
 // Dancer SVG paths from logo-dancer.svg
@@ -156,10 +152,7 @@ function LandingNav({
           <a href="#projetos" className="hover:text-foreground">
             {t('landing.navProjects')}
           </a>
-          <a
-            href="#plataforma"
-            className="italic hover:text-foreground"
-          >
+          <a href="#plataforma" className="italic hover:text-foreground">
             StudioOS
           </a>
         </div>
@@ -337,7 +330,10 @@ function Modalidades({ t }: { t: (key: string) => string }) {
               {t('landing.modHeadingLine1')}
               <br />
               {t('landing.modHeadingLine2Pre')}{' '}
-              <span className="text-primary">{t('landing.modHeadingLine2Highlight')}</span> {t('landing.modHeadingLine2Post')}
+              <span className="text-primary">
+                {t('landing.modHeadingLine2Highlight')}
+              </span>{' '}
+              {t('landing.modHeadingLine2Post')}
             </h2>
           </div>
           <p className="max-w-[360px] text-[15px] leading-relaxed text-muted-foreground">
@@ -351,9 +347,7 @@ function Modalidades({ t }: { t: (key: string) => string }) {
               key={item.name}
               className="min-h-[180px] border-b border-border px-6 py-7 lg:border-r lg:last:border-r-0 [&:nth-child(4n)]:lg:border-r-0"
             >
-              <span className="landing-mono text-primary">
-                {item.n}
-              </span>
+              <span className="landing-mono text-primary">{item.n}</span>
               <h3 className="landing-display mb-2.5 mt-3 text-[26px]">
                 {item.name}
               </h3>
@@ -384,7 +378,7 @@ function Awards({ t }: { t: (key: string) => string }) {
 
   const scholarships = [
     'Royal Ballet School',
-    'École de Danse de l\'Ópera de Paris',
+    "École de Danse de l'Ópera de Paris",
     'Zurich Dance Academy',
     'English National Ballet School',
     'Staatliche Ballettschule Berlin',
@@ -529,7 +523,9 @@ function Team({ t }: { t: (key: string) => string }) {
           <h2 className="landing-display text-[clamp(44px,6vw,92px)]">
             {t('landing.teamHeadingLine1')}
             <br />
-            <span className="text-primary">{t('landing.teamHeadingLine2')}</span>
+            <span className="text-primary">
+              {t('landing.teamHeadingLine2')}
+            </span>
           </h2>
         </div>
 
@@ -549,9 +545,7 @@ function Team({ t }: { t: (key: string) => string }) {
                 <Badge variant="secondary" className="mb-2">
                   {p.role}
                 </Badge>
-                <h3 className="landing-display text-[26px]">
-                  {p.name}
-                </h3>
+                <h3 className="landing-display text-[26px]">{p.name}</h3>
                 <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground">
                   {p.cred}
                 </p>
@@ -576,9 +570,7 @@ function Team({ t }: { t: (key: string) => string }) {
               </Avatar>
               <div>
                 <div className="text-sm font-medium">{s.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {s.role}
-                </div>
+                <div className="text-xs text-muted-foreground">{s.role}</div>
               </div>
             </div>
           ))}
@@ -600,7 +592,7 @@ function Projetos({ t }: { t: (key: string) => string }) {
     },
     {
       tag: t('landing.projTagScholarships'),
-      title: 'Plataforma Ent\'Artes',
+      title: "Plataforma StudioOS",
       desc: t('landing.projDescPlatform'),
     },
     {
@@ -627,7 +619,9 @@ function Projetos({ t }: { t: (key: string) => string }) {
           </span>
           <h2 className="landing-display text-[clamp(40px,5vw,76px)]">
             {t('landing.projHeadingPre')}{' '}
-            <span className="text-primary">{t('landing.projHeadingHighlight')}</span>{' '}
+            <span className="text-primary">
+              {t('landing.projHeadingHighlight')}
+            </span>{' '}
             {t('landing.projHeadingPost')}
           </h2>
         </div>
@@ -642,9 +636,7 @@ function Projetos({ t }: { t: (key: string) => string }) {
                 {p.tag}
               </Badge>
               <div>
-                <h3 className="landing-display text-[28px]">
-                  {p.title}
-                </h3>
+                <h3 className="landing-display text-[28px]">{p.title}</h3>
                 <p className="mt-2.5 text-[14.5px] leading-relaxed text-muted-foreground">
                   {p.desc}
                 </p>
@@ -675,9 +667,7 @@ function BentoCard({
     >
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
         <span className="landing-mono text-primary">{tag}</span>
-        <span className="landing-mono text-muted-foreground/60">
-          {en}
-        </span>
+        <span className="landing-mono text-muted-foreground/60">{en}</span>
       </div>
       <CardContent className="flex flex-1 items-center justify-center pb-4">
         <span className="landing-display text-[20px] text-muted-foreground">
@@ -829,18 +819,10 @@ function CTA() {
 // ---------------------------------------------------------------------------
 // Footer
 // ---------------------------------------------------------------------------
-function FooterCol({
-  title,
-  links,
-}: {
-  title: string
-  links: string[]
-}) {
+function FooterCol({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <div className="landing-mono mb-4 text-muted-foreground">
-        {title}
-      </div>
+      <div className="landing-mono mb-4 text-muted-foreground">{title}</div>
       <ul className="flex list-none flex-col gap-2 p-0">
         {links.map((l) => (
           <li key={l} className="text-[13.5px]">
@@ -861,9 +843,7 @@ function Footer() {
           <div>
             <div className="mb-5 flex items-center gap-3">
               <DancerSvg fill="currentColor" className="h-9 w-auto" />
-              <span className="landing-display text-[22px]">
-                StudioOS
-              </span>
+              <span className="landing-display text-[22px]">StudioOS</span>
             </div>
             <p className="max-w-[320px] text-[13px] leading-relaxed text-muted-foreground">
               {t('landing.footerDesc')}
@@ -903,9 +883,7 @@ function Footer() {
           <span className="landing-mono">
             © 2011–2026 StudioOS · RAD® N.º 24116
           </span>
-          <span className="landing-mono">
-            Powered by StudioOS
-          </span>
+          <span className="landing-mono">Powered by StudioOS</span>
         </div>
       </div>
     </footer>
@@ -922,8 +900,7 @@ export function LandingPage() {
   const currentLang = i18n.language?.startsWith('pt') ? 'pt' : 'en'
   const toggleLang = () =>
     i18n.changeLanguage(i18n.language?.startsWith('pt') ? 'en-US' : 'pt-PT')
-  const toggleTheme = () =>
-    setTheme(theme === 'dark' ? 'light' : 'dark')
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
 
   return (
     <div className="landing-body min-h-screen overflow-x-hidden bg-background text-foreground">

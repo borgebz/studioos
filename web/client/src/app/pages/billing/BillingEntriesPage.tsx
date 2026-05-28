@@ -68,7 +68,6 @@ function StatusPill({ status }: { status: BillingEntryStatusEnum }) {
   )
 }
 
-
 export function BillingEntriesPage() {
   const { t } = useTranslation()
   const { can } = usePermissions()
@@ -76,13 +75,10 @@ export function BillingEntriesPage() {
   const currency = t('common.currencySymbol')
 
   const [cancelTarget, setCancelTarget] = useState<BillingEntryList | null>(
-    null,
+    null
   )
 
-  const columnHelper = useMemo(
-    () => createColumnHelper<BillingEntryList>(),
-    [],
-  )
+  const columnHelper = useMemo(() => createColumnHelper<BillingEntryList>(), [])
 
   const columns = useMemo(
     () => [
@@ -143,9 +139,15 @@ export function BillingEntriesPage() {
             type: 'multi-select',
             label: t('billing.col.source'),
             options: [
-              { value: SourceTypeEnum.Coaching, label: t('billing.source.coaching') },
+              {
+                value: SourceTypeEnum.Coaching,
+                label: t('billing.source.coaching'),
+              },
               { value: SourceTypeEnum.Fine, label: t('billing.source.fine') },
-              { value: SourceTypeEnum.Marketplace, label: t('billing.source.marketplace') },
+              {
+                value: SourceTypeEnum.Marketplace,
+                label: t('billing.source.marketplace'),
+              },
             ],
           },
         },
@@ -173,9 +175,18 @@ export function BillingEntriesPage() {
             type: 'multi-select',
             label: t('billing.col.status'),
             options: [
-              { value: BillingEntryStatusEnum.Pending, label: t('billing.status.pending') },
-              { value: BillingEntryStatusEnum.Exported, label: t('billing.status.exported') },
-              { value: BillingEntryStatusEnum.Cancelled, label: t('billing.status.cancelled') },
+              {
+                value: BillingEntryStatusEnum.Pending,
+                label: t('billing.status.pending'),
+              },
+              {
+                value: BillingEntryStatusEnum.Exported,
+                label: t('billing.status.exported'),
+              },
+              {
+                value: BillingEntryStatusEnum.Cancelled,
+                label: t('billing.status.cancelled'),
+              },
             ],
           },
         },
@@ -223,28 +234,31 @@ export function BillingEntriesPage() {
         },
       }),
     ],
-    [columnHelper, t, canCancel, currency],
+    [columnHelper, t, canCancel, currency]
   )
 
-  const { columnFilters, setColumnFilters } = useColumnFilters<BillingEntryList>({
-    columns,
-    syncToUrl: true,
-    defaultFilters: [{ id: 'status', value: [BillingEntryStatusEnum.Pending] }],
-  })
+  const { columnFilters, setColumnFilters } =
+    useColumnFilters<BillingEntryList>({
+      columns,
+      syncToUrl: true,
+      defaultFilters: [
+        { id: 'status', value: [BillingEntryStatusEnum.Pending] },
+      ],
+    })
 
   const statusFilter = useMemo(
     () =>
       (columnFilters.find((f) => f.id === 'status')?.value as
         | BillingEntryStatusEnum[]
         | undefined) ?? null,
-    [columnFilters],
+    [columnFilters]
   )
   const sourceFilter = useMemo(
     () =>
       (columnFilters.find((f) => f.id === 'source_type')?.value as
         | SourceTypeEnum[]
         | undefined) ?? null,
-    [columnFilters],
+    [columnFilters]
   )
 
   // Stable keys for `resetDeps` so we only refetch when the filter actually
@@ -313,7 +327,7 @@ export function BillingEntriesPage() {
       })
       toast.success(t('billing.cancelSuccess'))
     },
-    [statusFilter, t, setRows],
+    [statusFilter, t, setRows]
   )
 
   const table = useReactTable({

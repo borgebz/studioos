@@ -86,8 +86,15 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
       notify_in_app: false,
     },
   })
-  const { control, register, handleSubmit, watch, formState, reset, getValues } =
-    form
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    formState,
+    reset,
+    getValues,
+  } = form
   const publication = watch('publication')
   const body = watch('body')
   const title = watch('title')
@@ -105,7 +112,9 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
       ]
       if (mode === 'edit' && Number.isFinite(numericPostId)) {
         tasks.push(
-          apiClient.api.eventsPostsRetrieve(eventId, numericPostId).catch(() => null),
+          apiClient.api
+            .eventsPostsRetrieve(eventId, numericPostId)
+            .catch(() => null)
         )
       }
       const [parentRes, postRes] = (await Promise.all(tasks)) as [
@@ -147,10 +156,14 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
         })
         result = r.data
       } else {
-        const r = await apiClient.api.eventsPostsUpdate(eventId, numericPostId, {
-          title: vals.title,
-          body: vals.body,
-        })
+        const r = await apiClient.api.eventsPostsUpdate(
+          eventId,
+          numericPostId,
+          {
+            title: vals.title,
+            body: vals.body,
+          }
+        )
         result = r.data
       }
       if (!result) throw new Error('no result')
@@ -163,7 +176,7 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
       } else if (vals.publication === 'scheduled' && vals.scheduled_at) {
         const iso = combineDateTime(
           vals.scheduled_at,
-          vals.scheduled_time || '09:00',
+          vals.scheduled_time || '09:00'
         )
         await apiClient.api
           .eventsPostsSchedulePublicationCreate(eventId, result.id, {
@@ -184,7 +197,9 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
 
   const backTo = paths.eventsDetail.replace(':id', String(eventId))
   const pageTitle =
-    mode === 'create' ? t('events.post.createTitle') : t('events.post.editTitle')
+    mode === 'create'
+      ? t('events.post.createTitle')
+      : t('events.post.editTitle')
 
   if (loading) {
     return (
@@ -225,10 +240,14 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
                   {parent.title}
                 </div>
                 <div className="font-mono text-[11px] text-muted-foreground">
-                  {dl ? `${dl.date} · ${parent.location}` : (parent.location ?? '')}
+                  {dl
+                    ? `${dl.date} · ${parent.location}`
+                    : (parent.location ?? '')}
                 </div>
               </div>
-              {parent.event_state && <EventStateBadge value={parent.event_state} />}
+              {parent.event_state && (
+                <EventStateBadge value={parent.event_state} />
+              )}
             </div>
           )}
 
@@ -303,20 +322,22 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
                   name="publication"
                   render={({ field }) => (
                     <div className="space-y-2">
-                      {(['draft', 'published', 'scheduled'] as const).map((v) => (
-                        <PubRadio
-                          key={v}
-                          selected={field.value === v}
-                          onSelect={() => field.onChange(v)}
-                          label={t(
-                            v === 'draft'
-                              ? 'events.post.publicationDraft'
-                              : v === 'published'
-                                ? 'events.post.publicationPublished'
-                                : 'events.post.publicationScheduled',
-                          )}
-                        />
-                      ))}
+                      {(['draft', 'published', 'scheduled'] as const).map(
+                        (v) => (
+                          <PubRadio
+                            key={v}
+                            selected={field.value === v}
+                            onSelect={() => field.onChange(v)}
+                            label={t(
+                              v === 'draft'
+                                ? 'events.post.publicationDraft'
+                                : v === 'published'
+                                  ? 'events.post.publicationPublished'
+                                  : 'events.post.publicationScheduled'
+                            )}
+                          />
+                        )
+                      )}
                     </div>
                   )}
                 />
@@ -414,7 +435,9 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
               type="button"
               disabled={submitting || !(getValues('title') && body)}
               onClick={() =>
-                handleSubmit((v) => submit({ ...v, publication: 'published' }))()
+                handleSubmit((v) =>
+                  submit({ ...v, publication: 'published' })
+                )()
               }
             >
               <Megaphone className="size-4" />
@@ -446,13 +469,13 @@ function PubRadio({
         'flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors',
         selected
           ? 'border-primary bg-primary/5'
-          : 'border-border bg-background hover:bg-accent/40',
+          : 'border-border bg-background hover:bg-accent/40'
       )}
     >
       <span
         className={cn(
           'grid size-4 place-items-center rounded-full border-[1.5px]',
-          selected ? 'border-primary' : 'border-muted-foreground/50',
+          selected ? 'border-primary' : 'border-muted-foreground/50'
         )}
       >
         {selected && <span className="size-2 rounded-full bg-primary" />}

@@ -66,9 +66,7 @@ export function WaiveFineDialog({
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{t('billingFines.waiveTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('billingFines.waiveDesc')}
-            </DialogDescription>
+            <DialogDescription>{t('billingFines.waiveDesc')}</DialogDescription>
           </DialogHeader>
 
           <div className="mt-4 space-y-2">
@@ -95,9 +93,7 @@ export function WaiveFineDialog({
               variant="destructive"
               disabled={submitting || !notes.trim()}
             >
-              {submitting
-                ? t('billingFines.waiving')
-                : t('billingFines.waive')}
+              {submitting ? t('billingFines.waiving') : t('billingFines.waive')}
             </Button>
           </DialogFooter>
         </form>

@@ -93,7 +93,9 @@ export function CancelBillingEntryDialog({
               variant="destructive"
               disabled={submitting || !notes.trim()}
             >
-              {submitting ? t('billing.cancelling') : t('billing.confirmCancel')}
+              {submitting
+                ? t('billing.cancelling')
+                : t('billing.confirmCancel')}
             </Button>
           </DialogFooter>
         </form>

@@ -41,7 +41,7 @@ function translateMessage(msg: string, t: (key: string) => string): string {
  * Returns null if the error doesn't match the expected structure.
  */
 export function extractApiErrors(
-  err: unknown,
+  err: unknown
 ): Record<string, string[]> | null {
   const httpErr = err as ApiErrorShape
   return httpErr?.error?.errors ?? null
@@ -62,7 +62,7 @@ export function extractApiErrors(
 export function parseApiError(
   err: unknown,
   t: (key: string) => string,
-  fallbackKey = 'common.unexpectedError',
+  fallbackKey = 'common.unexpectedError'
 ): string | null {
   const errors = extractApiErrors(err)
   if (!errors) return null
@@ -96,7 +96,7 @@ export function parseApiError(
  */
 export function parseApiFieldErrors(
   err: unknown,
-  t: (key: string) => string,
+  t: (key: string) => string
 ): Record<string, string> | null {
   const errors = extractApiErrors(err)
   if (!errors) return null

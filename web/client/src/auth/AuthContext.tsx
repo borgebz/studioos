@@ -63,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus('unauthenticated')
     }
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
-    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
+    return () =>
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
   }, [])
 
   const value = useMemo<AuthContextValue>(

@@ -140,7 +140,9 @@ export function LoginPage() {
       await login({ email: data.email, password: data.password })
       navigate(redirectTo, { replace: true })
     } catch (err) {
-      setSubmitError(parseApiError(err, t, 'auth.login.error') ?? t('auth.login.error'))
+      setSubmitError(
+        parseApiError(err, t, 'auth.login.error') ?? t('auth.login.error')
+      )
     }
   }
 

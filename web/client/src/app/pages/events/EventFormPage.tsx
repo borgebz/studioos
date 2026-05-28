@@ -141,7 +141,8 @@ export function EventFormPage({ mode }: EventFormPageProps) {
           contact_info: e.contact_info ?? '',
           event_date: dt.date,
           event_time: dt.time || '20:00',
-          date_unknown: e.event_state === EventStateEnum.DateTbd || !e.event_date,
+          date_unknown:
+            e.event_state === EventStateEnum.DateTbd || !e.event_date,
           visibility_state: e.visibility_state ?? VisibilityStateEnum.Draft,
           event_state: e.event_state ?? EventStateEnum.Planned,
           publication_scheduled_at: sched.date,
@@ -168,7 +169,7 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   // ── Submit handlers ───────────────────────────────────────────────────
   const submit = async (
     vals: EventFormValues,
-    opts: { publishAfter: boolean } = { publishAfter: false },
+    opts: { publishAfter: boolean } = { publishAfter: false }
   ) => {
     setSubmitting(true)
     try {
@@ -189,14 +190,12 @@ export function EventFormPage({ mode }: EventFormPageProps) {
 
       let result: EventDetail | undefined
       if (mode === 'create') {
-        const r = await apiClient.api.eventsCreate(
-          fd as unknown as EventCreate,
-        )
+        const r = await apiClient.api.eventsCreate(fd as unknown as EventCreate)
         result = r.data
       } else {
         const r = await apiClient.api.eventsUpdate(
           numericId,
-          fd as unknown as EventUpdate,
+          fd as unknown as EventUpdate
         )
         result = r.data
       }
@@ -219,7 +218,7 @@ export function EventFormPage({ mode }: EventFormPageProps) {
         ) {
           const iso = combineDateTime(
             vals.publication_scheduled_at,
-            vals.publication_scheduled_time || '09:00',
+            vals.publication_scheduled_time || '09:00'
           )
           await apiClient.api
             .eventsSchedulePublicationCreate(result.id, {
@@ -244,9 +243,7 @@ export function EventFormPage({ mode }: EventFormPageProps) {
       }
 
       toast.success(
-        opts.publishAfter
-          ? t('events.form.publishOk')
-          : t('events.form.saveOk'),
+        opts.publishAfter ? t('events.form.publishOk') : t('events.form.saveOk')
       )
       navigate(paths.eventsDetail.replace(':id', String(result.id)))
     } catch {
@@ -269,7 +266,10 @@ export function EventFormPage({ mode }: EventFormPageProps) {
       <div className="flex h-full flex-col">
         <div className="flex-1 overflow-auto p-6">
           <div className="mx-auto w-full max-w-6xl">
-            <PageHeader title={t('events.form.editTitle')} backTo={paths.events} />
+            <PageHeader
+              title={t('events.form.editTitle')}
+              backTo={paths.events}
+            />
             <Skeleton className="h-[600px] w-full" />
           </div>
         </div>
@@ -278,7 +278,9 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   }
 
   const title =
-    mode === 'create' ? t('events.form.createTitle') : t('events.form.editTitle')
+    mode === 'create'
+      ? t('events.form.createTitle')
+      : t('events.form.editTitle')
   const backTo =
     mode === 'edit' && Number.isFinite(numericId)
       ? paths.eventsDetail.replace(':id', String(numericId))
@@ -341,13 +343,18 @@ export function EventFormPage({ mode }: EventFormPageProps) {
                       {...register('description')}
                     />
                     <div className="mt-1 flex justify-end font-mono text-[11px] text-muted-foreground">
-                      {t('events.form.shortDescriptionCounter', { count: shortDescLen })}
+                      {t('events.form.shortDescriptionCounter', {
+                        count: shortDescLen,
+                      })}
                     </div>
                   </div>
                 </div>
               </CardSection>
 
-              <CardSection title={t('events.form.cover')} description={t('events.form.coverHint')}>
+              <CardSection
+                title={t('events.form.cover')}
+                description={t('events.form.coverHint')}
+              >
                 <CoverUpload
                   url={coverPreview}
                   onPick={onCoverPick}
@@ -358,7 +365,10 @@ export function EventFormPage({ mode }: EventFormPageProps) {
                 />
               </CardSection>
 
-              <CardSection title={t('events.form.body')} description={t('events.form.bodyHint')}>
+              <CardSection
+                title={t('events.form.body')}
+                description={t('events.form.bodyHint')}
+              >
                 <Controller
                   control={control}
                   name="body"
@@ -554,7 +564,10 @@ export function EventFormPage({ mode }: EventFormPageProps) {
               disabled={submitting}
               onClick={() =>
                 handleSubmit((v) =>
-                  submit({ ...v, visibility_state: VisibilityStateEnum.Draft }, { publishAfter: false }),
+                  submit(
+                    { ...v, visibility_state: VisibilityStateEnum.Draft },
+                    { publishAfter: false }
+                  )
                 )()
               }
             >
@@ -568,8 +581,8 @@ export function EventFormPage({ mode }: EventFormPageProps) {
                 handleSubmit((v) =>
                   submit(
                     { ...v, visibility_state: VisibilityStateEnum.Published },
-                    { publishAfter: true },
-                  ),
+                    { publishAfter: true }
+                  )
                 )()
               }
             >
@@ -608,13 +621,13 @@ function RadioCard({
         'grid w-full grid-cols-[18px_1fr_auto] items-center gap-3 rounded-md border px-3 py-2.5 text-left transition-colors',
         selected
           ? 'border-primary bg-primary/5'
-          : 'border-border bg-background hover:bg-accent/40',
+          : 'border-border bg-background hover:bg-accent/40'
       )}
     >
       <span
         className={cn(
           'grid size-4 place-items-center rounded-full border-[1.5px]',
-          selected ? 'border-primary' : 'border-muted-foreground/50',
+          selected ? 'border-primary' : 'border-muted-foreground/50'
         )}
       >
         {selected && <span className="size-2 rounded-full bg-primary" />}

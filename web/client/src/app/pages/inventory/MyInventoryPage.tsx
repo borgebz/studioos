@@ -125,7 +125,7 @@ export function MyInventoryPage() {
         cell: (info) => <ProductStatusBadge status={info.getValue()} />,
       }),
     ],
-    [columnHelper, t],
+    [columnHelper, t]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<ProductDetail>({
@@ -146,7 +146,7 @@ export function MyInventoryPage() {
         return [...without, { id: 'status', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const fetchPage = useCallback(() => {

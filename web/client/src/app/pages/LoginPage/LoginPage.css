@@ -7,18 +7,48 @@
   height: 14px;
   border: 1px solid var(--login-corner);
 }
-.login-corner-tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
-.login-corner-tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
-.login-corner-bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
-.login-corner-br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+.login-corner-tl {
+  top: -1px;
+  left: -1px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.login-corner-tr {
+  top: -1px;
+  right: -1px;
+  border-left: 0;
+  border-bottom: 0;
+}
+.login-corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-right: 0;
+  border-top: 0;
+}
+.login-corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-left: 0;
+  border-top: 0;
+}
 
 /* Dancer sway */
 @keyframes dancerSway {
-  0%   { transform: translateY(0) rotate(-1.2deg); }
-  25%  { transform: translateY(-6px) rotate(0.6deg); }
-  50%  { transform: translateY(-2px) rotate(1.4deg); }
-  75%  { transform: translateY(-8px) rotate(-0.4deg); }
-  100% { transform: translateY(0) rotate(-1.2deg); }
+  0% {
+    transform: translateY(0) rotate(-1.2deg);
+  }
+  25% {
+    transform: translateY(-6px) rotate(0.6deg);
+  }
+  50% {
+    transform: translateY(-2px) rotate(1.4deg);
+  }
+  75% {
+    transform: translateY(-8px) rotate(-0.4deg);
+  }
+  100% {
+    transform: translateY(0) rotate(-1.2deg);
+  }
 }
 .login-dancer-sway {
   transform-origin: 50% 100%;
@@ -33,14 +63,25 @@
   width: 38%;
   height: 14px;
   transform: translateX(-50%);
-  background: radial-gradient(50% 100% at 50% 50%, rgba(0, 0, 0, 0.18), transparent 70%);
+  background: radial-gradient(
+    50% 100% at 50% 50%,
+    rgba(0, 0, 0, 0.18),
+    transparent 70%
+  );
   filter: blur(6px);
   z-index: 1;
   animation: shadowPulse 4.5s ease-in-out infinite;
 }
 @keyframes shadowPulse {
-  0%, 100% { opacity: 0.65; transform: translateX(-50%) scaleX(1); }
-  50%      { opacity: 0.35; transform: translateX(-50%) scaleX(0.7); }
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: translateX(-50%) scaleX(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: translateX(-50%) scaleX(0.7);
+  }
 }
 
 /* Choreography traces */
@@ -85,4 +126,3 @@
   text-transform: uppercase;
   color: var(--login-brand);
 }
-

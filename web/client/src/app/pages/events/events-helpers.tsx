@@ -32,7 +32,10 @@ const STATE_STYLES: Record<EventStateEnum, string> = {
     'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-transparent',
 }
 
-const STATE_ICONS: Record<EventStateEnum, React.ComponentType<{ className?: string }>> = {
+const STATE_ICONS: Record<
+  EventStateEnum,
+  React.ComponentType<{ className?: string }>
+> = {
   [EventStateEnum.Planned]: Calendar,
   [EventStateEnum.DateTbd]: HelpCircle,
   [EventStateEnum.Cancelled]: Ban,
@@ -67,7 +70,10 @@ const VIS_STYLES: Record<VisibilityStateEnum, string> = {
     'bg-muted text-muted-foreground border-transparent',
 }
 
-const VIS_ICONS: Record<VisibilityStateEnum, React.ComponentType<{ className?: string }>> = {
+const VIS_ICONS: Record<
+  VisibilityStateEnum,
+  React.ComponentType<{ className?: string }>
+> = {
   [VisibilityStateEnum.Draft]: Pencil,
   [VisibilityStateEnum.Scheduled]: CalendarClock,
   [VisibilityStateEnum.Published]: Eye,
@@ -84,7 +90,10 @@ export function EventVisibilityBadge({
   const { t } = useTranslation()
   const Icon = VIS_ICONS[value]
   return (
-    <Badge variant="outline" className={cn('gap-1', VIS_STYLES[value], className)}>
+    <Badge
+      variant="outline"
+      className={cn('gap-1', VIS_STYLES[value], className)}
+    >
       <Icon className="size-3" />
       {t(`events.visibility.${value}`)}
     </Badge>
@@ -102,14 +111,19 @@ export function useDateFormatter() {
   const locale = dateFnsLocale(i18n.language)
   return {
     formatDateLong: (iso: string) => format(parseISO(iso), 'PPPP', { locale }),
-    formatDateShort: (iso: string) => format(parseISO(iso), 'd LLL yyyy', { locale }),
+    formatDateShort: (iso: string) =>
+      format(parseISO(iso), 'd LLL yyyy', { locale }),
     formatTime: (iso: string) => format(parseISO(iso), 'HH:mm', { locale }),
     formatWeekday: (iso: string) => format(parseISO(iso), 'EEEE', { locale }),
-    formatRelative: (iso: string) => format(parseISO(iso), 'd LLL · HH:mm', { locale }),
+    formatRelative: (iso: string) =>
+      format(parseISO(iso), 'd LLL · HH:mm', { locale }),
   }
 }
 
-export function eventDateLine(event_date: string | null | undefined, fmt: ReturnType<typeof useDateFormatter>) {
+export function eventDateLine(
+  event_date: string | null | undefined,
+  fmt: ReturnType<typeof useDateFormatter>
+) {
   if (!event_date) return null
   const weekday = fmt.formatWeekday(event_date)
   const date = fmt.formatDateShort(event_date)
@@ -161,7 +175,7 @@ export function EventCover({
       className={cn(
         'relative w-full overflow-hidden bg-muted/30',
         aspect,
-        className,
+        className
       )}
     >
       {src ? (
@@ -170,7 +184,7 @@ export function EventCover({
           alt={alt ?? ''}
           className={cn(
             'h-full w-full object-cover',
-            cancelled && 'grayscale opacity-70',
+            cancelled && 'grayscale opacity-70'
           )}
         />
       ) : (

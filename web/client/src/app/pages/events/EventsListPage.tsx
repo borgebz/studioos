@@ -77,23 +77,23 @@ export function EventsListPage() {
             VisibilityStateEnum.Published &&
           !isCancelled(e) &&
           !isCompleted(e) &&
-          isUpcoming(e),
+          isUpcoming(e)
       ),
-    [filtered],
+    [filtered]
   )
   const past = useMemo(() => filtered.filter((e) => isCompleted(e)), [filtered])
   const cancelledList = useMemo(
     () => filtered.filter((e) => isCancelled(e)),
-    [filtered],
+    [filtered]
   )
   const drafts = useMemo(
     () =>
       filtered.filter(
         (e) =>
           e.visibility_state === VisibilityStateEnum.Draft ||
-          e.visibility_state === VisibilityStateEnum.Scheduled,
+          e.visibility_state === VisibilityStateEnum.Scheduled
       ),
-    [filtered],
+    [filtered]
   )
 
   const visible: EventListAug[] = useMemo(() => {
@@ -110,7 +110,7 @@ export function EventsListPage() {
         return filtered.filter(
           (e) =>
             (e.visibility_state ?? VisibilityStateEnum.Published) ===
-            VisibilityStateEnum.Published,
+            VisibilityStateEnum.Published
         )
     }
   }, [tab, upcoming, past, cancelledList, drafts, filtered])
@@ -131,11 +131,11 @@ export function EventsListPage() {
               interested: next,
               interest_count: Math.max(
                 0,
-                (it.interest_count ?? 0) + (next ? 1 : -1),
+                (it.interest_count ?? 0) + (next ? 1 : -1)
               ),
             }
-          : it,
-      ),
+          : it
+      )
     )
     try {
       if (next) await apiClient.api.eventsInterestsCreate(e.id)
@@ -149,19 +149,27 @@ export function EventsListPage() {
                 interested: !next,
                 interest_count: Math.max(
                   0,
-                  (it.interest_count ?? 0) + (next ? -1 : 1),
+                  (it.interest_count ?? 0) + (next ? -1 : 1)
                 ),
               }
-            : it,
-        ),
+            : it
+        )
       )
     }
   }
 
   const tabs: { id: Tab; label: string; count: number }[] = [
-    { id: 'upcoming', label: t('events.tabs.upcoming'), count: upcoming.length },
+    {
+      id: 'upcoming',
+      label: t('events.tabs.upcoming'),
+      count: upcoming.length,
+    },
     { id: 'past', label: t('events.tabs.past'), count: past.length },
-    { id: 'cancelled', label: t('events.tabs.cancelled'), count: cancelledList.length },
+    {
+      id: 'cancelled',
+      label: t('events.tabs.cancelled'),
+      count: cancelledList.length,
+    },
     { id: 'drafts', label: t('events.tabs.drafts'), count: drafts.length },
     { id: 'all', label: t('events.tabs.all'), count: filtered.length },
   ]
@@ -308,14 +316,12 @@ function FeaturedEventCard({
               </div>
             )}
             <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
-              <Button onClick={onOpen}>
-                {t('events.open')}
-              </Button>
+              <Button onClick={onOpen}>{t('events.open')}</Button>
               <Button variant="outline" onClick={onToggleInterest}>
                 <Heart
                   className={cn(
                     'size-4',
-                    event.interested && 'fill-primary text-primary',
+                    event.interested && 'fill-primary text-primary'
                   )}
                 />
                 <span className="font-semibold">

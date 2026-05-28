@@ -78,7 +78,7 @@ export function usePaginatedList<T>({
       setCount(data.count)
       nextUrlRef.current = data.next ?? null
     },
-    [],
+    []
   )
 
   const inFlightRef = useRef(0)

@@ -70,7 +70,7 @@ export function NewConversationDialog({
     setLoading(true)
     apiClient.api
       .accountsProfilesRetrieve(
-        debouncedQuery.trim() ? { search: debouncedQuery.trim() } : undefined,
+        debouncedQuery.trim() ? { search: debouncedQuery.trim() } : undefined
       )
       .then((res) => {
         if (seq !== fetchSeq.current) return
@@ -102,12 +102,12 @@ export function NewConversationDialog({
 
   const visibleProfiles = useMemo(
     () => profiles.filter((p) => p.user_id !== meId),
-    [profiles, meId],
+    [profiles, meId]
   )
 
   const selectedIds = useMemo(
     () => new Set(selected.map((p) => p.user_id)),
-    [selected],
+    [selected]
   )
 
   async function handlePickDirect(userId: number) {
@@ -123,7 +123,7 @@ export function NewConversationDialog({
     setSelected((prev) =>
       prev.some((x) => x.user_id === p.user_id)
         ? prev.filter((x) => x.user_id !== p.user_id)
-        : [...prev, p],
+        : [...prev, p]
     )
   }
 
@@ -140,7 +140,7 @@ export function NewConversationDialog({
     try {
       await onCreateGroup(
         groupName.trim(),
-        selected.map((p) => p.user_id),
+        selected.map((p) => p.user_id)
       )
     } finally {
       setSubmittingGroup(false)
@@ -240,7 +240,7 @@ export function NewConversationDialog({
             <ul
               className={cn(
                 'flex flex-col transition-opacity duration-150',
-                loading && 'opacity-60',
+                loading && 'opacity-60'
               )}
               aria-busy={loading}
             >
@@ -265,15 +265,12 @@ export function NewConversationDialog({
                       className={cn(
                         'flex w-full items-center gap-3 rounded-md px-4 py-2.5 text-left transition-colors',
                         'hover:bg-accent disabled:opacity-60',
-                        mode === 'group' && isSelected && 'bg-accent',
+                        mode === 'group' && isSelected && 'bg-accent'
                       )}
                     >
                       <Avatar size="default">
                         {p.photo_url && (
-                          <AvatarImage
-                            src={p.photo_url}
-                            alt={p.display_name}
-                          />
+                          <AvatarImage src={p.photo_url} alt={p.display_name} />
                         )}
                         <AvatarFallback>
                           {getInitials(p.display_name)}

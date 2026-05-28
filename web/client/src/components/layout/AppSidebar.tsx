@@ -79,7 +79,8 @@ function isChildActive(
   siblings: NavItemConfig[]
 ): boolean {
   if (pathname === child.to) return true
-  if (!pathname.startsWith(child.to + '/') && pathname !== child.to) return false
+  if (!pathname.startsWith(child.to + '/') && pathname !== child.to)
+    return false
   // This child is a prefix match — only highlight if no sibling is a
   // longer (more specific) prefix match.
   return !siblings.some(
@@ -224,7 +225,7 @@ export function AppSidebar() {
         }
         return acc
       },
-      [],
+      []
     )
   }, [can, canAny])
 
@@ -313,7 +314,7 @@ export function AppSidebar() {
                           <span
                             className={cn(
                               'ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10.5px] font-semibold text-primary-foreground group-data-[collapsible=icon]:hidden',
-                              shake && 'unread-shake',
+                              shake && 'unread-shake'
                             )}
                             aria-label={`${badgeLabel} unread`}
                           >

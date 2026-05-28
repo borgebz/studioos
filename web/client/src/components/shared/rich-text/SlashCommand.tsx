@@ -1,9 +1,4 @@
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useState,
-} from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Extension, type Editor, type Range } from '@tiptap/core'
 import { ReactRenderer } from '@tiptap/react'
 import { Suggestion, type SuggestionProps } from '@tiptap/suggestion'
@@ -37,7 +32,12 @@ const ITEMS: SlashItem[] = [
     keywords: ['h1', 'title'],
     icon: <Heading1 className="size-4" />,
     command: ({ editor, range }) =>
-      editor.chain().focus().deleteRange(range).setNode('heading', { level: 1 }).run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode('heading', { level: 1 })
+        .run(),
   },
   {
     title: 'Heading 2',
@@ -45,7 +45,12 @@ const ITEMS: SlashItem[] = [
     keywords: ['h2'],
     icon: <Heading2 className="size-4" />,
     command: ({ editor, range }) =>
-      editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode('heading', { level: 2 })
+        .run(),
   },
   {
     title: 'Heading 3',
@@ -53,7 +58,12 @@ const ITEMS: SlashItem[] = [
     keywords: ['h3'],
     icon: <Heading3 className="size-4" />,
     command: ({ editor, range }) =>
-      editor.chain().focus().deleteRange(range).setNode('heading', { level: 3 }).run(),
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode('heading', { level: 3 })
+        .run(),
   },
   {
     title: 'Bullet list',
@@ -119,7 +129,12 @@ const ITEMS: SlashItem[] = [
         editor.chain().focus().deleteRange(range).run()
         return
       }
-      editor.chain().focus().deleteRange(range).setImage({ src: url, alt: '' }).run()
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setImage({ src: url, alt: '' })
+        .run()
     },
   },
   {
@@ -133,7 +148,12 @@ const ITEMS: SlashItem[] = [
         editor.chain().focus().deleteRange(range).run()
         return
       }
-      editor.chain().focus().deleteRange(range).setYoutubeVideo({ src: url }).run()
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setYoutubeVideo({ src: url })
+        .run()
     },
   },
 ]
@@ -185,7 +205,7 @@ const SlashList = forwardRef<SlashListHandle, SuggestionProps<SlashItem>>(
             onMouseEnter={() => setSelected(i)}
             className={cn(
               'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-accent',
-              i === selected && 'bg-accent',
+              i === selected && 'bg-accent'
             )}
           >
             <span className="flex size-7 items-center justify-center rounded border border-border bg-background text-muted-foreground">
@@ -203,7 +223,7 @@ const SlashList = forwardRef<SlashListHandle, SuggestionProps<SlashItem>>(
         ))}
       </div>
     )
-  },
+  }
 )
 SlashList.displayName = 'SlashList'
 
@@ -244,7 +264,10 @@ export const SlashCommand = Extension.create({
           })
         },
         render: () => {
-          let component: ReactRenderer<SlashListHandle, SuggestionProps<SlashItem>> | null = null
+          let component: ReactRenderer<
+            SlashListHandle,
+            SuggestionProps<SlashItem>
+          > | null = null
           let popup: HTMLDivElement | null = null
 
           const position = (props: SuggestionProps<SlashItem>) => {

@@ -69,15 +69,11 @@ export function ListingsGridView<T>({
     const root = getScrollParent(node)
     const observer = new IntersectionObserver(
       (entries) => {
-        if (
-          entries[0]?.isIntersecting &&
-          hasNextPage &&
-          !isFetchingNextPage
-        ) {
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
           onLoadMore()
         }
       },
-      { root, rootMargin: '400px' },
+      { root, rootMargin: '400px' }
     )
     observer.observe(node)
     return () => observer.disconnect()

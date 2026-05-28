@@ -44,7 +44,10 @@ export function ProfileSetupPrompt() {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleDismiss()}>
-      <DialogContent className="sm:max-w-md overflow-hidden p-0" showCloseButton={false}>
+      <DialogContent
+        className="sm:max-w-md overflow-hidden p-0"
+        showCloseButton={false}
+      >
         <div className="relative bg-background before:absolute before:inset-0 before:rounded-[inherit] before:bg-primary/5 px-6 pt-8 pb-12">
           <BadgeCheck className="absolute top-4 right-6 h-5 w-5 text-primary/40" />
           <IdCard className="absolute top-8 left-8 h-4 w-4 text-primary/25 -rotate-12" />

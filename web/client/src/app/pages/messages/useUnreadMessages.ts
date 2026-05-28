@@ -31,11 +31,14 @@ export interface UnreadState {
  */
 export function useUnreadMessages(): UnreadState {
   const [total, setTotal] = useState(0)
-  const [byConversation, setByConversation] = useState<Record<string, number>>({})
+  const [byConversation, setByConversation] = useState<Record<string, number>>(
+    {}
+  )
 
   const refresh = useCallback(async () => {
     try {
-      const res = await apiClient.api.messagingConversationsUnreadCountRetrieve()
+      const res =
+        await apiClient.api.messagingConversationsUnreadCountRetrieve()
       setTotal(res.data.total ?? 0)
       setByConversation(res.data.by_conversation ?? {})
     } catch {

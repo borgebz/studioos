@@ -87,9 +87,7 @@ export function DesignSystemIndexPage() {
       </header>
 
       <section>
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Pages
-        </h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Pages</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {pages.map(({ to, label, description, icon: Icon }) => (
             <Link key={to} to={to}>
@@ -112,9 +110,7 @@ export function DesignSystemIndexPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-foreground mb-4">
-          Dialogs
-        </h2>
+        <h2 className="text-lg font-semibold text-foreground mb-4">Dialogs</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <button
             type="button"
@@ -122,7 +118,9 @@ export function DesignSystemIndexPage() {
             className="rounded-lg border border-border bg-card p-6 text-left transition-colors hover:bg-accent/50"
           >
             <User className="mb-3 size-8 text-muted-foreground" />
-            <h3 className="font-semibold text-foreground">Profile Setup Prompt</h3>
+            <h3 className="font-semibold text-foreground">
+              Profile Setup Prompt
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Post-onboarding dialog nudging users to complete their profile.
             </p>
@@ -134,7 +132,10 @@ export function DesignSystemIndexPage() {
 
         {/* Profile Setup Prompt Dialog */}
         <Dialog open={profilePromptOpen} onOpenChange={setProfilePromptOpen}>
-          <DialogContent className="sm:max-w-md overflow-hidden p-0" showCloseButton={false}>
+          <DialogContent
+            className="sm:max-w-md overflow-hidden p-0"
+            showCloseButton={false}
+          >
             <div className="relative bg-primary/5 px-6 pt-8 pb-12">
               <BadgeCheck className="absolute top-4 right-6 h-5 w-5 text-primary/40" />
               <IdCard className="absolute top-8 left-8 h-4 w-4 text-primary/25 -rotate-12" />
@@ -161,7 +162,11 @@ export function DesignSystemIndexPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-2">
-                <Button onClick={() => setProfilePromptOpen(false)} className="w-full" size="lg">
+                <Button
+                  onClick={() => setProfilePromptOpen(false)}
+                  className="w-full"
+                  size="lg"
+                >
                   {t('account.setupAction')}
                 </Button>
                 <Button
@@ -177,7 +182,6 @@ export function DesignSystemIndexPage() {
           </DialogContent>
         </Dialog>
       </section>
-
     </div>
   )
 }

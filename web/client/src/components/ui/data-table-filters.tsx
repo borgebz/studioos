@@ -82,7 +82,7 @@ declare module '@tanstack/react-table' {
 
 export function isFilterValueActive(
   def: ColumnFilterDef,
-  value: unknown,
+  value: unknown
 ): boolean {
   if (value === undefined || value === null) return false
   switch (def.type) {
@@ -104,12 +104,13 @@ export function isFilterValueActive(
  */
 export function columnFiltersToApiParams<T extends Record<string, unknown>>(
   filters: ColumnFiltersState,
-  columns: ColumnDef<unknown>[],
+  columns: ColumnDef<unknown>[]
 ): T {
   const byId = new Map<string, ColumnFilterDef>()
   for (const col of columns) {
-    const id = (col as { id?: string; accessorKey?: string }).id
-      ?? (col as { accessorKey?: string }).accessorKey
+    const id =
+      (col as { id?: string; accessorKey?: string }).id ??
+      (col as { accessorKey?: string }).accessorKey
     const f = col.meta?.filter
     if (id && f) byId.set(id, f)
   }
@@ -158,11 +159,18 @@ export function useColumnFilters<TData>({
 }: UseColumnFiltersOptions<TData>): UseColumnFiltersReturn {
   // Build a lookup of url-key → { columnId, def } for parsing/serializing.
   const urlIndex = useMemo(() => {
-    const byUrlKey = new Map<string, { columnId: string; def: ColumnFilterDef }>()
-    const byColumnId = new Map<string, { urlKey: string; def: ColumnFilterDef }>()
+    const byUrlKey = new Map<
+      string,
+      { columnId: string; def: ColumnFilterDef }
+    >()
+    const byColumnId = new Map<
+      string,
+      { urlKey: string; def: ColumnFilterDef }
+    >()
     for (const col of columns) {
-      const id = (col as { id?: string; accessorKey?: string }).id
-        ?? (col as { accessorKey?: string }).accessorKey
+      const id =
+        (col as { id?: string; accessorKey?: string }).id ??
+        (col as { accessorKey?: string }).accessorKey
       const def = col.meta?.filter
       if (!id || !def) continue
       const key = def.urlKey ?? id
@@ -183,9 +191,10 @@ export function useColumnFilters<TData>({
 }
 
 function useLocalColumnFilters(
-  defaultFilters: ColumnFiltersState,
+  defaultFilters: ColumnFiltersState
 ): UseColumnFiltersReturn {
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(defaultFilters)
+  const [columnFilters, setColumnFilters] =
+    useState<ColumnFiltersState>(defaultFilters)
   return { columnFilters, setColumnFilters }
 }
 
@@ -194,7 +203,7 @@ function useUrlSyncedColumnFilters(
     byUrlKey: Map<string, { columnId: string; def: ColumnFilterDef }>
     byColumnId: Map<string, { urlKey: string; def: ColumnFilterDef }>
   },
-  defaultFilters: ColumnFiltersState,
+  defaultFilters: ColumnFiltersState
 ): UseColumnFiltersReturn {
   const [searchParams, setSearchParams] = useSearchParams()
   // Track whether the user has explicitly changed filters. Lets us tell
@@ -226,7 +235,7 @@ function useUrlSyncedColumnFilters(
     didSeedRef.current = true
     if (defaultFilters.length === 0) return
     const hasAnyKey = Array.from(urlIndex.byUrlKey.keys()).some((k) =>
-      searchParams.has(k),
+      searchParams.has(k)
     )
     if (hasAnyKey) return
     const next = new URLSearchParams(searchParams)
@@ -259,7 +268,7 @@ function useUrlSyncedColumnFilters(
       }
       setSearchParams(next, { replace: true })
     },
-    [columnFilters, searchParams, setSearchParams, urlIndex],
+    [columnFilters, searchParams, setSearchParams, urlIndex]
   )
 
   return { columnFilters, setColumnFilters }
@@ -275,9 +284,7 @@ function parseFilterValue(def: ColumnFilterDef, raw: string): unknown {
     }
     case 'multi-select': {
       const values = raw.split(',').filter(Boolean)
-      const valid = values.filter((v) =>
-        def.options.some((o) => o.value === v),
-      )
+      const valid = values.filter((v) => def.options.some((o) => o.value === v))
       return valid.length > 0 ? valid : undefined
     }
     case 'boolean':
@@ -289,7 +296,7 @@ function parseFilterValue(def: ColumnFilterDef, raw: string): unknown {
 
 function serializeFilterValue(
   def: ColumnFilterDef,
-  value: unknown,
+  value: unknown
 ): string | undefined {
   switch (def.type) {
     case 'text':
@@ -337,7 +344,7 @@ export function ColumnHeaderFilter<TData, TValue>({
             'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             active
               ? 'text-primary'
-              : 'text-muted-foreground/60 hover:text-foreground',
+              : 'text-muted-foreground/60 hover:text-foreground'
           )}
         >
           <Filter className="h-3.5 w-3.5" />
@@ -397,7 +404,7 @@ function ColumnFilterEditor({
           tabIndex={active ? 0 : -1}
           className={cn(
             '-mr-2 h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground',
-            !active && 'pointer-events-none opacity-0',
+            !active && 'pointer-events-none opacity-0'
           )}
           onClick={onClear}
         >
@@ -413,11 +420,7 @@ function ColumnFilterEditor({
         <SelectFilterEditor def={def} value={value} onChange={onChange} />
       )}
       {def.type === 'multi-select' && (
-        <MultiSelectFilterEditor
-          def={def}
-          value={value}
-          onChange={onChange}
-        />
+        <MultiSelectFilterEditor def={def} value={value} onChange={onChange} />
       )}
       {def.type === 'boolean' && (
         <BooleanFilterEditor def={def} value={value} onChange={onChange} />
@@ -440,7 +443,9 @@ function TextFilterEditor({
   onChange: (v: unknown) => void
 }) {
   const { t } = useTranslation()
-  const [draft, setDraft] = useState<string>(typeof value === 'string' ? value : '')
+  const [draft, setDraft] = useState<string>(
+    typeof value === 'string' ? value : ''
+  )
   const debounced = useDebouncedValue(draft, 300)
 
   // Mirror external resets (e.g. clear button).
@@ -452,7 +457,7 @@ function TextFilterEditor({
   }, [value])
 
   const lastEmittedRef = useRef<string | undefined>(
-    typeof value === 'string' ? value : '',
+    typeof value === 'string' ? value : ''
   )
   useEffect(() => {
     if (debounced === lastEmittedRef.current) return
@@ -516,7 +521,7 @@ function MultiSelectFilterEditor({
 }) {
   const selected = useMemo(
     () => new Set(Array.isArray(value) ? (value as string[]) : []),
-    [value],
+    [value]
   )
 
   const toggle = (optionValue: string) => {
@@ -555,23 +560,13 @@ function BooleanFilterEditor({
 
   return (
     <FilterOptionList>
-      <FilterOption
-        selected={isAny}
-        muted
-        onClick={() => onChange(undefined)}
-      >
+      <FilterOption selected={isAny} muted onClick={() => onChange(undefined)}>
         {t('common.filter.any')}
       </FilterOption>
-      <FilterOption
-        selected={value === true}
-        onClick={() => onChange(true)}
-      >
+      <FilterOption selected={value === true} onClick={() => onChange(true)}>
         {def.trueLabel ?? t('common.filter.yes')}
       </FilterOption>
-      <FilterOption
-        selected={value === false}
-        onClick={() => onChange(false)}
-      >
+      <FilterOption selected={value === false} onClick={() => onChange(false)}>
         {def.falseLabel ?? t('common.filter.no')}
       </FilterOption>
     </FilterOptionList>
@@ -615,7 +610,7 @@ function FilterOption({
       className={cn(
         'relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-left text-sm outline-none transition-colors',
         'hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground',
-        muted && !selected && 'text-muted-foreground',
+        muted && !selected && 'text-muted-foreground'
       )}
     >
       <span className="min-w-0 flex-1 truncate">{children}</span>

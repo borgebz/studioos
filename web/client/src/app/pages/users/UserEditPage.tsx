@@ -395,7 +395,7 @@ export function UserEditPage() {
                       'font-normal',
                       isActive
                         ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : 'bg-muted text-muted-foreground',
+                        : 'bg-muted text-muted-foreground'
                     )}
                   >
                     {isActive

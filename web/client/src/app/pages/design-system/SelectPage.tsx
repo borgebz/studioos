@@ -11,7 +11,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TreeSelect, type TreeSelectNode } from '@/components/shared/TreeSelect'
-import { Apple, Banana, Citrus, Cherry, Sparkles, Music, Dumbbell, Palette } from 'lucide-react'
+import {
+  Apple,
+  Banana,
+  Citrus,
+  Cherry,
+  Sparkles,
+  Music,
+  Dumbbell,
+  Palette,
+} from 'lucide-react'
 
 const fruits = [
   { value: 'apple', labelKey: 'playground.apple', icon: Apple },
@@ -129,9 +138,7 @@ export function SelectPage() {
 
         {/* Size sm */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">
-            size="sm"
-          </h2>
+          <h2 className="text-sm font-semibold text-foreground">size="sm"</h2>
           <Select value={value} onValueChange={setValue}>
             <SelectTrigger className="w-[180px]" size="sm">
               <SelectValue placeholder={t('playground.chooseFruit')} />

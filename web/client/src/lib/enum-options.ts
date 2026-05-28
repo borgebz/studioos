@@ -46,7 +46,7 @@ function toPascalCase(value: string): string {
  */
 export function enumOptions<E extends Record<string, string>>(
   enumObject: E,
-  prefix: string,
+  prefix: string
 ): EnumOption<E[keyof E]>[] {
   return Object.values(enumObject).map((value) => ({
     value: value as E[keyof E],

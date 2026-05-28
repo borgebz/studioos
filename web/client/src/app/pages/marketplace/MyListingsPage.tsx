@@ -75,9 +75,12 @@ export function MyListingsPage() {
 
   const sortKeyToOrdering = (key: SortKey) => {
     switch (key) {
-      case 'priceAsc': return 'asking_price' as const
-      case 'priceDesc': return '-asking_price' as const
-      default: return '-created_at' as const
+      case 'priceAsc':
+        return 'asking_price' as const
+      case 'priceDesc':
+        return '-asking_price' as const
+      default:
+        return '-created_at' as const
     }
   }
 
@@ -156,16 +159,22 @@ export function MyListingsPage() {
       }),
       columnHelper.accessor('variant_condition', {
         id: 'condition',
-        header: () => t('marketplace.col.condition', { defaultValue: 'Condition' }),
+        header: () =>
+          t('marketplace.col.condition', { defaultValue: 'Condition' }),
         meta: {
           className: 'hidden lg:table-cell',
           filter: {
             type: 'select',
-            label: t('marketplace.col.condition', { defaultValue: 'Condition' }),
+            label: t('marketplace.col.condition', {
+              defaultValue: 'Condition',
+            }),
             anyLabel: t('marketplace.allConditions'),
             options: [
               { value: 'new', label: t('marketplace.conditionNew') },
-              { value: 'excellent', label: t('marketplace.conditionExcellent') },
+              {
+                value: 'excellent',
+                label: t('marketplace.conditionExcellent'),
+              },
               { value: 'good', label: t('marketplace.conditionGood') },
               { value: 'fair', label: t('marketplace.conditionFair') },
               { value: 'damaged', label: t('marketplace.conditionDamaged') },
@@ -225,7 +234,7 @@ export function MyListingsPage() {
                 <DropdownMenuItem
                   onClick={() =>
                     navigate(
-                      paths.marketplaceEdit.replace(':id', String(row.id)),
+                      paths.marketplaceEdit.replace(':id', String(row.id))
                     )
                   }
                 >
@@ -245,7 +254,7 @@ export function MyListingsPage() {
         },
       }),
     ],
-    [columnHelper, navigate, t],
+    [columnHelper, navigate, t]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<ListingList>({
@@ -274,7 +283,7 @@ export function MyListingsPage() {
         return [...without, { id: 'listing_type', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const setStatusFilter = useCallback(
@@ -285,7 +294,7 @@ export function MyListingsPage() {
         return [...without, { id: 'status', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const setConditionFilter = useCallback(
@@ -296,7 +305,7 @@ export function MyListingsPage() {
         return [...without, { id: 'condition', value: next }]
       })
     },
-    [setColumnFilters],
+    [setColumnFilters]
   )
 
   const fetchPage = useCallback(() => {
@@ -448,9 +457,7 @@ export function MyListingsPage() {
             <>
               <Select
                 value={typeFilter ?? 'all'}
-                onValueChange={(v) =>
-                  setTypeFilter(v as ListingType | 'all')
-                }
+                onValueChange={(v) => setTypeFilter(v as ListingType | 'all')}
               >
                 <SelectTrigger className="w-full sm:w-[150px]">
                   <SelectValue />
@@ -563,12 +570,12 @@ export function MyListingsPage() {
                 variant="owner"
                 onOpen={() =>
                   navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                    paths.marketplaceEdit.replace(':id', String(item.id))
                   )
                 }
                 onEdit={() =>
                   navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id)),
+                    paths.marketplaceEdit.replace(':id', String(item.id))
                   )
                 }
                 onDelete={() => setDeleteTarget(item)}

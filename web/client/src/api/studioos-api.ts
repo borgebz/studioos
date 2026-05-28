@@ -17,10 +17,10 @@
  * * `archived` - Archived
  */
 export enum VisibilityStateEnum {
-  Draft = "draft",
-  Scheduled = "scheduled",
-  Published = "published",
-  Archived = "archived",
+  Draft = 'draft',
+  Scheduled = 'scheduled',
+  Published = 'published',
+  Archived = 'archived',
 }
 
 /**
@@ -31,11 +31,11 @@ export enum VisibilityStateEnum {
  * * `cancelled` - Cancelled
  */
 export enum VariantBookingStatusEnum {
-  Pending = "pending",
-  Confirmed = "confirmed",
-  Completed = "completed",
-  Blocked = "blocked",
-  Cancelled = "cancelled",
+  Pending = 'pending',
+  Confirmed = 'confirmed',
+  Completed = 'completed',
+  Blocked = 'blocked',
+  Cancelled = 'cancelled',
 }
 
 /**
@@ -45,10 +45,10 @@ export enum VariantBookingStatusEnum {
  * * `donate` - Donate
  */
 export enum TransactionTypeEnum {
-  Rent = "rent",
-  Sell = "sell",
-  Lend = "lend",
-  Donate = "donate",
+  Rent = 'rent',
+  Sell = 'sell',
+  Lend = 'lend',
+  Donate = 'donate',
 }
 
 /**
@@ -60,12 +60,12 @@ export enum TransactionTypeEnum {
  * * `blocked` - Blocked
  */
 export enum TransactionStatusEnum {
-  Pending = "pending",
-  Accepted = "accepted",
-  Completed = "completed",
-  Rejected = "rejected",
-  Cancelled = "cancelled",
-  Blocked = "blocked",
+  Pending = 'pending',
+  Accepted = 'accepted',
+  Completed = 'completed',
+  Rejected = 'rejected',
+  Cancelled = 'cancelled',
+  Blocked = 'blocked',
 }
 
 /**
@@ -74,9 +74,9 @@ export enum TransactionStatusEnum {
  * * `unisex` - Unisex
  */
 export enum TargetGenderEnum {
-  Female = "female",
-  Male = "male",
-  Unisex = "unisex",
+  Female = 'female',
+  Male = 'male',
+  Unisex = 'unisex',
 }
 
 /**
@@ -85,9 +85,9 @@ export enum TargetGenderEnum {
  * * `marketplace` - Marketplace
  */
 export enum SourceTypeEnum {
-  Coaching = "coaching",
-  Fine = "fine",
-  Marketplace = "marketplace",
+  Coaching = 'coaching',
+  Fine = 'fine',
+  Marketplace = 'marketplace',
 }
 
 /**
@@ -97,10 +97,10 @@ export enum SourceTypeEnum {
  * * `monthly` - Monthly
  */
 export enum RecurrenceTypeEnum {
-  Daily = "daily",
-  Weekly = "weekly",
-  Biweekly = "biweekly",
-  Monthly = "monthly",
+  Daily = 'daily',
+  Weekly = 'weekly',
+  Biweekly = 'biweekly',
+  Monthly = 'monthly',
 }
 
 /**
@@ -108,8 +108,8 @@ export enum RecurrenceTypeEnum {
  * * `late_cancellation` - Late cancellation
  */
 export enum ReasonEnum {
-  Absence = "absence",
-  LateCancellation = "late_cancellation",
+  Absence = 'absence',
+  LateCancellation = 'late_cancellation',
 }
 
 /**
@@ -121,12 +121,12 @@ export enum ReasonEnum {
  * * `archived` - Archived
  */
 export enum ProductVariantStatusEnum {
-  Available = "available",
-  Maintenance = "maintenance",
-  Inactive = "inactive",
-  Sold = "sold",
-  Donated = "donated",
-  Archived = "archived",
+  Available = 'available',
+  Maintenance = 'maintenance',
+  Inactive = 'inactive',
+  Sold = 'sold',
+  Donated = 'donated',
+  Archived = 'archived',
 }
 
 /**
@@ -135,9 +135,9 @@ export enum ProductVariantStatusEnum {
  * * `archived` - Archived
  */
 export enum ProductStatusEnum {
-  Active = "active",
-  Inactive = "inactive",
-  Archived = "archived",
+  Active = 'active',
+  Inactive = 'inactive',
+  Archived = 'archived',
 }
 
 /**
@@ -146,9 +146,9 @@ export enum ProductStatusEnum {
  * * `both` - New & Renewals
  */
 export enum PeriodTypeEnum {
-  New = "new",
-  Renewal = "renewal",
-  Both = "both",
+  New = 'new',
+  Renewal = 'renewal',
+  Both = 'both',
 }
 
 /**
@@ -156,8 +156,8 @@ export enum PeriodTypeEnum {
  * * `insurance` - Insurance
  */
 export enum PaymentTypeEnum {
-  EnrollmentFee = "enrollment_fee",
-  Insurance = "insurance",
+  EnrollmentFee = 'enrollment_fee',
+  Insurance = 'insurance',
 }
 
 /**
@@ -165,19 +165,19 @@ export enum PaymentTypeEnum {
  * * `member` - Member
  */
 export enum OwnerTypeEnum {
-  School = "school",
-  Member = "member",
+  School = 'school',
+  Member = 'member',
 }
 
-export type NullEnum = null;
+export type NullEnum = null
 
 /**
  * * `all` - All
  * * `classes` - Classes
  */
 export enum NotificationTargetEnum {
-  All = "all",
-  Classes = "classes",
+  All = 'all',
+  Classes = 'classes',
 }
 
 /**
@@ -186,9 +186,9 @@ export enum NotificationTargetEnum {
  * * `notification` - Notification
  */
 export enum NotificationEnum {
-  None = "none",
-  NotificationTest = "notification_test",
-  Notification = "notification",
+  None = 'none',
+  NotificationTest = 'notification_test',
+  Notification = 'notification',
 }
 
 /**
@@ -196,8 +196,8 @@ export enum NotificationEnum {
  * * `system` - System message
  */
 export enum MessageKindEnum {
-  User = "user",
-  System = "system",
+  User = 'user',
+  System = 'system',
 }
 
 /**
@@ -207,10 +207,10 @@ export enum MessageKindEnum {
  * * `donate` - Donate
  */
 export enum ListingTypeEnum {
-  Rent = "rent",
-  Sell = "sell",
-  Lend = "lend",
-  Donate = "donate",
+  Rent = 'rent',
+  Sell = 'sell',
+  Lend = 'lend',
+  Donate = 'donate',
 }
 
 /**
@@ -219,9 +219,9 @@ export enum ListingTypeEnum {
  * * `closed` - Closed
  */
 export enum ListingStatusEnum {
-  Draft = "draft",
-  Active = "active",
-  Closed = "closed",
+  Draft = 'draft',
+  Active = 'active',
+  Closed = 'closed',
 }
 
 /**
@@ -229,8 +229,8 @@ export enum ListingStatusEnum {
  * * `en` - English
  */
 export enum LanguageEnum {
-  Pt = "pt",
-  En = "en",
+  Pt = 'pt',
+  En = 'en',
 }
 
 /**
@@ -239,9 +239,9 @@ export enum LanguageEnum {
  * * `waived` - Waived
  */
 export enum FineStatusEnum {
-  PendingReview = "pending_review",
-  Approved = "approved",
-  Waived = "waived",
+  PendingReview = 'pending_review',
+  Approved = 'approved',
+  Waived = 'waived',
 }
 
 /**
@@ -251,10 +251,10 @@ export enum FineStatusEnum {
  * * `completed` - Completed
  */
 export enum EventStateEnum {
-  Planned = "planned",
-  DateTbd = "date_tbd",
-  Cancelled = "cancelled",
-  Completed = "completed",
+  Planned = 'planned',
+  DateTbd = 'date_tbd',
+  Cancelled = 'cancelled',
+  Completed = 'completed',
 }
 
 /**
@@ -262,8 +262,8 @@ export enum EventStateEnum {
  * * `renewal` - Renewal
  */
 export enum EnrollmentTypeEnum {
-  New = "new",
-  Renewal = "renewal",
+  New = 'new',
+  Renewal = 'renewal',
 }
 
 /**
@@ -274,11 +274,11 @@ export enum EnrollmentTypeEnum {
  * * `cancelled` - Cancelled
  */
 export enum EnrollmentReadStatusEnum {
-  Submitted = "submitted",
-  UnderReview = "under_review",
-  Approved = "approved",
-  Rejected = "rejected",
-  Cancelled = "cancelled",
+  Submitted = 'submitted',
+  UnderReview = 'under_review',
+  Approved = 'approved',
+  Rejected = 'rejected',
+  Cancelled = 'cancelled',
 }
 
 /**
@@ -286,8 +286,8 @@ export enum EnrollmentReadStatusEnum {
  * * `confirmed` - Confirmed
  */
 export enum EnrollmentPaymentReadStatusEnum {
-  Pending = "pending",
-  Confirmed = "confirmed",
+  Pending = 'pending',
+  Confirmed = 'confirmed',
 }
 
 /**
@@ -297,10 +297,10 @@ export enum EnrollmentPaymentReadStatusEnum {
  * * `listing` - Listing
  */
 export enum ConversationKindEnum {
-  Direct = "direct",
-  Group = "group",
-  Coaching = "coaching",
-  Listing = "listing",
+  Direct = 'direct',
+  Group = 'group',
+  Coaching = 'coaching',
+  Listing = 'listing',
 }
 
 /**
@@ -308,8 +308,8 @@ export enum ConversationKindEnum {
  * * `internal_regulation` - Internal Regulation
  */
 export enum ConsentTypeEnum {
-  Rgpd = "rgpd",
-  InternalRegulation = "internal_regulation",
+  Rgpd = 'rgpd',
+  InternalRegulation = 'internal_regulation',
 }
 
 /**
@@ -320,11 +320,11 @@ export enum ConsentTypeEnum {
  * * `damaged` - Damaged
  */
 export enum ConditionEnum {
-  New = "new",
-  Excellent = "excellent",
-  Good = "good",
-  Fair = "fair",
-  Damaged = "damaged",
+  New = 'new',
+  Excellent = 'excellent',
+  Good = 'good',
+  Fair = 'fair',
+  Damaged = 'damaged',
 }
 
 /**
@@ -338,14 +338,14 @@ export enum ConditionEnum {
  * * `late_cancelled` - Late Cancelled
  */
 export enum CoachingParticipantStatusEnum {
-  Invited = "invited",
-  Pending = "pending",
-  Active = "active",
-  PendingCompletion = "pending_completion",
-  Attended = "attended",
-  Absent = "absent",
-  Cancelled = "cancelled",
-  LateCancelled = "late_cancelled",
+  Invited = 'invited',
+  Pending = 'pending',
+  Active = 'active',
+  PendingCompletion = 'pending_completion',
+  Attended = 'attended',
+  Absent = 'absent',
+  Cancelled = 'cancelled',
+  LateCancelled = 'late_cancelled',
 }
 
 /**
@@ -359,14 +359,14 @@ export enum CoachingParticipantStatusEnum {
  * * `rejected` - Rejected
  */
 export enum CoachingClassStatusEnum {
-  Requested = "requested",
-  PendingApproval = "pending_approval",
-  Scheduled = "scheduled",
-  WaitingConfirmation = "waiting_confirmation",
-  PendingCompletionApproval = "pending_completion_approval",
-  Completed = "completed",
-  Cancelled = "cancelled",
-  Rejected = "rejected",
+  Requested = 'requested',
+  PendingApproval = 'pending_approval',
+  Scheduled = 'scheduled',
+  WaitingConfirmation = 'waiting_confirmation',
+  PendingCompletionApproval = 'pending_completion_approval',
+  Completed = 'completed',
+  Cancelled = 'cancelled',
+  Rejected = 'rejected',
 }
 
 /**
@@ -380,18 +380,18 @@ export enum CoachingClassStatusEnum {
  * * `blocked` - Blocked
  */
 export enum BookingTypeEnum {
-  Reservation = "reservation",
-  Loan = "loan",
-  Rent = "rent",
-  Sale = "sale",
-  Donation = "donation",
-  SchoolUse = "school_use",
-  Maintenance = "maintenance",
-  Blocked = "blocked",
+  Reservation = 'reservation',
+  Loan = 'loan',
+  Rent = 'rent',
+  Sale = 'sale',
+  Donation = 'donation',
+  SchoolUse = 'school_use',
+  Maintenance = 'maintenance',
+  Blocked = 'blocked',
 }
 
 export enum BlankEnum {
-  Value = "",
+  Value = '',
 }
 
 /**
@@ -400,9 +400,9 @@ export enum BlankEnum {
  * * `cancelled` - Cancelled
  */
 export enum BillingEntryStatusEnum {
-  Pending = "pending",
-  Exported = "exported",
-  Cancelled = "cancelled",
+  Pending = 'pending',
+  Exported = 'exported',
+  Cancelled = 'cancelled',
 }
 
 /**
@@ -412,214 +412,214 @@ export enum BillingEntryStatusEnum {
  * * `other` - Other
  */
 export enum AcquisitionTypeEnum {
-  Purchased = "purchased",
-  Donated = "donated",
-  SchoolOwned = "school_owned",
-  Other = "other",
+  Purchased = 'purchased',
+  Donated = 'donated',
+  SchoolOwned = 'school_owned',
+  Other = 'other',
 }
 
 /** Input for account activation — uid + token + new password. */
 export interface ActivateAccount {
-  uid: string;
-  token: string;
+  uid: string
+  token: string
   /** @minLength 8 */
-  password: string;
+  password: string
 }
 
 export interface ActivationSuccess {
-  message: string;
+  message: string
 }
 
 export interface AddParticipant {
-  student_id: number;
+  student_id: number
 }
 
 export interface AddParticipants {
-  user_ids: number[];
+  user_ids: number[]
 }
 
 export interface Availability {
-  id: number;
-  teacher_id: number;
-  modality: Modality;
+  id: number
+  teacher_id: number
+  modality: Modality
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
-  notes?: string;
-  is_recurring: string;
-  recurring: RecurringAvailability;
+  end_datetime: string
+  notes?: string
+  is_recurring: string
+  recurring: RecurringAvailability
 }
 
 export interface AvailabilitySubmit {
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
-  modality_id?: number | null;
-  notes?: string;
-  recurring?: RecurringAvailabilitySubmit | null;
+  end_datetime: string
+  modality_id?: number | null
+  notes?: string
+  recurring?: RecurringAvailabilitySubmit | null
 }
 
 export interface BillingEntryCancel {
-  notes: string;
+  notes: string
 }
 
 export interface BillingEntryDetail {
-  id: number;
-  source_type: SourceTypeEnum;
-  student: UserResponse;
+  id: number
+  source_type: SourceTypeEnum
+  student: UserResponse
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount_due: string;
+  amount_due: string
   /** Single-line, human-readable description shown to the student and on accounting exports. Generated at creation time, not editable afterwards. */
-  description: string;
-  status: BillingEntryStatusEnum;
+  description: string
+  status: BillingEntryStatusEnum
   /** @format date-time */
-  exported_at: string | null;
+  exported_at: string | null
   /** @format date-time */
-  cancelled_at: string | null;
-  notes: string;
-  coaching_class: CoachingClassBillingDetail | null;
-  coaching_participant: CoachingParticipantBilling;
-  fine: FineBillingSummary | null;
+  cancelled_at: string | null
+  notes: string
+  coaching_class: CoachingClassBillingDetail | null
+  coaching_participant: CoachingParticipantBilling
+  fine: FineBillingSummary | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface BillingEntryList {
-  id: number;
-  source_type: SourceTypeEnum;
-  student: UserResponse;
+  id: number
+  source_type: SourceTypeEnum
+  student: UserResponse
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount_due: string;
+  amount_due: string
   /** Single-line, human-readable description shown to the student and on accounting exports. Generated at creation time, not editable afterwards. */
-  description: string;
-  status: BillingEntryStatusEnum;
-  coaching_class: CoachingClassBillingSummary | null;
-  fine: FineBillingSummary | null;
+  description: string
+  status: BillingEntryStatusEnum
+  coaching_class: CoachingClassBillingSummary | null
+  fine: FineBillingSummary | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 /** Multipart upload for bulk invite spreadsheet. */
 export interface BulkInviteFile {
   /** @format uri */
-  file: string;
+  file: string
 }
 
 export interface BulkInviteUsersListPayload {
-  users: UserResponse[];
-  count: number;
+  users: UserResponse[]
+  count: number
 }
 
 export interface BulkInviteUsersWrapper {
-  data: BulkInviteUsersListPayload;
+  data: BulkInviteUsersListPayload
 }
 
 export interface Category {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
-  parent?: number | null;
-  size_systems: Record<string, any>[];
+  name: string
+  parent?: number | null
+  size_systems: Record<string, any>[]
   /**
    * @min -2147483648
    * @max 2147483647
    */
-  sort_order?: number;
-  is_active?: boolean;
-  subcategories: Record<string, any>[];
+  sort_order?: number
+  is_active?: boolean
+  subcategories: Record<string, any>[]
 }
 
 export interface Classe {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
-  description?: string;
+  name: string
+  description?: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface ClasseDetail {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
-  description?: string;
+  name: string
+  description?: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
-  members: ClasseMember[];
+  updated_at: string
+  members: ClasseMember[]
 }
 
 export interface ClasseList {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
-  description?: string;
+  name: string
+  description?: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
-  members: ClasseMemberSummary[];
+  updated_at: string
+  members: ClasseMemberSummary[]
 }
 
 export interface ClasseMember {
-  id: number;
-  student: UserResponse;
+  id: number
+  student: UserResponse
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 export interface ClasseMemberSubmit {
-  student_id: number;
+  student_id: number
 }
 
 export interface ClasseMemberSummary {
-  id: number;
-  student: ClasseMemberSummaryStudent;
+  id: number
+  student: ClasseMemberSummaryStudent
 }
 
 export interface ClasseMemberSummaryStudent {
-  id: number;
-  first_name: string;
-  last_name: string;
+  id: number
+  first_name: string
+  last_name: string
   /** @format email */
-  email: string;
+  email: string
 }
 
 export interface ClasseSubmit {
   /** @maxLength 255 */
-  name: string;
+  name: string
   /** @default "" */
-  description?: string;
+  description?: string
 }
 
 export interface CoachingApprove {
-  studio_id: number;
+  studio_id: number
   /**
    * @format decimal
    * @pattern ^-?\d{0,6}(?:\.\d{0,2})?$
    */
-  total_price: string;
+  total_price: string
 }
 
 export interface CoachingCancel {
-  cancellation_reason?: string;
+  cancellation_reason?: string
 }
 
 export interface CoachingClass {
-  id: number;
+  id: number
   /**
    * * `requested` - Requested
    * * `pending_approval` - Pending Approval
@@ -630,61 +630,61 @@ export interface CoachingClass {
    * * `cancelled` - Cancelled
    * * `rejected` - Rejected
    */
-  status?: CoachingClassStatusEnum;
-  teacher: UserResponse;
-  modality: Modality;
-  studio: Studio;
+  status?: CoachingClassStatusEnum
+  teacher: UserResponse
+  modality: Modality
+  studio: Studio
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
+  end_datetime: string
   /** @format date-time */
-  completed_at?: string | null;
+  completed_at?: string | null
   /** If False, complete_coaching does not generate billing entries. Only set or changed for coordination-scheduled coachings (no requester); student-requested coachings keep billing defaults from workflow. */
-  is_billable?: boolean;
+  is_billable?: boolean
   /**
    * Set by coordination at approval.
    * @format decimal
    * @pattern ^-?\d{0,6}(?:\.\d{0,2})?$
    */
-  total_price?: string | null;
-  requested_by: UserResponse;
-  recurring_id: number | null;
-  recurring_coaching: string;
-  classe_id: number | null;
-  notes?: string;
-  teacher_notes?: string;
+  total_price?: string | null
+  requested_by: UserResponse
+  recurring_id: number | null
+  recurring_coaching: string
+  classe_id: number | null
+  notes?: string
+  teacher_notes?: string
   /** @format date-time */
-  teacher_confirmed_at?: string | null;
-  teacher_confirmed_by: UserResponse;
-  rejection_reason?: string;
-  cancellation_reason?: string;
-  participants: CoachingParticipant[];
+  teacher_confirmed_at?: string | null
+  teacher_confirmed_by: UserResponse
+  rejection_reason?: string
+  cancellation_reason?: string
+  participants: CoachingParticipant[]
 }
 
 /** Extended coaching summary that includes the teacher — used in detail responses. */
 export interface CoachingClassBillingDetail {
-  id: number;
+  id: number
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
-  modality: Modality;
-  teacher: UserResponse | null;
+  end_datetime: string
+  modality: Modality
+  teacher: UserResponse | null
 }
 
 export interface CoachingClassBillingSummary {
-  id: number;
+  id: number
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
-  modality: Modality;
+  end_datetime: string
+  modality: Modality
 }
 
 export interface CoachingParticipant {
-  id: number;
-  student: UserResponse;
+  id: number
+  student: UserResponse
   /**
    * * `invited` - Invited
    * * `pending` - Pending
@@ -695,16 +695,16 @@ export interface CoachingParticipant {
    * * `cancelled` - Cancelled
    * * `late_cancelled` - Late Cancelled
    */
-  status?: CoachingParticipantStatusEnum;
+  status?: CoachingParticipantStatusEnum
   /** True when a coordination/direction user invited this student (invite → accept becomes active without a pending approval step). */
-  invited_by_staff?: boolean;
+  invited_by_staff?: boolean
   /** @format date-time */
-  cancelled_at?: string | null;
-  cancellation_reason?: string;
+  cancelled_at?: string | null
+  cancellation_reason?: string
 }
 
 export interface CoachingParticipantBilling {
-  id: number;
+  id: number
   /**
    * * `invited` - Invited
    * * `pending` - Pending
@@ -715,54 +715,54 @@ export interface CoachingParticipantBilling {
    * * `cancelled` - Cancelled
    * * `late_cancelled` - Late Cancelled
    */
-  status?: CoachingParticipantStatusEnum;
+  status?: CoachingParticipantStatusEnum
 }
 
 export interface CoachingReject {
-  rejection_reason?: string;
+  rejection_reason?: string
 }
 
 export interface CoachingRequest {
-  teacher_id: number;
-  modality_id: number;
-  studio_id?: number | null;
+  teacher_id: number
+  modality_id: number
+  studio_id?: number | null
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
-  notes?: string;
-  classe_id?: number | null;
+  end_datetime: string
+  notes?: string
+  classe_id?: number | null
   /** Student user ID when a parent requests on behalf of their child. */
-  on_behalf_of?: number | null;
+  on_behalf_of?: number | null
 }
 
 export interface Color {
-  id: number;
+  id: number
   /** @maxLength 100 */
-  name: string;
+  name: string
   /** @maxLength 7 */
-  hex_code: string;
-  is_active?: boolean;
+  hex_code: string
+  is_active?: boolean
 }
 
 /** Public onboarding completion after invite. */
 export interface CompleteOnboarding {
   /** @maxLength 150 */
-  first_name: string;
+  first_name: string
   /** @maxLength 150 */
-  last_name: string;
+  last_name: string
   /** @minLength 8 */
-  password: string;
+  password: string
   /** @maxLength 20 */
-  phone: string;
+  phone: string
   /** @maxLength 5 */
-  phone_country_code: string;
+  phone_country_code: string
   /** @format date */
-  date_of_birth: string;
+  date_of_birth: string
 }
 
 export interface ConfirmParticipantAttendance {
-  attended: boolean;
+  attended: boolean
 }
 
 export interface ConsentInput {
@@ -770,31 +770,31 @@ export interface ConsentInput {
    * * `rgpd` - RGPD / Data Processing
    * * `internal_regulation` - Internal Regulation
    */
-  consent_type: ConsentTypeEnum;
-  accepted: boolean;
+  consent_type: ConsentTypeEnum
+  accepted: boolean
 }
 
 export interface Conversation {
-  id: number;
+  id: number
   /**
    * * `direct` - Direct
    * * `group` - Group
    * * `coaching` - Coaching
    * * `listing` - Listing
    */
-  kind?: ConversationKindEnum;
+  kind?: ConversationKindEnum
   /** @maxLength 120 */
-  name?: string;
-  participant_ids: number[];
-  participants: ConversationParticipantSummary[];
-  is_admin: boolean;
-  created_by_id: number | null;
-  coaching_id: number | null;
-  recurring_coaching_id: number | null;
-  last_message: Message | null;
-  pinned_message_ids: number[];
+  name?: string
+  participant_ids: number[]
+  participants: ConversationParticipantSummary[]
+  is_admin: boolean
+  created_by_id: number | null
+  coaching_id: number | null
+  recurring_coaching_id: number | null
+  last_message: Message | null
+  pinned_message_ids: number[]
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 /**
@@ -807,140 +807,140 @@ export interface Conversation {
  * last_name / email through this surface.
  */
 export interface ConversationParticipantSummary {
-  id: number;
-  has_profile: boolean;
-  display_name: string | null;
-  photo_url: string | null;
+  id: number
+  has_profile: boolean
+  display_name: string | null
+  photo_url: string | null
 }
 
 export interface CreateCategory {
-  name: string;
-  parent_category_id?: number;
-  size_system_ids?: number[];
-  sort_order?: number;
-  is_active?: boolean;
-  subcategories?: any[];
+  name: string
+  parent_category_id?: number
+  size_system_ids?: number[]
+  sort_order?: number
+  is_active?: boolean
+  subcategories?: any[]
 }
 
 export interface CreateColor {
-  name: string;
-  hex_code: string;
+  name: string
+  hex_code: string
   /** @default true */
-  is_active?: boolean;
+  is_active?: boolean
 }
 
 export interface CreateConversation {
-  user_id: number;
+  user_id: number
 }
 
 export interface CreateGroupConversation {
   /** @maxLength 120 */
-  name: string;
-  participant_ids: number[];
+  name: string
+  participant_ids: number[]
 }
 
 export interface CreateRole {
   /** @maxLength 50 */
-  code: string;
+  code: string
   /** @maxLength 150 */
-  name: string;
-  description: string;
+  name: string
+  description: string
 }
 
 export interface CreateSize {
-  name: string;
-  size_system_id: number;
-  is_active?: boolean;
+  name: string
+  size_system_id: number
+  is_active?: boolean
 }
 
 export interface CreateSizeSystem {
-  name: string;
-  is_active?: boolean;
-  sizes?: SizeInput[];
+  name: string
+  is_active?: boolean
+  sizes?: SizeInput[]
 }
 
 /** Input serializer for creating a new user. */
 export interface CreateUser {
   /** @format email */
-  email: string;
+  email: string
   /** @maxLength 150 */
-  first_name: string;
+  first_name: string
   /** @maxLength 150 */
-  last_name: string;
+  last_name: string
   /** @maxLength 50 */
-  role_code: string;
+  role_code: string
   /**
    * @maxLength 20
    * @default ""
    */
-  phone?: string;
+  phone?: string
   /**
    * @maxLength 5
    * @default ""
    */
-  phone_country_code?: string;
+  phone_country_code?: string
 }
 
 /** Body for POST ``/api/coachings/`` — coordination-created timetable coaching. */
 export interface DirectCoordinationCoachingCreate {
-  teacher_id: number;
-  modality_id: number;
-  studio_id: number;
+  teacher_id: number
+  modality_id: number
+  studio_id: number
   /**
    * @format decimal
    * @pattern ^-?\d{0,6}(?:\.\d{0,2})?$
    */
-  total_price: string;
+  total_price: string
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
+  end_datetime: string
   /**
    * Coordination-only; ignored on student-request flows.
    * @default true
    */
-  is_billable?: boolean;
-  notes?: string;
+  is_billable?: boolean
+  notes?: string
   /**
    * true = coaching is created as SCHEDULED; false = goes through approval flow (REQUESTED).
    * @default true
    */
-  schedule?: boolean;
+  schedule?: boolean
   /**
    * true = participants added as ACTIVE; false = participants added as INVITED (must accept).
    * @default true
    */
-  auto_confirm_participants?: boolean;
-  classe_id?: number | null;
+  auto_confirm_participants?: boolean
+  classe_id?: number | null
   /** Explicit student user IDs to add as participants. Merged with classe members when classe_id is also provided; duplicates are removed automatically. */
-  participant_ids?: number[];
-  recurring_coaching?: RecurringCoachingSubmit | null;
+  participant_ids?: number[]
+  recurring_coaching?: RecurringCoachingSubmit | null
 }
 
 export interface EnrollmentConsentRead {
-  id: number;
-  consent_type: ConsentTypeEnum;
-  accepted: boolean;
+  id: number
+  consent_type: ConsentTypeEnum
+  accepted: boolean
   /** @format date-time */
-  accepted_at: string | null;
-  ip_address: string | null;
-  user_agent: string;
+  accepted_at: string | null
+  ip_address: string | null
+  user_agent: string
 }
 
 export interface EnrollmentFileRead {
-  id: number;
+  id: number
   /** @format uri */
-  file: string;
-  original_filename: string;
-  mime_type: string;
+  file: string
+  original_filename: string
+  mime_type: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 export interface EnrollmentModalityRead {
-  id: number;
-  modality_id: number;
-  modality_name: string;
+  id: number
+  modality_id: number
+  modality_name: string
 }
 
 export interface EnrollmentPaymentCreate {
@@ -948,110 +948,110 @@ export interface EnrollmentPaymentCreate {
    * * `enrollment_fee` - Enrollment Fee
    * * `insurance` - Insurance
    */
-  payment_type: PaymentTypeEnum;
+  payment_type: PaymentTypeEnum
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount: string;
+  amount: string
   /** Optional notes from direction about this payment. */
-  notes?: string;
+  notes?: string
 }
 
 export interface EnrollmentPaymentRead {
-  id: number;
-  payment_type: PaymentTypeEnum;
+  id: number
+  payment_type: PaymentTypeEnum
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount: string;
-  status: EnrollmentPaymentReadStatusEnum;
-  confirmed_by: number | null;
+  amount: string
+  status: EnrollmentPaymentReadStatusEnum
+  confirmed_by: number | null
   /** @format email */
-  confirmed_by_email: string;
+  confirmed_by_email: string
   /** Optional notes from direction about this payment. */
-  notes: string;
+  notes: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 export interface EnrollmentPeriod {
-  id: number;
+  id: number
   /**
    * Format: 2025/2026
    * @maxLength 9
    */
-  academic_year: string;
+  academic_year: string
   /**
    * * `new` - New Enrollments
    * * `renewal` - Renewals
    * * `both` - New & Renewals
    */
-  period_type?: PeriodTypeEnum;
+  period_type?: PeriodTypeEnum
   /** @format date */
-  start_date: string;
+  start_date: string
   /** @format date */
-  end_date: string;
-  is_open?: boolean;
+  end_date: string
+  is_open?: boolean
   /**
    * Matrícula fee. Null means not required.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  enrollment_fee?: string | null;
+  enrollment_fee?: string | null
   /**
    * Insurance for general regime. Null means not required.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  insurance_general?: string | null;
+  insurance_general?: string | null
   /**
    * Insurance for intensive regime. Null means not required.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  insurance_intensive?: string | null;
+  insurance_intensive?: string | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface EnrollmentRead {
-  id: number;
-  student: number | null;
-  parent: number | null;
-  period: EnrollmentPeriod;
-  status: EnrollmentReadStatusEnum;
-  enrollment_type: EnrollmentTypeEnum;
+  id: number
+  student: number | null
+  parent: number | null
+  period: EnrollmentPeriod
+  status: EnrollmentReadStatusEnum
+  enrollment_type: EnrollmentTypeEnum
   /** @format email */
-  student_email: string;
-  student_name: string;
+  student_email: string
+  student_name: string
   /** @format date */
-  student_date_of_birth: string;
-  student_nif: string;
-  student_nationality: string;
-  student_document_number: string;
+  student_date_of_birth: string
+  student_nif: string
+  student_nationality: string
+  student_document_number: string
   /** @format date */
-  student_document_expiry: string | null;
-  address: string;
-  postal_code: string;
-  parent_name: string;
+  student_document_expiry: string | null
+  address: string
+  postal_code: string
+  parent_name: string
   /** @format email */
-  parent_email: string;
-  parent_phone: string;
-  parent_phone_country_code: string;
+  parent_email: string
+  parent_phone: string
+  parent_phone_country_code: string
   /** Prior dance experience: school, level, modality, exams, observations. */
-  historical_notes: string;
-  enrollment_modalities: EnrollmentModalityRead[];
-  files: EnrollmentFileRead[];
-  consents: EnrollmentConsentRead[];
-  payments: EnrollmentPaymentRead[];
+  historical_notes: string
+  enrollment_modalities: EnrollmentModalityRead[]
+  files: EnrollmentFileRead[]
+  consents: EnrollmentConsentRead[]
+  payments: EnrollmentPaymentRead[]
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 /**
@@ -1060,289 +1060,289 @@ export interface EnrollmentRead {
  * The service layer handles all the creation logic.
  */
 export interface EnrollmentSubmit {
-  period_id?: number | null;
+  period_id?: number | null
   /** @default "new" */
-  enrollment_type?: EnrollmentTypeEnum;
+  enrollment_type?: EnrollmentTypeEnum
   /** @format email */
-  student_email: string;
+  student_email: string
   /** @maxLength 255 */
-  student_name: string;
+  student_name: string
   /** @format date */
-  student_date_of_birth: string;
+  student_date_of_birth: string
   /**
    * @maxLength 20
    * @default ""
    */
-  student_nif?: string;
+  student_nif?: string
   /**
    * @maxLength 100
    * @default ""
    */
-  student_nationality?: string;
+  student_nationality?: string
   /**
    * @maxLength 50
    * @default ""
    */
-  student_document_number?: string;
+  student_document_number?: string
   /** @format date */
-  student_document_expiry?: string | null;
+  student_document_expiry?: string | null
   /** @default "" */
-  address?: string;
+  address?: string
   /**
    * @maxLength 20
    * @default ""
    */
-  postal_code?: string;
+  postal_code?: string
   /** @maxLength 255 */
-  parent_name: string;
+  parent_name: string
   /** @format email */
-  parent_email: string;
+  parent_email: string
   /** @maxLength 30 */
-  parent_phone: string;
+  parent_phone: string
   /**
    * @maxLength 5
    * @default ""
    */
-  parent_phone_country_code?: string;
+  parent_phone_country_code?: string
   /** @default "" */
-  historical_notes?: string;
+  historical_notes?: string
   /** @minItems 1 */
-  modality_ids: number[];
-  consents?: ConsentInput[];
-  consent_rgpd?: boolean;
-  consent_internal_regulation?: boolean;
+  modality_ids: number[]
+  consents?: ConsentInput[]
+  consent_rgpd?: boolean
+  consent_internal_regulation?: boolean
 }
 
 export interface ErrorDetail {
   /** Non-field errors such as authentication, permission, or business rule violations. */
-  messages?: string[];
+  messages?: string[]
   /** Field-level validation errors keyed by field name. */
-  field_name?: string[];
+  field_name?: string[]
 }
 
 export interface ErrorResponse {
-  errors: ErrorDetail;
+  errors: ErrorDetail
 }
 
 export interface Event {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  title: string;
-  description: string;
-  body?: string;
+  title: string
+  description: string
+  body?: string
   /** @format uri */
-  cover_photo_url: string;
+  cover_photo_url: string
   /** @maxLength 255 */
-  location?: string;
+  location?: string
   /** @format date-time */
-  event_date?: string | null;
+  event_date?: string | null
   /**
    * * `planned` - Planned
    * * `date_tbd` - Date TBD
    * * `cancelled` - Cancelled
    * * `completed` - Completed
    */
-  event_state?: EventStateEnum;
+  event_state?: EventStateEnum
   /**
    * * `draft` - Draft
    * * `scheduled` - Scheduled
    * * `published` - Published
    * * `archived` - Archived
    */
-  visibility_state?: VisibilityStateEnum;
-  contact_info?: string;
-  notification_target: NotificationTargetEnum;
-  class_target_classe_ids: number[];
+  visibility_state?: VisibilityStateEnum
+  contact_info?: string
+  notification_target: NotificationTargetEnum
+  class_target_classe_ids: number[]
   /** @format date-time */
-  publication_scheduled_at?: string | null;
+  publication_scheduled_at?: string | null
   /** @format date-time */
-  published_at?: string | null;
+  published_at?: string | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface EventComment {
-  id: number;
-  event: number;
-  owner: number;
-  body: string;
-  parent_comment?: number | null;
-  replies: any[];
+  id: number
+  event: number
+  owner: number
+  body: string
+  parent_comment?: number | null
+  replies: any[]
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface EventCommentCreate {
-  body: string;
-  parent_comment_id?: number | null;
+  body: string
+  parent_comment_id?: number | null
 }
 
 export interface EventCommentUpdate {
-  body: string;
+  body: string
 }
 
 export interface EventCreate {
   /** @maxLength 255 */
-  title: string;
-  description: string;
-  body?: string;
+  title: string
+  description: string
+  body?: string
   /** @format uri */
-  cover_photo?: string;
+  cover_photo?: string
   /** @maxLength 255 */
-  location?: string;
+  location?: string
   /** @format date-time */
-  event_date?: string | null;
-  contact_info?: string;
+  event_date?: string | null
+  contact_info?: string
   /** @default "all" */
-  notification_target?: NotificationTargetEnum;
-  class_target_classe_ids?: number[];
+  notification_target?: NotificationTargetEnum
+  class_target_classe_ids?: number[]
 }
 
 export interface EventFile {
-  id: number;
-  event: number;
+  id: number
+  event: number
   /** @format uri */
-  file_url: string | null;
+  file_url: string | null
   /** @maxLength 255 */
-  file_name?: string;
+  file_name?: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface EventFileCreate {
   /** @format uri */
-  file: string;
+  file: string
   /** @maxLength 255 */
-  file_name?: string;
+  file_name?: string
 }
 
 export interface EventInterest {
-  id: number;
-  event: number;
-  user: number;
+  id: number
+  event: number
+  user: number
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 /** Compact shape for GET /events/ list responses. */
 export interface EventList {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  title: string;
+  title: string
   /** @format uri */
-  cover_photo_url: string;
+  cover_photo_url: string
   /** @maxLength 255 */
-  location?: string;
+  location?: string
   /** @format date-time */
-  event_date?: string | null;
+  event_date?: string | null
   /**
    * * `planned` - Planned
    * * `date_tbd` - Date TBD
    * * `cancelled` - Cancelled
    * * `completed` - Completed
    */
-  event_state?: EventStateEnum;
+  event_state?: EventStateEnum
 }
 
 export interface EventPost {
-  id: number;
-  event: number;
+  id: number
+  event: number
   /** @maxLength 255 */
-  title: string;
-  body: string;
+  title: string
+  body: string
   /** @format date-time */
-  publication_scheduled_at?: string | null;
+  publication_scheduled_at?: string | null
   /** @format date-time */
-  published_at?: string | null;
+  published_at?: string | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface EventPostCreate {
   /** @maxLength 255 */
-  title: string;
-  body: string;
+  title: string
+  body: string
 }
 
 export interface EventPostPublish {
   /** @default "none" */
-  notification?: NotificationEnum;
+  notification?: NotificationEnum
 }
 
 export interface EventPostSchedulePublication {
   /** @format date-time */
-  publication_scheduled_at: string;
+  publication_scheduled_at: string
   /** @default "none" */
-  notification?: NotificationEnum;
+  notification?: NotificationEnum
 }
 
 export interface EventPostUpdate {
   /** @maxLength 255 */
-  title: string;
-  body: string;
+  title: string
+  body: string
 }
 
 export interface EventPublish {
   /** @default "none" */
-  notification?: NotificationEnum;
+  notification?: NotificationEnum
 }
 
 export interface EventSchedulePublication {
   /** @format date-time */
-  publication_scheduled_at: string;
+  publication_scheduled_at: string
   /** @default "none" */
-  notification?: NotificationEnum;
+  notification?: NotificationEnum
 }
 
 export interface EventUpdate {
   /** @maxLength 255 */
-  title: string;
-  description: string;
-  body?: string;
+  title: string
+  description: string
+  body?: string
   /** @format uri */
-  cover_photo?: string;
+  cover_photo?: string
   /** @maxLength 255 */
-  location?: string;
+  location?: string
   /** @format date-time */
-  event_date?: string | null;
-  contact_info?: string;
+  event_date?: string | null
+  contact_info?: string
   /**
    * * `all` - All
    * * `classes` - Classes
    */
-  notification_target?: NotificationTargetEnum;
-  class_target_classe_ids?: number[];
+  notification_target?: NotificationTargetEnum
+  class_target_classe_ids?: number[]
 }
 
 /** A concrete time slot — either a one-time availability or an expanded recurring occurrence. */
 export interface ExpandedSlot {
-  id: number | null;
-  teacher_id: number;
-  modality: Modality | null;
+  id: number | null
+  teacher_id: number
+  modality: Modality | null
   /** @format date-time */
-  start_datetime: string;
+  start_datetime: string
   /** @format date-time */
-  end_datetime: string;
-  notes: string;
-  is_recurring: boolean;
-  recurring_id: number | null;
+  end_datetime: string
+  notes: string
+  is_recurring: boolean
+  recurring_id: number | null
 }
 
 export interface FavoriteListingsList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: ListingList[];
+  previous?: string | null
+  results: ListingList[]
 }
 
 export interface FineApprove {
@@ -1351,50 +1351,50 @@ export interface FineApprove {
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount?: string | null;
-  notes?: string;
+  amount?: string | null
+  notes?: string
 }
 
 /** Compact fine view embedded in BillingEntry detail/list. */
 export interface FineBillingSummary {
-  id: number;
-  reason: ReasonEnum;
-  status: FineStatusEnum;
+  id: number
+  reason: ReasonEnum
+  status: FineStatusEnum
   /**
    * Set on approval. Null while pending review or when waived.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount?: string | null;
+  amount?: string | null
 }
 
 export interface FineDetail {
-  id: number;
-  reason: ReasonEnum;
-  status: FineStatusEnum;
+  id: number
+  reason: ReasonEnum
+  status: FineStatusEnum
   /**
    * Set on approval. Null while pending review or when waived.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount: string | null;
+  amount: string | null
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  suggested_amount: string;
-  student: UserResponse;
-  coaching_class: CoachingClassBillingDetail | null;
-  coaching_participant: CoachingParticipantBilling;
-  billing_entry: FineLinkedBillingEntry | null;
+  suggested_amount: string
+  student: UserResponse
+  coaching_class: CoachingClassBillingDetail | null
+  coaching_participant: CoachingParticipantBilling
+  billing_entry: FineLinkedBillingEntry | null
   /** @format date-time */
-  reviewed_at: string | null;
-  reviewed_by: UserResponse | null;
-  notes: string;
+  reviewed_at: string | null
+  reviewed_by: UserResponse | null
+  notes: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 /**
@@ -1404,458 +1404,458 @@ export interface FineDetail {
  * an approved fine has since been cancelled, without a second roundtrip.
  */
 export interface FineLinkedBillingEntry {
-  id: number;
-  status: BillingEntryStatusEnum;
+  id: number
+  status: BillingEntryStatusEnum
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount_due: string;
+  amount_due: string
 }
 
 export interface FineList {
-  id: number;
-  reason: ReasonEnum;
-  status: FineStatusEnum;
+  id: number
+  reason: ReasonEnum
+  status: FineStatusEnum
   /**
    * Set on approval. Null while pending review or when waived.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  amount: string | null;
-  student: UserResponse;
-  coaching_class: CoachingClassBillingSummary;
-  billing_entry: FineLinkedBillingEntry | null;
+  amount: string | null
+  student: UserResponse
+  coaching_class: CoachingClassBillingSummary
+  billing_entry: FineLinkedBillingEntry | null
   /** @format date-time */
-  reviewed_at: string | null;
+  reviewed_at: string | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 export interface FineWaive {
-  notes: string;
+  notes: string
 }
 
 export interface InlineVariant {
-  size_id?: number | null;
-  sku?: string | null;
-  condition?: string;
-  acquisition_type?: string;
-  color_ids?: number[];
+  size_id?: number | null
+  sku?: string | null
+  condition?: string
+  acquisition_type?: string
+  color_ids?: number[]
   /** @default "" */
-  notes?: string;
+  notes?: string
 }
 
 export interface InventoryMemberProductList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: ProductDetail[];
+  previous?: string | null
+  results: ProductDetail[]
 }
 
 export interface InventoryProductVariantList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: ProductVariantRead[];
+  previous?: string | null
+  results: ProductVariantRead[]
 }
 
 export interface InventorySchoolProductList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: ProductDetail[];
+  previous?: string | null
+  results: ProductDetail[]
 }
 
 export interface InventoryVariantBookingList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: VariantBooking[];
+  previous?: string | null
+  results: VariantBooking[]
 }
 
 /** Single invite: email + role code (see ``accounts.Role`` / seed_roles). */
 export interface InviteSingle {
   /** @format email */
-  email: string;
+  email: string
   /** @maxLength 50 */
-  role: string;
+  role: string
 }
 
 export interface ListCoachingClasses {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: CoachingClass[];
+  previous?: string | null
+  results: CoachingClass[]
 }
 
 export interface ListingComment {
-  id: number;
-  listing: number;
-  owner: number;
-  body: string;
-  parent_comment?: number | null;
-  replies: any[];
+  id: number
+  listing: number
+  owner: number
+  body: string
+  parent_comment?: number | null
+  replies: any[]
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface ListingCommentCreate {
-  body: string;
-  parent_comment_id?: number | null;
+  body: string
+  parent_comment_id?: number | null
 }
 
 export interface ListingCommentUpdate {
-  body: string;
+  body: string
 }
 
 export interface ListingCreate {
-  variant_id?: number | null;
+  variant_id?: number | null
   /**
    * * `rent` - Rent
    * * `sell` - Sell
    * * `lend` - Lend
    * * `donate` - Donate
    */
-  listing_type: ListingTypeEnum;
+  listing_type: ListingTypeEnum
   /** @maxLength 255 */
-  title: string;
+  title: string
   /** @default "" */
-  description?: string;
+  description?: string
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  asking_price?: string | null;
+  asking_price?: string | null
   /** @default false */
-  is_public?: boolean;
-  product?: Record<string, any>;
+  is_public?: boolean
+  product?: Record<string, any>
 }
 
 export interface ListingDetail {
-  id: number;
+  id: number
   /**
    * * `rent` - Rent
    * * `sell` - Sell
    * * `lend` - Lend
    * * `donate` - Donate
    */
-  listing_type: ListingTypeEnum;
+  listing_type: ListingTypeEnum
   /**
    * * `draft` - Draft
    * * `active` - Active
    * * `closed` - Closed
    */
-  status?: ListingStatusEnum;
+  status?: ListingStatusEnum
   /** @maxLength 255 */
-  title: string;
-  description?: string;
+  title: string
+  description?: string
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  asking_price?: string | null;
-  is_public?: boolean;
-  product: ProductDetail;
-  variant: ProductVariantRead;
-  active_booking_windows: Record<string, any>[];
-  owner_display: Record<string, any>;
-  is_favorited: boolean;
-  favorites_count: number;
+  asking_price?: string | null
+  is_public?: boolean
+  product: ProductDetail
+  variant: ProductVariantRead
+  active_booking_windows: Record<string, any>[]
+  owner_display: Record<string, any>
+  is_favorited: boolean
+  favorites_count: number
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface ListingList {
-  id: number;
+  id: number
   /**
    * * `rent` - Rent
    * * `sell` - Sell
    * * `lend` - Lend
    * * `donate` - Donate
    */
-  listing_type: ListingTypeEnum;
+  listing_type: ListingTypeEnum
   /**
    * * `draft` - Draft
    * * `active` - Active
    * * `closed` - Closed
    */
-  status?: ListingStatusEnum;
+  status?: ListingStatusEnum
   /** @maxLength 255 */
-  title: string;
+  title: string
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  asking_price?: string | null;
+  asking_price?: string | null
   /** @format uri */
-  primary_media_url: string | null;
-  product_name: string;
-  product_category: string;
-  variant_condition: string;
-  variant_size: string;
-  variant_status: string;
+  primary_media_url: string | null
+  product_name: string
+  product_category: string
+  variant_condition: string
+  variant_size: string
+  variant_status: string
   /** @format date-time */
-  available_from: string | null;
+  available_from: string | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 /** Input serializer for login. */
 export interface Login {
   /** @format email */
-  email: string;
-  password: string;
+  email: string
+  password: string
 }
 
 export interface LoginSuccess {
-  detail: string;
+  detail: string
 }
 
 export interface MarketplaceListingList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: ListingList[];
+  previous?: string | null
+  results: ListingList[]
 }
 
 export interface Me {
-  id: number;
+  id: number
   /** @format email */
-  email: string;
-  full_name: string;
-  role: string[];
-  permissions: string[];
-  language: string;
-  profile: MeEndpointProfileOutput | null;
-  has_profile: boolean;
+  email: string
+  full_name: string
+  role: string[]
+  permissions: string[]
+  language: string
+  profile: MeEndpointProfileOutput | null
+  has_profile: boolean
 }
 
 export interface MeEndpointProfileOutput {
-  display_name?: string;
-  photo_url?: string | null;
+  display_name?: string
+  photo_url?: string | null
 }
 
 export interface Message {
-  id: number;
-  kind: MessageKindEnum;
-  sender_id: number;
-  body: string;
-  file_url: string | null;
-  original_filename: string;
-  mime_type: string;
+  id: number
+  kind: MessageKindEnum
+  sender_id: number
+  body: string
+  file_url: string | null
+  original_filename: string
+  mime_type: string
   /** @format date-time */
-  edited_at: string | null;
+  edited_at: string | null
   /** @format date-time */
-  deleted_at: string;
-  reactions: ReactionGroup[];
+  deleted_at: string
+  reactions: ReactionGroup[]
   /** @format date-time */
-  pinned_at: string;
-  pinned_by_id: number | null;
+  pinned_at: string
+  pinned_by_id: number | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 export interface Modality {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
-  description?: string;
+  name: string
+  description?: string
   /**
    * Maximum number of students for this modality, if applicable.
    * @min 0
    * @max 2147483647
    */
-  max_capacity?: number | null;
+  max_capacity?: number | null
   /**
    * Minimum student age in months for eligibility.
    * @min 0
    * @max 2147483647
    */
-  min_age_months?: number | null;
+  min_age_months?: number | null
   /**
    * Maximum student age in months for eligibility.
    * @min 0
    * @max 32767
    */
-  max_age_months?: number | null;
-  studios: Studio[];
+  max_age_months?: number | null
+  studios: Studio[]
 }
 
 export interface ModalitySubmit {
   /** @maxLength 255 */
-  name: string;
-  description?: string;
+  name: string
+  description?: string
   /** @min 1 */
-  max_capacity?: number | null;
+  max_capacity?: number | null
   /** @min 0 */
-  min_age_months?: number | null;
+  min_age_months?: number | null
   /** @min 0 */
-  max_age_months?: number | null;
-  allowed_studio_ids?: number[];
+  max_age_months?: number | null
+  allowed_studio_ids?: number[]
 }
 
 export interface ModalitySummary {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
+  name: string
 }
 
 export interface MyListingsList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: ListingList[];
+  previous?: string | null
+  results: ListingList[]
 }
 
 export interface MyTransactionsList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: TransactionDetail[];
+  previous?: string | null
+  results: TransactionDetail[]
 }
 
 export interface OnboardingCompleteSuccess {
-  detail: string;
+  detail: string
 }
 
 export interface OnboardingPreviewInner {
   /** @format email */
-  email: string;
-  role: string;
+  email: string
+  role: string
 }
 
 export interface OnboardingPreviewWrapper {
-  data: OnboardingPreviewInner;
+  data: OnboardingPreviewInner
 }
 
 export interface ParticipantAcceptInvite {
   /** Student user ID when a parent accepts on behalf of their child. */
-  on_behalf_of?: number | null;
+  on_behalf_of?: number | null
 }
 
 export interface ParticipantCancel {
-  cancellation_reason?: string;
+  cancellation_reason?: string
 }
 
 export interface PasswordResetConfirm {
-  uid: string;
-  token: string;
+  uid: string
+  token: string
   /** @minLength 8 */
-  password: string;
+  password: string
 }
 
 export interface PasswordResetConfirmSuccess {
-  detail: string;
+  detail: string
 }
 
 export interface PasswordResetRequest {
   /** @format email */
-  email: string;
+  email: string
 }
 
 export interface PasswordResetRequestSuccess {
-  detail: string;
+  detail: string
 }
 
 export interface PatchedAvailabilityUpdate {
   /** @format date-time */
-  start_datetime?: string;
+  start_datetime?: string
   /** @format date-time */
-  end_datetime?: string;
-  modality_id?: number | null;
-  notes?: string;
-  recurring?: RecurringAvailabilityUpdate | null;
+  end_datetime?: string
+  modality_id?: number | null
+  notes?: string
+  recurring?: RecurringAvailabilityUpdate | null
 }
 
 export interface PatchedClasseUpdate {
   /** @maxLength 255 */
-  name?: string;
-  description?: string;
+  name?: string
+  description?: string
 }
 
 export interface PatchedCoachingUpdate {
-  teacher_id?: number;
-  modality_id?: number;
-  studio_id?: number | null;
+  teacher_id?: number
+  modality_id?: number
+  studio_id?: number | null
   /**
    * @format decimal
    * @pattern ^-?\d{0,6}(?:\.\d{0,2})?$
    */
-  total_price?: string | null;
+  total_price?: string | null
   /** Only for coordination-scheduled coachings (no requester). */
-  is_billable?: boolean;
+  is_billable?: boolean
   /** @format date-time */
-  start_datetime?: string;
+  start_datetime?: string
   /** @format date-time */
-  end_datetime?: string;
-  notes?: string;
+  end_datetime?: string
+  notes?: string
 }
 
 export interface PatchedEditMessage {
-  body?: string;
+  body?: string
 }
 
 export interface PatchedEnrollmentPeriod {
-  id?: number;
+  id?: number
   /**
    * Format: 2025/2026
    * @maxLength 9
    */
-  academic_year?: string;
+  academic_year?: string
   /**
    * * `new` - New Enrollments
    * * `renewal` - Renewals
    * * `both` - New & Renewals
    */
-  period_type?: PeriodTypeEnum;
+  period_type?: PeriodTypeEnum
   /** @format date */
-  start_date?: string;
+  start_date?: string
   /** @format date */
-  end_date?: string;
-  is_open?: boolean;
+  end_date?: string
+  is_open?: boolean
   /**
    * Matrícula fee. Null means not required.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  enrollment_fee?: string | null;
+  enrollment_fee?: string | null
   /**
    * Insurance for general regime. Null means not required.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  insurance_general?: string | null;
+  insurance_general?: string | null
   /**
    * Insurance for intensive regime. Null means not required.
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  insurance_intensive?: string | null;
+  insurance_intensive?: string | null
   /** @format date-time */
-  created_at?: string;
+  created_at?: string
   /** @format date-time */
-  updated_at?: string;
+  updated_at?: string
 }
 
 export interface PatchedEnrollmentUpdate {
@@ -1863,35 +1863,35 @@ export interface PatchedEnrollmentUpdate {
    * @format email
    * @maxLength 254
    */
-  student_email?: string;
+  student_email?: string
   /** @maxLength 255 */
-  student_name?: string;
+  student_name?: string
   /** @format date */
-  student_date_of_birth?: string;
+  student_date_of_birth?: string
   /** @maxLength 20 */
-  student_nif?: string;
+  student_nif?: string
   /** @maxLength 100 */
-  student_nationality?: string;
+  student_nationality?: string
   /** @maxLength 50 */
-  student_document_number?: string;
+  student_document_number?: string
   /** @format date */
-  student_document_expiry?: string | null;
-  address?: string;
+  student_document_expiry?: string | null
+  address?: string
   /** @maxLength 20 */
-  postal_code?: string;
+  postal_code?: string
   /** @maxLength 255 */
-  parent_name?: string;
+  parent_name?: string
   /**
    * @format email
    * @maxLength 254
    */
-  parent_email?: string;
+  parent_email?: string
   /** @maxLength 30 */
-  parent_phone?: string;
+  parent_phone?: string
   /** @maxLength 5 */
-  parent_phone_country_code?: string;
+  parent_phone_country_code?: string
   /** Prior dance experience: school, level, modality, exams, observations. */
-  historical_notes?: string;
+  historical_notes?: string
 }
 
 export interface PatchedListingUpdate {
@@ -1901,53 +1901,53 @@ export interface PatchedListingUpdate {
    * * `lend` - Lend
    * * `donate` - Donate
    */
-  listing_type?: ListingTypeEnum;
+  listing_type?: ListingTypeEnum
   /** @maxLength 255 */
-  title?: string;
-  description?: string;
+  title?: string
+  description?: string
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  asking_price?: string | null;
-  is_public?: boolean;
-  product?: Record<string, any>;
-  variant?: Record<string, any>;
+  asking_price?: string | null
+  is_public?: boolean
+  product?: Record<string, any>
+  variant?: Record<string, any>
 }
 
 export interface PatchedModalityUpdate {
   /** @maxLength 255 */
-  name?: string;
-  description?: string;
+  name?: string
+  description?: string
   /** @min 1 */
-  max_capacity?: number | null;
+  max_capacity?: number | null
   /** @min 0 */
-  min_age_months?: number | null;
+  min_age_months?: number | null
   /** @min 0 */
-  max_age_months?: number | null;
-  allowed_studio_ids?: number[];
+  max_age_months?: number | null
+  allowed_studio_ids?: number[]
 }
 
 export interface PatchedProductUpdate {
-  name?: string;
-  description?: string;
-  category_id?: number | null;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
+  name?: string
+  description?: string
+  category_id?: number | null
+  target_gender?: string | null
+  brand?: string | null
+  material?: string | null
   /**
    * * `active` - Active
    * * `inactive` - Inactive
    * * `archived` - Archived
    */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
+  status?: ProductStatusEnum
+  media?: ProductMediaInput[]
 }
 
 /** Write serializer used for POST/PATCH. */
 export interface PatchedProductVariantWrite {
   /** @maxLength 100 */
-  sku?: string | null;
+  sku?: string | null
   /**
    * * `new` - New
    * * `excellent` - Excellent
@@ -1955,7 +1955,7 @@ export interface PatchedProductVariantWrite {
    * * `fair` - Fair
    * * `damaged` - Damaged
    */
-  condition?: ConditionEnum;
+  condition?: ConditionEnum
   /**
    * * `available` - Available
    * * `maintenance` - Maintenance
@@ -1964,103 +1964,103 @@ export interface PatchedProductVariantWrite {
    * * `donated` - Donated
    * * `archived` - Archived
    */
-  status?: ProductVariantStatusEnum;
+  status?: ProductVariantStatusEnum
   /**
    * * `purchased` - Purchased
    * * `donated` - Donated
    * * `school_owned` - School Owned
    * * `other` - Other
    */
-  acquisition_type?: AcquisitionTypeEnum;
-  internal_notes?: string | null;
-  public_notes?: string | null;
-  size_id?: number | null;
-  color_ids?: number[];
-  media_ids?: number[];
-  media_upload?: string[];
+  acquisition_type?: AcquisitionTypeEnum
+  internal_notes?: string | null
+  public_notes?: string | null
+  size_id?: number | null
+  color_ids?: number[]
+  media_ids?: number[]
+  media_upload?: string[]
 }
 
 export interface PatchedProfile {
   /** @maxLength 200 */
-  display_name?: string;
-  bio?: string;
+  display_name?: string
+  bio?: string
   /** @format uri */
-  photo?: string | null;
-  photo_url?: string | null;
+  photo?: string | null
+  photo_url?: string | null
 }
 
 export interface PatchedRenameConversation {
   /** @maxLength 120 */
-  name?: string;
+  name?: string
 }
 
 export interface PatchedSchoolProductUpdate {
-  name?: string;
-  description?: string;
-  category_id?: number | null;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
+  name?: string
+  description?: string
+  category_id?: number | null
+  target_gender?: string | null
+  brand?: string | null
+  material?: string | null
   /**
    * * `active` - Active
    * * `inactive` - Inactive
    * * `archived` - Archived
    */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
-  school_details?: SchoolProductDetails;
+  status?: ProductStatusEnum
+  media?: ProductMediaInput[]
+  school_details?: SchoolProductDetails
 }
 
 export interface PatchedStudioUpdate {
   /** @maxLength 255 */
-  name?: string;
+  name?: string
   /** @min 1 */
-  max_capacity?: number;
-  description?: string;
-  allowed_modality_ids?: number[];
+  max_capacity?: number
+  description?: string
+  allowed_modality_ids?: number[]
 }
 
 export interface PatchedUpdateCategory {
-  name?: string;
-  parent_category_id?: number | null;
-  size_system_ids?: number[] | null;
-  sort_order?: number;
-  is_active?: boolean;
+  name?: string
+  parent_category_id?: number | null
+  size_system_ids?: number[] | null
+  sort_order?: number
+  is_active?: boolean
 }
 
 export interface PatchedUpdateRole {
-  description?: string;
+  description?: string
 }
 
 export interface PatchedUpdateSizeSystem {
-  name?: string;
+  name?: string
 }
 
 /** Partial update of principal user fields (direction / ``accounts.change_user``). */
 export interface PatchedUserCoreUpdate {
   /** @maxLength 150 */
-  first_name?: string;
+  first_name?: string
   /** @maxLength 150 */
-  last_name?: string;
+  last_name?: string
   /** @format email */
-  email?: string;
+  email?: string
   /** @maxLength 20 */
-  phone?: string;
+  phone?: string
   /** @maxLength 5 */
-  phone_country_code?: string;
+  phone_country_code?: string
   /**
    * * `pt` - Português
    * * `en` - English
    */
-  language?: LanguageEnum;
-  parent_id?: number | null;
-  address?: string;
+  language?: LanguageEnum
+  parent_id?: number | null
+  address?: string
   /** @maxLength 20 */
-  postal_code?: string;
+  postal_code?: string
   /** Replaces the user's role-group memberships (multi-role). */
-  role_codes?: string[];
+  role_codes?: string[]
   /** Replaces the user's individual permissions (independent of roles). */
-  permission_ids?: number[];
+  permission_ids?: number[]
 }
 
 /** Create/update payload (variant comes from URL). */
@@ -2075,7 +2075,7 @@ export interface PatchedVariantBookingWrite {
    * * `maintenance` - Maintenance
    * * `blocked` - Blocked
    */
-  booking_type?: BookingTypeEnum;
+  booking_type?: BookingTypeEnum
   /**
    * * `pending` - Pending
    * * `confirmed` - Confirmed
@@ -2083,112 +2083,112 @@ export interface PatchedVariantBookingWrite {
    * * `blocked` - Blocked
    * * `cancelled` - Cancelled
    */
-  status?: VariantBookingStatusEnum;
+  status?: VariantBookingStatusEnum
   /** @format date-time */
-  start_at?: string;
+  start_at?: string
   /** @format date-time */
-  end_at?: string;
+  end_at?: string
   /** @format date-time */
-  actual_start_at?: string | null;
+  actual_start_at?: string | null
   /** @format date-time */
-  actual_end_at?: string | null;
+  actual_end_at?: string | null
   /** @maxLength 255 */
-  title?: string;
-  notes?: string;
+  title?: string
+  notes?: string
 }
 
 export interface Permission {
-  id: number;
+  id: number
   /** @maxLength 100 */
-  codename: string;
-  app_label: string;
+  codename: string
+  app_label: string
   /** @maxLength 255 */
-  name: string;
+  name: string
 }
 
 export interface ProductCreate {
-  name: string;
+  name: string
   /** @default "" */
-  description?: string;
-  category_id?: number;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
+  description?: string
+  category_id?: number
+  target_gender?: string | null
+  brand?: string | null
+  material?: string | null
   /** @default "active" */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
-  variants?: InlineVariant[];
+  status?: ProductStatusEnum
+  media?: ProductMediaInput[]
+  variants?: InlineVariant[]
 }
 
 export interface ProductDetail {
-  id: number;
-  owner_type: OwnerTypeEnum;
-  owner?: number | null;
-  category?: number | null;
+  id: number
+  owner_type: OwnerTypeEnum
+  owner?: number | null
+  category?: number | null
   /** @maxLength 255 */
-  name: string;
-  description?: string;
-  target_gender?: TargetGenderEnum | BlankEnum | NullEnum | null;
+  name: string
+  description?: string
+  target_gender?: TargetGenderEnum | BlankEnum | NullEnum | null
   /** @maxLength 255 */
-  brand?: string | null;
+  brand?: string | null
   /** @maxLength 255 */
-  material?: string | null;
-  status: ProductStatusEnum;
-  media: ProductMedia[];
-  school_details: SchoolProductDetails;
+  material?: string | null
+  status: ProductStatusEnum
+  media: ProductMedia[]
+  school_details: SchoolProductDetails
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface ProductMedia {
-  id: number;
+  id: number
   /** @format uri */
-  image: string;
-  is_primary?: boolean;
+  image: string
+  is_primary?: boolean
   /**
    * @min -2147483648
    * @max 2147483647
    */
-  sort_order?: number;
+  sort_order?: number
 }
 
 export interface ProductMediaInput {
   /** @format uri */
-  image?: string;
+  image?: string
   /** @default false */
-  is_primary?: boolean;
+  is_primary?: boolean
   /** @default 0 */
-  sort_order?: number;
+  sort_order?: number
 }
 
 /** Read-only serializer used for GET responses. */
 export interface ProductVariantRead {
-  id: number;
+  id: number
   /** @maxLength 100 */
-  sku?: string | null;
-  condition: ConditionEnum;
-  status: ProductVariantStatusEnum;
-  acquisition_type: AcquisitionTypeEnum;
+  sku?: string | null
+  condition: ConditionEnum
+  status: ProductVariantStatusEnum
+  acquisition_type: AcquisitionTypeEnum
   /** @format date-time */
-  acquired_at?: string | null;
-  internal_notes?: string | null;
-  public_notes?: string | null;
-  size: VariantSize;
-  colors: Record<string, any>[];
-  media: Record<string, any>[];
-  availability: Record<string, any>;
+  acquired_at?: string | null
+  internal_notes?: string | null
+  public_notes?: string | null
+  size: VariantSize
+  colors: Record<string, any>[]
+  media: Record<string, any>[]
+  availability: Record<string, any>
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 /** Write serializer used for POST/PATCH. */
 export interface ProductVariantWrite {
   /** @maxLength 100 */
-  sku?: string | null;
+  sku?: string | null
   /**
    * * `new` - New
    * * `excellent` - Excellent
@@ -2196,7 +2196,7 @@ export interface ProductVariantWrite {
    * * `fair` - Fair
    * * `damaged` - Damaged
    */
-  condition?: ConditionEnum;
+  condition?: ConditionEnum
   /**
    * * `available` - Available
    * * `maintenance` - Maintenance
@@ -2205,29 +2205,29 @@ export interface ProductVariantWrite {
    * * `donated` - Donated
    * * `archived` - Archived
    */
-  status?: ProductVariantStatusEnum;
+  status?: ProductVariantStatusEnum
   /**
    * * `purchased` - Purchased
    * * `donated` - Donated
    * * `school_owned` - School Owned
    * * `other` - Other
    */
-  acquisition_type?: AcquisitionTypeEnum;
-  internal_notes?: string | null;
-  public_notes?: string | null;
-  size_id?: number | null;
-  color_ids?: number[];
-  media_ids?: number[];
-  media_upload?: string[];
+  acquisition_type?: AcquisitionTypeEnum
+  internal_notes?: string | null
+  public_notes?: string | null
+  size_id?: number | null
+  color_ids?: number[]
+  media_ids?: number[]
+  media_upload?: string[]
 }
 
 export interface Profile {
   /** @maxLength 200 */
-  display_name: string;
-  bio?: string;
+  display_name: string
+  bio?: string
   /** @format uri */
-  photo?: string | null;
-  photo_url: string | null;
+  photo?: string | null
+  photo_url: string | null
 }
 
 /**
@@ -2236,30 +2236,30 @@ export interface Profile {
  * presence of a profile is what makes a user reachable.
  */
 export interface PublicProfile {
-  user_id: number;
+  user_id: number
   /** @maxLength 200 */
-  display_name: string;
-  photo_url: string | null;
+  display_name: string
+  photo_url: string | null
 }
 
 export interface PublicProfileList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: PublicProfile[];
+  previous?: string | null
+  results: PublicProfile[]
 }
 
 export interface ReactionGroup {
-  emoji: string;
-  count: number;
-  user_ids: number[];
+  emoji: string
+  count: number
+  user_ids: number[]
 }
 
 export interface ReactionInput {
   /** @maxLength 16 */
-  emoji: string;
+  emoji: string
 }
 
 export interface RecurringAvailability {
@@ -2267,46 +2267,46 @@ export interface RecurringAvailability {
    * Comma-separated weekday integers (0=Mon..6=Sun), e.g. '0,2,4' for Mon/Wed/Fri.
    * @maxLength 20
    */
-  days_of_week: string;
+  days_of_week: string
   /** @format time */
-  start_time: string;
+  start_time: string
   /** @format time */
-  end_time: string;
+  end_time: string
   /**
    * Inclusive start date for this recurrence to apply.
    * @format date
    */
-  valid_from: string;
+  valid_from: string
   /**
    * Inclusive end date. Null means open-ended.
    * @format date
    */
-  valid_until?: string | null;
+  valid_until?: string | null
 }
 
 export interface RecurringAvailabilitySubmit {
   /** Comma-separated weekday integers (0=Mon..6=Sun), e.g. '0,2,4'. */
-  days_of_week: string;
+  days_of_week: string
   /** @format time */
-  start_time: string;
+  start_time: string
   /** @format time */
-  end_time: string;
+  end_time: string
   /** @format date */
-  valid_from?: string;
+  valid_from?: string
   /** @format date */
-  valid_until?: string | null;
+  valid_until?: string | null
 }
 
 export interface RecurringAvailabilityUpdate {
-  days_of_week?: string;
+  days_of_week?: string
   /** @format time */
-  start_time?: string;
+  start_time?: string
   /** @format time */
-  end_time?: string;
+  end_time?: string
   /** @format date */
-  valid_from?: string;
+  valid_from?: string
   /** @format date */
-  valid_until?: string | null;
+  valid_until?: string | null
 }
 
 export interface RecurringCoachingSubmit {
@@ -2316,228 +2316,228 @@ export interface RecurringCoachingSubmit {
    * * `biweekly` - Biweekly
    * * `monthly` - Monthly
    */
-  recurrence_type: RecurrenceTypeEnum;
+  recurrence_type: RecurrenceTypeEnum
   /**
    * @min 1
    * @default 1
    */
-  recurrence_interval?: number;
+  recurrence_interval?: number
   /** @default "" */
-  days_of_week?: string;
+  days_of_week?: string
   /** @format date */
-  end_date?: string | null;
+  end_date?: string | null
   /** @min 1 */
-  occurrences_count?: number | null;
+  occurrences_count?: number | null
   /** @default "" */
-  notes?: string;
+  notes?: string
 }
 
 export interface RecurringSeriesCancel {
-  cancellation_reason?: string;
+  cancellation_reason?: string
   /**
    * If true, also cancels sessions that have already ended (still cancellable by status).
    * @default false
    */
-  cancel_past?: boolean;
+  cancel_past?: boolean
 }
 
 export interface RefreshSuccess {
-  detail: string;
+  detail: string
 }
 
 /** Resolve refresh token from JSON ``refresh`` or httpOnly cookie ``studioos_refresh``. */
 export interface RefreshTokenSource {
-  refresh?: string;
+  refresh?: string
 }
 
 export interface RoleDetail {
   /** @maxLength 50 */
-  code: string;
-  name: string;
-  description: string;
-  permissions: Permission[];
+  code: string
+  name: string
+  description: string
+  permissions: Permission[]
 }
 
 export interface RoleList {
   /** @maxLength 50 */
-  code: string;
-  name: string;
-  description: string;
-  permission_count: number;
+  code: string
+  name: string
+  description: string
+  permission_count: number
 }
 
 export interface SchoolListingCreateMultipart {
   /** JSON-encoded ListingCreate payload. Files for product.media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
-  payload: string;
+  payload: string
   /** @format uri */
-  media_0?: string;
+  media_0?: string
   /** @format uri */
-  media_1?: string;
+  media_1?: string
   /** @format uri */
-  media_2?: string;
+  media_2?: string
   /** @format uri */
-  media_3?: string;
+  media_3?: string
   /** @format uri */
-  media_4?: string;
+  media_4?: string
   /** @format uri */
-  media_5?: string;
+  media_5?: string
   /** @format uri */
-  media_6?: string;
+  media_6?: string
   /** @format uri */
-  media_7?: string;
+  media_7?: string
   /** @format uri */
-  media_8?: string;
+  media_8?: string
   /** @format uri */
-  media_9?: string;
+  media_9?: string
 }
 
 export interface SchoolListingList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: ListingList[];
+  previous?: string | null
+  results: ListingList[]
 }
 
 export interface SchoolProductCreate {
-  name: string;
+  name: string
   /** @default "" */
-  description?: string;
-  category_id?: number;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
+  description?: string
+  category_id?: number
+  target_gender?: string | null
+  brand?: string | null
+  material?: string | null
   /** @default "active" */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
-  variants?: InlineVariant[];
-  school_details?: SchoolProductDetails;
+  status?: ProductStatusEnum
+  media?: ProductMediaInput[]
+  variants?: InlineVariant[]
+  school_details?: SchoolProductDetails
 }
 
 export interface SchoolProductDetails {
   /** @default "" */
-  inventory_code?: string;
+  inventory_code?: string
   /** @default "" */
-  storage_location?: string;
+  storage_location?: string
   /** @default "" */
-  notes?: string;
+  notes?: string
 }
 
 export interface SchoolTransactionList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: TransactionDetail[];
+  previous?: string | null
+  results: TransactionDetail[]
 }
 
 export interface SendMessageMultipart {
   /** JSON-encoded SendMessage payload (body, original_filename, mime_type). Optional when only a file is sent. */
-  data?: string;
+  data?: string
   /** @format uri */
-  file?: string;
+  file?: string
 }
 
 export interface SetRolePermissions {
-  permission_ids: number[];
+  permission_ids: number[]
 }
 
 export interface Size {
-  id: number;
+  id: number
   /** @maxLength 50 */
-  name: string;
-  size_system: number;
+  name: string
+  size_system: number
   /**
    * @min -2147483648
    * @max 2147483647
    */
-  sort_order?: number;
-  is_active?: boolean;
+  sort_order?: number
+  is_active?: boolean
 }
 
 export interface SizeInput {
-  name: string;
-  sort_order?: number;
+  name: string
+  sort_order?: number
 }
 
 export interface SizeSystem {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
-  is_active?: boolean;
-  sizes: SizeSystemSize[];
+  name: string
+  is_active?: boolean
+  sizes: SizeSystemSize[]
 }
 
 export interface SizeSystemSize {
-  id: number;
+  id: number
   /** @maxLength 50 */
-  name: string;
+  name: string
   /**
    * @min -2147483648
    * @max 2147483647
    */
-  sort_order?: number;
-  is_active?: boolean;
+  sort_order?: number
+  is_active?: boolean
 }
 
 export interface Studio {
-  id: number;
+  id: number
   /** @maxLength 255 */
-  name: string;
+  name: string
   /**
    * Maximum number of people allowed in this studio.
    * @min 0
    * @max 2147483647
    */
-  max_capacity: number;
-  description?: string;
-  modalities: ModalitySummary[];
+  max_capacity: number
+  description?: string
+  modalities: ModalitySummary[]
 }
 
 export interface StudioSubmit {
   /** @maxLength 255 */
-  name: string;
+  name: string
   /** @min 1 */
-  max_capacity: number;
-  description?: string;
-  allowed_modality_ids?: number[];
+  max_capacity: number
+  description?: string
+  allowed_modality_ids?: number[]
 }
 
 export interface TeacherConfirmCoaching {
-  teacher_notes?: string;
+  teacher_notes?: string
 }
 
 /** Minimal teacher row for pickers (users with ``accounts.can_teach``). */
 export interface TeacherSummary {
-  id: number;
+  id: number
   /** @maxLength 150 */
-  first_name?: string;
+  first_name?: string
   /** @maxLength 150 */
-  last_name?: string;
+  last_name?: string
   /**
    * @format email
    * @maxLength 254
    */
-  email: string;
+  email: string
   /** @maxLength 20 */
-  phone?: string;
+  phone?: string
   /** @maxLength 5 */
-  phone_country_code?: string;
+  phone_country_code?: string
 }
 
 export interface TransactionDetail {
-  id: number;
-  listing_id: number | null;
-  variant_id: number;
+  id: number
+  listing_id: number | null
+  variant_id: number
   /**
    * * `rent` - Rent
    * * `sell` - Sell
    * * `lend` - Lend
    * * `donate` - Donate
    */
-  transaction_type: TransactionTypeEnum;
+  transaction_type: TransactionTypeEnum
   /**
    * * `pending` - Pending
    * * `accepted` - Accepted
@@ -2546,109 +2546,109 @@ export interface TransactionDetail {
    * * `cancelled` - Cancelled
    * * `blocked` - Blocked
    */
-  status?: TransactionStatusEnum;
-  requester_display: Record<string, any>;
-  owner_display: Record<string, any>;
+  status?: TransactionStatusEnum
+  requester_display: Record<string, any>
+  owner_display: Record<string, any>
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  agreed_price?: string | null;
+  agreed_price?: string | null
   /** @format date-time */
-  start_at?: string | null;
+  start_at?: string | null
   /** @format date-time */
-  end_at?: string | null;
-  notes?: string;
-  listing_title: string;
-  variant_sku: string;
-  product_name: string;
+  end_at?: string | null
+  notes?: string
+  listing_title: string
+  variant_sku: string
+  product_name: string
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 export interface TransactionRequest {
-  listing_id: number;
+  listing_id: number
   /** @format date-time */
-  start_at?: string | null;
+  start_at?: string | null
   /** @format date-time */
-  end_at?: string | null;
+  end_at?: string | null
   /** @default "" */
-  notes?: string;
+  notes?: string
 }
 
 export interface UnreadCount {
-  total: number;
-  by_conversation: Record<string, number>;
+  total: number
+  by_conversation: Record<string, number>
 }
 
 export interface UserList {
-  count: number;
+  count: number
   /** @format uri */
-  next?: string | null;
+  next?: string | null
   /** @format uri */
-  previous?: string | null;
-  results: UserResponse[];
+  previous?: string | null
+  results: UserResponse[]
 }
 
 export interface UserModality {
-  id: number;
-  modality: Modality;
+  id: number
+  modality: Modality
 }
 
 export interface UserModalitySubmit {
-  modality_id: number;
+  modality_id: number
 }
 
 /** Output serializer for user data in API responses. */
 export interface UserResponse {
-  id: number;
+  id: number
   /**
    * @format email
    * @maxLength 254
    */
-  email: string;
+  email: string
   /** @maxLength 150 */
-  first_name?: string;
+  first_name?: string
   /** @maxLength 150 */
-  last_name?: string;
+  last_name?: string
   /** @maxLength 20 */
-  phone?: string;
+  phone?: string
   /** @maxLength 5 */
-  phone_country_code?: string;
-  address?: string;
+  phone_country_code?: string
+  address?: string
   /** @maxLength 20 */
-  postal_code?: string;
+  postal_code?: string
   /**
    * * `pt` - Português
    * * `en` - English
    */
-  language?: LanguageEnum;
-  parent_id: number | null;
+  language?: LanguageEnum
+  parent_id: number | null
   /**
    * Active
    * Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
    */
-  is_active?: boolean;
-  role: UserResponseRoleOutput[] | null;
-  display_name: string | null;
-  photo_url: string | null;
-  user_permission_ids: number[];
+  is_active?: boolean
+  role: UserResponseRoleOutput[] | null
+  display_name: string | null
+  photo_url: string | null
+  user_permission_ids: number[]
   /** @format date-time */
-  last_login?: string | null;
+  last_login?: string | null
   /** @format date-time */
-  created_at: string;
+  created_at: string
 }
 
 export interface UserResponseRoleOutput {
-  code: string;
-  name: string;
+  code: string
+  name: string
 }
 
 export interface VariantBooking {
-  id: number;
-  variant: number;
+  id: number
+  variant: number
   /**
    * * `reservation` - Reservation
    * * `loan` - Loan
@@ -2659,7 +2659,7 @@ export interface VariantBooking {
    * * `maintenance` - Maintenance
    * * `blocked` - Blocked
    */
-  booking_type: BookingTypeEnum;
+  booking_type: BookingTypeEnum
   /**
    * * `pending` - Pending
    * * `confirmed` - Confirmed
@@ -2667,25 +2667,25 @@ export interface VariantBooking {
    * * `blocked` - Blocked
    * * `cancelled` - Cancelled
    */
-  status: VariantBookingStatusEnum;
-  listing_id: number;
+  status: VariantBookingStatusEnum
+  listing_id: number
   /** @format date-time */
-  start_at: string;
+  start_at: string
   /** @format date-time */
-  end_at: string;
+  end_at: string
   /** @format date-time */
-  actual_start_at?: string | null;
+  actual_start_at?: string | null
   /** @format date-time */
-  actual_end_at?: string | null;
-  approved_by_user?: number | null;
+  actual_end_at?: string | null
+  approved_by_user?: number | null
   /** @maxLength 255 */
-  title: string;
-  notes?: string;
-  created_by: number;
+  title: string
+  notes?: string
+  created_by: number
   /** @format date-time */
-  created_at: string;
+  created_at: string
   /** @format date-time */
-  updated_at: string;
+  updated_at: string
 }
 
 /** Create/update payload (variant comes from URL). */
@@ -2700,7 +2700,7 @@ export interface VariantBookingWrite {
    * * `maintenance` - Maintenance
    * * `blocked` - Blocked
    */
-  booking_type: BookingTypeEnum;
+  booking_type: BookingTypeEnum
   /**
    * * `pending` - Pending
    * * `confirmed` - Confirmed
@@ -2708,171 +2708,173 @@ export interface VariantBookingWrite {
    * * `blocked` - Blocked
    * * `cancelled` - Cancelled
    */
-  status?: VariantBookingStatusEnum;
+  status?: VariantBookingStatusEnum
   /** @format date-time */
-  start_at: string;
+  start_at: string
   /** @format date-time */
-  end_at: string;
+  end_at: string
   /** @format date-time */
-  actual_start_at?: string | null;
+  actual_start_at?: string | null
   /** @format date-time */
-  actual_end_at?: string | null;
+  actual_end_at?: string | null
   /** @maxLength 255 */
-  title: string;
-  notes?: string;
+  title: string
+  notes?: string
 }
 
 export interface VariantSize {
-  id: number;
+  id: number
   /** @maxLength 50 */
-  name: string;
+  name: string
 }
 
-export type QueryParamsType = Record<string | number, any>;
-export type ResponseFormat = keyof Omit<Body, "body" | "bodyUsed">;
+export type QueryParamsType = Record<string | number, any>
+export type ResponseFormat = keyof Omit<Body, 'body' | 'bodyUsed'>
 
-export interface FullRequestParams extends Omit<RequestInit, "body"> {
+export interface FullRequestParams extends Omit<RequestInit, 'body'> {
   /** set parameter to `true` for call `securityWorker` for this request */
-  secure?: boolean;
+  secure?: boolean
   /** request path */
-  path: string;
+  path: string
   /** content type of request body */
-  type?: ContentType;
+  type?: ContentType
   /** query params */
-  query?: QueryParamsType;
+  query?: QueryParamsType
   /** format of response (i.e. response.json() -> format: "json") */
-  format?: ResponseFormat;
+  format?: ResponseFormat
   /** request body */
-  body?: unknown;
+  body?: unknown
   /** base url */
-  baseUrl?: string;
+  baseUrl?: string
   /** request cancellation token */
-  cancelToken?: CancelToken;
+  cancelToken?: CancelToken
 }
 
 export type RequestParams = Omit<
   FullRequestParams,
-  "body" | "method" | "query" | "path"
->;
+  'body' | 'method' | 'query' | 'path'
+>
 
 export interface ApiConfig<SecurityDataType = unknown> {
-  baseUrl?: string;
-  baseApiParams?: Omit<RequestParams, "baseUrl" | "cancelToken" | "signal">;
+  baseUrl?: string
+  baseApiParams?: Omit<RequestParams, 'baseUrl' | 'cancelToken' | 'signal'>
   securityWorker?: (
-    securityData: SecurityDataType | null,
-  ) => Promise<RequestParams | void> | RequestParams | void;
-  customFetch?: typeof fetch;
+    securityData: SecurityDataType | null
+  ) => Promise<RequestParams | void> | RequestParams | void
+  customFetch?: typeof fetch
 }
 
-export interface HttpResponse<D extends unknown, E extends unknown = unknown>
-  extends Response {
-  data: D;
-  error: E;
+export interface HttpResponse<
+  D extends unknown,
+  E extends unknown = unknown,
+> extends Response {
+  data: D
+  error: E
 }
 
-type CancelToken = Symbol | string | number;
+type CancelToken = Symbol | string | number
 
 export enum ContentType {
-  Json = "application/json",
-  JsonApi = "application/vnd.api+json",
-  FormData = "multipart/form-data",
-  UrlEncoded = "application/x-www-form-urlencoded",
-  Text = "text/plain",
+  Json = 'application/json',
+  JsonApi = 'application/vnd.api+json',
+  FormData = 'multipart/form-data',
+  UrlEncoded = 'application/x-www-form-urlencoded',
+  Text = 'text/plain',
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = "";
-  private securityData: SecurityDataType | null = null;
-  private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
-  private abortControllers = new Map<CancelToken, AbortController>();
+  public baseUrl: string = ''
+  private securityData: SecurityDataType | null = null
+  private securityWorker?: ApiConfig<SecurityDataType>['securityWorker']
+  private abortControllers = new Map<CancelToken, AbortController>()
   private customFetch = (...fetchParams: Parameters<typeof fetch>) =>
-    fetch(...fetchParams);
+    fetch(...fetchParams)
 
   private baseApiParams: RequestParams = {
-    credentials: "same-origin",
+    credentials: 'same-origin',
     headers: {},
-    redirect: "follow",
-    referrerPolicy: "no-referrer",
-  };
+    redirect: 'follow',
+    referrerPolicy: 'no-referrer',
+  }
 
   constructor(apiConfig: ApiConfig<SecurityDataType> = {}) {
-    Object.assign(this, apiConfig);
+    Object.assign(this, apiConfig)
   }
 
   public setSecurityData = (data: SecurityDataType | null) => {
-    this.securityData = data;
-  };
+    this.securityData = data
+  }
 
   protected encodeQueryParam(key: string, value: any) {
-    const encodedKey = encodeURIComponent(key);
-    return `${encodedKey}=${encodeURIComponent(typeof value === "number" ? value : `${value}`)}`;
+    const encodedKey = encodeURIComponent(key)
+    return `${encodedKey}=${encodeURIComponent(typeof value === 'number' ? value : `${value}`)}`
   }
 
   protected addQueryParam(query: QueryParamsType, key: string) {
-    return this.encodeQueryParam(key, query[key]);
+    return this.encodeQueryParam(key, query[key])
   }
 
   protected addArrayQueryParam(query: QueryParamsType, key: string) {
-    const value = query[key];
-    return value.map((v: any) => this.encodeQueryParam(key, v)).join("&");
+    const value = query[key]
+    return value.map((v: any) => this.encodeQueryParam(key, v)).join('&')
   }
 
   protected toQueryString(rawQuery?: QueryParamsType): string {
-    const query = rawQuery || {};
+    const query = rawQuery || {}
     const keys = Object.keys(query).filter(
-      (key) => "undefined" !== typeof query[key],
-    );
+      (key) => 'undefined' !== typeof query[key]
+    )
     return keys
       .map((key) =>
         Array.isArray(query[key])
           ? this.addArrayQueryParam(query, key)
-          : this.addQueryParam(query, key),
+          : this.addQueryParam(query, key)
       )
-      .join("&");
+      .join('&')
   }
 
   protected addQueryParams(rawQuery?: QueryParamsType): string {
-    const queryString = this.toQueryString(rawQuery);
-    return queryString ? `?${queryString}` : "";
+    const queryString = this.toQueryString(rawQuery)
+    return queryString ? `?${queryString}` : ''
   }
 
   private contentFormatters: Record<ContentType, (input: any) => any> = {
     [ContentType.Json]: (input: any) =>
-      input !== null && (typeof input === "object" || typeof input === "string")
+      input !== null && (typeof input === 'object' || typeof input === 'string')
         ? JSON.stringify(input)
         : input,
     [ContentType.JsonApi]: (input: any) =>
-      input !== null && (typeof input === "object" || typeof input === "string")
+      input !== null && (typeof input === 'object' || typeof input === 'string')
         ? JSON.stringify(input)
         : input,
     [ContentType.Text]: (input: any) =>
-      input !== null && typeof input !== "string"
+      input !== null && typeof input !== 'string'
         ? JSON.stringify(input)
         : input,
     [ContentType.FormData]: (input: any) => {
       if (input instanceof FormData) {
-        return input;
+        return input
       }
 
       return Object.keys(input || {}).reduce((formData, key) => {
-        const property = input[key];
+        const property = input[key]
         formData.append(
           key,
           property instanceof Blob
             ? property
-            : typeof property === "object" && property !== null
+            : typeof property === 'object' && property !== null
               ? JSON.stringify(property)
-              : `${property}`,
-        );
-        return formData;
-      }, new FormData());
+              : `${property}`
+        )
+        return formData
+      }, new FormData())
     },
     [ContentType.UrlEncoded]: (input: any) => this.toQueryString(input),
-  };
+  }
 
   protected mergeRequestParams(
     params1: RequestParams,
-    params2?: RequestParams,
+    params2?: RequestParams
   ): RequestParams {
     return {
       ...this.baseApiParams,
@@ -2883,33 +2885,33 @@ export class HttpClient<SecurityDataType = unknown> {
         ...(params1.headers || {}),
         ...((params2 && params2.headers) || {}),
       },
-    };
+    }
   }
 
   protected createAbortSignal = (
-    cancelToken: CancelToken,
+    cancelToken: CancelToken
   ): AbortSignal | undefined => {
     if (this.abortControllers.has(cancelToken)) {
-      const abortController = this.abortControllers.get(cancelToken);
+      const abortController = this.abortControllers.get(cancelToken)
       if (abortController) {
-        return abortController.signal;
+        return abortController.signal
       }
-      return void 0;
+      return void 0
     }
 
-    const abortController = new AbortController();
-    this.abortControllers.set(cancelToken, abortController);
-    return abortController.signal;
-  };
+    const abortController = new AbortController()
+    this.abortControllers.set(cancelToken, abortController)
+    return abortController.signal
+  }
 
   public abortRequest = (cancelToken: CancelToken) => {
-    const abortController = this.abortControllers.get(cancelToken);
+    const abortController = this.abortControllers.get(cancelToken)
 
     if (abortController) {
-      abortController.abort();
-      this.abortControllers.delete(cancelToken);
+      abortController.abort()
+      this.abortControllers.delete(cancelToken)
     }
-  };
+  }
 
   public request = async <T = any, E = any>({
     body,
@@ -2923,23 +2925,23 @@ export class HttpClient<SecurityDataType = unknown> {
     ...params
   }: FullRequestParams): Promise<HttpResponse<T, E>> => {
     const secureParams =
-      ((typeof secure === "boolean" ? secure : this.baseApiParams.secure) &&
+      ((typeof secure === 'boolean' ? secure : this.baseApiParams.secure) &&
         this.securityWorker &&
         (await this.securityWorker(this.securityData))) ||
-      {};
-    const requestParams = this.mergeRequestParams(params, secureParams);
-    const queryString = query && this.toQueryString(query);
-    const payloadFormatter = this.contentFormatters[type || ContentType.Json];
-    const responseFormat = format || requestParams.format;
+      {}
+    const requestParams = this.mergeRequestParams(params, secureParams)
+    const queryString = query && this.toQueryString(query)
+    const payloadFormatter = this.contentFormatters[type || ContentType.Json]
+    const responseFormat = format || requestParams.format
 
     return this.customFetch(
-      `${baseUrl || this.baseUrl || ""}${path}${queryString ? `?${queryString}` : ""}`,
+      `${baseUrl || this.baseUrl || ''}${path}${queryString ? `?${queryString}` : ''}`,
       {
         ...requestParams,
         headers: {
           ...(requestParams.headers || {}),
           ...(type && type !== ContentType.FormData
-            ? { "Content-Type": type }
+            ? { 'Content-Type': type }
             : {}),
         },
         signal:
@@ -2947,40 +2949,40 @@ export class HttpClient<SecurityDataType = unknown> {
             ? this.createAbortSignal(cancelToken)
             : requestParams.signal) || null,
         body:
-          typeof body === "undefined" || body === null
+          typeof body === 'undefined' || body === null
             ? null
             : payloadFormatter(body),
-      },
+      }
     ).then(async (response) => {
-      const r = response as HttpResponse<T, E>;
-      r.data = null as unknown as T;
-      r.error = null as unknown as E;
+      const r = response as HttpResponse<T, E>
+      r.data = null as unknown as T
+      r.error = null as unknown as E
 
-      const responseToParse = responseFormat ? response.clone() : response;
+      const responseToParse = responseFormat ? response.clone() : response
       const data = !responseFormat
         ? r
         : await responseToParse[responseFormat]()
             .then((data) => {
               if (r.ok) {
-                r.data = data;
+                r.data = data
               } else {
-                r.error = data;
+                r.error = data
               }
-              return r;
+              return r
             })
             .catch((e) => {
-              r.error = e;
-              return r;
-            });
+              r.error = e
+              return r
+            })
 
       if (cancelToken) {
-        this.abortControllers.delete(cancelToken);
+        this.abortControllers.delete(cancelToken)
       }
 
-      if (!response.ok) throw data;
-      return data;
-    });
-  };
+      if (!response.ok) throw data
+      return data
+    })
+  }
 }
 
 /**
@@ -3003,15 +3005,15 @@ export class Api<
      */
     accountsActivateCreate: (
       data: ActivateAccount,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ActivationSuccess, ErrorResponse>({
         path: `/api/accounts/activate/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3026,11 +3028,11 @@ export class Api<
     accountsAuthLoginCreate: (data: Login, params: RequestParams = {}) =>
       this.request<LoginSuccess, ErrorResponse>({
         path: `/api/accounts/auth/login/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3044,11 +3046,11 @@ export class Api<
      */
     accountsAuthLogoutCreate: (
       data: RefreshTokenSource,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/accounts/auth/logout/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -3065,15 +3067,15 @@ export class Api<
      */
     accountsAuthPasswordResetCreate: (
       data: PasswordResetRequest,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<PasswordResetRequestSuccess, ErrorResponse>({
         path: `/api/accounts/auth/password-reset/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3087,15 +3089,15 @@ export class Api<
      */
     accountsAuthPasswordResetConfirmCreate: (
       data: PasswordResetConfirm,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<PasswordResetConfirmSuccess, ErrorResponse>({
         path: `/api/accounts/auth/password-reset/confirm/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3109,15 +3111,15 @@ export class Api<
      */
     accountsAuthRefreshCreate: (
       data: RefreshTokenSource,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<RefreshSuccess, ErrorResponse>({
         path: `/api/accounts/auth/refresh/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3131,20 +3133,20 @@ export class Api<
     accountsEmailsExportRetrieve: (
       query?: {
         /** @minLength 1 */
-        classe_ids?: string;
-        is_active?: boolean | null;
+        classe_ids?: string
+        is_active?: boolean | null
         /** @minLength 1 */
-        modality_ids?: string;
+        modality_ids?: string
         /** @minLength 1 */
-        role?: string;
+        role?: string
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<File, any>({
         path: `/api/accounts/emails/export/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3158,10 +3160,10 @@ export class Api<
     accountsInvitesCreate: (data: InviteSingle, params: RequestParams = {}) =>
       this.request<UserResponse, ErrorResponse>({
         path: `/api/accounts/invites/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3174,14 +3176,14 @@ export class Api<
      */
     accountsInvitesBulkCreate: (
       data: BulkInviteFile,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<BulkInviteUsersWrapper, ErrorResponse>({
         path: `/api/accounts/invites/bulk/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3195,8 +3197,8 @@ export class Api<
     accountsMeRetrieve: (params: RequestParams = {}) =>
       this.request<Me, ErrorResponse>({
         path: `/api/accounts/me/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3211,9 +3213,9 @@ export class Api<
     accountsOnboardRetrieve: (token: string, params: RequestParams = {}) =>
       this.request<OnboardingPreviewWrapper, ErrorResponse>({
         path: `/api/accounts/onboard/${token}/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3228,15 +3230,15 @@ export class Api<
     accountsOnboardCreate: (
       token: string,
       data: CompleteOnboarding,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<OnboardingCompleteSuccess, ErrorResponse>({
         path: `/api/accounts/onboard/${token}/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3250,8 +3252,8 @@ export class Api<
     accountsProfileMeRetrieve: (params: RequestParams = {}) =>
       this.request<Profile, ErrorResponse>({
         path: `/api/accounts/profile/me/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3265,10 +3267,10 @@ export class Api<
     accountsProfileMeCreate: (data: Profile, params: RequestParams = {}) =>
       this.request<Profile, ErrorResponse>({
         path: `/api/accounts/profile/me/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3281,14 +3283,14 @@ export class Api<
      */
     accountsProfileMePartialUpdate: (
       data: PatchedProfile,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Profile, ErrorResponse>({
         path: `/api/accounts/profile/me/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3301,15 +3303,15 @@ export class Api<
      */
     accountsProfilesRetrieve: (
       query?: {
-        search?: string;
+        search?: string
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<PublicProfileList, ErrorResponse>({
         path: `/api/accounts/profiles/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3323,8 +3325,8 @@ export class Api<
     accountsTeachersList: (params: RequestParams = {}) =>
       this.request<TeacherSummary[], ErrorResponse>({
         path: `/api/accounts/teachers/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3337,25 +3339,25 @@ export class Api<
      */
     listUsers: (
       query?: {
-        is_active?: boolean;
+        is_active?: boolean
         /**
          * @minLength 1
          * @maxLength 50
          */
-        role_code?: string;
+        role_code?: string
         /**
          * Case-insensitive match on email, first_name, or last_name.
          * @minLength 1
          */
-        search?: string;
+        search?: string
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<UserList, ErrorResponse>({
         path: `/api/accounts/users/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3369,10 +3371,10 @@ export class Api<
     createUser: (data: CreateUser, params: RequestParams = {}) =>
       this.request<UserResponse, ErrorResponse>({
         path: `/api/accounts/users/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3386,8 +3388,8 @@ export class Api<
     getUser: (id: number, params: RequestParams = {}) =>
       this.request<UserResponse, ErrorResponse>({
         path: `/api/accounts/users/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3401,14 +3403,14 @@ export class Api<
     updateUser: (
       id: number,
       data: PatchedUserCoreUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<UserResponse, ErrorResponse>({
         path: `/api/accounts/users/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3422,8 +3424,8 @@ export class Api<
     deactivateUser: (id: number, params: RequestParams = {}) =>
       this.request<UserResponse, ErrorResponse>({
         path: `/api/accounts/users/${id}/deactivate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -3437,7 +3439,7 @@ export class Api<
     accountsUsersResendInviteCreate: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/accounts/users/${id}/resend-invite/`,
-        method: "POST",
+        method: 'POST',
         ...params,
       }),
 
@@ -3452,17 +3454,17 @@ export class Api<
       userId: number,
       query: {
         /** @format date-time */
-        date_from: string;
+        date_from: string
         /** @format date-time */
-        date_to: string;
+        date_to: string
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ExpandedSlot[], ErrorResponse>({
         path: `/api/availability/teachers/${userId}/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3476,14 +3478,14 @@ export class Api<
     availabilityTeachersCreate: (
       userId: number,
       data: AvailabilitySubmit,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Availability, ErrorResponse>({
         path: `/api/availability/teachers/${userId}/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3497,12 +3499,12 @@ export class Api<
     availabilityTeachersRetrieve: (
       id: number,
       userId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Availability, ErrorResponse>({
         path: `/api/availability/teachers/${userId}/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3517,14 +3519,14 @@ export class Api<
       id: number,
       userId: number,
       data: PatchedAvailabilityUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Availability, ErrorResponse>({
         path: `/api/availability/teachers/${userId}/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3538,11 +3540,11 @@ export class Api<
     availabilityTeachersDestroy: (
       id: number,
       userId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/availability/teachers/${userId}/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -3555,22 +3557,22 @@ export class Api<
      */
     billingEntriesList: (
       query?: {
-        coaching_class_id?: number;
+        coaching_class_id?: number
         /** @format date-time */
-        date_from?: string;
+        date_from?: string
         /** @format date-time */
-        date_to?: string;
-        source_type?: ("coaching" | "fine" | "marketplace")[];
-        status?: ("pending" | "exported" | "cancelled")[];
-        student_id?: number;
+        date_to?: string
+        source_type?: ('coaching' | 'fine' | 'marketplace')[]
+        status?: ('pending' | 'exported' | 'cancelled')[]
+        student_id?: number
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<BillingEntryList[], ErrorResponse>({
         path: `/api/billing/entries/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3584,8 +3586,8 @@ export class Api<
     billingEntriesRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<BillingEntryDetail, ErrorResponse>({
         path: `/api/billing/entries/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3599,14 +3601,14 @@ export class Api<
     billingEntriesCancelCreate: (
       id: number,
       data: BillingEntryCancel,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<BillingEntryDetail, ErrorResponse>({
         path: `/api/billing/entries/${id}/cancel/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3619,18 +3621,18 @@ export class Api<
      */
     billingFinesList: (
       query?: {
-        coaching_class_id?: number;
-        reason?: ("absence" | "late_cancellation")[];
-        status?: ("pending_review" | "approved" | "waived")[];
-        student_id?: number;
+        coaching_class_id?: number
+        reason?: ('absence' | 'late_cancellation')[]
+        status?: ('pending_review' | 'approved' | 'waived')[]
+        student_id?: number
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<FineList[], ErrorResponse>({
         path: `/api/billing/fines/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3644,8 +3646,8 @@ export class Api<
     billingFinesRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<FineDetail, ErrorResponse>({
         path: `/api/billing/fines/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3659,14 +3661,14 @@ export class Api<
     billingFinesApproveCreate: (
       id: number,
       data: FineApprove,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<FineDetail, ErrorResponse>({
         path: `/api/billing/fines/${id}/approve/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3680,14 +3682,14 @@ export class Api<
     billingFinesWaiveCreate: (
       id: number,
       data: FineWaive,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<FineDetail, ErrorResponse>({
         path: `/api/billing/fines/${id}/waive/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3701,8 +3703,8 @@ export class Api<
     classesList: (params: RequestParams = {}) =>
       this.request<ClasseList[], ErrorResponse>({
         path: `/api/classes/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3716,10 +3718,10 @@ export class Api<
     classesCreate: (data: ClasseSubmit, params: RequestParams = {}) =>
       this.request<Classe, ErrorResponse>({
         path: `/api/classes/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3733,8 +3735,8 @@ export class Api<
     classesMembersList: (classeId: number, params: RequestParams = {}) =>
       this.request<ClasseMember[], ErrorResponse>({
         path: `/api/classes/${classeId}/members/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3748,14 +3750,14 @@ export class Api<
     classesMembersCreate: (
       classeId: number,
       data: ClasseMemberSubmit,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ClasseMember, ErrorResponse>({
         path: `/api/classes/${classeId}/members/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3769,11 +3771,11 @@ export class Api<
     classesMembersDestroy: (
       classeId: number,
       id: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/classes/${classeId}/members/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -3787,8 +3789,8 @@ export class Api<
     classesRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<ClasseDetail, ErrorResponse>({
         path: `/api/classes/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3802,14 +3804,14 @@ export class Api<
     classesPartialUpdate: (
       id: number,
       data: PatchedClasseUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ClasseDetail, ErrorResponse>({
         path: `/api/classes/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3823,7 +3825,7 @@ export class Api<
     classesDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/classes/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -3837,34 +3839,34 @@ export class Api<
     getAllCoachings: (
       query?: {
         /** @format date-time */
-        date_from?: string;
+        date_from?: string
         /** @format date-time */
-        date_to?: string;
-        modality_id?: number[];
+        date_to?: string
+        modality_id?: number[]
         /** Filter coachings where this user is a participant. */
-        participant_id?: number;
-        recurring_coaching_id?: number;
-        requested_by_id?: number;
+        participant_id?: number
+        recurring_coaching_id?: number
+        requested_by_id?: number
         status?: (
-          | "requested"
-          | "pending_approval"
-          | "scheduled"
-          | "waiting_confirmation"
-          | "pending_completion_approval"
-          | "completed"
-          | "cancelled"
-          | "rejected"
-        )[];
-        studio_id?: number[];
-        teacher_id?: number[];
+          | 'requested'
+          | 'pending_approval'
+          | 'scheduled'
+          | 'waiting_confirmation'
+          | 'pending_completion_approval'
+          | 'completed'
+          | 'cancelled'
+          | 'rejected'
+        )[]
+        studio_id?: number[]
+        teacher_id?: number[]
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListCoachingClasses, ErrorResponse>({
         path: `/api/coachings/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3877,14 +3879,14 @@ export class Api<
      */
     coachingsCreate: (
       data: DirectCoordinationCoachingCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3897,12 +3899,12 @@ export class Api<
      */
     coachingsParticipantsList: (
       coachingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingParticipant[], ErrorResponse>({
         path: `/api/coachings/${coachingId}/participants/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -3916,14 +3918,14 @@ export class Api<
     coachingsParticipantsCreate: (
       coachingId: number,
       data: AddParticipant,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingParticipant, ErrorResponse>({
         path: `/api/coachings/${coachingId}/participants/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3937,12 +3939,12 @@ export class Api<
     coachingsParticipantsApproveCreate: (
       coachingId: number,
       id: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingParticipant, ErrorResponse>({
         path: `/api/coachings/${coachingId}/participants/${id}/approve/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -3957,14 +3959,14 @@ export class Api<
       coachingId: number,
       id: number,
       data: ParticipantCancel,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingParticipant, ErrorResponse>({
         path: `/api/coachings/${coachingId}/participants/${id}/cancel/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -3979,14 +3981,14 @@ export class Api<
       coachingId: number,
       id: number,
       data: ConfirmParticipantAttendance,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingParticipant, ErrorResponse>({
         path: `/api/coachings/${coachingId}/participants/${id}/confirm-attendance/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4000,14 +4002,14 @@ export class Api<
     coachingsParticipantsAcceptCreate: (
       coachingId: number,
       data: ParticipantAcceptInvite,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingParticipant, ErrorResponse>({
         path: `/api/coachings/${coachingId}/participants/accept/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4021,8 +4023,8 @@ export class Api<
     coachingsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -4036,14 +4038,14 @@ export class Api<
     coachingsPartialUpdate: (
       id: number,
       data: PatchedCoachingUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4057,8 +4059,8 @@ export class Api<
     coachingsAcceptCreate: (id: number, params: RequestParams = {}) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/accept/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4072,14 +4074,14 @@ export class Api<
     coachingsApproveCreate: (
       id: number,
       data: CoachingApprove,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/approve/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4093,14 +4095,14 @@ export class Api<
     coachingsCancelCreate: (
       id: number,
       data: CoachingCancel,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/cancel/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4114,8 +4116,8 @@ export class Api<
     coachingsCompleteCreate: (id: number, params: RequestParams = {}) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/complete/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4129,14 +4131,14 @@ export class Api<
     coachingsRejectCreate: (
       id: number,
       data: CoachingReject,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/reject/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4150,14 +4152,14 @@ export class Api<
     coachingsTeacherConfirmCreate: (
       id: number,
       data: TeacherConfirmCoaching,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/${id}/teacher-confirm/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4171,14 +4173,14 @@ export class Api<
     coachingsRecurringCancelCreate: (
       recurringId: number,
       data: RecurringSeriesCancel,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass[], ErrorResponse>({
         path: `/api/coachings/recurring/${recurringId}/cancel/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4191,14 +4193,14 @@ export class Api<
      */
     coachingsRequestCreate: (
       data: CoachingRequest,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<CoachingClass, ErrorResponse>({
         path: `/api/coachings/request/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4213,11 +4215,11 @@ export class Api<
     enrollmentsCreate: (data: EnrollmentSubmit, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4231,8 +4233,8 @@ export class Api<
     enrollmentsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -4246,14 +4248,14 @@ export class Api<
     enrollmentsPartialUpdate: (
       id: number,
       data: PatchedEnrollmentUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4267,8 +4269,8 @@ export class Api<
     enrollmentsApproveCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/approve/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4282,8 +4284,8 @@ export class Api<
     enrollmentsCancelCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/cancel/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4297,8 +4299,8 @@ export class Api<
     enrollmentsPaymentsList: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentPaymentRead[], ErrorResponse>({
         path: `/api/enrollments/${id}/payments/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -4312,14 +4314,14 @@ export class Api<
     enrollmentsPaymentsCreate: (
       id: number,
       data: EnrollmentPaymentCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EnrollmentPaymentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/payments/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4333,12 +4335,12 @@ export class Api<
     enrollmentsPaymentsConfirmCreate: (
       id: number,
       paymentPk: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EnrollmentPaymentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/payments/${paymentPk}/confirm/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4352,8 +4354,8 @@ export class Api<
     enrollmentsRejectCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/reject/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4367,8 +4369,8 @@ export class Api<
     enrollmentsStartReviewCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentRead, ErrorResponse>({
         path: `/api/enrollments/${id}/start-review/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4382,24 +4384,24 @@ export class Api<
     enrollmentsListList: (
       query?: {
         /** @minLength 1 */
-        academic_year?: string;
-        enrollment_type?: ("new" | "renewal")[];
+        academic_year?: string
+        enrollment_type?: ('new' | 'renewal')[]
         status?: (
-          | "submitted"
-          | "under_review"
-          | "approved"
-          | "rejected"
-          | "cancelled"
-        )[];
-        student_id?: number;
+          | 'submitted'
+          | 'under_review'
+          | 'approved'
+          | 'rejected'
+          | 'cancelled'
+        )[]
+        student_id?: number
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EnrollmentRead[], ErrorResponse>({
         path: `/api/enrollments/list/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4414,9 +4416,9 @@ export class Api<
     enrollmentsPeriodsList: (params: RequestParams = {}) =>
       this.request<EnrollmentPeriod[], ErrorResponse>({
         path: `/api/enrollments/periods/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4431,9 +4433,9 @@ export class Api<
     enrollmentsPeriodsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/${id}/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4447,14 +4449,14 @@ export class Api<
     enrollmentsPeriodsPartialUpdate: (
       id: number,
       data: PatchedEnrollmentPeriod,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4468,8 +4470,8 @@ export class Api<
     enrollmentsPeriodsCloseCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/${id}/close/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4483,8 +4485,8 @@ export class Api<
     enrollmentsPeriodsOpenCreate: (id: number, params: RequestParams = {}) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/${id}/open/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4497,14 +4499,14 @@ export class Api<
      */
     enrollmentsPeriodsCreateCreate: (
       data: EnrollmentPeriod,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EnrollmentPeriod, ErrorResponse>({
         path: `/api/enrollments/periods/create/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4519,9 +4521,9 @@ export class Api<
     eventsList: (params: RequestParams = {}) =>
       this.request<EventList[], ErrorResponse>({
         path: `/api/events/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4535,10 +4537,10 @@ export class Api<
     eventsCreate: (data: EventCreate, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4553,9 +4555,9 @@ export class Api<
     eventsCommentsList: (eventId: number, params: RequestParams = {}) =>
       this.request<EventComment[], ErrorResponse>({
         path: `/api/events/${eventId}/comments/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4569,14 +4571,14 @@ export class Api<
     eventsCommentsCreate: (
       eventId: number,
       data: EventCommentCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventComment, ErrorResponse>({
         path: `/api/events/${eventId}/comments/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4591,14 +4593,14 @@ export class Api<
       commentId: number,
       eventId: number,
       data: EventCommentUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventComment, ErrorResponse>({
         path: `/api/events/${eventId}/comments/${commentId}/`,
-        method: "PUT",
+        method: 'PUT',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4612,11 +4614,11 @@ export class Api<
     eventsCommentsDestroy: (
       commentId: number,
       eventId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/events/${eventId}/comments/${commentId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -4631,9 +4633,9 @@ export class Api<
     eventsFilesList: (eventId: number, params: RequestParams = {}) =>
       this.request<EventFile[], ErrorResponse>({
         path: `/api/events/${eventId}/files/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4647,14 +4649,14 @@ export class Api<
     eventsFilesCreate: (
       eventId: number,
       data: EventFileCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventFile, ErrorResponse>({
         path: `/api/events/${eventId}/files/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4668,11 +4670,11 @@ export class Api<
     eventsFilesDestroy: (
       eventId: number,
       fileId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/events/${eventId}/files/${fileId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -4686,8 +4688,8 @@ export class Api<
     eventsInterestsCreate: (eventId: number, params: RequestParams = {}) =>
       this.request<EventInterest, ErrorResponse>({
         path: `/api/events/${eventId}/interests/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4701,7 +4703,7 @@ export class Api<
     eventsInterestsMeDestroy: (eventId: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/events/${eventId}/interests/me/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -4716,9 +4718,9 @@ export class Api<
     eventsPostsList: (eventId: number, params: RequestParams = {}) =>
       this.request<EventPost[], ErrorResponse>({
         path: `/api/events/${eventId}/posts/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4732,14 +4734,14 @@ export class Api<
     eventsPostsCreate: (
       eventId: number,
       data: EventPostCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventPost, ErrorResponse>({
         path: `/api/events/${eventId}/posts/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4754,13 +4756,13 @@ export class Api<
     eventsPostsRetrieve: (
       eventId: number,
       postId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventPost, ErrorResponse>({
         path: `/api/events/${eventId}/posts/${postId}/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4775,14 +4777,14 @@ export class Api<
       eventId: number,
       postId: number,
       data: EventPostUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventPost, ErrorResponse>({
         path: `/api/events/${eventId}/posts/${postId}/`,
-        method: "PUT",
+        method: 'PUT',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4796,11 +4798,11 @@ export class Api<
     eventsPostsDestroy: (
       eventId: number,
       postId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/events/${eventId}/posts/${postId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -4815,14 +4817,14 @@ export class Api<
       eventId: number,
       postId: number,
       data: EventPostPublish,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventPost, ErrorResponse>({
         path: `/api/events/${eventId}/posts/${postId}/publish/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4837,14 +4839,14 @@ export class Api<
       eventId: number,
       postId: number,
       data: EventPostSchedulePublication,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<EventPost, ErrorResponse>({
         path: `/api/events/${eventId}/posts/${postId}/schedule-publication/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4859,9 +4861,9 @@ export class Api<
     eventsRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4875,10 +4877,10 @@ export class Api<
     eventsUpdate: (id: number, data: EventUpdate, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/`,
-        method: "PUT",
+        method: 'PUT',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4892,7 +4894,7 @@ export class Api<
     eventsDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/events/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -4906,8 +4908,8 @@ export class Api<
     eventsArchiveCreate: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/archive/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4921,8 +4923,8 @@ export class Api<
     eventsCancelCreate: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/cancel/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4936,8 +4938,8 @@ export class Api<
     eventsCompleteCreate: (id: number, params: RequestParams = {}) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/complete/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -4951,14 +4953,14 @@ export class Api<
     eventsPublishCreate: (
       id: number,
       data: EventPublish,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/publish/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4972,14 +4974,14 @@ export class Api<
     eventsSchedulePublicationCreate: (
       id: number,
       data: EventSchedulePublication,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Event, ErrorResponse>({
         path: `/api/events/${id}/schedule-publication/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -4992,12 +4994,12 @@ export class Api<
      */
     inventoryBookingsRetrieve: (
       bookingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<VariantBooking, ErrorResponse>({
         path: `/api/inventory/bookings/${bookingId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5011,14 +5013,14 @@ export class Api<
     inventoryBookingsPartialUpdate: (
       bookingId: number,
       data: PatchedVariantBookingWrite,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<VariantBooking, ErrorResponse>({
         path: `/api/inventory/bookings/${bookingId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5032,7 +5034,7 @@ export class Api<
     inventoryBookingsDestroy: (bookingId: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/bookings/${bookingId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5046,8 +5048,8 @@ export class Api<
     inventoryCategoriesList: (params: RequestParams = {}) =>
       this.request<Category[], ErrorResponse>({
         path: `/api/inventory/categories/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5060,14 +5062,14 @@ export class Api<
      */
     inventoryCategoriesCreate: (
       data: CreateCategory,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Category, ErrorResponse>({
         path: `/api/inventory/categories/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5080,12 +5082,12 @@ export class Api<
      */
     inventoryCategoriesRetrieve: (
       categoryId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Category, ErrorResponse>({
         path: `/api/inventory/categories/${categoryId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5099,14 +5101,14 @@ export class Api<
     inventoryCategoriesPartialUpdate: (
       categoryId: number,
       data: PatchedUpdateCategory,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Category, ErrorResponse>({
         path: `/api/inventory/categories/${categoryId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5119,11 +5121,11 @@ export class Api<
      */
     inventoryCategoriesDestroy: (
       categoryId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/categories/${categoryId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5136,12 +5138,12 @@ export class Api<
      */
     inventoryCategoriesActivateCreate: (
       categoryId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Category, ErrorResponse>({
         path: `/api/inventory/categories/${categoryId}/activate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5154,12 +5156,12 @@ export class Api<
      */
     inventoryCategoriesDeactivateCreate: (
       categoryId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Category, ErrorResponse>({
         path: `/api/inventory/categories/${categoryId}/deactivate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5173,8 +5175,8 @@ export class Api<
     inventoryColorsList: (params: RequestParams = {}) =>
       this.request<Color[], ErrorResponse>({
         path: `/api/inventory/colors/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5188,10 +5190,10 @@ export class Api<
     inventoryColorsCreate: (data: CreateColor, params: RequestParams = {}) =>
       this.request<Color, ErrorResponse>({
         path: `/api/inventory/colors/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5205,8 +5207,8 @@ export class Api<
     inventoryColorsRetrieve: (colorId: number, params: RequestParams = {}) =>
       this.request<Color, ErrorResponse>({
         path: `/api/inventory/colors/${colorId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5220,7 +5222,7 @@ export class Api<
     inventoryColorsDestroy: (colorId: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/colors/${colorId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5233,12 +5235,12 @@ export class Api<
      */
     inventoryColorsActivateCreate: (
       colorId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Color, ErrorResponse>({
         path: `/api/inventory/colors/${colorId}/activate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5251,12 +5253,12 @@ export class Api<
      */
     inventoryColorsDeactivateCreate: (
       colorId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Color, ErrorResponse>({
         path: `/api/inventory/colors/${colorId}/deactivate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5269,9 +5271,9 @@ export class Api<
      */
     inventoryProductsRetrieve: (
       query?: {
-        category_id?: number;
+        category_id?: number
         /** @minLength 1 */
-        name?: string;
+        name?: string
         /**
          * * `-updated_at` - Recently updated
          * * `updated_at` - Oldest updated
@@ -5279,22 +5281,22 @@ export class Api<
          * * `-name` - Name Z-A
          * @minLength 1
          */
-        ordering?: "-updated_at" | "updated_at" | "name" | "-name";
+        ordering?: '-updated_at' | 'updated_at' | 'name' | '-name'
         /**
          * * `active` - Active
          * * `inactive` - Inactive
          * * `archived` - Archived
          * @minLength 1
          */
-        status?: "active" | "inactive" | "archived";
+        status?: 'active' | 'inactive' | 'archived'
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<InventoryMemberProductList, ErrorResponse>({
         path: `/api/inventory/products/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5307,14 +5309,14 @@ export class Api<
      */
     inventoryProductsCreate: (
       data: ProductCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/products/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5328,8 +5330,8 @@ export class Api<
     inventoryProductsRetrieve2: (id: number, params: RequestParams = {}) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/products/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5343,14 +5345,14 @@ export class Api<
     inventoryProductsPartialUpdate: (
       id: number,
       data: PatchedProductUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/products/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5364,7 +5366,7 @@ export class Api<
     inventoryProductsDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/products/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5377,12 +5379,12 @@ export class Api<
      */
     inventoryProductsVariantsRetrieve: (
       productId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<InventoryProductVariantList, ErrorResponse>({
         path: `/api/inventory/products/${productId}/variants/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5396,14 +5398,14 @@ export class Api<
     inventoryProductsVariantsCreate: (
       productId: number,
       data: ProductVariantWrite,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductVariantRead, ErrorResponse>({
         path: `/api/inventory/products/${productId}/variants/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5416,9 +5418,9 @@ export class Api<
      */
     inventorySchoolProductsRetrieve: (
       query?: {
-        category_id?: number;
+        category_id?: number
         /** @minLength 1 */
-        name?: string;
+        name?: string
         /**
          * * `-updated_at` - Recently updated
          * * `updated_at` - Oldest updated
@@ -5426,22 +5428,22 @@ export class Api<
          * * `-name` - Name Z-A
          * @minLength 1
          */
-        ordering?: "-updated_at" | "updated_at" | "name" | "-name";
+        ordering?: '-updated_at' | 'updated_at' | 'name' | '-name'
         /**
          * * `active` - Active
          * * `inactive` - Inactive
          * * `archived` - Archived
          * @minLength 1
          */
-        status?: "active" | "inactive" | "archived";
+        status?: 'active' | 'inactive' | 'archived'
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<InventorySchoolProductList, ErrorResponse>({
         path: `/api/inventory/school/products/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5454,14 +5456,14 @@ export class Api<
      */
     inventorySchoolProductsCreate: (
       data: SchoolProductCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/school/products/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5474,12 +5476,12 @@ export class Api<
      */
     inventorySchoolProductsRetrieve2: (
       id: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/school/products/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5493,14 +5495,14 @@ export class Api<
     inventorySchoolProductsPartialUpdate: (
       id: number,
       data: PatchedSchoolProductUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/school/products/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5514,7 +5516,7 @@ export class Api<
     inventorySchoolProductsDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/school/products/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5528,8 +5530,8 @@ export class Api<
     inventorySizeSystemsList: (params: RequestParams = {}) =>
       this.request<SizeSystem[], ErrorResponse>({
         path: `/api/inventory/size-systems/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5542,14 +5544,14 @@ export class Api<
      */
     inventorySizeSystemsCreate: (
       data: CreateSizeSystem,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<SizeSystem, ErrorResponse>({
         path: `/api/inventory/size-systems/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5563,14 +5565,14 @@ export class Api<
     inventorySizeSystemsPartialUpdate: (
       sizeSystemId: number,
       data: PatchedUpdateSizeSystem,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<SizeSystem, ErrorResponse>({
         path: `/api/inventory/size-systems/${sizeSystemId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5583,11 +5585,11 @@ export class Api<
      */
     inventorySizeSystemsDestroy: (
       sizeSystemId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/size-systems/${sizeSystemId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5600,12 +5602,12 @@ export class Api<
      */
     inventorySizeSystemsActivateCreate: (
       sizeSystemId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<SizeSystem, ErrorResponse>({
         path: `/api/inventory/size-systems/${sizeSystemId}/activate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5618,12 +5620,12 @@ export class Api<
      */
     inventorySizeSystemsDeactivateCreate: (
       sizeSystemId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<SizeSystem, ErrorResponse>({
         path: `/api/inventory/size-systems/${sizeSystemId}/deactivate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5637,8 +5639,8 @@ export class Api<
     inventorySizesList: (params: RequestParams = {}) =>
       this.request<Size[], ErrorResponse>({
         path: `/api/inventory/sizes/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5652,10 +5654,10 @@ export class Api<
     inventorySizesCreate: (data: CreateSize, params: RequestParams = {}) =>
       this.request<Size, ErrorResponse>({
         path: `/api/inventory/sizes/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5669,8 +5671,8 @@ export class Api<
     inventorySizesRetrieve: (sizeId: number, params: RequestParams = {}) =>
       this.request<Size, ErrorResponse>({
         path: `/api/inventory/sizes/${sizeId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5684,7 +5686,7 @@ export class Api<
     inventorySizesDestroy: (sizeId: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/sizes/${sizeId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5697,12 +5699,12 @@ export class Api<
      */
     inventorySizesActivateCreate: (
       sizeId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Size, ErrorResponse>({
         path: `/api/inventory/sizes/${sizeId}/activate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5715,12 +5717,12 @@ export class Api<
      */
     inventorySizesDeactivateCreate: (
       sizeId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Size, ErrorResponse>({
         path: `/api/inventory/sizes/${sizeId}/deactivate/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -5733,12 +5735,12 @@ export class Api<
      */
     inventoryVariantsRetrieve: (
       variantId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductVariantRead, ErrorResponse>({
         path: `/api/inventory/variants/${variantId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5752,14 +5754,14 @@ export class Api<
     inventoryVariantsPartialUpdate: (
       variantId: number,
       data: PatchedProductVariantWrite,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ProductVariantRead, ErrorResponse>({
         path: `/api/inventory/variants/${variantId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5773,7 +5775,7 @@ export class Api<
     inventoryVariantsDestroy: (variantId: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/inventory/variants/${variantId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5786,12 +5788,12 @@ export class Api<
      */
     inventoryVariantsBookingsRetrieve: (
       variantId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<InventoryVariantBookingList, ErrorResponse>({
         path: `/api/inventory/variants/${variantId}/bookings/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5805,14 +5807,14 @@ export class Api<
     inventoryVariantsBookingsCreate: (
       variantId: number,
       data: VariantBookingWrite,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<VariantBooking, ErrorResponse>({
         path: `/api/inventory/variants/${variantId}/bookings/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5825,10 +5827,10 @@ export class Api<
      */
     marketplaceListingsRetrieve: (
       query?: {
-        category_id?: number;
-        color_id?: number;
+        category_id?: number
+        color_id?: number
         /** @minLength 1 */
-        condition?: string;
+        condition?: string
         /**
          * * `rent` - Rent
          * * `sell` - Sell
@@ -5836,7 +5838,7 @@ export class Api<
          * * `donate` - Donate
          * @minLength 1
          */
-        listing_type?: "rent" | "sell" | "lend" | "donate";
+        listing_type?: 'rent' | 'sell' | 'lend' | 'donate'
         /**
          * * `-created_at` - Newest first
          * * `created_at` - Oldest first
@@ -5845,28 +5847,28 @@ export class Api<
          * @minLength 1
          */
         ordering?:
-          | "-created_at"
-          | "created_at"
-          | "asking_price"
-          | "-asking_price";
+          | '-created_at'
+          | 'created_at'
+          | 'asking_price'
+          | '-asking_price'
         /** @minLength 1 */
-        search?: string;
-        size_id?: number;
+        search?: string
+        size_id?: number
         /**
          * * `draft` - Draft
          * * `active` - Active
          * * `closed` - Closed
          * @minLength 1
          */
-        status?: "draft" | "active" | "closed";
+        status?: 'draft' | 'active' | 'closed'
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<MarketplaceListingList, ErrorResponse>({
         path: `/api/marketplace/listings/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5879,14 +5881,14 @@ export class Api<
      */
     marketplaceListingsCreate: (
       data: ListingCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/listings/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5899,12 +5901,12 @@ export class Api<
      */
     marketplaceListingsRetrieve2: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5918,14 +5920,14 @@ export class Api<
     marketplaceListingsPartialUpdate: (
       listingId: number,
       data: PatchedListingUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -5938,11 +5940,11 @@ export class Api<
      */
     marketplaceListingsDestroy: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -5955,11 +5957,11 @@ export class Api<
      */
     marketplaceListingsAvailabilityRetrieve: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/availability/`,
-        method: "GET",
+        method: 'GET',
         ...params,
       }),
 
@@ -5972,12 +5974,12 @@ export class Api<
      */
     marketplaceListingsCommentsList: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingComment[], ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/comments/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -5991,14 +5993,14 @@ export class Api<
     marketplaceListingsCommentsCreate: (
       listingId: number,
       data: ListingCommentCreate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingComment, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/comments/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6013,14 +6015,14 @@ export class Api<
       commentId: number,
       listingId: number,
       data: ListingCommentUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingComment, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/comments/${commentId}/`,
-        method: "PUT",
+        method: 'PUT',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6034,11 +6036,11 @@ export class Api<
     marketplaceListingsCommentsDestroy: (
       commentId: number,
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/comments/${commentId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -6051,11 +6053,11 @@ export class Api<
      */
     marketplaceListingsFavoriteCreate: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/favorite/`,
-        method: "POST",
+        method: 'POST',
         ...params,
       }),
 
@@ -6068,11 +6070,11 @@ export class Api<
      */
     marketplaceListingsFavoriteDestroy: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/favorite/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -6085,12 +6087,12 @@ export class Api<
      */
     marketplaceListingsPublishCreate: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/publish/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6104,14 +6106,14 @@ export class Api<
     marketplaceListingsRequestCreate: (
       listingId: number,
       data: TransactionRequest,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/request/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6124,12 +6126,12 @@ export class Api<
      */
     marketplaceListingsUnpublishCreate: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/unpublish/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6143,8 +6145,8 @@ export class Api<
     marketplaceListingsFavoritesRetrieve: (params: RequestParams = {}) =>
       this.request<FavoriteListingsList, ErrorResponse>({
         path: `/api/marketplace/listings/favorites/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6157,10 +6159,10 @@ export class Api<
      */
     marketplaceListingsMineRetrieve: (
       query?: {
-        category_id?: number;
-        color_id?: number;
+        category_id?: number
+        color_id?: number
         /** @minLength 1 */
-        condition?: string;
+        condition?: string
         /**
          * * `rent` - Rent
          * * `sell` - Sell
@@ -6168,7 +6170,7 @@ export class Api<
          * * `donate` - Donate
          * @minLength 1
          */
-        listing_type?: "rent" | "sell" | "lend" | "donate";
+        listing_type?: 'rent' | 'sell' | 'lend' | 'donate'
         /**
          * * `-created_at` - Newest first
          * * `created_at` - Oldest first
@@ -6177,28 +6179,28 @@ export class Api<
          * @minLength 1
          */
         ordering?:
-          | "-created_at"
-          | "created_at"
-          | "asking_price"
-          | "-asking_price";
+          | '-created_at'
+          | 'created_at'
+          | 'asking_price'
+          | '-asking_price'
         /** @minLength 1 */
-        search?: string;
-        size_id?: number;
+        search?: string
+        size_id?: number
         /**
          * * `draft` - Draft
          * * `active` - Active
          * * `closed` - Closed
          * @minLength 1
          */
-        status?: "draft" | "active" | "closed";
+        status?: 'draft' | 'active' | 'closed'
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<MyListingsList, ErrorResponse>({
         path: `/api/marketplace/listings/mine/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6211,10 +6213,10 @@ export class Api<
      */
     marketplaceSchoolListingsRetrieve: (
       query?: {
-        category_id?: number;
-        color_id?: number;
+        category_id?: number
+        color_id?: number
         /** @minLength 1 */
-        condition?: string;
+        condition?: string
         /**
          * * `rent` - Rent
          * * `sell` - Sell
@@ -6222,7 +6224,7 @@ export class Api<
          * * `donate` - Donate
          * @minLength 1
          */
-        listing_type?: "rent" | "sell" | "lend" | "donate";
+        listing_type?: 'rent' | 'sell' | 'lend' | 'donate'
         /**
          * * `-created_at` - Newest first
          * * `created_at` - Oldest first
@@ -6231,28 +6233,28 @@ export class Api<
          * @minLength 1
          */
         ordering?:
-          | "-created_at"
-          | "created_at"
-          | "asking_price"
-          | "-asking_price";
+          | '-created_at'
+          | 'created_at'
+          | 'asking_price'
+          | '-asking_price'
         /** @minLength 1 */
-        search?: string;
-        size_id?: number;
+        search?: string
+        size_id?: number
         /**
          * * `draft` - Draft
          * * `active` - Active
          * * `closed` - Closed
          * @minLength 1
          */
-        status?: "draft" | "active" | "closed";
+        status?: 'draft' | 'active' | 'closed'
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<SchoolListingList, ErrorResponse>({
         path: `/api/marketplace/school/listings/`,
-        method: "GET",
+        method: 'GET',
         query: query,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6265,14 +6267,14 @@ export class Api<
      */
     marketplaceSchoolListingsCreate: (
       data: SchoolListingCreateMultipart,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/school/listings/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6285,12 +6287,12 @@ export class Api<
      */
     marketplaceSchoolListingsRetrieve2: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/school/listings/${listingId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6304,14 +6306,14 @@ export class Api<
     marketplaceSchoolListingsPartialUpdate: (
       listingId: number,
       data: PatchedListingUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/school/listings/${listingId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6324,12 +6326,12 @@ export class Api<
      */
     marketplaceSchoolListingsPublishCreate: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/school/listings/${listingId}/publish/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6342,12 +6344,12 @@ export class Api<
      */
     marketplaceSchoolListingsUnpublishCreate: (
       listingId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/school/listings/${listingId}/unpublish/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6361,8 +6363,8 @@ export class Api<
     marketplaceSchoolTransactionsRetrieve: (params: RequestParams = {}) =>
       this.request<SchoolTransactionList, ErrorResponse>({
         path: `/api/marketplace/school/transactions/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6375,12 +6377,12 @@ export class Api<
      */
     marketplaceSchoolTransactionsRetrieve2: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/school/transactions/${transactionId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6393,12 +6395,12 @@ export class Api<
      */
     marketplaceSchoolTransactionsAcceptCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/school/transactions/${transactionId}/accept/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6411,12 +6413,12 @@ export class Api<
      */
     marketplaceSchoolTransactionsBlockCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/school/transactions/${transactionId}/block/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6429,12 +6431,12 @@ export class Api<
      */
     marketplaceSchoolTransactionsCompleteCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/school/transactions/${transactionId}/complete/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6447,12 +6449,12 @@ export class Api<
      */
     marketplaceSchoolTransactionsRejectCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/school/transactions/${transactionId}/reject/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6465,12 +6467,12 @@ export class Api<
      */
     marketplaceSchoolTransactionsUnblockCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/school/transactions/${transactionId}/unblock/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6483,12 +6485,12 @@ export class Api<
      */
     marketplaceTransactionsRetrieve: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/transactions/${transactionId}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6501,12 +6503,12 @@ export class Api<
      */
     marketplaceTransactionsAcceptCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/transactions/${transactionId}/accept/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6519,12 +6521,12 @@ export class Api<
      */
     marketplaceTransactionsCancelCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/transactions/${transactionId}/cancel/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6537,12 +6539,12 @@ export class Api<
      */
     marketplaceTransactionsCompleteCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/transactions/${transactionId}/complete/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6555,12 +6557,12 @@ export class Api<
      */
     marketplaceTransactionsRejectCreate: (
       transactionId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<TransactionDetail, ErrorResponse>({
         path: `/api/marketplace/transactions/${transactionId}/reject/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6574,8 +6576,8 @@ export class Api<
     marketplaceTransactionsMineRetrieve: (params: RequestParams = {}) =>
       this.request<MyTransactionsList, ErrorResponse>({
         path: `/api/marketplace/transactions/mine/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6589,8 +6591,8 @@ export class Api<
     messagingConversationsList: (params: RequestParams = {}) =>
       this.request<Conversation[], ErrorResponse>({
         path: `/api/messaging/conversations/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6603,14 +6605,14 @@ export class Api<
      */
     messagingConversationsCreate: (
       data: CreateConversation,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Conversation, ErrorResponse>({
         path: `/api/messaging/conversations/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6624,14 +6626,14 @@ export class Api<
     messagingConversationsPartialUpdate: (
       conversationId: number,
       data: PatchedRenameConversation,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Conversation, ErrorResponse>({
         path: `/api/messaging/conversations/${conversationId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6644,11 +6646,11 @@ export class Api<
      */
     messagingConversationsLeaveCreate: (
       conversationId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/messaging/conversations/${conversationId}/leave/`,
-        method: "POST",
+        method: 'POST',
         ...params,
       }),
 
@@ -6661,11 +6663,11 @@ export class Api<
      */
     messagingConversationsMarkReadCreate: (
       conversationId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/messaging/conversations/${conversationId}/mark-read/`,
-        method: "POST",
+        method: 'POST',
         ...params,
       }),
 
@@ -6678,12 +6680,12 @@ export class Api<
      */
     messagingConversationsMessagesList: (
       conversationId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Message[], ErrorResponse>({
         path: `/api/messaging/conversations/${conversationId}/messages/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6697,14 +6699,14 @@ export class Api<
     messagingConversationsMessagesCreate: (
       conversationId: number,
       data: SendMessageMultipart,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Message, ErrorResponse>({
         path: `/api/messaging/conversations/${conversationId}/messages/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.FormData,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6718,14 +6720,14 @@ export class Api<
     messagingConversationsParticipantsCreate: (
       conversationId: number,
       data: AddParticipants,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Conversation, ErrorResponse>({
         path: `/api/messaging/conversations/${conversationId}/participants/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6739,11 +6741,11 @@ export class Api<
     messagingConversationsParticipantsDestroy: (
       conversationId: number,
       userId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/messaging/conversations/${conversationId}/participants/${userId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -6756,14 +6758,14 @@ export class Api<
      */
     messagingConversationsGroupsCreate: (
       data: CreateGroupConversation,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Conversation, ErrorResponse>({
         path: `/api/messaging/conversations/groups/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6777,8 +6779,8 @@ export class Api<
     messagingConversationsUnreadCountRetrieve: (params: RequestParams = {}) =>
       this.request<UnreadCount, ErrorResponse>({
         path: `/api/messaging/conversations/unread-count/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6792,14 +6794,14 @@ export class Api<
     messagingMessagesPartialUpdate: (
       messageId: number,
       data: PatchedEditMessage,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Message, ErrorResponse>({
         path: `/api/messaging/messages/${messageId}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6813,7 +6815,7 @@ export class Api<
     messagingMessagesDestroy: (messageId: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/messaging/messages/${messageId}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -6826,12 +6828,12 @@ export class Api<
      */
     messagingMessagesPinCreate: (
       messageId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Message, ErrorResponse>({
         path: `/api/messaging/messages/${messageId}/pin/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6845,14 +6847,14 @@ export class Api<
     messagingMessagesReactionsCreate: (
       messageId: number,
       data: ReactionInput,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Message, ErrorResponse>({
         path: `/api/messaging/messages/${messageId}/reactions/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6865,12 +6867,12 @@ export class Api<
      */
     messagingMessagesReactionsDestroy: (
       messageId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Message, ErrorResponse>({
         path: `/api/messaging/messages/${messageId}/reactions/`,
-        method: "DELETE",
-        format: "json",
+        method: 'DELETE',
+        format: 'json',
         ...params,
       }),
 
@@ -6883,12 +6885,12 @@ export class Api<
      */
     messagingMessagesUnpinCreate: (
       messageId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Message, ErrorResponse>({
         path: `/api/messaging/messages/${messageId}/unpin/`,
-        method: "POST",
-        format: "json",
+        method: 'POST',
+        format: 'json',
         ...params,
       }),
 
@@ -6903,9 +6905,9 @@ export class Api<
     modalitiesList: (params: RequestParams = {}) =>
       this.request<Modality[], ErrorResponse>({
         path: `/api/modalities/`,
-        method: "GET",
+        method: 'GET',
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6919,10 +6921,10 @@ export class Api<
     modalitiesCreate: (data: ModalitySubmit, params: RequestParams = {}) =>
       this.request<Modality, ErrorResponse>({
         path: `/api/modalities/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6936,8 +6938,8 @@ export class Api<
     modalitiesRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<Modality, ErrorResponse>({
         path: `/api/modalities/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -6951,14 +6953,14 @@ export class Api<
     modalitiesPartialUpdate: (
       id: number,
       data: PatchedModalityUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Modality, ErrorResponse>({
         path: `/api/modalities/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -6972,7 +6974,7 @@ export class Api<
     modalitiesDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/modalities/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -6985,12 +6987,12 @@ export class Api<
      */
     modalitiesUsersModalitiesList: (
       userId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<UserModality[], ErrorResponse>({
         path: `/api/modalities/users/${userId}/modalities/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -7004,14 +7006,14 @@ export class Api<
     modalitiesUsersModalitiesCreate: (
       userId: number,
       data: UserModalitySubmit,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<UserModality, ErrorResponse>({
         path: `/api/modalities/users/${userId}/modalities/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -7025,11 +7027,11 @@ export class Api<
     modalitiesUsersModalitiesDestroy: (
       id: number,
       userId: number,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<void, ErrorResponse>({
         path: `/api/modalities/users/${userId}/modalities/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -7043,8 +7045,8 @@ export class Api<
     rolesList: (params: RequestParams = {}) =>
       this.request<RoleList[], ErrorResponse>({
         path: `/api/roles/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -7058,10 +7060,10 @@ export class Api<
     rolesCreate: (data: CreateRole, params: RequestParams = {}) =>
       this.request<RoleDetail, ErrorResponse>({
         path: `/api/roles/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -7075,8 +7077,8 @@ export class Api<
     rolesRetrieve: (code: string, params: RequestParams = {}) =>
       this.request<RoleDetail, ErrorResponse>({
         path: `/api/roles/${code}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -7090,14 +7092,14 @@ export class Api<
     rolesPartialUpdate: (
       code: string,
       data: PatchedUpdateRole,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<RoleDetail, ErrorResponse>({
         path: `/api/roles/${code}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -7111,7 +7113,7 @@ export class Api<
     rolesDestroy: (code: string, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/roles/${code}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
 
@@ -7125,14 +7127,14 @@ export class Api<
     rolesPermissionsUpdate: (
       code: string,
       data: SetRolePermissions,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<RoleDetail, ErrorResponse>({
         path: `/api/roles/${code}/permissions/`,
-        method: "PUT",
+        method: 'PUT',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -7146,8 +7148,8 @@ export class Api<
     rolesPermissionsAvailableList: (params: RequestParams = {}) =>
       this.request<Permission[], ErrorResponse>({
         path: `/api/roles/permissions/available/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -7161,117 +7163,117 @@ export class Api<
      */
     schemaRetrieve: (
       query?: {
-        format?: "json" | "yaml";
+        format?: 'json' | 'yaml'
         lang?:
-          | "af"
-          | "ar"
-          | "ar-dz"
-          | "ast"
-          | "az"
-          | "be"
-          | "bg"
-          | "bn"
-          | "br"
-          | "bs"
-          | "ca"
-          | "ckb"
-          | "cs"
-          | "cy"
-          | "da"
-          | "de"
-          | "dsb"
-          | "el"
-          | "en"
-          | "en-au"
-          | "en-gb"
-          | "eo"
-          | "es"
-          | "es-ar"
-          | "es-co"
-          | "es-mx"
-          | "es-ni"
-          | "es-ve"
-          | "et"
-          | "eu"
-          | "fa"
-          | "fi"
-          | "fr"
-          | "fy"
-          | "ga"
-          | "gd"
-          | "gl"
-          | "he"
-          | "hi"
-          | "hr"
-          | "hsb"
-          | "ht"
-          | "hu"
-          | "hy"
-          | "ia"
-          | "id"
-          | "ig"
-          | "io"
-          | "is"
-          | "it"
-          | "ja"
-          | "ka"
-          | "kab"
-          | "kk"
-          | "km"
-          | "kn"
-          | "ko"
-          | "ky"
-          | "lb"
-          | "lt"
-          | "lv"
-          | "mk"
-          | "ml"
-          | "mn"
-          | "mr"
-          | "ms"
-          | "my"
-          | "nb"
-          | "ne"
-          | "nl"
-          | "nn"
-          | "os"
-          | "pa"
-          | "pl"
-          | "pt"
-          | "pt-br"
-          | "ro"
-          | "ru"
-          | "sk"
-          | "sl"
-          | "sq"
-          | "sr"
-          | "sr-latn"
-          | "sv"
-          | "sw"
-          | "ta"
-          | "te"
-          | "tg"
-          | "th"
-          | "tk"
-          | "tr"
-          | "tt"
-          | "udm"
-          | "ug"
-          | "uk"
-          | "ur"
-          | "uz"
-          | "vi"
-          | "zh-hans"
-          | "zh-hant";
+          | 'af'
+          | 'ar'
+          | 'ar-dz'
+          | 'ast'
+          | 'az'
+          | 'be'
+          | 'bg'
+          | 'bn'
+          | 'br'
+          | 'bs'
+          | 'ca'
+          | 'ckb'
+          | 'cs'
+          | 'cy'
+          | 'da'
+          | 'de'
+          | 'dsb'
+          | 'el'
+          | 'en'
+          | 'en-au'
+          | 'en-gb'
+          | 'eo'
+          | 'es'
+          | 'es-ar'
+          | 'es-co'
+          | 'es-mx'
+          | 'es-ni'
+          | 'es-ve'
+          | 'et'
+          | 'eu'
+          | 'fa'
+          | 'fi'
+          | 'fr'
+          | 'fy'
+          | 'ga'
+          | 'gd'
+          | 'gl'
+          | 'he'
+          | 'hi'
+          | 'hr'
+          | 'hsb'
+          | 'ht'
+          | 'hu'
+          | 'hy'
+          | 'ia'
+          | 'id'
+          | 'ig'
+          | 'io'
+          | 'is'
+          | 'it'
+          | 'ja'
+          | 'ka'
+          | 'kab'
+          | 'kk'
+          | 'km'
+          | 'kn'
+          | 'ko'
+          | 'ky'
+          | 'lb'
+          | 'lt'
+          | 'lv'
+          | 'mk'
+          | 'ml'
+          | 'mn'
+          | 'mr'
+          | 'ms'
+          | 'my'
+          | 'nb'
+          | 'ne'
+          | 'nl'
+          | 'nn'
+          | 'os'
+          | 'pa'
+          | 'pl'
+          | 'pt'
+          | 'pt-br'
+          | 'ro'
+          | 'ru'
+          | 'sk'
+          | 'sl'
+          | 'sq'
+          | 'sr'
+          | 'sr-latn'
+          | 'sv'
+          | 'sw'
+          | 'ta'
+          | 'te'
+          | 'tg'
+          | 'th'
+          | 'tk'
+          | 'tr'
+          | 'tt'
+          | 'udm'
+          | 'ug'
+          | 'uk'
+          | 'ur'
+          | 'uz'
+          | 'vi'
+          | 'zh-hans'
+          | 'zh-hant'
       },
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Record<string, any>, any>({
         path: `/api/schema/`,
-        method: "GET",
+        method: 'GET',
         query: query,
         secure: true,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -7285,8 +7287,8 @@ export class Api<
     studiosList: (params: RequestParams = {}) =>
       this.request<Studio[], ErrorResponse>({
         path: `/api/studios/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -7300,10 +7302,10 @@ export class Api<
     studiosCreate: (data: StudioSubmit, params: RequestParams = {}) =>
       this.request<Studio, ErrorResponse>({
         path: `/api/studios/`,
-        method: "POST",
+        method: 'POST',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -7317,8 +7319,8 @@ export class Api<
     studiosRetrieve: (id: number, params: RequestParams = {}) =>
       this.request<Studio, ErrorResponse>({
         path: `/api/studios/${id}/`,
-        method: "GET",
-        format: "json",
+        method: 'GET',
+        format: 'json',
         ...params,
       }),
 
@@ -7332,14 +7334,14 @@ export class Api<
     studiosPartialUpdate: (
       id: number,
       data: PatchedStudioUpdate,
-      params: RequestParams = {},
+      params: RequestParams = {}
     ) =>
       this.request<Studio, ErrorResponse>({
         path: `/api/studios/${id}/`,
-        method: "PATCH",
+        method: 'PATCH',
         body: data,
         type: ContentType.Json,
-        format: "json",
+        format: 'json',
         ...params,
       }),
 
@@ -7353,8 +7355,8 @@ export class Api<
     studiosDestroy: (id: number, params: RequestParams = {}) =>
       this.request<void, ErrorResponse>({
         path: `/api/studios/${id}/`,
-        method: "DELETE",
+        method: 'DELETE',
         ...params,
       }),
-  };
+  }
 }

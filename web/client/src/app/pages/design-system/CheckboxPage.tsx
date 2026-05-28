@@ -31,15 +31,21 @@ export function CheckboxPage() {
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <Checkbox checked={false} />
-              <span className="text-sm text-muted-foreground">{t('designSystem.checkboxUnchecked')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('designSystem.checkboxUnchecked')}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <Checkbox checked={true} />
-              <span className="text-sm text-muted-foreground">{t('designSystem.checkboxChecked')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('designSystem.checkboxChecked')}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <Checkbox checked="indeterminate" />
-              <span className="text-sm text-muted-foreground">{t('designSystem.checkboxIndeterminate')}</span>
+              <span className="text-sm text-muted-foreground">
+                {t('designSystem.checkboxIndeterminate')}
+              </span>
             </div>
           </div>
         </div>
@@ -53,13 +59,15 @@ export function CheckboxPage() {
             <div className="flex items-center gap-3">
               <Checkbox checked={false} disabled />
               <span className="text-sm text-muted-foreground">
-                {t('designSystem.checkboxUnchecked')} ({t('designSystem.disabled')})
+                {t('designSystem.checkboxUnchecked')} (
+                {t('designSystem.disabled')})
               </span>
             </div>
             <div className="flex items-center gap-3">
               <Checkbox checked={true} disabled />
               <span className="text-sm text-muted-foreground">
-                {t('designSystem.checkboxChecked')} ({t('designSystem.disabled')})
+                {t('designSystem.checkboxChecked')} (
+                {t('designSystem.disabled')})
               </span>
             </div>
           </div>
@@ -91,11 +99,16 @@ export function CheckboxPage() {
                 id="newsletter"
                 checked={checkedItems.newsletter}
                 onCheckedChange={(v) =>
-                  setCheckedItems((prev) => ({ ...prev, newsletter: v === true }))
+                  setCheckedItems((prev) => ({
+                    ...prev,
+                    newsletter: v === true,
+                  }))
                 }
               />
               <div className="space-y-0.5">
-                <Label htmlFor="newsletter">{t('designSystem.checkboxNewsletter')}</Label>
+                <Label htmlFor="newsletter">
+                  {t('designSystem.checkboxNewsletter')}
+                </Label>
                 <p className="text-sm text-muted-foreground">
                   {t('designSystem.checkboxNewsletterDesc')}
                 </p>
@@ -110,7 +123,9 @@ export function CheckboxPage() {
                 }
               />
               <div className="space-y-0.5">
-                <Label htmlFor="updates">{t('designSystem.checkboxUpdates')}</Label>
+                <Label htmlFor="updates">
+                  {t('designSystem.checkboxUpdates')}
+                </Label>
                 <p className="text-sm text-muted-foreground">
                   {t('designSystem.checkboxUpdatesDesc')}
                 </p>

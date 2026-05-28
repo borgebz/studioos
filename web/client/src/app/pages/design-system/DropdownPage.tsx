@@ -103,9 +103,7 @@ export function DropdownPage() {
 
         {/* Inset items (pl-8) */}
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-foreground">
-            inset items
-          </h2>
+          <h2 className="text-sm font-semibold text-foreground">inset items</h2>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">

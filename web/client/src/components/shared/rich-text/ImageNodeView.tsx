@@ -104,7 +104,7 @@ function ImageNodeView({
       window.addEventListener('pointermove', onMove)
       window.addEventListener('pointerup', onUp)
     },
-    [editor.isEditable, updateAttributes],
+    [editor.isEditable, updateAttributes]
   )
 
   const commitCaption = useCallback(() => {
@@ -140,8 +140,9 @@ function ImageNodeView({
         className={cn(
           'relative inline-block max-w-full overflow-hidden rounded-md',
           alignClass,
-          selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
-          resizing && 'select-none',
+          selected &&
+            'ring-2 ring-primary ring-offset-2 ring-offset-background',
+          resizing && 'select-none'
         )}
         style={widthStyle ? { width: widthStyle } : undefined}
       >
@@ -218,7 +219,7 @@ function ImageNodeView({
           className={cn(
             'mt-2 max-w-full bg-transparent text-center text-xs text-muted-foreground placeholder:text-muted-foreground/60 focus:outline-none',
             !captionDraft && !editor.isEditable && 'hidden',
-            widthStyle ? '' : 'w-auto',
+            widthStyle ? '' : 'w-auto'
           )}
           style={widthStyle ? { width: widthStyle } : undefined}
         />
@@ -251,7 +252,7 @@ function AlignBtn({
       className={cn(
         'flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground',
         active && 'bg-accent text-foreground',
-        destructive && 'hover:bg-destructive/10 hover:text-destructive',
+        destructive && 'hover:bg-destructive/10 hover:text-destructive'
       )}
     >
       {children}

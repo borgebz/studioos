@@ -79,7 +79,7 @@ function HeaderCellContent<TData>({
   if (header.isPlaceholder) return null
   const content = flexRender(
     header.column.columnDef.header,
-    header.getContext(),
+    header.getContext()
   )
   const meta = header.column.columnDef.meta
   if (!meta?.filter) return <>{content}</>
@@ -90,7 +90,7 @@ function HeaderCellContent<TData>({
       className={cn(
         'group/header flex items-center gap-1.5',
         align === 'right' && 'flex-row-reverse justify-end',
-        align === 'center' && 'justify-center',
+        align === 'center' && 'justify-center'
       )}
     >
       <span className="min-w-0 truncate">{content}</span>
@@ -190,42 +190,41 @@ export function DataTable<TData>({
     : null
 
   // -- Body rows --
-  const bodyContent =
-    loading ? (
-      skeletonRows
-    ) : table.getRowModel().rows.length === 0 ? (
-      <TableRow className="hover:bg-transparent">
-        <TableCell
-          colSpan={columnCount}
-          className="h-32 text-center text-sm text-muted-foreground whitespace-normal"
+  const bodyContent = loading ? (
+    skeletonRows
+  ) : table.getRowModel().rows.length === 0 ? (
+    <TableRow className="hover:bg-transparent">
+      <TableCell
+        colSpan={columnCount}
+        className="h-32 text-center text-sm text-muted-foreground whitespace-normal"
+      >
+        {emptyMessage}
+      </TableCell>
+    </TableRow>
+  ) : (
+    <>
+      {table.getRowModel().rows.map((row) => (
+        <TableRow
+          key={row.id}
+          data-state={row.getIsSelected() ? 'selected' : undefined}
         >
-          {emptyMessage}
-        </TableCell>
-      </TableRow>
-    ) : (
-      <>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow
-            key={row.id}
-            data-state={row.getIsSelected() ? 'selected' : undefined}
-          >
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-        {loadingMoreRows}
-        {onLoadMore && (
-          <tr aria-hidden className="h-px border-0">
-            <td colSpan={columnCount} className="p-0">
-              <div ref={sentinelRef} />
-            </td>
-          </tr>
-        )}
-      </>
-    )
+          {row.getVisibleCells().map((cell) => (
+            <TableCell key={cell.id}>
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+      {loadingMoreRows}
+      {onLoadMore && (
+        <tr aria-hidden className="h-px border-0">
+          <td colSpan={columnCount} className="p-0">
+            <div ref={sentinelRef} />
+          </td>
+        </tr>
+      )}
+    </>
+  )
 
   // -- Footer markup --
   const footer = showFooter ? (
@@ -266,7 +265,7 @@ export function DataTable<TData>({
       <div
         className={cn(
           'flex flex-col flex-1 min-h-0 rounded-lg border border-border bg-card',
-          className,
+          className
         )}
       >
         {/* Pinned header */}
@@ -277,7 +276,11 @@ export function DataTable<TData>({
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
                   {hg.headers.map((header) => (
-                    <th key={header.id} colSpan={header.colSpan} className={TH_CLASS}>
+                    <th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className={TH_CLASS}
+                    >
                       <HeaderCellContent header={header} />
                     </th>
                   ))}
@@ -294,9 +297,7 @@ export function DataTable<TData>({
         >
           <table className="w-full table-fixed text-sm">
             <ColGroup table={table} />
-            <tbody className="[&_tr:last-child]:border-0">
-              {bodyContent}
-            </tbody>
+            <tbody className="[&_tr:last-child]:border-0">{bodyContent}</tbody>
           </table>
         </div>
 
@@ -312,7 +313,7 @@ export function DataTable<TData>({
     <div
       className={cn(
         'overflow-hidden rounded-lg border border-border bg-card',
-        className,
+        className
       )}
     >
       <Table>
@@ -334,9 +335,7 @@ export function DataTable<TData>({
             </TableRow>
           ))}
         </TableHeader>
-        <TableBody>
-          {bodyContent}
-        </TableBody>
+        <TableBody>{bodyContent}</TableBody>
       </Table>
       {footer}
     </div>

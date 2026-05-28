@@ -11,7 +11,12 @@ import { TextAlign } from '@tiptap/extension-text-align'
 import { FontSize, TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
-import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
+import {
+  Table,
+  TableCell,
+  TableHeader,
+  TableRow,
+} from '@tiptap/extension-table'
 import { Youtube } from '@tiptap/extension-youtube'
 import { CharacterCount } from '@tiptap/extension-character-count'
 import { TaskList } from '@tiptap/extension-task-list'
@@ -76,18 +81,56 @@ interface RichTextEditorProps {
 }
 
 const ALLOWED_TAGS = [
-  'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
-  'h1', 'h2', 'h3', 'h4', 'blockquote', 'code', 'pre',
-  'ul', 'ol', 'li', 'a', 'img', 'hr', 'span', 'div',
-  'table', 'thead', 'tbody', 'tr', 'th', 'td',
+  'p',
+  'br',
+  'strong',
+  'b',
+  'em',
+  'i',
+  'u',
+  's',
+  'strike',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'blockquote',
+  'code',
+  'pre',
+  'ul',
+  'ol',
+  'li',
+  'a',
+  'img',
+  'hr',
+  'span',
+  'div',
+  'table',
+  'thead',
+  'tbody',
+  'tr',
+  'th',
+  'td',
   'iframe',
 ]
 
 const ALLOWED_ATTR = [
-  'href', 'target', 'rel', 'src', 'alt', 'title',
-  'style', 'class', 'data-*',
-  'colspan', 'rowspan',
-  'width', 'height', 'frameborder', 'allow', 'allowfullscreen',
+  'href',
+  'target',
+  'rel',
+  'src',
+  'alt',
+  'title',
+  'style',
+  'class',
+  'data-*',
+  'colspan',
+  'rowspan',
+  'width',
+  'height',
+  'frameborder',
+  'allow',
+  'allowfullscreen',
 ]
 
 export function sanitizeHtml(input: string) {
@@ -134,7 +177,7 @@ export function SanitizedHtml({
         '[&_table_td]:border [&_table_td]:border-border [&_table_td]:px-2 [&_table_td]:py-1 [&_table_td]:align-top',
         '[&_table_th]:border [&_table_th]:border-border [&_table_th]:bg-muted [&_table_th]:px-2 [&_table_th]:py-1 [&_table_th]:text-left [&_table_th]:font-semibold',
         '[&_iframe]:my-3 [&_iframe]:aspect-video [&_iframe]:w-full [&_iframe]:rounded-md',
-        className,
+        className
       )}
       // eslint-disable-next-line react/no-danger
       dangerouslySetInnerHTML={{ __html: safe }}
@@ -143,14 +186,27 @@ export function SanitizedHtml({
 }
 
 const PROMO_COLORS = [
-  '#0f172a', '#475569', '#94a3b8',
-  '#dc2626', '#ea580c', '#d97706',
-  '#16a34a', '#0891b2', '#2563eb', '#7c3aed', '#db2777',
+  '#0f172a',
+  '#475569',
+  '#94a3b8',
+  '#dc2626',
+  '#ea580c',
+  '#d97706',
+  '#16a34a',
+  '#0891b2',
+  '#2563eb',
+  '#7c3aed',
+  '#db2777',
 ]
 
 const HIGHLIGHT_COLORS = [
-  '#fef08a', '#fed7aa', '#fecaca',
-  '#bbf7d0', '#bae6fd', '#ddd6fe', '#fbcfe8',
+  '#fef08a',
+  '#fed7aa',
+  '#fecaca',
+  '#bbf7d0',
+  '#bae6fd',
+  '#ddd6fe',
+  '#fbcfe8',
 ]
 
 interface ToolbarButtonProps {
@@ -182,7 +238,7 @@ function ToolbarButton({
           onClick={onClick}
           className={cn(
             'size-8 rounded-md text-muted-foreground hover:text-foreground',
-            active && 'bg-accent text-foreground',
+            active && 'bg-accent text-foreground'
           )}
         >
           {children}
@@ -217,7 +273,11 @@ function LinkPopover({ editor }: { editor: Editor }) {
         .chain()
         .focus()
         .extendMarkRange('link')
-        .setLink({ href: trimmed, target: '_blank', rel: 'noopener noreferrer' })
+        .setLink({
+          href: trimmed,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        })
         .run()
     }
     setOpen(false)
@@ -237,7 +297,7 @@ function LinkPopover({ editor }: { editor: Editor }) {
             onClick={openPopover}
             className={cn(
               'size-8 rounded-md text-muted-foreground hover:text-foreground',
-              isActive && 'bg-accent text-foreground',
+              isActive && 'bg-accent text-foreground'
             )}
           >
             <LinkIcon className="size-4" />
@@ -246,7 +306,9 @@ function LinkPopover({ editor }: { editor: Editor }) {
         <PopoverContent className="w-80" align="start">
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="rte-link-url" className="text-xs">URL</Label>
+              <Label htmlFor="rte-link-url" className="text-xs">
+                URL
+              </Label>
               <Input
                 id="rte-link-url"
                 value={url}
@@ -349,7 +411,7 @@ function HighlightPopover({ editor }: { editor: Editor }) {
           onMouseDown={(e) => e.preventDefault()}
           className={cn(
             'size-8 rounded-md text-muted-foreground hover:text-foreground',
-            editor.isActive('highlight') && 'bg-accent text-foreground',
+            editor.isActive('highlight') && 'bg-accent text-foreground'
           )}
         >
           <Highlighter className="size-4" />
@@ -369,7 +431,9 @@ function HighlightPopover({ editor }: { editor: Editor }) {
             <button
               key={c}
               type="button"
-              onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()}
+              onClick={() =>
+                editor.chain().focus().toggleHighlight({ color: c }).run()
+              }
               className="h-6 w-6 rounded border border-border"
               style={{ backgroundColor: c }}
               aria-label={`Highlight ${c}`}
@@ -393,8 +457,7 @@ const FONT_SIZES = [
 function FontSizeControl({ editor }: { editor: Editor }) {
   const current =
     (editor.getAttributes('textStyle').fontSize as string | undefined) ?? ''
-  const label =
-    FONT_SIZES.find((s) => s.value === current)?.label ?? 'Size'
+  const label = FONT_SIZES.find((s) => s.value === current)?.label ?? 'Size'
   return (
     <Popover>
       <Tooltip>
@@ -434,11 +497,13 @@ function FontSizeControl({ editor }: { editor: Editor }) {
                 }
                 className={cn(
                   'flex w-full items-center justify-between rounded px-2 py-1.5 text-xs hover:bg-accent',
-                  current === s.value && 'bg-accent font-medium',
+                  current === s.value && 'bg-accent font-medium'
                 )}
               >
                 <span style={{ fontSize: s.value }}>{s.label}</span>
-                <span className="text-[10px] text-muted-foreground">{s.value}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {s.value}
+                </span>
               </button>
             </li>
           ))}
@@ -525,7 +590,9 @@ function ImageControl({ editor, onImageUpload }: ImageControlProps) {
               Upload from device
             </Button>
             <div className="space-y-1.5">
-              <Label htmlFor="rte-image-url" className="text-xs">…or paste a URL</Label>
+              <Label htmlFor="rte-image-url" className="text-xs">
+                …or paste a URL
+              </Label>
               <Input
                 id="rte-image-url"
                 value={url}
@@ -540,7 +607,12 @@ function ImageControl({ editor, onImageUpload }: ImageControlProps) {
               />
             </div>
             <div className="flex justify-end">
-              <Button type="button" size="sm" onClick={insertUrl} disabled={!url.trim()}>
+              <Button
+                type="button"
+                size="sm"
+                onClick={insertUrl}
+                disabled={!url.trim()}
+              >
                 Insert
               </Button>
             </div>
@@ -578,7 +650,9 @@ function YoutubePopover({ editor }: { editor: Editor }) {
       <PopoverContent className="w-80" align="start">
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="rte-youtube" className="text-xs">YouTube URL</Label>
+            <Label htmlFor="rte-youtube" className="text-xs">
+              YouTube URL
+            </Label>
             <Input
               id="rte-youtube"
               value={url}
@@ -593,7 +667,12 @@ function YoutubePopover({ editor }: { editor: Editor }) {
             />
           </div>
           <div className="flex justify-end">
-            <Button type="button" size="sm" onClick={insert} disabled={!url.trim()}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={insert}
+              disabled={!url.trim()}
+            >
               Embed
             </Button>
           </div>
@@ -621,9 +700,12 @@ function TableControl({ editor }: { editor: Editor }) {
 }
 
 function CharCount({ editor }: { editor: Editor }) {
-  const [n, setN] = useState(() => editor.storage.characterCount?.characters?.() ?? 0)
+  const [n, setN] = useState(
+    () => editor.storage.characterCount?.characters?.() ?? 0
+  )
   useEffect(() => {
-    const update = () => setN(editor.storage.characterCount?.characters?.() ?? 0)
+    const update = () =>
+      setN(editor.storage.characterCount?.characters?.() ?? 0)
     editor.on('update', update)
     return () => {
       editor.off('update', update)
@@ -705,7 +787,7 @@ export function RichTextEditor({
       attributes: {
         class: cn(
           'tiptap rich-text max-w-none text-sm text-foreground focus:outline-none',
-          'px-4 py-3 min-h-full',
+          'px-4 py-3 min-h-full'
         ),
       },
       transformPastedHTML: (html) => cleanPastedHtml(html),
@@ -722,7 +804,9 @@ export function RichTextEditor({
           view.dispatch(tr)
         }
         if (onImageUpload) {
-          onImageUpload(image).then(insert).catch((e) => console.error(e))
+          onImageUpload(image)
+            .then(insert)
+            .catch((e) => console.error(e))
         } else {
           const reader = new FileReader()
           reader.onload = () => insert(String(reader.result))
@@ -742,7 +826,9 @@ export function RichTextEditor({
           view.dispatch(tr)
         }
         if (onImageUpload) {
-          onImageUpload(image).then(insert).catch((e) => console.error(e))
+          onImageUpload(image)
+            .then(insert)
+            .catch((e) => console.error(e))
         } else {
           const reader = new FileReader()
           reader.onload = () => insert(String(reader.result))
@@ -780,7 +866,7 @@ export function RichTextEditor({
       <div
         className={cn(
           'rounded-md border border-input bg-background',
-          className,
+          className
         )}
         style={{ minHeight }}
       />
@@ -836,7 +922,7 @@ export function RichTextEditor({
           'rounded-md border border-input bg-background shadow-xs',
           'focus-within:ring-2 focus-within:ring-ring/40',
           disabled && 'opacity-60',
-          className,
+          className
         )}
       >
         {/* Toolbar */}
@@ -853,21 +939,27 @@ export function RichTextEditor({
             <Pilcrow className="size-4" />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 1 }).run()
+            }
             active={editor.isActive('heading', { level: 1 })}
             label="Heading 1"
           >
             <Heading1 className="size-4" />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 2 }).run()
+            }
             active={editor.isActive('heading', { level: 2 })}
             label="Heading 2"
           >
             <Heading2 className="size-4" />
           </ToolbarButton>
           <ToolbarButton
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+            onClick={() =>
+              editor.chain().focus().toggleHeading({ level: 3 }).run()
+            }
             active={editor.isActive('heading', { level: 3 })}
             label="Heading 3"
           >
@@ -1000,7 +1092,9 @@ export function RichTextEditor({
           editor={editor}
           options={{ placement: 'top' }}
           shouldShow={({ editor, from, to }) =>
-            from !== to && !editor.isActive('image') && !editor.isActive('table')
+            from !== to &&
+            !editor.isActive('image') &&
+            !editor.isActive('table')
           }
         >
           <div className="flex items-center gap-0.5 rounded-md border border-border bg-popover px-1 py-1 shadow-md">
@@ -1047,4 +1141,3 @@ export function RichTextEditor({
     </TooltipProvider>
   )
 }
-

@@ -1,7 +1,11 @@
 import * as React from 'react'
 import { useState, useCallback } from 'react'
 import { ChevronDownIcon, ChevronRightIcon, CheckIcon } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
 export interface TreeSelectNode {
@@ -48,7 +52,9 @@ function TreeSelectTriggerDisplay({
         if (child.value === value) {
           return (
             <span className="flex items-center gap-2">
-              {node.icon && <node.icon className="size-4 text-muted-foreground" />}
+              {node.icon && (
+                <node.icon className="size-4 text-muted-foreground" />
+              )}
               {child.label}
             </span>
           )
@@ -109,7 +115,12 @@ function TreeNode({
           className="flex min-h-11 md:min-h-[36px] flex-1 items-center gap-2 rounded-sm py-1.5 pr-2 outline-none"
         >
           {node.icon && (
-            <node.icon className={cn('size-4 shrink-0', isSelected ? 'text-foreground' : 'text-muted-foreground')} />
+            <node.icon
+              className={cn(
+                'size-4 shrink-0',
+                isSelected ? 'text-foreground' : 'text-muted-foreground'
+              )}
+            />
           )}
           <span className="truncate">{node.label}</span>
           {isSelected && <CheckIcon className="ml-auto size-3.5 shrink-0" />}
@@ -190,7 +201,10 @@ function TreeSelect({
       <PopoverContent
         align="start"
         sideOffset={-36}
-        className={cn('w-[--radix-popover-trigger-width] min-w-[200px] overflow-hidden p-0', className)}
+        className={cn(
+          'w-[--radix-popover-trigger-width] min-w-[200px] overflow-hidden p-0',
+          className
+        )}
       >
         <div className="max-h-[min(300px,var(--radix-popover-content-available-height,300px))] overflow-y-auto overscroll-contain p-1">
           {nodes.map((node) => (
