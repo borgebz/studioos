@@ -42,7 +42,11 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # fires if a request bypasses Caddy and hits Django directly (e.g., container
 # port accidentally exposed). With SECURE_PROXY_SSL_HEADER set above, normal
 # Caddy traffic carries X-Forwarded-Proto=https and never triggers the redirect.
-SECURE_SSL_REDIRECT = not DEBUG
+#
+# CI sets this to False explicitly: tests use the Django test client which
+# makes plain-HTTP requests and would receive 301s instead of the expected
+# status codes. Defaults to `not DEBUG` so st/prod don't need to opt in.
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=not DEBUG, cast=bool)
 
 # Use the X-Forwarded-Host header to build absolute URLs (so request.get_host()
 # returns the public hostname like "st.studioos.club" rather than the internal

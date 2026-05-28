@@ -45,9 +45,13 @@ variables:
   # Django
   SECRET_KEY: "ci-secret-key-not-used-in-production"
   DEBUG: "False"
-  ALLOWED_HOSTS: "localhost,127.0.0.1"
+  ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
   CORS_ALLOWED_ORIGINS: "http://localhost:3000"
   FRONTEND_URL: "http://localhost:3000"
+  # Tests use the Django test client over plain HTTP; SECURE_SSL_REDIRECT=True
+  # (the prod default when DEBUG=False) would 301 every request before it
+  # reaches the view, breaking the entire suite.
+  SECURE_SSL_REDIRECT: "False"
   # JWT
   JWT_ACCESS_TOKEN_LIFETIME_MINUTES: "60"
   JWT_REFRESH_TOKEN_LIFETIME_DAYS: "7"
