@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { Eye, EyeOff, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { paths } from '@/app/paths'
 import { SubmitArrow } from '@/components/shared/SubmitArrow'
 import { apiClient } from '@/api/api-client'
@@ -13,6 +13,7 @@ import { useAuth } from '@/auth/useAuth'
 import { useTheme } from '@/theme/ThemeProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/shared/DatePicker'
@@ -43,7 +44,6 @@ export function OnboardingPage() {
   const [step, setStep] = useState<OnboardingStep>('loading')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
@@ -401,29 +401,12 @@ export function OnboardingPage() {
                     {t('auth.onboarding.password')}{' '}
                     <span className="text-destructive">*</span>
                   </Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="new-password"
-                      placeholder="••••••••"
-                      {...register('password')}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      className="absolute right-2 top-1/2 -translate-y-1/2"
-                      onClick={() => setShowPassword((v) => !v)}
-                      aria-label={t('auth.onboarding.togglePassword')}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-4" />
-                      ) : (
-                        <Eye className="size-4" />
-                      )}
-                    </Button>
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    {...register('password')}
+                  />
                   {errors.password ? (
                     <p className="text-sm text-destructive">
                       {t(errors.password.message ?? '')}

@@ -3,13 +3,13 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff, Moon, Phone, Mail, Sun } from 'lucide-react'
+import { ArrowRight, Moon, Phone, Mail, Sun } from 'lucide-react'
 import { paths } from '@/app/paths'
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
 import { useTheme } from '@/theme/ThemeProvider'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { FullPageLoader } from '@/components/shared/LogoLoader'
 import {
@@ -34,7 +34,6 @@ export function ActivateAccountPage() {
   }
 
   const [step, setStep] = useState<Step>('form')
-  const [showPassword, setShowPassword] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
@@ -147,29 +146,14 @@ export function ActivateAccountPage() {
               {t('auth.activate.passwordLabel')}{' '}
               <span className="text-destructive">*</span>
             </Label>
-            <div className="relative mt-1.5">
-              <Input
+            <div className="mt-1.5">
+              <PasswordInput
                 id="password"
-                type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 placeholder="••••••••"
                 className="bg-background dark:bg-background"
                 {...register('password')}
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={t('auth.onboarding.togglePassword')}
-              >
-                {showPassword ? (
-                  <EyeOff className="size-4" />
-                ) : (
-                  <Eye className="size-4" />
-                )}
-              </Button>
             </div>
             {errors.password ? (
               <p className="text-sm text-destructive mt-1">

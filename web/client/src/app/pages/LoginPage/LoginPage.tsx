@@ -11,6 +11,7 @@ import { useAuth } from '@/auth/useAuth'
 import { useTheme } from '@/theme/ThemeProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { FullPageLoader } from '@/components/shared/LogoLoader'
@@ -353,9 +354,8 @@ export function LoginPage() {
                   <Label htmlFor="password">
                     {t('auth.login.passwordLabel')}
                   </Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     placeholder="••••••••"
                     autoComplete="current-password"
                     className="bg-background dark:bg-background"
@@ -417,7 +417,7 @@ export function LoginPage() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between border-t border-dashed border-border pt-4 text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="flex items-center justify-between pt-4 text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
             <span>{t('auth.login.copyright')}</span>
             <span
               className="auth-wordmark hidden sm:inline"
