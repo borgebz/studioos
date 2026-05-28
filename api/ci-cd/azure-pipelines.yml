@@ -194,7 +194,10 @@ stages:
   - stage: Deploy
     displayName: "Deploy to st"
     dependsOn: Test
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    # Run on main even when Test was skipped (it always is on main pushes — see
+    # the Test stage condition above). `succeeded()` does NOT treat Skipped as
+    # success, so we check the result enum explicitly.
+    condition: and(in(dependencies.Test.result, 'Succeeded', 'Skipped'), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: DeployToST
         displayName: "Build & up on VPS"
