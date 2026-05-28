@@ -1,21 +1,31 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
-  Home,
-  CalendarDays,
-  Palette,
-  GraduationCap,
-  ShoppingBag,
-  UserPlus,
   ChevronsUpDown,
   Sun,
   Moon,
   Monitor,
   LogOut,
+  ChevronRight,
+  Settings,
 } from 'lucide-react'
 import { paths } from '@/app/paths'
 import { useAuth } from '@/auth/useAuth'
+import { usePermissions } from '@/auth/permissions'
+import {
+  navConfig,
+  isNavGroup,
+  type NavItemConfig,
+  type NavGroupConfig,
+  type NavEntryConfig,
+} from '@/auth/nav-config'
 import { useTheme, type Theme } from '@/theme/ThemeProvider'
+import {
+  triggerUnreadRefresh,
+  useUnreadMessages,
+} from '@/app/pages/messages/useUnreadMessages'
+import { useUserChannelSocket } from '@/app/pages/messages/useUserChannelSocket'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -37,17 +47,13 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar'
-
-const navItems = [
-  { to: paths.home, labelKey: 'nav.home', icon: Home },
-  { to: paths.calendar, labelKey: 'nav.calendar', icon: CalendarDays },
-  { to: paths.coachingsCreate, labelKey: 'nav.coachings', icon: GraduationCap },
-  { to: paths.marketplaceCreate, labelKey: 'nav.marketplace', icon: ShoppingBag },
-  { to: paths.invites, labelKey: 'nav.invites', icon: UserPlus },
-  { to: paths.designSystem, labelKey: 'nav.designSystem', icon: Palette },
-] as const
+import { cn } from '@/lib/utils'
+import { getInitials } from '@/lib/user-utils'
 
 const themes: { value: Theme; labelKey: string; icon: typeof Sun }[] = [
   { value: 'light', labelKey: 'theme.light', icon: Sun },
@@ -60,14 +66,168 @@ const languages = [
   { code: 'en' as const, labelKey: 'lang.en' },
 ] as const
 
+/**
+ * Check if a pathname matches a nav item path.
+ *
+ * Uses exact match first. Falls back to prefix match only when no sibling
+ * has a longer, more-specific prefix match. This prevents `/marketplace`
+ * from staying active when the user is on `/marketplace/my-listings`.
+ */
+function isChildActive(
+  pathname: string,
+  child: NavItemConfig,
+  siblings: NavItemConfig[]
+): boolean {
+  if (pathname === child.to) return true
+  if (!pathname.startsWith(child.to + '/') && pathname !== child.to)
+    return false
+  // This child is a prefix match — only highlight if no sibling is a
+  // longer (more specific) prefix match.
+  return !siblings.some(
+    (s) =>
+      s !== child &&
+      s.to.length > child.to.length &&
+      (pathname === s.to || pathname.startsWith(s.to + '/'))
+  )
+}
+
+function NavGroupItem({
+  group,
+  t,
+  location,
+}: {
+  group: NavGroupConfig
+  t: (key: string) => string
+  location: ReturnType<typeof useLocation>
+}) {
+  const hasActiveChild = group.children.some((child) =>
+    isChildActive(location.pathname, child, group.children)
+  )
+  const [open, setOpen] = useState(hasActiveChild)
+  const Icon = group.icon
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        onClick={() => setOpen((prev) => !prev)}
+        isActive={hasActiveChild && !open}
+        tooltip={t(group.labelKey)}
+        className="cursor-pointer"
+      >
+        <Icon />
+        <span className="flex-1">{t(group.labelKey)}</span>
+        <ChevronRight
+          className={cn(
+            'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+            open && 'rotate-90'
+          )}
+        />
+      </SidebarMenuButton>
+
+      {open && (
+        <SidebarMenuSub>
+          {group.children.map((child) => {
+            const isActive = isChildActive(
+              location.pathname,
+              child,
+              group.children
+            )
+            return (
+              <SidebarMenuSubItem key={child.to}>
+                <SidebarMenuSubButton asChild isActive={isActive}>
+                  <NavLink to={child.to}>
+                    <span>{t(child.labelKey)}</span>
+                  </NavLink>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            )
+          })}
+        </SidebarMenuSub>
+      )}
+    </SidebarMenuItem>
+  )
+}
+
 export function AppSidebar() {
   const { t, i18n } = useTranslation()
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const { can, canAny } = usePermissions()
   const { theme, setTheme } = useTheme()
+  const { total: unreadMessages } = useUnreadMessages()
+  const [shake, setShake] = useState(false)
+  const shakeTimer = useRef<number | null>(null)
+
+  useUserChannelSocket(Boolean(user), {
+    onConversationAdded: () => {
+      // Membership change — refresh every unread hook (this badge + any
+      // per-conversation badges in MessagesPage).
+      triggerUnreadRefresh()
+    },
+    onIncomingMessage: () => {
+      // Refresh every unread hook from the server's source-of-truth
+      // (handles reads from other tabs too).
+      triggerUnreadRefresh()
+      // Trigger a one-shot shake animation. Restart it if a fresh message
+      // lands while we're still animating.
+      setShake(false)
+      if (shakeTimer.current) window.clearTimeout(shakeTimer.current)
+      // Force a reflow so the animation re-runs even if the class was just
+      // toggled off.
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setShake(true)
+          shakeTimer.current = window.setTimeout(() => setShake(false), 700)
+        })
+      })
+    },
+  })
+
+  useEffect(() => {
+    return () => {
+      if (shakeTimer.current) window.clearTimeout(shakeTimer.current)
+    }
+  }, [])
 
   const currentLang = i18n.language.startsWith('pt') ? 'pt' : 'en'
+
+  // Filter nav entries based on user permissions.
+  // Items without a `permission` field are always visible.
+  // Groups with zero visible children are hidden entirely.
+  // Groups with `hidePermission` are hidden when the user holds that permission
+  // (used for role-specific variants, e.g. student "Payments" vs admin "Billing").
+  const visibleNav = useMemo(() => {
+    const isAllowed = (item: NavItemConfig) => {
+      if (!item.permission) return true
+      return Array.isArray(item.permission)
+        ? canAny(...item.permission)
+        : can(item.permission)
+    }
+
+    const isHidden = (entry: NavEntryConfig) => {
+      if (!isNavGroup(entry) || !entry.hidePermission) return false
+      return Array.isArray(entry.hidePermission)
+        ? canAny(...entry.hidePermission)
+        : can(entry.hidePermission)
+    }
+
+    return navConfig.reduce<(NavItemConfig | NavGroupConfig)[]>(
+      (acc, entry) => {
+        if (isHidden(entry)) return acc
+        if (isNavGroup(entry)) {
+          const children = entry.children.filter(isAllowed)
+          if (children.length > 0) {
+            acc.push({ ...entry, children })
+          }
+        } else if (isAllowed(entry)) {
+          acc.push(entry)
+        }
+        return acc
+      },
+      []
+    )
+  }, [can, canAny])
 
   const handleLangChange = (code: string) => {
     i18n.changeLanguage(code)
@@ -76,22 +236,35 @@ export function AppSidebar() {
 
   const displayName = user?.full_name || user?.email || ''
   const photoUrl = user?.profile?.photo_url
-  const initials = displayName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join('')
+  const initials = getInitials(displayName)
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="px-4 pt-4 pb-3">
+      <SidebarHeader className="px-4 pt-4 pb-3 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:pt-2">
         <NavLink
           to={paths.home}
-          className="group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center"
+          className="flex items-center group-data-[collapsible=icon]:justify-center"
         >
-          <span className="text-foreground text-3xl font-bold">
+          <span className="text-foreground text-3xl font-bold auth-wordmark group-data-[collapsible=icon]:hidden">
             StudioOS
+          </span>
+          <span
+            aria-hidden="true"
+            className="hidden size-8 shrink-0 items-center justify-center rounded-md bg-primary group-data-[collapsible=icon]:flex"
+          >
+            <span
+              className="size-5 bg-primary-foreground"
+              style={{
+                maskImage: 'url(/logo-dancer.svg)',
+                WebkitMaskImage: 'url(/logo-dancer.svg)',
+                maskRepeat: 'no-repeat',
+                WebkitMaskRepeat: 'no-repeat',
+                maskPosition: 'center',
+                WebkitMaskPosition: 'center',
+                maskSize: 'contain',
+                WebkitMaskSize: 'contain',
+              }}
+            />
           </span>
         </NavLink>
       </SidebarHeader>
@@ -100,21 +273,54 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map(({ to, labelKey, icon: Icon }) => {
+              {visibleNav.map((entry) => {
+                if (isNavGroup(entry)) {
+                  return (
+                    <NavGroupItem
+                      key={entry.labelKey}
+                      group={entry}
+                      t={t}
+                      location={location}
+                    />
+                  )
+                }
+
                 const isActive =
-                  to === paths.home
+                  entry.to === paths.home
                     ? location.pathname === '/'
-                    : location.pathname.startsWith(to)
+                    : location.pathname.startsWith(entry.to)
+                const Icon = entry.icon
+
+                const showUnread =
+                  entry.to === paths.messages && unreadMessages > 0
+                const badgeLabel =
+                  unreadMessages > 99 ? '+99' : String(unreadMessages)
+
                 return (
-                  <SidebarMenuItem key={to}>
+                  <SidebarMenuItem key={entry.to}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      tooltip={t(labelKey)}
+                      tooltip={
+                        showUnread
+                          ? `${t(entry.labelKey)} · ${badgeLabel}`
+                          : t(entry.labelKey)
+                      }
                     >
-                      <NavLink to={to}>
+                      <NavLink to={entry.to}>
                         <Icon />
-                        <span>{t(labelKey)}</span>
+                        <span className="flex-1">{t(entry.labelKey)}</span>
+                        {showUnread && (
+                          <span
+                            className={cn(
+                              'ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10.5px] font-semibold text-primary-foreground group-data-[collapsible=icon]:hidden',
+                              shake && 'unread-shake'
+                            )}
+                            aria-label={`${badgeLabel} unread`}
+                          >
+                            {badgeLabel}
+                          </span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -189,6 +395,10 @@ export function AppSidebar() {
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate(paths.accountSettings)}>
+              <Settings className="size-4" />
+              {t('account.title')}
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={async () => {
@@ -197,7 +407,7 @@ export function AppSidebar() {
               }}
             >
               <LogOut className="size-4" />
-              {t('designSystem.dropdownLogout')}
+              {t('nav.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

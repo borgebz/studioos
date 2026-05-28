@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -10,6 +11,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, backTo, children }: PageHeaderProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   return (
     <div className="flex items-center gap-4 mb-6">
@@ -17,6 +19,7 @@ export function PageHeader({ title, backTo, children }: PageHeaderProps) {
         <Button
           variant="ghost"
           size="icon"
+          aria-label={t('nav.back')}
           onClick={() => navigate(backTo)}
         >
           <ChevronLeft className="h-5 w-5" />

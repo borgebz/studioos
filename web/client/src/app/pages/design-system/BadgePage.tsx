@@ -20,14 +20,16 @@ export function BadgePage() {
       <section className="space-y-8">
         {/* Variants */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeVariants')}
           </h2>
           <div className="flex flex-wrap gap-3">
             {variants.map((variant) => (
               <div key={variant} className="flex flex-col items-center gap-2">
                 <Badge variant={variant}>
-                  {t(`designSystem.variants.${variant === 'outline' ? 'outline' : variant}`)}
+                  {t(
+                    `designSystem.variants.${variant === 'outline' ? 'outline' : variant}`
+                  )}
                 </Badge>
                 <span className="text-xs text-muted-foreground">{variant}</span>
               </div>
@@ -37,7 +39,7 @@ export function BadgePage() {
 
         {/* Status examples */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeStatus')}
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -58,7 +60,7 @@ export function BadgePage() {
 
         {/* With count */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeWithCount')}
           </h2>
           <div className="flex flex-wrap gap-3">
@@ -71,24 +73,30 @@ export function BadgePage() {
 
         {/* In context */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.badgeInContext')}
           </h2>
           <div className="space-y-3 max-w-md">
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <span className="text-sm font-medium">{t('designSystem.badgeCoaching')}</span>
+              <span className="text-sm font-medium">
+                {t('designSystem.badgeCoaching')}
+              </span>
               <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100">
                 {t('designSystem.badgeActive')}
               </Badge>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <span className="text-sm font-medium">{t('designSystem.badgeEnrollment')}</span>
+              <span className="text-sm font-medium">
+                {t('designSystem.badgeEnrollment')}
+              </span>
               <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-100">
                 {t('designSystem.badgePending')}
               </Badge>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-border p-3">
-              <span className="text-sm font-medium">{t('designSystem.badgeEvent')}</span>
+              <span className="text-sm font-medium">
+                {t('designSystem.badgeEvent')}
+              </span>
               <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-100">
                 {t('designSystem.badgeCancelled')}
               </Badge>

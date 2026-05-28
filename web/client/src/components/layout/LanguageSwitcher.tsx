@@ -28,7 +28,7 @@ export function LanguageSwitcher() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-9 w-12 px-2 font-medium"
+          className="h-9 w-12 px-2 font-medium min-h-11 md:min-h-0"
           aria-label={t(`lang.${currentLang}`)}
         >
           {currentLang.toUpperCase()}

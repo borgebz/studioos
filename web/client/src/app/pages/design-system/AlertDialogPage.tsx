@@ -30,7 +30,7 @@ export function AlertDialogPage() {
       <section className="space-y-8">
         {/* Destructive */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.alertDialogDestructive')}
           </h2>
           <AlertDialog>
@@ -42,13 +42,17 @@ export function AlertDialogPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t('designSystem.alertDialogDeleteTitle')}</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t('designSystem.alertDialogDeleteTitle')}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
                   {t('designSystem.alertDialogDeleteDesc')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{t('designSystem.alertDialogCancel')}</AlertDialogCancel>
+                <AlertDialogCancel>
+                  {t('designSystem.alertDialogCancel')}
+                </AlertDialogCancel>
                 <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {t('designSystem.alertDialogConfirmDelete')}
                 </AlertDialogAction>
@@ -59,7 +63,7 @@ export function AlertDialogPage() {
 
         {/* Confirmation */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.alertDialogConfirmation')}
           </h2>
           <AlertDialog>
@@ -71,14 +75,20 @@ export function AlertDialogPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t('designSystem.alertDialogLogoutTitle')}</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t('designSystem.alertDialogLogoutTitle')}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
                   {t('designSystem.alertDialogLogoutDesc')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{t('designSystem.alertDialogCancel')}</AlertDialogCancel>
-                <AlertDialogAction>{t('designSystem.alertDialogConfirmLogout')}</AlertDialogAction>
+                <AlertDialogCancel>
+                  {t('designSystem.alertDialogCancel')}
+                </AlertDialogCancel>
+                <AlertDialogAction>
+                  {t('designSystem.alertDialogConfirmLogout')}
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -86,7 +96,7 @@ export function AlertDialogPage() {
 
         {/* Warning */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.alertDialogWarning')}
           </h2>
           <AlertDialog>
@@ -98,13 +108,17 @@ export function AlertDialogPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>{t('designSystem.alertDialogDiscardTitle')}</AlertDialogTitle>
+                <AlertDialogTitle>
+                  {t('designSystem.alertDialogDiscardTitle')}
+                </AlertDialogTitle>
                 <AlertDialogDescription>
                   {t('designSystem.alertDialogDiscardDesc')}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>{t('designSystem.alertDialogKeepEditing')}</AlertDialogCancel>
+                <AlertDialogCancel>
+                  {t('designSystem.alertDialogKeepEditing')}
+                </AlertDialogCancel>
                 <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {t('designSystem.alertDialogConfirmDiscard')}
                 </AlertDialogAction>

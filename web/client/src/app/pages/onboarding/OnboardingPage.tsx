@@ -1,11 +1,14 @@
-import { useEffect, useId, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { Eye, EyeOff, Moon, Sun } from 'lucide-react'
 import { paths } from '@/app/paths'
+import { SubmitArrow } from '@/components/shared/SubmitArrow'
 import { apiClient } from '@/api/api-client'
+import { parseApiError } from '@/lib/api-errors'
 import { useAuth } from '@/auth/useAuth'
 import { useTheme } from '@/theme/ThemeProvider'
 import { Button } from '@/components/ui/button'
@@ -14,6 +17,10 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { FullPageLoader } from '@/components/shared/LogoLoader'
+import {
+  onboardingSchema,
+  type OnboardingFormValues,
+} from './onboarding-schema'
 import '../LoginPage/LoginPage.css'
 
 type OnboardingStep = 'loading' | 'invalid' | 'form' | 'submitting' | 'success'
@@ -33,26 +40,34 @@ export function OnboardingPage() {
     localStorage.setItem('i18nextLng', next)
   }
 
-  const firstNameId = useId()
-  const lastNameId = useId()
-  const phoneCountryId = useId()
-  const phoneId = useId()
-  const passwordId = useId()
-  const dobId = useId()
-
   const [step, setStep] = useState<OnboardingStep>('loading')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('')
-  const [dateOfBirth, setDateOfBirth] = useState<Date | undefined>()
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<OnboardingFormValues>({
+    resolver: zodResolver(onboardingSchema),
+    defaultValues: {
+      first_name: '',
+      last_name: '',
+      phone_country_code: '+351',
+      phone: '',
+      password: '',
+    },
+  })
 
   const loaded = useRef(false)
   useEffect(() => {
     if (loaded.current || !token) return
     loaded.current = true
     apiClient.api
-      .apiAccountsOnboardRetrieve(token)
+      .accountsOnboardRetrieve(token)
       .then((res) => {
         setEmail(res.data.data.email)
         setRole(res.data.data.role)
@@ -61,43 +76,28 @@ export function OnboardingPage() {
       .catch(() => setStep('invalid'))
   }, [token])
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const onSubmit = async (data: OnboardingFormValues) => {
     if (!token) return
 
-    setError(null)
-    const fd = new FormData(e.currentTarget)
-    const first_name = String(fd.get('first_name') ?? '').trim()
-    const last_name = String(fd.get('last_name') ?? '').trim()
-    const password = String(fd.get('password') ?? '')
-    const phone = String(fd.get('phone') ?? '').trim()
-    const phone_country_code = String(fd.get('phone_country_code') ?? '').trim()
-
-    if (!first_name || !last_name || !password || !phone || !phone_country_code || !dateOfBirth) {
-      setError(t('auth.onboarding.missingFields'))
-      return
-    }
-
-    if (password.length < 8) {
-      setError(t('auth.onboarding.passwordTooShort'))
-      return
-    }
-
+    setSubmitError(null)
     setStep('submitting')
 
     try {
-      await apiClient.api.apiAccountsOnboardCreate(token, {
-        first_name,
-        last_name,
-        password,
-        phone,
-        phone_country_code,
-        date_of_birth: format(dateOfBirth, 'yyyy-MM-dd'),
+      await apiClient.api.accountsOnboardCreate(token, {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        password: data.password,
+        phone: data.phone,
+        phone_country_code: data.phone_country_code,
+        date_of_birth: format(data.date_of_birth, 'yyyy-MM-dd'),
       })
       await refreshUser()
       setStep('success')
-    } catch {
-      setError(t('auth.onboarding.error'))
+    } catch (err) {
+      setSubmitError(
+        parseApiError(err, t, 'auth.onboarding.error') ??
+          t('auth.onboarding.error')
+      )
       setStep('form')
     }
   }
@@ -110,15 +110,7 @@ export function OnboardingPage() {
     return (
       <main className="flex min-h-svh items-center justify-center bg-background p-6 text-foreground">
         <div className="max-w-md text-center">
-          <h1
-            className="mb-4"
-            style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontWeight: 500,
-              fontSize: 'clamp(32px, 4vw, 48px)',
-              lineHeight: 1.1,
-            }}
-          >
+          <h1 className="auth-heading auth-heading-sm mb-4">
             {t('auth.onboarding.invalidTitle')}
           </h1>
           <p className="mb-6 text-muted-foreground">
@@ -136,15 +128,7 @@ export function OnboardingPage() {
     return (
       <main className="flex min-h-svh items-center justify-center bg-background p-6 text-foreground">
         <div className="max-w-md text-center">
-          <h1
-            className="mb-4"
-            style={{
-              fontFamily: "Georgia, 'Times New Roman', serif",
-              fontWeight: 500,
-              fontSize: 'clamp(32px, 4vw, 48px)',
-              lineHeight: 1.1,
-            }}
-          >
+          <h1 className="auth-heading auth-heading-sm mb-4">
             {t('auth.onboarding.successTitle')}
           </h1>
           <p className="mb-6 text-muted-foreground">
@@ -198,20 +182,18 @@ export function OnboardingPage() {
                   {t('auth.onboarding.invitedAs')}
                 </p>
                 <Badge variant="outline" className="text-sm capitalize">
-                  {role}
+                  {t(`roles.${role}`)}
                 </Badge>
               </div>
 
               <h1
+                className="auth-heading auth-heading-xl"
                 style={{
-                  fontFamily: "Georgia, 'Times New Roman', serif",
-                  fontStyle: 'italic',
-                  fontWeight: 500,
-                  fontSize: 'clamp(56px, 8vw, 96px)',
                   lineHeight: 0.95,
                   letterSpacing: '-0.01em',
                   margin: 0,
                   color: 'var(--primary)',
+                  fontStyle: 'italic',
                 }}
               >
                 StudioOS
@@ -249,19 +231,27 @@ export function OnboardingPage() {
                 type="button"
                 variant="ghost"
                 size="icon-xs"
+                className="min-h-11 min-w-11 md:min-h-0 md:min-w-0"
                 onClick={toggleLang}
-                aria-label="Toggle language"
+                aria-label={t('nav.toggleLanguage')}
               >
-                <span className="text-[10px] font-medium uppercase">{currentLang}</span>
+                <span className="text-[10px] font-medium uppercase">
+                  {currentLang}
+                </span>
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-xs"
+                className="min-h-11 min-w-11 md:min-h-0 md:min-w-0"
                 onClick={toggleTheme}
-                aria-label="Toggle theme"
+                aria-label={t('nav.toggleTheme')}
               >
-                {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+                {theme === 'dark' ? (
+                  <Sun className="size-3.5" />
+                ) : (
+                  <Moon className="size-3.5" />
+                )}
               </Button>
             </div>
           </div>
@@ -272,28 +262,20 @@ export function OnboardingPage() {
               {/* Header */}
               <div className="mb-7">
                 <div className="mb-4 flex items-center gap-3 text-[10.5px] uppercase tracking-[0.28em] text-primary">
-                  <span
-                    className="text-[17px] lowercase tracking-normal"
-                    style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic' }}
-                  >
+                  <span className="auth-wordmark text-[17px] lowercase tracking-normal">
                     01.
                   </span>
                   <span>{t('auth.onboarding.overline')}</span>
                   <span className="h-px flex-1 bg-border" />
                 </div>
                 <h2
-                  className="mb-3.5"
-                  style={{
-                    fontFamily: "Georgia, 'Times New Roman', serif",
-                    fontWeight: 500,
-                    fontSize: 'clamp(36px, 4vw, 48px)',
-                    lineHeight: 1.0,
-                    letterSpacing: '-0.012em',
-                    margin: 0,
-                  }}
+                  className="auth-heading auth-heading-md mb-3.5"
+                  style={{ margin: 0 }}
                 >
                   {t('auth.onboarding.heroTitle_1')}
-                  <em className="text-primary">{t('auth.onboarding.heroTitle_em')}</em>
+                  <em className="text-primary">
+                    {t('auth.onboarding.heroTitle_em')}
+                  </em>
                   {t('auth.onboarding.heroTitle_2')}
                 </h2>
                 <p className="max-w-[38ch] text-[14.5px] leading-relaxed text-muted-foreground">
@@ -304,91 +286,128 @@ export function OnboardingPage() {
               {/* Mobile role badge */}
               <div className="mb-5 flex items-center gap-2 lg:hidden">
                 <span className="text-sm text-muted-foreground">{email}</span>
-                <Badge variant="outline" className="capitalize">{role}</Badge>
+                <Badge variant="outline" className="capitalize">
+                  {t(`roles.${role}`)}
+                </Badge>
               </div>
 
               {/* Form */}
-              <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-                <div className="grid grid-cols-2 gap-4">
+              <form
+                className="flex flex-col gap-5"
+                onSubmit={handleSubmit(onSubmit)}
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor={firstNameId}>
-                      {t('auth.onboarding.firstName')} <span className="text-destructive">*</span>
+                    <Label htmlFor="first_name">
+                      {t('auth.onboarding.firstName')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      id={firstNameId}
-                      name="first_name"
+                      id="first_name"
                       autoComplete="given-name"
                       placeholder={t('auth.onboarding.firstNamePlaceholder')}
-                      required
+                      {...register('first_name')}
                     />
+                    {errors.first_name && (
+                      <p className="text-sm text-destructive">
+                        {t(errors.first_name.message ?? '')}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={lastNameId}>
-                      {t('auth.onboarding.lastName')} <span className="text-destructive">*</span>
+                    <Label htmlFor="last_name">
+                      {t('auth.onboarding.lastName')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      id={lastNameId}
-                      name="last_name"
+                      id="last_name"
                       autoComplete="family-name"
                       placeholder={t('auth.onboarding.lastNamePlaceholder')}
-                      required
+                      {...register('last_name')}
                     />
+                    {errors.last_name && (
+                      <p className="text-sm text-destructive">
+                        {t(errors.last_name.message ?? '')}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-[100px_1fr] gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor={phoneCountryId}>
-                      {t('auth.onboarding.phoneCode')} <span className="text-destructive">*</span>
+                    <Label htmlFor="phone_country_code">
+                      {t('auth.onboarding.phoneCode')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      id={phoneCountryId}
-                      name="phone_country_code"
-                      defaultValue="+351"
+                      id="phone_country_code"
                       autoComplete="tel-country-code"
                       placeholder="+351"
-                      required
+                      {...register('phone_country_code')}
                     />
+                    {errors.phone_country_code && (
+                      <p className="text-sm text-destructive">
+                        {t(errors.phone_country_code.message ?? '')}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={phoneId}>
-                      {t('auth.onboarding.phone')} <span className="text-destructive">*</span>
+                    <Label htmlFor="phone">
+                      {t('auth.onboarding.phone')}{' '}
+                      <span className="text-destructive">*</span>
                     </Label>
                     <Input
-                      id={phoneId}
-                      name="phone"
+                      id="phone"
                       type="tel"
                       autoComplete="tel-national"
                       placeholder={t('auth.onboarding.phonePlaceholder')}
-                      required
+                      {...register('phone')}
                     />
+                    {errors.phone && (
+                      <p className="text-sm text-destructive">
+                        {t(errors.phone.message ?? '')}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={dobId}>
-                    {t('auth.onboarding.dateOfBirth')} <span className="text-destructive">*</span>
+                  <Label htmlFor="date_of_birth">
+                    {t('auth.onboarding.dateOfBirth')}{' '}
+                    <span className="text-destructive">*</span>
                   </Label>
-                  <DatePicker
-                    value={dateOfBirth}
-                    onChange={setDateOfBirth}
-                    placeholder={t('auth.onboarding.dateOfBirthPlaceholder')}
+                  <Controller
+                    name="date_of_birth"
+                    control={control}
+                    render={({ field }) => (
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder={t(
+                          'auth.onboarding.dateOfBirthPlaceholder'
+                        )}
+                      />
+                    )}
                   />
+                  {errors.date_of_birth && (
+                    <p className="text-sm text-destructive">
+                      {t(errors.date_of_birth.message ?? '')}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={passwordId}>
-                    {t('auth.onboarding.password')} <span className="text-destructive">*</span>
+                  <Label htmlFor="password">
+                    {t('auth.onboarding.password')}{' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <div className="relative">
                     <Input
-                      id={passwordId}
-                      name="password"
+                      id="password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
                       placeholder="••••••••"
-                      minLength={8}
-                      required
+                      {...register('password')}
                     />
                     <Button
                       type="button"
@@ -398,36 +417,33 @@ export function OnboardingPage() {
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={t('auth.onboarding.togglePassword')}
                     >
-                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      {showPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {t('auth.onboarding.passwordHelper')}
-                  </p>
+                  {errors.password ? (
+                    <p className="text-sm text-destructive">
+                      {t(errors.password.message ?? '')}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {t('auth.onboarding.passwordHelper')}
+                    </p>
+                  )}
                 </div>
 
-                {error && (
+                {submitError && (
                   <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {error}
+                    {submitError}
                   </p>
                 )}
 
                 <Button type="submit" size="lg">
                   {t('auth.onboarding.submit')}
-                  <svg
-                    className="ml-2 h-3 w-6"
-                    viewBox="0 0 24 12"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M0 6 H22 M16 1 L22 6 L16 11"
-                      stroke="currentColor"
-                      strokeWidth="1.25"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                  <SubmitArrow />
                 </Button>
               </form>
             </div>
@@ -437,10 +453,8 @@ export function OnboardingPage() {
           <div className="flex items-center justify-between border-t border-dashed border-border pt-4 text-[10.5px] uppercase tracking-[0.18em] text-muted-foreground">
             <span>{t('auth.login.copyright')}</span>
             <span
-              className="hidden sm:inline"
+              className="auth-wordmark hidden sm:inline"
               style={{
-                fontFamily: 'Georgia, serif',
-                fontStyle: 'italic',
                 textTransform: 'none',
                 letterSpacing: 0,
                 fontSize: '13px',
@@ -448,7 +462,9 @@ export function OnboardingPage() {
             >
               — a small school for the moving body —
             </span>
-            <span className="normal-case tracking-normal">{t('auth.login.support')}</span>
+            <span className="normal-case tracking-normal">
+              {t('auth.login.support')}
+            </span>
           </div>
         </div>
       </div>

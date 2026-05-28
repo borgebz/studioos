@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
 import i18n from '@/i18n'
 import { apiClient, SESSION_EXPIRED_EVENT } from '@/api/api-client'
 import { AuthContext } from '@/auth/auth-context'
@@ -15,7 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const response = await apiClient.api.apiAccountsMeRetrieve()
+      const response = await apiClient.api.accountsMeRetrieve()
       setUser(response.data)
       setStatus('authenticated')
       if (!localStorage.getItem(LANG_KEY) && response.data.language) {
@@ -32,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (credentials: Login) => {
       setStatus('loading')
-      await apiClient.api.apiAccountsAuthLoginCreate(credentials)
+      await apiClient.api.accountsAuthLoginCreate(credentials)
 
       const currentUser = await refreshUser()
 
@@ -47,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await apiClient.api.apiAccountsAuthLogoutCreate({})
+      await apiClient.api.accountsAuthLogoutCreate({})
     } finally {
       setUser(null)
       setStatus('unauthenticated')
@@ -62,10 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleSessionExpired = () => {
       setUser(null)
       setStatus('unauthenticated')
-      toast.warning(i18n.t('auth.sessionExpired'), { description: i18n.t('auth.sessionExpiredDescription') })
     }
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
-    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
+    return () =>
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired)
   }, [])
 
   const value = useMemo<AuthContextValue>(

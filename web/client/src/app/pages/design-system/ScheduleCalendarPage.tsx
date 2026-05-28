@@ -60,7 +60,14 @@ const SEED: SeedEvent[] = [
   { s: 4, t: 180, d: 75, dis: 'contemporary', n: 'Improvisation Lab', tea: 2 },
   { s: 5, t: 0, d: 90, dis: 'ballet', n: 'Grand Allégro', tea: 0 },
   { s: 5, t: 105, d: 60, dis: 'hiphop', n: 'Hip-Hop · Advanced', tea: 3 },
-  { s: 5, t: 180, d: 75, dis: 'contemporary', n: 'Tanztheater Workshop', tea: 2 },
+  {
+    s: 5,
+    t: 180,
+    d: 75,
+    dis: 'contemporary',
+    n: 'Tanztheater Workshop',
+    tea: 2,
+  },
   { s: 6, t: 0, d: 60, dis: 'jazz', n: 'Jazz · Ailey Tech.', tea: 5 },
   { s: 6, t: 75, d: 75, dis: 'modern', n: 'Modern · Dunham Tech.', tea: 4 },
   { s: 6, t: 165, d: 60, dis: 'ballet', n: 'Stretch & Cool-down', tea: 1 },
@@ -80,7 +87,9 @@ const EVENTS: CalendarEvent[] = SEED.map((e, i) => ({
 }))
 
 const FEW_RESOURCES: CalendarResource[] = RESOURCES.slice(0, 2)
-const FEW_EVENTS: CalendarEvent[] = EVENTS.filter((e) => e.resourceId <= 2)
+const FEW_EVENTS: CalendarEvent[] = EVENTS.filter(
+  (e) => Number(e.resourceId) <= 2
+)
 
 export function ScheduleCalendarPage() {
   const { t } = useTranslation()
@@ -101,7 +110,7 @@ export function ScheduleCalendarPage() {
 
       <section className="space-y-8">
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scheduleCalendarFull')}
           </h2>
           <ScheduleCalendar
@@ -118,7 +127,7 @@ export function ScheduleCalendarPage() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scheduleCalendarMinimal')}
           </h2>
           <ScheduleCalendar
@@ -131,7 +140,7 @@ export function ScheduleCalendarPage() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.scheduleCalendarEmpty')}
           </h2>
           <ScheduleCalendar

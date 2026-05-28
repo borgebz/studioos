@@ -18,20 +18,16 @@ export default defineConfig(({ mode }) => {
               changeOrigin: true,
               secure: false,
             },
-            '/inventory/': {
+            '/media': {
               target: apiProxyTarget,
               changeOrigin: true,
               secure: false,
             },
-            '/marketplace/school/': {
+            '/ws': {
               target: apiProxyTarget,
               changeOrigin: true,
               secure: false,
-            },
-            '/marketplace/listings/': {
-              target: apiProxyTarget,
-              changeOrigin: true,
-              secure: false,
+              ws: true,
             },
           }
         : undefined,

@@ -5,6 +5,7 @@ import { AppRoutes } from '@/app/routes'
 import { paths } from '@/app/paths'
 import { useAuth } from '@/auth/useAuth'
 import { LogoLoader } from '@/components/shared/LogoLoader'
+import { ProfileSetupPrompt } from '@/components/shared/ProfileSetupPrompt'
 import { Toaster } from '@/components/ui/sonner'
 import './App.css'
 
@@ -13,7 +14,12 @@ function AppShell() {
   const { isAuthenticated, isLoading } = useAuth()
   const isAuthPage = location.pathname === paths.login
   const isLandingPage = location.pathname === paths.landing
-  const isPublicPage = location.pathname === paths.enrollment || location.pathname.startsWith('/onboarding/')
+  const isPublicPage =
+    location.pathname === paths.enrollment ||
+    location.pathname.startsWith('/activate/') ||
+    location.pathname.startsWith('/onboarding/') ||
+    location.pathname === paths.forgotPassword ||
+    location.pathname.startsWith('/reset-password/')
   const isDesignSystem = location.pathname.startsWith(paths.designSystem)
 
   if (isAuthPage || isLandingPage || isPublicPage) {
@@ -38,6 +44,7 @@ function AppShell() {
       <SidebarInset className="grain overflow-hidden">
         <AppRoutes />
       </SidebarInset>
+      <ProfileSetupPrompt />
     </SidebarProvider>
   )
 }

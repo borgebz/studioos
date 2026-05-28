@@ -11,7 +11,11 @@ const normalizeBaseUrl = (baseUrl: string) => baseUrl.replace(/\/$/, '')
 
 export const SESSION_EXPIRED_EVENT = 'studioos:session-expired'
 
-const AUTH_PATHS = ['/api/accounts/auth/login/', '/api/accounts/auth/logout/', '/api/accounts/auth/refresh/']
+const AUTH_PATHS = [
+  '/api/accounts/auth/login/',
+  '/api/accounts/auth/logout/',
+  '/api/accounts/auth/refresh/',
+]
 
 let refreshPromise: Promise<Response> | null = null
 
@@ -21,7 +25,12 @@ function createAuthFetch(baseUrl: string): typeof fetch {
 
     if (response.status !== 401) return response
 
-    const url = typeof input === 'string' ? input : input instanceof Request ? input.url : ''
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof Request
+          ? input.url
+          : ''
     if (AUTH_PATHS.some((p) => url.includes(p))) return response
 
     if (!refreshPromise) {
@@ -67,3 +76,9 @@ export const createApiClient = (config: StudioOSApiClientConfig = {}) => {
 export const apiClient = createApiClient()
 
 export type ApiClient = ReturnType<typeof createApiClient>
+
+/**
+ * Auth-aware fetch that handles 401 refresh automatically.
+ * Use for paginated `next` URLs returned by list endpoints.
+ */
+export const authFetch = createAuthFetch(normalizeBaseUrl(API_BASE_URL))

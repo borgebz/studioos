@@ -15,10 +15,7 @@ export function CardSection({
 }: CardSectionProps) {
   return (
     <div
-      className={cn(
-        'rounded-lg border border-border bg-card p-6',
-        className,
-      )}
+      className={cn('rounded-lg border border-border bg-card p-6', className)}
     >
       {title && (
         <div className="mb-4">

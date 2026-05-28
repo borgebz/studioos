@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { DateRange } from 'react-day-picker'
 import { Calendar } from '@/components/ui/calendar'
 
 export function CalendarPage() {
   const { t } = useTranslation()
   const [single, setSingle] = useState<Date | undefined>(new Date())
-  const [range, setRange] = useState<{ from: Date; to?: Date } | undefined>({
+  const [range, setRange] = useState<DateRange | undefined>({
     from: new Date(),
     to: new Date(Date.now() + 5 * 86400000),
   })
@@ -24,7 +25,7 @@ export function CalendarPage() {
       <section className="space-y-8">
         {/* Single date */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.calendarSingle')}
           </h2>
           <Calendar
@@ -37,7 +38,7 @@ export function CalendarPage() {
 
         {/* Range */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.calendarRange')}
           </h2>
           <Calendar
@@ -51,7 +52,7 @@ export function CalendarPage() {
 
         {/* Disabled */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.disabled')}
           </h2>
           <Calendar
@@ -64,7 +65,7 @@ export function CalendarPage() {
 
         {/* Disabled dates */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.calendarDisabledDates')}
           </h2>
           <Calendar

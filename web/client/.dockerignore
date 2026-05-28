@@ -1,0 +1,15 @@
+node_modules
+dist
+dist-ssr
+*.local
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+eslint-results.json
+npm-debug.log*
+.env
+.env.*
+README.md
+UI_GUIDELINES.md

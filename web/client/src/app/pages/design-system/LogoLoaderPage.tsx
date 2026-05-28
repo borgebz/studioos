@@ -21,7 +21,7 @@ export function LogoLoaderPage() {
       <section className="space-y-8">
         {/* Sizes */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.sizes')}
           </h2>
           <div className="flex items-end gap-8">
@@ -50,7 +50,7 @@ export function LogoLoaderPage() {
 
         {/* In context - card loading state */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.logoLoaderInContext')}
           </h2>
           <div className="flex gap-4">
@@ -68,7 +68,7 @@ export function LogoLoaderPage() {
 
         {/* Full page loader */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.logoLoaderFullPage')}
           </h2>
           <Button variant="outline" onClick={() => setShowFullPage(true)}>

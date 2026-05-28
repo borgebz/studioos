@@ -55,6 +55,7 @@ export interface ScheduleCalendarProps {
   nowMinutes?: number
   selectedDate?: Date
   dayLoadMap?: Map<string, number>
+  filtersSlot?: React.ReactNode
   onDateChange?: (date: Date) => void
   onEventClick?: (event: CalendarEvent) => void
 }
@@ -82,6 +83,7 @@ function EventBlock({
   dayStartHour: number
   onClick: () => void
 }) {
+  const { t } = useTranslation()
   const top = (event.start / slotMinutes) * slotHeight + GRID_TOP_PAD
   const height = (event.duration / slotMinutes) * slotHeight
   const isShort = event.duration <= 45
@@ -92,6 +94,7 @@ function EventBlock({
       <TooltipTrigger asChild>
         <button
           type="button"
+          aria-label={event.title || t('calendar.eventDetails')}
           className={cn(
             'absolute left-1 right-1 overflow-hidden rounded-md border border-border bg-card text-left transition-shadow hover:shadow-md hover:z-10',
             'flex flex-col gap-0.5',
@@ -111,7 +114,7 @@ function EventBlock({
             </span>
             {!isTiny && (
               <span
-                className="text-[10px] font-medium uppercase tracking-wider"
+                className="text-[10px] font-medium"
                 style={{ color: event.categoryColor }}
               >
                 {event.subtitle}
@@ -198,7 +201,6 @@ function TimeGutter({
 }
 
 function ResourceColumn({
-  resource,
   events,
   totalSlots,
   slotHeight,
@@ -282,25 +284,40 @@ function useTick() {
   const ctxRef = useRef<AudioContext | null>(null)
   const lastTickRef = useRef(0)
 
-  return useCallback(() => {
-    const now = performance.now()
-    if (now - lastTickRef.current < 60) return
-    lastTickRef.current = now
-
-    if (!ctxRef.current) {
-      ctxRef.current = new AudioContext()
+  useEffect(() => {
+    return () => {
+      try {
+        ctxRef.current?.close()
+      } catch {
+        // ignore – browser may have already discarded the context
+      }
+      ctxRef.current = null
     }
-    const ctx = ctxRef.current
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.type = 'sine'
-    osc.frequency.value = 1800
-    gain.gain.setValueAtTime(0.03, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03)
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + 0.03)
+  }, [])
+
+  return useCallback(() => {
+    try {
+      const now = performance.now()
+      if (now - lastTickRef.current < 60) return
+      lastTickRef.current = now
+
+      if (!ctxRef.current) {
+        ctxRef.current = new AudioContext()
+      }
+      const ctx = ctxRef.current
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.value = 1800
+      gain.gain.setValueAtTime(0.03, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.03)
+    } catch {
+      // AudioContext not supported or blocked by browser policy
+    }
   }, [])
 }
 
@@ -326,9 +343,10 @@ function DayRoulette({
 
   const [rangeBefore, setRangeBefore] = useState(INITIAL_RANGE)
   const [rangeAfter, setRangeAfter] = useState(INITIAL_RANGE)
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [visibleMonth, setVisibleMonth] = useState(
-    () => `${t(`scheduleCalendar.months.${selectedDate.getMonth()}`)} ${selectedDate.getFullYear()}`
+    () =>
+      `${t(`scheduleCalendar.months.${selectedDate.getMonth()}`)} ${selectedDate.getFullYear()}`
   )
   const startSentinelRef = useRef<HTMLDivElement>(null)
   const endSentinelRef = useRef<HTMLDivElement>(null)
@@ -436,12 +454,15 @@ function DayRoulette({
             {visibleMonth}
           </span>
           <span className="text-xs text-muted-foreground">
-            {selectedDate.getDate()} {t(`scheduleCalendar.monthsShort.${selectedDate.getMonth()}`)} {t('scheduleCalendar.selected')}
+            {selectedDate.getDate()}{' '}
+            {t(`scheduleCalendar.monthsShort.${selectedDate.getMonth()}`)}{' '}
+            {t('scheduleCalendar.selected')}
           </span>
         </div>
         {!isSelectedToday && (
           <button
             type="button"
+            aria-label={t('calendar.today')}
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent"
             onClick={handleTodayClick}
           >
@@ -472,6 +493,13 @@ function DayRoulette({
               key={key}
               ref={isDaySelected ? selectedRef : undefined}
               type="button"
+              aria-label={t('calendar.selectDay', {
+                date: day.toLocaleDateString(i18n.language, {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                }),
+              })}
               className={cn(
                 'flex min-w-[48px] shrink-0 flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 transition-colors',
                 isDaySelected
@@ -488,7 +516,7 @@ function DayRoulette({
             >
               <span
                 className={cn(
-                  'text-[10px] font-medium uppercase tracking-wider',
+                  'text-[10px] font-medium',
                   isDaySelected
                     ? 'text-background/70'
                     : isFirstOfMonth
@@ -496,7 +524,9 @@ function DayRoulette({
                       : 'text-muted-foreground'
                 )}
               >
-                {isFirstOfMonth ? t(`scheduleCalendar.monthsShort.${day.getMonth()}`) : t(`scheduleCalendar.daysShort.${DAY_KEYS[day.getDay()]}`)}
+                {isFirstOfMonth
+                  ? t(`scheduleCalendar.monthsShort.${day.getMonth()}`)
+                  : t(`scheduleCalendar.daysShort.${DAY_KEYS[day.getDay()]}`)}
               </span>
               <span className="text-lg font-medium leading-none">
                 {day.getDate()}
@@ -524,56 +554,6 @@ function DayRoulette({
   )
 }
 
-function CategoryLegend({
-  categories,
-  events,
-  activeCategories,
-  onToggle,
-}: {
-  categories: CalendarCategory[]
-  events: CalendarEvent[]
-  activeCategories: Set<string>
-  onToggle: (id: string) => void
-}) {
-  const counts = useMemo(() => {
-    const c: Record<string, number> = {}
-    events.forEach((e) => {
-      c[e.category] = (c[e.category] || 0) + 1
-    })
-    return c
-  }, [events])
-
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {categories.map((cat) => {
-        const isActive = activeCategories.has(cat.id)
-        return (
-          <button
-            key={cat.id}
-            type="button"
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors',
-              isActive
-                ? 'border-border bg-card text-foreground'
-                : 'border-transparent bg-muted/50 text-muted-foreground opacity-50'
-            )}
-            onClick={() => onToggle(cat.id)}
-          >
-            <span
-              className="h-2.5 w-2.5 rounded-sm shrink-0"
-              style={{ backgroundColor: cat.color }}
-            />
-            <span>{cat.label}</span>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {counts[cat.id] || 0}
-            </span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 function EventDrawer({
   event,
   open,
@@ -595,18 +575,20 @@ function EventDrawer({
       <SheetContent className="flex flex-col sm:max-w-[400px]">
         <SheetHeader>
           <div
-            className="text-[10px] font-medium uppercase tracking-[0.2em]"
+            className="text-[10px] font-medium tracking-wide"
             style={{ color: event.categoryColor }}
           >
             {event.subtitle}
           </div>
           <SheetTitle className="text-xl">{event.title}</SheetTitle>
-          <SheetDescription className="sr-only">{t('scheduleCalendar.eventDetails')}</SheetDescription>
+          <SheetDescription className="sr-only">
+            {t('scheduleCalendar.eventDetails')}
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col gap-4 py-4">
           <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <Clock className="h-3 w-3" /> {t('scheduleCalendar.time')}
             </span>
             <span className="text-sm">
@@ -622,7 +604,7 @@ function EventDrawer({
           {resource && (
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <MapPin className="h-3 w-3" /> {t('scheduleCalendar.studio')}
                 </span>
                 <span className="text-sm">
@@ -641,7 +623,7 @@ function EventDrawer({
           {event.teacher && (
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <User className="h-3 w-3" /> {t('scheduleCalendar.teacher')}
                 </span>
                 <span className="text-sm">{event.teacher}</span>
@@ -653,7 +635,7 @@ function EventDrawer({
           {event.enrolled != null && (
             <>
               <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                   <Users className="h-3 w-3" /> {t('scheduleCalendar.enrolled')}
                 </span>
                 <span className="text-sm">
@@ -671,7 +653,7 @@ function EventDrawer({
           )}
 
           <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <span className="text-xs font-medium text-muted-foreground">
               {t('scheduleCalendar.category')}
             </span>
             <Badge
@@ -701,7 +683,6 @@ function EventDrawer({
 export function ScheduleCalendar({
   resources,
   events,
-  categories = [],
   dayStartHour = 15,
   dayEndHour = 22,
   slotMinutes = 30,
@@ -709,13 +690,11 @@ export function ScheduleCalendar({
   nowMinutes,
   selectedDate,
   dayLoadMap,
+  filtersSlot,
   onDateChange,
   onEventClick,
 }: ScheduleCalendarProps) {
   const { t } = useTranslation()
-  const [activeCategories, setActiveCategories] = useState<Set<string>>(
-    () => new Set(categories.map((c) => c.id))
-  )
   const [drawerEvent, setDrawerEvent] = useState<CalendarEvent | null>(null)
 
   const currentDate = useMemo(() => selectedDate ?? new Date(), [selectedDate])
@@ -728,166 +707,150 @@ export function ScheduleCalendar({
   const totalMinutes = (dayEndHour - dayStartHour) * 60
   const totalSlots = totalMinutes / slotMinutes
 
-  const visibleCategories = useMemo(() => {
-    const present = new Set(events.map((e) => e.category))
-    return categories.filter((c) => present.has(c.id))
-  }, [events, categories])
-
-  const effectiveActive = useMemo(() => {
-    const visible = new Set(visibleCategories.map((c) => c.id))
-    const result = new Set<string>()
-    for (const id of visible) {
-      if (activeCategories.has(id)) result.add(id)
-    }
-    return result.size > 0 ? result : visible
-  }, [visibleCategories, activeCategories])
-
-  const filteredEvents = useMemo(
-    () => events.filter((e) => effectiveActive.has(e.category)),
-    [events, effectiveActive]
-  )
-
   const eventsByResource = useMemo(() => {
     const m: Record<string | number, CalendarEvent[]> = {}
     resources.forEach((r) => (m[r.id] = []))
-    filteredEvents.forEach((e) => {
+    events.forEach((e) => {
       if (m[e.resourceId]) m[e.resourceId].push(e)
     })
     return m
-  }, [resources, filteredEvents])
+  }, [resources, events])
 
   const resourceMap = useMemo(
     () => Object.fromEntries(resources.map((r) => [r.id, r])),
     [resources]
   )
 
-  const handleToggleCategory = useCallback((id: string) => {
-    setActiveCategories((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
-
-  const handleEventClick = useCallback((event: CalendarEvent) => {
-    onEventClick?.(event)
-    setDrawerEvent(event)
-  }, [onEventClick])
+  const handleEventClick = useCallback(
+    (event: CalendarEvent) => {
+      onEventClick?.(event)
+      setDrawerEvent(event)
+    },
+    [onEventClick]
+  )
 
   return (
     <div className="flex flex-col gap-4">
       {/* Toolbar card */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        {onDateChange && (
+      {onDateChange && (
+        <div className="rounded-lg border border-border bg-card p-4">
           <DayRoulette
             selectedDate={currentDate}
             dayLoadMap={dayLoadMap}
             onDateChange={onDateChange}
           />
-        )}
+        </div>
+      )}
 
-        {visibleCategories.length > 0 && (
-          <div className={cn(onDateChange ? 'mt-3' : '')}>
-            <CategoryLegend
-              categories={visibleCategories}
-              events={events}
-              activeCategories={effectiveActive}
-              onToggle={handleToggleCategory}
-            />
-          </div>
-        )}
-      </div>
+      {/* Filters card (optional) */}
+      {filtersSlot}
 
       {/* Grid card — memoized so day-click re-renders don't touch the grid */}
-      {useMemo(() => (
-        <div className="rounded-lg border border-border bg-card overflow-x-auto overflow-y-hidden">
-          <div
-            className="flex flex-col"
-            style={{ minWidth: GUTTER_WIDTH + resources.length * COL_MIN_WIDTH }}
-          >
-            {/* Column headers */}
-            <div className="flex border-b border-border bg-card">
-              <div
-                className="sticky left-0 z-10 shrink-0 border-r border-border bg-card px-3 py-2.5"
-                style={{ width: GUTTER_WIDTH }}
-              >
-                <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                  {t('scheduleCalendar.time')}
-                </span>
-              </div>
-              {resources.map((resource, idx) => (
+      {useMemo(
+        () => (
+          <div className="rounded-lg border border-border bg-card overflow-x-auto overflow-y-hidden">
+            <div
+              className="flex flex-col"
+              style={{
+                minWidth: GUTTER_WIDTH + resources.length * COL_MIN_WIDTH,
+              }}
+            >
+              {/* Column headers */}
+              <div className="flex border-b border-border bg-card">
                 <div
-                  key={resource.id}
-                  className={cn(
-                    'shrink-0 px-3 py-2.5',
-                    idx < resources.length - 1 && 'border-r border-border/50'
-                  )}
-                  style={{ minWidth: COL_MIN_WIDTH, flex: '1 0 0%' }}
+                  className="sticky left-0 z-10 shrink-0 border-r border-border bg-card px-3 py-2.5"
+                  style={{ width: GUTTER_WIDTH }}
                 >
-                  <div className="text-sm font-medium text-foreground">
-                    {resource.name}
-                  </div>
-                  {resource.subtitle && (
-                    <div className="text-[10px] text-muted-foreground">
-                      {resource.subtitle}
-                    </div>
-                  )}
-                  {resource.capacity != null && (
-                    <div className="text-[10px] text-muted-foreground">
-                      {t('scheduleCalendar.maxCap', { capacity: resource.capacity })}
-                    </div>
-                  )}
+                  <span className="text-[10px] font-medium text-muted-foreground">
+                    {t('scheduleCalendar.time')}
+                  </span>
                 </div>
-              ))}
-            </div>
-
-            {/* Time grid */}
-            <div className="relative flex">
-              <div className="sticky left-0 z-10">
-                <TimeGutter
-                  totalSlots={totalSlots}
-                  slotHeight={slotHeight}
-                  slotMinutes={slotMinutes}
-                  dayStartHour={dayStartHour}
-                />
-                {nowMinutes != null && (
-                  <div
-                    className="pointer-events-none absolute left-0 z-30 -translate-y-1/2"
-                    style={{ top: nowTop }}
-                  >
-                    <div className="h-2 w-2 rounded-full bg-destructive" />
-                  </div>
-                )}
-              </div>
-              <div className="relative flex flex-1">
                 {resources.map((resource, idx) => (
-                  <ResourceColumn
+                  <div
                     key={resource.id}
-                    resource={resource}
-                    events={eventsByResource[resource.id] || []}
+                    className={cn(
+                      'shrink-0 px-3 py-2.5',
+                      idx < resources.length - 1 && 'border-r border-border/50'
+                    )}
+                    style={{ minWidth: COL_MIN_WIDTH, flex: '1 0 0%' }}
+                  >
+                    <div className="text-sm font-medium text-foreground">
+                      {resource.name}
+                    </div>
+                    {resource.subtitle && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {resource.subtitle}
+                      </div>
+                    )}
+                    {resource.capacity != null && (
+                      <div className="text-[10px] text-muted-foreground">
+                        {t('scheduleCalendar.maxCap', {
+                          capacity: resource.capacity,
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Time grid */}
+              <div className="relative flex">
+                <div className="sticky left-0 z-10">
+                  <TimeGutter
                     totalSlots={totalSlots}
                     slotHeight={slotHeight}
                     slotMinutes={slotMinutes}
                     dayStartHour={dayStartHour}
-                    isLast={idx === resources.length - 1}
-                    onEventClick={handleEventClick}
                   />
-                ))}
-              </div>
-
-              {nowMinutes != null && (
-                <div
-                  className="pointer-events-none absolute left-0 right-0 z-20"
-                  style={{ top: nowTop }}
-                >
-                  <div className="h-px bg-destructive/60" />
+                  {nowMinutes != null && (
+                    <div
+                      className="pointer-events-none absolute left-0 z-30 -translate-y-1/2"
+                      style={{ top: nowTop }}
+                    >
+                      <div className="h-2 w-2 rounded-full bg-destructive" />
+                    </div>
+                  )}
                 </div>
-              )}
+                <div className="relative flex flex-1">
+                  {resources.map((resource, idx) => (
+                    <ResourceColumn
+                      key={resource.id}
+                      resource={resource}
+                      events={eventsByResource[resource.id] || []}
+                      totalSlots={totalSlots}
+                      slotHeight={slotHeight}
+                      slotMinutes={slotMinutes}
+                      dayStartHour={dayStartHour}
+                      isLast={idx === resources.length - 1}
+                      onEventClick={handleEventClick}
+                    />
+                  ))}
+                </div>
+
+                {nowMinutes != null && (
+                  <div
+                    className="pointer-events-none absolute left-0 right-0 z-20"
+                    style={{ top: nowTop }}
+                  >
+                    <div className="h-px bg-destructive/60" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ), [resources, eventsByResource, totalSlots, slotHeight, slotMinutes, dayStartHour, nowMinutes, nowTop, handleEventClick])}
+        ),
+        [
+          resources,
+          eventsByResource,
+          totalSlots,
+          slotHeight,
+          slotMinutes,
+          dayStartHour,
+          nowMinutes,
+          nowTop,
+          handleEventClick,
+        ]
+      )}
 
       {/* Event detail drawer */}
       <EventDrawer

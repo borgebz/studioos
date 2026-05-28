@@ -18,20 +18,29 @@ export function AvatarPage() {
       <section className="space-y-8">
         {/* With image */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.avatarWithImage')}
           </h2>
           <div className="flex items-center gap-4">
             <Avatar className="h-8 w-8">
-              <AvatarImage src="https://api.dicebear.com/9.x/initials/svg?seed=AB" alt="AB" />
+              <AvatarImage
+                src="https://api.dicebear.com/9.x/initials/svg?seed=AB"
+                alt="AB"
+              />
               <AvatarFallback>AB</AvatarFallback>
             </Avatar>
             <Avatar className="h-10 w-10">
-              <AvatarImage src="https://api.dicebear.com/9.x/initials/svg?seed=CD" alt="CD" />
+              <AvatarImage
+                src="https://api.dicebear.com/9.x/initials/svg?seed=CD"
+                alt="CD"
+              />
               <AvatarFallback>CD</AvatarFallback>
             </Avatar>
             <Avatar className="h-16 w-16">
-              <AvatarImage src="https://api.dicebear.com/9.x/initials/svg?seed=EF" alt="EF" />
+              <AvatarImage
+                src="https://api.dicebear.com/9.x/initials/svg?seed=EF"
+                alt="EF"
+              />
               <AvatarFallback>EF</AvatarFallback>
             </Avatar>
           </div>
@@ -39,7 +48,7 @@ export function AvatarPage() {
 
         {/* Fallback initials */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.avatarFallback')}
           </h2>
           <div className="flex items-center gap-4">
@@ -60,7 +69,7 @@ export function AvatarPage() {
 
         {/* Sizes */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.sizes')}
           </h2>
           <div className="flex items-end gap-4">
@@ -83,7 +92,7 @@ export function AvatarPage() {
 
         {/* Group */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.avatarGroup')}
           </h2>
           <div className="flex -space-x-3">

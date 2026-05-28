@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { Mail, Upload, UserPlus, FileSpreadsheet, X, Check } from 'lucide-react'
+import { Mail, FileSpreadsheet, Upload, X, ArrowRight } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { apiClient } from '@/api/api-client'
-import type { RoleList, UserResponse } from '@/api/studioos-api'
+import type { BulkInviteFile, RoleList, UserResponse } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,60 +16,74 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { CardSection } from '@/components/shared/CardSection'
+import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
+import { parseApiError } from '@/lib/api-errors'
+import {
+  singleInviteSchema,
+  type SingleInviteFormValues,
+} from './invite-schema'
 
 export function InviteUsersPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
 
   const [roles, setRoles] = useState<RoleList[]>([])
   const rolesLoaded = useRef(false)
 
-  // Single invite state
-  const [email, setEmail] = useState('')
-  const [role, setRole] = useState('')
   const [sending, setSending] = useState(false)
   const [invitedUsers, setInvitedUsers] = useState<UserResponse[]>([])
 
-  // Bulk invite state
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [bulkResult, setBulkResult] = useState<{ users: UserResponse[]; count: number } | null>(null)
+  const [bulkResult, setBulkResult] = useState<{
+    users: UserResponse[]
+    count: number
+  } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isValid },
+  } = useForm<SingleInviteFormValues>({
+    resolver: zodResolver(singleInviteSchema),
+    defaultValues: { email: '', role: '' },
+    mode: 'onBlur',
+  })
 
   useEffect(() => {
     if (rolesLoaded.current) return
     rolesLoaded.current = true
-    apiClient.api.apiRolesList().then((res) => {
-      setRoles(res.data)
-    })
+    apiClient.api
+      .rolesList()
+      .then((res) => {
+        setRoles(res.data)
+      })
+      .catch(() => null)
   }, [])
 
-  const handleSingleInvite = async () => {
-    if (!email || !role) {
-      toast.error(t('invites.missingFields'))
-      return
-    }
+  const allInvited = [...invitedUsers, ...(bulkResult?.users ?? [])]
+
+  const onSingleInvite = async (data: SingleInviteFormValues) => {
     setSending(true)
     try {
-      const res = await apiClient.api.apiAccountsInvitesCreate({ email, role })
+      const res = await apiClient.api.accountsInvitesCreate({
+        email: data.email,
+        role: data.role,
+      })
       setInvitedUsers((prev) => [res.data, ...prev])
-      setEmail('')
-      setRole('')
-      toast.success(t('invites.inviteSent', { email }))
-    } catch {
-      toast.error(t('invites.inviteError'))
+      reset()
+      toast.success(t('invites.inviteSent', { email: data.email }))
+    } catch (err) {
+      toast.error(
+        parseApiError(err, t, 'invites.inviteError') ?? t('invites.inviteError')
+      )
     } finally {
       setSending(false)
     }
@@ -82,20 +98,18 @@ export function InviteUsersPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      const baseUrl = import.meta.env.VITE_STUDIOOS_API_BASE_URL?.replace(/\/$/, '') ?? ''
-      const res = await fetch(`${baseUrl}/api/accounts/invites/bulk/`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      })
-      if (!res.ok) throw new Error()
-      const data = await res.json()
-      setBulkResult(data.data)
+      const res = await apiClient.api.accountsInvitesBulkCreate(
+        formData as unknown as BulkInviteFile
+      )
+      const bulkData = res.data.data
+      setBulkResult(bulkData)
       setFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
-      toast.success(t('invites.bulkSuccess', { count: data.data.count }))
-    } catch {
-      toast.error(t('invites.bulkError'))
+      toast.success(t('invites.bulkSuccess', { count: bulkData.count }))
+    } catch (err) {
+      toast.error(
+        parseApiError(err, t, 'invites.bulkError') ?? t('invites.bulkError')
+      )
     } finally {
       setUploading(false)
     }
@@ -121,62 +135,52 @@ export function InviteUsersPage() {
     }
   }
 
+  const hasInvites = allInvited.length > 0
+
   return (
-    <PageLayout
-      footer={
-        <div className="flex w-full items-center justify-between">
-          <Button variant="outline" onClick={() => navigate(paths.home)}>
-            {t('invites.back')}
-          </Button>
-          <div className="text-xs text-muted-foreground">
-            {invitedUsers.length > 0 &&
-              t('invites.invitedCount', { count: invitedUsers.length })}
-          </div>
-        </div>
-      }
-    >
+    <PageLayout>
       <PageHeader title={t('invites.title')} backTo={paths.home} />
 
-      <Tabs defaultValue="single" className="max-w-2xl">
-        <TabsList className="mb-6">
-          <TabsTrigger value="single">
-            <UserPlus className="mr-2 size-4" />
-            {t('invites.singleTab')}
-          </TabsTrigger>
-          <TabsTrigger value="bulk">
-            <FileSpreadsheet className="mr-2 size-4" />
-            {t('invites.bulkTab')}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="single">
-          <CardSection
-            title={t('invites.singleTitle')}
-            description={t('invites.singleDesc')}
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="email">{t('invites.email')}</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder={t('invites.emailPlaceholder')}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSingleInvite()
-                      }}
-                    />
-                  </div>
+      <div className="max-w-4xl space-y-4">
+        {/* ── Single invite ── */}
+        <CardSection
+          title={t('invites.singleTitle')}
+          description={t('invites.singleDesc')}
+        >
+          <form onSubmit={handleSubmit(onSingleInvite)} className="space-y-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+              <div className="flex-1">
+                <Label htmlFor="invite-email" className="sr-only">
+                  {t('invites.emailLabel')}
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    placeholder={t('invites.emailPlaceholder')}
+                    className={`pl-10 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    {...register('email')}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label>{t('invites.role')}</Label>
-                  <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger>
+                {errors.email && (
+                  <p className="mt-1 text-sm text-destructive">
+                    {t(errors.email.message ?? '')}
+                  </p>
+                )}
+              </div>
+              <Label htmlFor="invite-role" className="sr-only">
+                {t('invites.roleLabel')}
+              </Label>
+              <Controller
+                name="role"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger
+                      id="invite-role"
+                      className="w-full sm:w-[160px]"
+                    >
                       <SelectValue placeholder={t('invites.selectRole')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -187,120 +191,126 @@ export function InviteUsersPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              <Button onClick={handleSingleInvite} disabled={sending || !email || !role}>
-                {sending ? t('invites.sending') : t('invites.sendInvite')}
-              </Button>
-            </div>
-          </CardSection>
-
-          {invitedUsers.length > 0 && (
-            <CardSection title={t('invites.recentInvites')} className="mt-4">
-              <div className="space-y-2">
-                {invitedUsers.map((u) => (
-                  <div
-                    key={u.id}
-                    className="flex items-center justify-between rounded-md border border-border px-4 py-2"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Check className="size-4 text-emerald-500" />
-                      <span className="text-sm">{u.email}</span>
-                    </div>
-                    <Badge variant="secondary">
-                      {u.role?.[0]?.name ?? '—'}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardSection>
-          )}
-        </TabsContent>
-
-        <TabsContent value="bulk">
-          <CardSection
-            title={t('invites.bulkTitle')}
-            description={t('invites.bulkDesc')}
-          >
-            <div className="space-y-4">
-              <div
-                className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleFileDrop}
-              >
-                <Upload className="mb-3 size-8 text-muted-foreground" />
-                {file ? (
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="size-4 text-emerald-500" />
-                    <span className="text-sm font-medium">{file.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({(file.size / 1024).toFixed(0)} KB)
-                    </span>
-                    <button
-                      onClick={() => {
-                        setFile(null)
-                        if (fileInputRef.current) fileInputRef.current.value = ''
-                      }}
-                      className="ml-1 rounded-full p-0.5 hover:bg-muted"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-sm text-muted-foreground">
-                      {t('invites.dropzone')}
-                    </p>
-                    <button
-                      className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      {t('invites.browse')}
-                    </button>
-                  </>
                 )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t('invites.fileRequirements')}
-              </p>
-              <Button onClick={handleBulkInvite} disabled={uploading || !file}>
-                {uploading ? t('invites.uploading') : t('invites.uploadAndInvite')}
+              />
+              <Button
+                type="submit"
+                disabled={sending || !isValid}
+                className="gap-2"
+              >
+                {sending ? t('invites.sending') : t('invites.send')}
+                {!sending && <ArrowRight className="size-4" />}
               </Button>
             </div>
-          </CardSection>
+          </form>
+        </CardSection>
 
-          {bulkResult && (
-            <CardSection
-              title={t('invites.bulkResultTitle', { count: bulkResult.count })}
-              className="mt-4"
+        {/* ── OR divider ── */}
+        <div className="flex items-center gap-3 px-2">
+          <Separator className="flex-1" />
+          <span className="text-xs font-medium text-muted-foreground">
+            {t('invites.orDivider')}
+          </span>
+          <Separator className="flex-1" />
+        </div>
+
+        {/* ── Bulk upload ── */}
+        <CardSection
+          title={t('invites.bulkTitle')}
+          description={t('invites.bulkDesc')}
+        >
+          <div className="space-y-4">
+            <div
+              className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border p-8 text-center transition-colors hover:border-primary/50"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleFileDrop}
             >
-              <div className="space-y-2">
-                {bulkResult.users.map((u) => (
+              <Upload className="mb-3 size-8 text-muted-foreground" />
+              {file ? (
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-medium">{file.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({(file.size / 1024).toFixed(0)} KB)
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t('invites.removeFile')}
+                    onClick={() => {
+                      setFile(null)
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                    className="ml-1 flex items-center justify-center rounded-full p-2 hover:bg-muted min-h-[44px] min-w-[44px]"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {t('invites.dropzone')}
+                  </p>
+                  <button
+                    className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {t('invites.browse')}
+                  </button>
+                </>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t('invites.fileRequirements')}
+            </p>
+            <Button onClick={handleBulkInvite} disabled={uploading || !file}>
+              {uploading
+                ? t('invites.uploading')
+                : t('invites.uploadAndInvite')}
+            </Button>
+          </div>
+        </CardSection>
+
+        {/* ── Invite list ── */}
+        {hasInvites && (
+          <CardSection title={t('invites.listTitle')}>
+            <div className="-mx-6 -mb-6">
+              {allInvited.map((u, i) => {
+                const initial = (u.email?.[0] ?? '?').toUpperCase()
+                const roleName = u.role?.[0]?.name ?? '—'
+                return (
                   <div
                     key={u.id}
-                    className="flex items-center justify-between rounded-md border border-border px-4 py-2"
+                    className={`flex items-center gap-4 px-6 py-4 ${i < allInvited.length - 1 ? 'border-b border-border' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Check className="size-4 text-emerald-500" />
-                      <span className="text-sm">{u.email}</span>
+                    <Avatar size="sm">
+                      <AvatarFallback>{initial}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{u.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {roleName}
+                      </p>
                     </div>
-                    <Badge variant="secondary">
-                      {u.role?.[0]?.name ?? '—'}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <span className="size-2 rounded-full bg-emerald-500" />
+                      <span className="text-xs text-muted-foreground">
+                        {t('invites.sent')}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </CardSection>
-          )}
-        </TabsContent>
-      </Tabs>
+                )
+              })}
+            </div>
+          </CardSection>
+        )}
+      </div>
     </PageLayout>
   )
 }

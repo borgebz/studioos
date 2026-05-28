@@ -41,11 +41,13 @@ export function DatePicker({
           className={cn(
             'w-full justify-start text-left font-normal',
             !value && 'text-muted-foreground',
-            className,
+            className
           )}
         >
           <CalendarDays className="mr-2 h-4 w-4" />
-          {value ? format(value, 'PPP', { locale }) : (placeholder ?? t('coachings.selectDate'))}
+          {value
+            ? format(value, 'PPP', { locale })
+            : (placeholder ?? t('coachings.selectDate'))}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">

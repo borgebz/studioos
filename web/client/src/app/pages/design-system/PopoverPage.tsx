@@ -25,7 +25,7 @@ export function PopoverPage() {
       <section className="space-y-8">
         {/* Basic */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.popoverBasic')}
           </h2>
           <Popover>
@@ -34,7 +34,9 @@ export function PopoverPage() {
             </PopoverTrigger>
             <PopoverContent className="w-80">
               <div className="space-y-2">
-                <h4 className="font-medium text-sm">{t('designSystem.popoverTitle')}</h4>
+                <h4 className="font-medium text-sm">
+                  {t('designSystem.popoverTitle')}
+                </h4>
                 <p className="text-sm text-muted-foreground">
                   {t('designSystem.popoverBody')}
                 </p>
@@ -45,7 +47,7 @@ export function PopoverPage() {
 
         {/* With form */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.popoverWithForm')}
           </h2>
           <Popover>
@@ -56,13 +58,19 @@ export function PopoverPage() {
             </PopoverTrigger>
             <PopoverContent className="w-80">
               <div className="space-y-4">
-                <h4 className="font-medium text-sm">{t('designSystem.popoverSettings')}</h4>
+                <h4 className="font-medium text-sm">
+                  {t('designSystem.popoverSettings')}
+                </h4>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('designSystem.popoverWidth')}</label>
+                  <label className="text-sm font-medium">
+                    {t('designSystem.popoverWidth')}
+                  </label>
                   <Input defaultValue="100%" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('designSystem.popoverHeight')}</label>
+                  <label className="text-sm font-medium">
+                    {t('designSystem.popoverHeight')}
+                  </label>
                   <Input defaultValue="auto" />
                 </div>
               </div>
@@ -72,7 +80,7 @@ export function PopoverPage() {
 
         {/* Placement */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.popoverPlacement')}
           </h2>
           <div className="flex flex-wrap gap-4">

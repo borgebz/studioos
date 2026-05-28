@@ -1,22 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { Sun, Moon, ExternalLink } from 'lucide-react'
 import { paths } from '@/app/paths'
+import { useTheme } from '@/theme/ThemeProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarGroup,
-  AvatarGroupCount,
-} from '@/components/ui/avatar'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 // ---------------------------------------------------------------------------
 // Dancer SVG paths from logo-dancer.svg
@@ -125,7 +117,19 @@ function TreatmentDraw() {
 // ---------------------------------------------------------------------------
 // Nav
 // ---------------------------------------------------------------------------
-function LandingNav() {
+function LandingNav({
+  t,
+  toggleTheme,
+  toggleLang,
+  currentLang,
+  theme,
+}: {
+  t: (key: string) => string
+  toggleTheme: () => void
+  toggleLang: () => void
+  currentLang: string
+  theme: string
+}) {
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-border/40 bg-background/78 backdrop-blur-xl backdrop-saturate-150">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 md:px-10">
@@ -137,30 +141,51 @@ function LandingNav() {
         </a>
         <div className="hidden items-center gap-7 text-[12.5px] tracking-wide text-muted-foreground md:flex">
           <a href="#modalidades" className="hover:text-foreground">
-            Modalidades
+            {t('landing.navModalities')}
           </a>
           <a href="#distincoes" className="hover:text-foreground">
-            Distinções
+            {t('landing.navAwards')}
           </a>
           <a href="#equipa" className="hover:text-foreground">
-            Equipa
+            {t('landing.navTeam')}
           </a>
           <a href="#projetos" className="hover:text-foreground">
-            Projetos
+            {t('landing.navProjects')}
           </a>
-          <a
-            href="#plataforma"
-            className="italic hover:text-foreground"
-          >
+          <a href="#plataforma" className="italic hover:text-foreground">
             StudioOS
           </a>
         </div>
         <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={toggleLang}
+            >
+              <span className="text-[10px] font-medium uppercase">
+                {currentLang}
+              </span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? (
+                <Sun className="size-3.5" />
+              ) : (
+                <Moon className="size-3.5" />
+              )}
+            </Button>
+          </div>
           <Button variant="outline" size="sm" asChild>
-            <a href="#enrol">Inscrever</a>
+            <a href="#enrol">{t('landing.navEnroll')}</a>
           </Button>
           <Button size="sm" asChild>
-            <Link to={paths.login}>Entrar →</Link>
+            <Link to={paths.login}>{t('landing.navLogin')} →</Link>
           </Button>
         </div>
       </div>
@@ -171,13 +196,13 @@ function LandingNav() {
 // ---------------------------------------------------------------------------
 // Hero
 // ---------------------------------------------------------------------------
-function Hero() {
+function Hero({ t }: { t: (key: string) => string }) {
   const stats = [
-    ['14+', 'Anos de excelência'],
-    ['900+', 'Distinções internacionais'],
-    ['RAD®', 'Certificação n.º 24116'],
-    ['2.5+', 'Idades · a partir de'],
-  ] as const
+    ['14+', t('landing.statYears')],
+    ['900+', t('landing.statAwards')],
+    ['RAD®', t('landing.statCertification')],
+    ['2.5+', t('landing.statAges')],
+  ]
 
   return (
     <section id="top" className="relative min-h-[112vh] pt-[88px]">
@@ -185,11 +210,17 @@ function Hero() {
         {/* Top labels */}
         <div className="flex justify-between pb-3 pt-2">
           <span className="landing-mono text-muted-foreground">
-            Escola de Dança · Braga
+            {t('landing.heroTopLabel')}
           </span>
-          <span className="landing-mono hidden text-muted-foreground sm:block">
-            41.55°N 8.42°W · Portugal
-          </span>
+          <a
+            href="https://maps.app.goo.gl/6KBV6hgekbpXoQaA9"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="landing-mono hidden items-center gap-1.5 text-muted-foreground hover:text-foreground sm:inline-flex"
+          >
+            <ExternalLink className="size-3" />
+            41.5575°N 8.4201°W · Braga, Portugal
+          </a>
         </div>
         <Separator />
 
@@ -201,7 +232,7 @@ function Hero() {
           <div className="pointer-events-none absolute inset-0 grid grid-rows-[auto_1fr_auto] p-6">
             <div className="flex justify-between">
               <span className="landing-eyebrow text-muted-foreground">
-                Escola de Dança · Desde 2011
+                {t('landing.heroEyebrowLeft')}
               </span>
               <span className="landing-eyebrow hidden text-muted-foreground sm:block">
                 RAD® Registered · N.º 24116
@@ -214,18 +245,17 @@ function Hero() {
                   <span className="text-primary">OS</span>
                 </h1>
                 <p className="landing-display mt-2 text-[clamp(18px,2.4vw,30px)] font-normal tracking-normal text-muted-foreground">
-                  Escola de Dança · Braga, Portugal
+                  {t('landing.heroSubtitle')}
                 </p>
               </div>
             </div>
             <div className="flex items-end justify-between">
               <p className="max-w-[280px] text-[13.5px] leading-relaxed text-muted-foreground">
-                Catorze anos a formar bailarinos em Braga. Mais de novecentas
-                distinções internacionais. Uma escola, em movimento contínuo.
+                {t('landing.heroDescription')}
               </p>
               <div className="hidden text-right sm:block">
                 <div className="landing-mono mb-1.5 text-muted-foreground">
-                  ↓ Continue
+                  ↓ {t('landing.heroContinue')}
                 </div>
               </div>
             </div>
@@ -234,7 +264,7 @@ function Hero() {
 
         {/* Stats strip */}
         <Separator className="mt-6" />
-        <div className="grid grid-cols-2 gap-6 py-5 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 py-5 sm:grid-cols-2 md:grid-cols-4">
           {stats.map(([n, l]) => (
             <div key={l}>
               <div className="landing-display text-4xl">{n}</div>
@@ -252,41 +282,41 @@ function Hero() {
 // ---------------------------------------------------------------------------
 // Modalidades – verified from studioos.dev Modalidades section
 // ---------------------------------------------------------------------------
-function Modalidades() {
+function Modalidades({ t }: { t: (key: string) => string }) {
   const list = [
     {
       n: '01',
-      name: 'Ballet Clássico',
-      desc: 'Royal Academy of Dance · do Pre-Primary ao Advanced 2',
+      name: t('landing.modBallet'),
+      desc: t('landing.modBalletDesc'),
     },
     {
       n: '02',
-      name: 'Contemporânea',
-      desc: 'Release, floor work, improvisação guiada.',
+      name: t('landing.modContemporary'),
+      desc: t('landing.modContemporaryDesc'),
     },
     { n: '03', name: 'Jazz', desc: 'Lyrical, Broadway, Commercial.' },
     { n: '04', name: 'Hip-Hop', desc: 'New School, House, Street.' },
     {
       n: '05',
-      name: 'Teatro Musical',
-      desc: 'Canto, representação e dança num formato integrado.',
+      name: t('landing.modMusicalTheatre'),
+      desc: t('landing.modMusicalTheatreDesc'),
     },
     {
       n: '06',
       name: 'Acrodance',
-      desc: 'Fusão de dança e acrobacia.',
+      desc: t('landing.modAcrodanceDesc'),
     },
     {
       n: '07',
       name: 'Body Balance',
-      desc: 'Pilates, força, mobilidade para bailarinos.',
+      desc: t('landing.modBodyBalanceDesc'),
     },
     {
       n: '08',
-      name: 'Comercial & Fusion',
-      desc: 'Estilos urbanos e comerciais de dança contemporânea.',
+      name: t('landing.modCommercial'),
+      desc: t('landing.modCommercialDesc'),
     },
-  ] as const
+  ]
 
   return (
     <section id="modalidades" className="py-20 md:py-28">
@@ -294,20 +324,20 @@ function Modalidades() {
         <div className="mb-14 flex flex-wrap items-end justify-between gap-10">
           <div>
             <span className="landing-eyebrow mb-4 block text-muted-foreground">
-              Capítulo I · O Repertório
+              {t('landing.modChapter')}
             </span>
             <h2 className="landing-display text-[clamp(44px,6vw,92px)]">
-              Oito formas
+              {t('landing.modHeadingLine1')}
               <br />
-              de{' '}
-              <span className="text-primary">dizer</span> o
-              mesmo.
+              {t('landing.modHeadingLine2Pre')}{' '}
+              <span className="text-primary">
+                {t('landing.modHeadingLine2Highlight')}
+              </span>{' '}
+              {t('landing.modHeadingLine2Post')}
             </h2>
           </div>
           <p className="max-w-[360px] text-[15px] leading-relaxed text-muted-foreground">
-            Programas certificados pela Royal Academy of Dance e
-            estruturados por níveis de progressão. A partir dos 2 anos e
-            meio.
+            {t('landing.modDescription')}
           </p>
         </div>
 
@@ -317,9 +347,7 @@ function Modalidades() {
               key={item.name}
               className="min-h-[180px] border-b border-border px-6 py-7 lg:border-r lg:last:border-r-0 [&:nth-child(4n)]:lg:border-r-0"
             >
-              <span className="landing-mono text-primary">
-                {item.n}
-              </span>
+              <span className="landing-mono text-primary">{item.n}</span>
               <h3 className="landing-display mb-2.5 mt-3 text-[26px]">
                 {item.name}
               </h3>
@@ -337,7 +365,7 @@ function Modalidades() {
 // ---------------------------------------------------------------------------
 // Awards / Distinções – confirmed: 900+ distinções, competitions listed on site
 // ---------------------------------------------------------------------------
-function Awards() {
+function Awards({ t }: { t: (key: string) => string }) {
   const competitions = [
     'Youth America Grand Prix',
     'TanzOlymp',
@@ -350,7 +378,7 @@ function Awards() {
 
   const scholarships = [
     'Royal Ballet School',
-    'École de Danse de l\'Ópera de Paris',
+    "École de Danse de l'Ópera de Paris",
     'Zurich Dance Academy',
     'English National Ballet School',
     'Staatliche Ballettschule Berlin',
@@ -366,24 +394,22 @@ function Awards() {
         <div className="grid items-start gap-10 md:grid-cols-2 md:gap-20">
           <div>
             <span className="landing-eyebrow mb-4 block text-background/60">
-              Capítulo II · O Palmarés
+              {t('landing.awardsChapter')}
             </span>
             <h2 className="landing-display text-[clamp(56px,8vw,132px)] text-background">
-              <span className="block">Novecentas</span>
+              <span className="block">{t('landing.awardsHeadingLine1')}</span>
               <span className="text-primary">
-                distinções.
+                {t('landing.awardsHeadingLine2')}
               </span>
             </h2>
             <p className="mt-8 max-w-[460px] text-base leading-relaxed text-background/70">
-              Em catorze anos, mais de 900 prémios em concursos nacionais
-              e internacionais. Bolsas de estudo conquistadas para
-              algumas das mais prestigiadas escolas de dança do mundo.
+              {t('landing.awardsDescription')}
             </p>
           </div>
           <div>
             <div className="mb-8">
               <h3 className="landing-mono mb-4 text-primary">
-                Competições
+                {t('landing.awardsCompetitions')}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {competitions.map((c) => (
@@ -400,7 +426,7 @@ function Awards() {
             <Separator className="bg-background/18" />
             <div className="mt-8">
               <h3 className="landing-mono mb-4 text-primary">
-                Bolsas de Estudo
+                {t('landing.awardsScholarships')}
               </h3>
               <ol className="list-none space-y-0">
                 {scholarships.map((s, i) => (
@@ -441,65 +467,85 @@ function Awards() {
 // ---------------------------------------------------------------------------
 // Team – confirmed from studioos.dev "Corpo Docente" / "A nossa história"
 // ---------------------------------------------------------------------------
-function Team() {
+function Team({ t }: { t: (key: string) => string }) {
   const team = [
     {
       name: 'Ana Ribeiro',
-      role: 'Direção',
-      cred: 'Professora de Ballet · RAD® Registered Teacher — TC',
+      role: t('landing.teamRoleDirection'),
+      cred: t('landing.teamCredDiana'),
       initials: 'DC',
+      photo: '/team/diana.jpg',
     },
     {
       name: 'Rui Martins',
-      role: 'Direção',
-      cred: 'Pianista acompanhador · Professor de música',
+      role: t('landing.teamRoleDirection'),
+      cred: t('landing.teamCredPedro'),
       initials: 'PA',
+      photo: '/team/pedro.png',
     },
     {
       name: 'Sofia Costa',
-      role: 'Coordenação',
-      cred: 'Coordenação interdisciplinar',
+      role: t('landing.teamRoleCoordination'),
+      cred: t('landing.teamCredMaria'),
       initials: 'MB',
+      photo: '/team/maria.jpg',
     },
-  ] as const
+  ]
 
   const support = [
-    { name: 'Teresa Lopes', role: 'Assistente administrativa', initials: 'CD' },
-    { name: 'Inês Ferreira', role: 'Comunicação · Redes sociais', initials: 'JG' },
-    { name: 'Marta Sousa', role: 'MD MsC · Saúde Mental', initials: 'FC' },
-  ] as const
+    {
+      name: 'Teresa Lopes',
+      role: t('landing.teamRoleClotilde'),
+      initials: 'CD',
+      photo: '/team/clotilde.jpg',
+    },
+    {
+      name: 'Inês Ferreira',
+      role: t('landing.teamRoleJoana'),
+      initials: 'JG',
+      photo: '/team/joana.jpg',
+    },
+    {
+      name: 'Marta Sousa',
+      role: t('landing.teamRoleFilipa'),
+      initials: 'FC',
+      photo: '/team/filipa.png',
+    },
+  ]
 
   return (
     <section id="equipa" className="py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <div className="mb-14">
           <span className="landing-eyebrow mb-4 block text-muted-foreground">
-            Capítulo III · Quem está na sala
+            {t('landing.teamChapter')}
           </span>
           <h2 className="landing-display text-[clamp(44px,6vw,92px)]">
-            A escola é
+            {t('landing.teamHeadingLine1')}
             <br />
-            <span className="text-primary">quem ensina.</span>
+            <span className="text-primary">
+              {t('landing.teamHeadingLine2')}
+            </span>
           </h2>
         </div>
 
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {team.map((p) => (
             <Card key={p.name} className="gap-4 py-0 overflow-hidden">
-              <div className="flex h-48 items-center justify-center bg-muted">
-                <Avatar className="size-20">
-                  <AvatarFallback className="text-2xl">
-                    {p.initials}
-                  </AvatarFallback>
-                </Avatar>
+              <div className="relative aspect-[4/5] overflow-hidden bg-muted">
+                <img
+                  src={p.photo}
+                  alt={p.name}
+                  className="h-full w-full object-cover grayscale"
+                  style={{ objectPosition: '50% 25%' }}
+                  loading="lazy"
+                />
               </div>
               <CardContent className="pb-6">
                 <Badge variant="secondary" className="mb-2">
                   {p.role}
                 </Badge>
-                <h3 className="landing-display text-[26px]">
-                  {p.name}
-                </h3>
+                <h3 className="landing-display text-[26px]">{p.name}</h3>
                 <p className="mt-1 text-[13.5px] leading-snug text-muted-foreground">
                   {p.cred}
                 </p>
@@ -513,14 +559,18 @@ function Team() {
         <div className="grid gap-6 sm:grid-cols-3">
           {support.map((s) => (
             <div key={s.name} className="flex items-center gap-4">
-              <Avatar>
+              <Avatar className="size-14">
+                <AvatarImage
+                  src={s.photo}
+                  alt={s.name}
+                  className="grayscale"
+                  style={{ objectPosition: '50% 25%' }}
+                />
                 <AvatarFallback>{s.initials}</AvatarFallback>
               </Avatar>
               <div>
                 <div className="text-sm font-medium">{s.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {s.role}
-                </div>
+                <div className="text-xs text-muted-foreground">{s.role}</div>
               </div>
             </div>
           ))}
@@ -533,29 +583,29 @@ function Team() {
 // ---------------------------------------------------------------------------
 // Projetos – confirmed from studioos.dev
 // ---------------------------------------------------------------------------
-function Projetos() {
+function Projetos({ t }: { t: (key: string) => string }) {
   const projects = [
     {
-      tag: 'Companhia',
+      tag: t('landing.projTagCompany'),
       title: 'Motus Dance Project',
-      desc: 'Companhia juvenil de criação coreográfica.',
+      desc: t('landing.projDescMotus'),
     },
     {
-      tag: 'Bolsas',
-      title: 'Plataforma Ent\'Artes',
-      desc: 'Programa de apoio a alunos com mérito artístico.',
+      tag: t('landing.projTagScholarships'),
+      title: "Plataforma StudioOS",
+      desc: t('landing.projDescPlatform'),
     },
     {
       tag: 'Festival',
       title: 'Soma das Artes',
-      desc: 'Festival anual interdisciplinar — dança, música, vídeo, palavra.',
+      desc: t('landing.projDescFestival'),
     },
     {
-      tag: 'Treino',
+      tag: t('landing.projTagTraining'),
       title: 'Studio Training',
-      desc: 'Aulas técnicas para bailarinos profissionais e ex-alunos em formação contínua.',
+      desc: t('landing.projDescTraining'),
     },
-  ] as const
+  ]
 
   return (
     <section
@@ -565,17 +615,19 @@ function Projetos() {
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <div className="mb-14">
           <span className="landing-eyebrow mb-4 block text-muted-foreground">
-            Capítulo IV · O que se faz fora da aula
+            {t('landing.projChapter')}
           </span>
           <h2 className="landing-display text-[clamp(40px,5vw,76px)]">
-            Quatro{' '}
-            <span className="text-primary">extensões</span>{' '}
-            da escola.
+            {t('landing.projHeadingPre')}{' '}
+            <span className="text-primary">
+              {t('landing.projHeadingHighlight')}
+            </span>{' '}
+            {t('landing.projHeadingPost')}
           </h2>
         </div>
 
         <div className="grid border-t border-border sm:grid-cols-2">
-          {projects.map((p, i) => (
+          {projects.map((p) => (
             <article
               key={p.title}
               className="grid grid-cols-[auto_1fr] items-start gap-8 border-b border-border px-8 py-10 sm:odd:border-r"
@@ -584,9 +636,7 @@ function Projetos() {
                 {p.tag}
               </Badge>
               <div>
-                <h3 className="landing-display text-[28px]">
-                  {p.title}
-                </h3>
+                <h3 className="landing-display text-[28px]">{p.title}</h3>
                 <p className="mt-2.5 text-[14.5px] leading-relaxed text-muted-foreground">
                   {p.desc}
                 </p>
@@ -606,12 +656,10 @@ function BentoCard({
   tag,
   en,
   className,
-  children,
 }: {
   tag: string
   en: string
   className?: string
-  children: React.ReactNode
 }) {
   return (
     <Card
@@ -619,367 +667,26 @@ function BentoCard({
     >
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
         <span className="landing-mono text-primary">{tag}</span>
-        <span className="landing-mono text-muted-foreground/60">
-          {en}
-        </span>
+        <span className="landing-mono text-muted-foreground/60">{en}</span>
       </div>
-      <CardContent className="flex-1 pb-4">{children}</CardContent>
+      <CardContent className="flex flex-1 items-center justify-center pb-4">
+        <span className="landing-display text-[20px] text-muted-foreground">
+          {en} module
+        </span>
+      </CardContent>
     </Card>
   )
 }
 
-function EnrollmentMock() {
-  const rows = [
-    ['Maria T.', 'Ballet · Grade 5', 'Pago', '✓'],
-    ['Ana M.', 'Contemporânea · I', 'Pago', '✓'],
-    ['Beatriz F.', 'Ballet · Pre-Prim', 'Pendente', '·'],
-    ['Sofia R.', 'Jazz · II', 'Pago', '✓'],
-    ['Carolina S.', 'Sapateado · I', 'Pago', '✓'],
-  ] as const
-
-  return (
-    <div className="flex h-full flex-col gap-2.5">
-      <div className="landing-display text-[26px] leading-tight">
-        Período de{' '}
-        <span className="text-primary">matrículas</span> aberto.
-      </div>
-      <div className="text-xs text-muted-foreground">
-        187 candidaturas · 142 confirmadas
-      </div>
-      <div className="mt-1.5 flex flex-1 flex-col overflow-hidden border border-border bg-muted/30">
-        <div className="landing-mono grid grid-cols-[1.4fr_1.6fr_.9fr_24px] border-b border-border px-3 py-2 text-[9.5px] text-muted-foreground">
-          <span>Aluno</span>
-          <span>Modalidade</span>
-          <span>Estado</span>
-          <span />
-        </div>
-        {rows.map((r, i) => (
-          <div
-            key={i}
-            className="grid grid-cols-[1.4fr_1.6fr_.9fr_24px] items-center border-b border-border px-3 py-2 text-[12.5px] last:border-b-0"
-          >
-            <span className="font-medium">{r[0]}</span>
-            <span className="text-muted-foreground">{r[1]}</span>
-            <span
-              className={
-                r[2] === 'Pendente'
-                  ? 'text-muted-foreground'
-                  : ''
-              }
-            >
-              {r[2]}
-            </span>
-            <span className="landing-mono text-right text-muted-foreground">
-              {r[3]}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function CalendarMock() {
-  const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] as const
-  const events: Record<number, [string, string, 'ink' | 'soft' | 'accent'][]> = {
-    0: [['18:00', 'Ballet · Grade 3', 'ink']],
-    1: [
-      ['17:30', 'Pré-dança', 'soft'],
-      ['19:00', 'Contemporânea', 'accent'],
-    ],
-    2: [['18:00', 'Contemp. I', 'ink']],
-    3: [
-      ['17:00', 'Sapateado', 'soft'],
-      ['19:30', 'Studio Training', 'ink'],
-    ],
-    4: [['18:00', 'Jazz · II', 'ink']],
-    5: [['10:00', 'Aulas abertas', 'accent']],
-  }
-  return (
-    <div className="grid h-full grid-cols-6 gap-1 pt-1.5">
-      {days.map((d, i) => (
-        <div key={d} className="flex flex-col gap-1">
-          <div className="landing-mono mb-0.5 text-[9.5px] text-muted-foreground">
-            {d}
-          </div>
-          {(events[i] || []).map((e, j) => (
-            <div
-              key={j}
-              className={`border border-border p-1.5 text-[9.5px] leading-tight ${
-                e[2] === 'accent'
-                  ? 'bg-primary text-primary-foreground'
-                  : e[2] === 'soft'
-                    ? 'bg-muted'
-                    : 'bg-foreground text-background'
-              }`}
-            >
-              <div className="landing-mono text-[8.5px] opacity-80">
-                {e[0]}
-              </div>
-              <div className="font-medium">{e[1]}</div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function CoachingMock() {
-  const slots = [
-    ['Diana S. C.', 'Qua · 16:00', true],
-    ['Pedro A.', 'Qui · 18:30', true],
-    ['Rita N.', 'Sex · 17:00', false],
-  ] as const
-
-  return (
-    <div className="flex h-full flex-col justify-between">
-      <div className="landing-display text-[22px] leading-tight">
-        Reservar uma{' '}
-        <span className="text-primary">privada</span>.
-      </div>
-      <div className="mt-2 flex flex-col gap-1.5">
-        {slots.map(([n, t, free]) => (
-          <div
-            key={n}
-            className={`flex items-center justify-between border border-border px-2.5 py-2 ${free ? 'bg-muted/30' : 'opacity-55'}`}
-          >
-            <span className="text-xs font-medium">{n}</span>
-            <span className="landing-mono text-muted-foreground">
-              {t}
-            </span>
-            <Badge
-              variant={free ? 'default' : 'secondary'}
-              className="text-[10px]"
-            >
-              {free ? 'livre' : 'ocupado'}
-            </Badge>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function EventsMock() {
-  return (
-    <div className="flex h-full flex-col gap-1.5">
-      <div className="border-l-2 border-primary pl-2.5">
-        <div className="landing-mono text-[9.5px] text-primary">
-          14 JUN · Braga
-        </div>
-        <div className="landing-display text-lg">
-          Soma das Artes 2026
-        </div>
-      </div>
-      <div className="text-xs leading-relaxed text-muted-foreground">
-        Espetáculo de fim de ano.
-        <br />
-        <span className="text-foreground">32 comentários</span> · 3
-        publicações
-      </div>
-      <div className="mt-auto flex items-center gap-1">
-        <AvatarGroup>
-          {['AT', 'MC', 'RS'].map((i) => (
-            <Avatar key={i} size="sm">
-              <AvatarFallback className="text-[8px]">
-                {i}
-              </AvatarFallback>
-            </Avatar>
-          ))}
-        </AvatarGroup>
-        <AvatarGroupCount className="size-6 text-xs">
-          +47
-        </AvatarGroupCount>
-      </div>
-    </div>
-  )
-}
-
-function BillingMock() {
-  return (
-    <div className="flex h-full flex-col justify-between">
-      <div>
-        <div className="landing-display text-[32px] leading-none">
-          €18.420
-        </div>
-        <div className="landing-mono mt-1 text-muted-foreground">
-          Recebido · Maio 2026
-        </div>
-      </div>
-      <div className="flex h-14 items-end gap-0.5">
-        {[42, 58, 70, 64, 82, 76, 88, 94, 100].map((h, i) => (
-          <div
-            key={i}
-            className={`flex-1 ${i === 8 ? 'bg-primary' : 'bg-foreground'}`}
-            style={{ height: `${h}%` }}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between text-[11px] text-muted-foreground">
-        <span>3 multas em aberto</span>
-        <span>97% em dia</span>
-      </div>
-    </div>
-  )
-}
-
-function ClassesMock() {
-  return (
-    <div className="flex h-full flex-col gap-1.5">
-      <div className="landing-display text-[22px] leading-tight">
-        Turma ·{' '}
-        <span className="text-primary">Grade 5</span>
-      </div>
-      <div className="landing-mono text-muted-foreground">
-        14 alunas · Estúdio I · Diana S.C.
-      </div>
-      <div className="mt-1.5 grid grid-cols-7 gap-1">
-        {Array.from({ length: 14 }).map((_, i) => (
-          <div
-            key={i}
-            className={`aspect-square border border-border ${i === 4 || i === 11 ? 'bg-muted' : 'bg-foreground'}`}
-          />
-        ))}
-      </div>
-      <div className="mt-auto text-[11px] text-muted-foreground">
-        2 ausentes · 12 presentes
-      </div>
-    </div>
-  )
-}
-
-function InventoryMock() {
-  const sizes = ['35', '36', '37', '38', '39', '40'] as const
-  const stock = [4, 7, 2, 5, 3, 1] as const
-
-  return (
-    <div className="flex h-full flex-col gap-2">
-      <div className="landing-display text-[22px]">
-        Sapatilhas ·{' '}
-        <span className="text-primary">pontas</span>
-      </div>
-      <div className="flex flex-wrap gap-1">
-        {sizes.map((s, i) => (
-          <TooltipProvider key={s}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div
-                  className={`border border-border px-2 py-1 text-[11px] font-medium ${i === 2 ? 'bg-foreground text-background' : ''}`}
-                >
-                  {s}{' '}
-                  <span className="opacity-55">· {stock[i]}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                {stock[i]} em stock
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ))}
-      </div>
-      <div className="mt-auto text-[11px] text-muted-foreground">
-        22 em stock · 4 reservadas
-      </div>
-    </div>
-  )
-}
-
-function MessagingMock() {
-  const messages = [
-    ['Diana S.C.', 'Trouxe a partitura nova para amanhã', 'DC'],
-    ['M. Tavares', 'Obrigada pela aula extra!', 'MT'],
-    ['Pedro A.', 'Vamos ensaiar a variação às 17h', 'PA'],
-  ] as const
-
-  return (
-    <div className="flex h-full flex-col gap-1.5">
-      {messages.map(([n, m, initials], i) => (
-        <div key={i} className="flex items-start gap-2">
-          <Avatar size="sm">
-            <AvatarFallback className="text-[8px]">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <div className="landing-mono text-[9px] text-primary">
-              {n}
-            </div>
-            <div className="truncate text-xs">{m}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function ModalitiesMock() {
-  const tags = [
-    'Ballet',
-    'Contemp.',
-    'Jazz',
-    'Hip-Hop',
-    'Teatro Musical',
-    'Acrodance',
-  ] as const
-
-  return (
-    <div className="flex flex-wrap gap-1.5 pt-3">
-      {tags.map((t, i) => (
-        <Badge
-          key={t}
-          variant={i === 0 ? 'default' : 'outline'}
-        >
-          {t}
-        </Badge>
-      ))}
-    </div>
-  )
-}
-
-function AttendanceMock() {
-  return (
-    <div className="flex h-full items-center justify-between">
-      <div>
-        <div className="landing-display text-[38px] leading-none">
-          96<span className="text-primary">%</span>
-        </div>
-        <div className="landing-mono text-muted-foreground">
-          Assiduidade média · maio
-        </div>
-      </div>
-      <svg width="80" height="80" viewBox="0 0 80 80">
-        <circle
-          cx="40"
-          cy="40"
-          r="34"
-          className="stroke-border"
-          strokeWidth="6"
-          fill="none"
-        />
-        <circle
-          cx="40"
-          cy="40"
-          r="34"
-          className="stroke-foreground"
-          strokeWidth="6"
-          fill="none"
-          strokeDasharray={`${2 * Math.PI * 34 * 0.96} 999`}
-          transform="rotate(-90 40 40)"
-        />
-      </svg>
-    </div>
-  )
-}
-
 function PlatformBento() {
+  const { t } = useTranslation()
   return (
     <section id="plataforma" className="py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <div className="mb-14 flex flex-wrap items-end justify-between gap-10">
           <div>
             <span className="landing-eyebrow mb-4 block text-muted-foreground">
-              Intermezzo · O que move a casa
+              {t('landing.bentoChapter')}
             </span>
             <h2 className="landing-display text-[clamp(44px,6.5vw,100px)]">
               <span className="font-normal italic">Powered by</span>
@@ -987,100 +694,76 @@ function PlatformBento() {
               StudioOS<span className="text-primary">.</span>
             </h2>
             <p className="mt-6 max-w-[520px] text-base leading-relaxed text-muted-foreground">
-              Por trás de cada inscrição, cada aula privada, cada
-              espetáculo, há uma plataforma que organiza o quotidiano da
-              escola.
+              {t('landing.bentoDescription')}
             </p>
           </div>
           <div className="min-w-[240px]">
             <span className="landing-mono text-muted-foreground">
-              10 módulos · uma única base de dados · acesso por papel
-              (aluno, professor, encarregado, direção)
+              {t('landing.bentoSubtitle')}
             </span>
           </div>
         </div>
 
-        {/* Bento grid */}
         <div className="grid auto-rows-[120px] grid-cols-6 gap-4 lg:grid-cols-12">
           <BentoCard
             tag="Inscrições"
             en="Enrollments"
             className="col-span-6 row-span-4"
-          >
-            <EnrollmentMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Calendário"
             en="Calendar"
             className="col-span-6 row-span-4"
-          >
-            <CalendarMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Aulas Privadas"
             en="Coachings"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <CoachingMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Eventos"
             en="Events"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <EventsMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Faturação"
             en="Billing"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <BillingMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Turmas"
             en="Classes"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <ClassesMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Inventário"
             en="Inventory"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <InventoryMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Mensagens"
             en="Messaging"
             className="col-span-6 row-span-3 lg:col-span-4"
-          >
-            <MessagingMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Modalidades"
             en="Modalities"
             className="col-span-6 row-span-2"
-          >
-            <ModalitiesMock />
-          </BentoCard>
+          />
 
           <BentoCard
             tag="Assiduidade"
             en="Attendance"
             className="col-span-6 row-span-2"
-          >
-            <AttendanceMock />
-          </BentoCard>
+          />
         </div>
       </div>
     </section>
@@ -1091,6 +774,7 @@ function PlatformBento() {
 // CTA
 // ---------------------------------------------------------------------------
 function CTA() {
+  const { t } = useTranslation()
   return (
     <section
       id="enrol"
@@ -1098,26 +782,25 @@ function CTA() {
     >
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
         <span className="landing-eyebrow mb-6 block text-background/55">
-          Próxima época · Setembro 2026
+          {t('landing.ctaEyebrow')}
         </span>
         <h2 className="landing-display text-[clamp(64px,11vw,180px)] leading-[0.92]">
-          <span className="block">Venha</span>
+          <span className="block">{t('landing.ctaHeadingLine1')}</span>
           <span className="block text-primary">
-            dançar.
+            {t('landing.ctaHeadingLine2')}
           </span>
         </h2>
         <p className="mx-auto mt-8 mb-12 max-w-[520px] text-[17px] leading-relaxed text-background/72">
-          Inscrições abertas. Aulas experimentais sem compromisso.
-          Atendimento direto no estúdio em Braga, ou através da
-          plataforma StudioOS.
+          {t('landing.ctaDescription')}
         </p>
         <div className="inline-flex flex-wrap justify-center gap-3.5">
           <Button
             size="lg"
             variant="outline"
-            className="border-background bg-background text-foreground hover:bg-background/90 hover:text-foreground"
+            className="border-background bg-background text-foreground hover:bg-background/90 hover:text-foreground dark:bg-background dark:hover:bg-background/90 dark:border-background"
+            asChild
           >
-            Inscrever aluno →
+            <Link to={paths.enrollment}>{t('landing.ctaEnroll')}</Link>
           </Button>
           <Button
             size="lg"
@@ -1125,7 +808,7 @@ function CTA() {
             className="border border-background/50 text-background hover:bg-background/10 hover:text-background"
             asChild
           >
-            <Link to={paths.login}>Entrar na plataforma</Link>
+            <Link to={paths.login}>{t('landing.ctaLogin')}</Link>
           </Button>
         </div>
       </div>
@@ -1136,18 +819,10 @@ function CTA() {
 // ---------------------------------------------------------------------------
 // Footer
 // ---------------------------------------------------------------------------
-function FooterCol({
-  title,
-  links,
-}: {
-  title: string
-  links: string[]
-}) {
+function FooterCol({ title, links }: { title: string; links: string[] }) {
   return (
     <div>
-      <div className="landing-mono mb-4 text-muted-foreground">
-        {title}
-      </div>
+      <div className="landing-mono mb-4 text-muted-foreground">{title}</div>
       <ul className="flex list-none flex-col gap-2 p-0">
         {links.map((l) => (
           <li key={l} className="text-[13.5px]">
@@ -1160,6 +835,7 @@ function FooterCol({
 }
 
 function Footer() {
+  const { t } = useTranslation()
   return (
     <footer className="border-t border-border py-16 pb-10">
       <div className="mx-auto max-w-[1440px] px-5 md:px-10">
@@ -1167,38 +843,32 @@ function Footer() {
           <div>
             <div className="mb-5 flex items-center gap-3">
               <DancerSvg fill="currentColor" className="h-9 w-auto" />
-              <span className="landing-display text-[22px]">
-                StudioOS
-              </span>
+              <span className="landing-display text-[22px]">StudioOS</span>
             </div>
             <p className="max-w-[320px] text-[13px] leading-relaxed text-muted-foreground">
-              Escola de Dança · Braga, Portugal.
-              <br />
-              Royal Academy of Dance Registered.
-              <br />
-              Apoio da Câmara Municipal de Braga.
+              {t('landing.footerDesc')}
             </p>
           </div>
           <FooterCol
-            title="Escola"
+            title={t('landing.footerSchool')}
             links={[
-              'Modalidades',
-              'Equipa',
-              'Projetos',
-              'Inscrições',
+              t('landing.navModalities'),
+              t('landing.navTeam'),
+              t('landing.navProjects'),
+              t('landing.navEnroll'),
             ]}
           />
           <FooterCol
-            title="Plataforma"
+            title={t('landing.footerPlatform')}
             links={[
-              'Entrar',
-              'Inscrição online',
-              'Calendário',
-              'Mensagens',
+              t('landing.navLogin'),
+              t('landing.footerOnlineEnroll'),
+              t('landing.footerCalendar'),
+              t('landing.footerMessages'),
             ]}
           />
           <FooterCol
-            title="Contacto"
+            title={t('landing.footerContact')}
             links={[
               'Rua Dr. Manuel de Oliveira Machado, 21-23',
               '4700-054 Braga',
@@ -1213,9 +883,7 @@ function Footer() {
           <span className="landing-mono">
             © 2011–2026 StudioOS · RAD® N.º 24116
           </span>
-          <span className="landing-mono">
-            Powered by StudioOS
-          </span>
+          <span className="landing-mono">Powered by StudioOS</span>
         </div>
       </div>
     </footer>
@@ -1226,15 +894,29 @@ function Footer() {
 // Page
 // ---------------------------------------------------------------------------
 export function LandingPage() {
+  const { t, i18n } = useTranslation()
+  const { theme, setTheme } = useTheme()
+
+  const currentLang = i18n.language?.startsWith('pt') ? 'pt' : 'en'
+  const toggleLang = () =>
+    i18n.changeLanguage(i18n.language?.startsWith('pt') ? 'en-US' : 'pt-PT')
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
+
   return (
     <div className="landing-body min-h-screen overflow-x-hidden bg-background text-foreground">
-      <LandingNav />
-      <Hero />
+      <LandingNav
+        t={t}
+        toggleTheme={toggleTheme}
+        toggleLang={toggleLang}
+        currentLang={currentLang}
+        theme={theme}
+      />
+      <Hero t={t} />
       <Separator className="mx-auto max-w-[1440px]" />
-      <Modalidades />
-      <Awards />
-      <Team />
-      <Projetos />
+      <Modalidades t={t} />
+      <Awards t={t} />
+      <Team t={t} />
+      <Projetos t={t} />
       <PlatformBento />
       <CTA />
       <Footer />

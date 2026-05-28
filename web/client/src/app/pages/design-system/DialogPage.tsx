@@ -31,7 +31,7 @@ export function DialogPage() {
       <section className="space-y-8">
         {/* Basic with form */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dialogWithForm')}
           </h2>
           <Dialog>
@@ -51,15 +51,25 @@ export function DialogPage() {
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">{t('designSystem.dialogName')}</Label>
-                  <Input id="name" placeholder={t('designSystem.dialogNamePlaceholder')} />
+                  <Input
+                    id="name"
+                    placeholder={t('designSystem.dialogNamePlaceholder')}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">{t('designSystem.dialogDescription')}</Label>
-                  <Textarea id="description" placeholder={t('designSystem.dialogDescPlaceholder')} />
+                  <Label htmlFor="description">
+                    {t('designSystem.dialogDescription')}
+                  </Label>
+                  <Textarea
+                    id="description"
+                    placeholder={t('designSystem.dialogDescPlaceholder')}
+                  />
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline">{t('designSystem.alertDialogCancel')}</Button>
+                <Button variant="outline">
+                  {t('designSystem.alertDialogCancel')}
+                </Button>
                 <Button>{t('designSystem.dialogSave')}</Button>
               </DialogFooter>
             </DialogContent>
@@ -68,7 +78,7 @@ export function DialogPage() {
 
         {/* Settings dialog */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dialogSettings')}
           </h2>
           <Dialog>
@@ -80,19 +90,27 @@ export function DialogPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>{t('designSystem.dialogSettingsTitle')}</DialogTitle>
+                <DialogTitle>
+                  {t('designSystem.dialogSettingsTitle')}
+                </DialogTitle>
                 <DialogDescription>
                   {t('designSystem.dialogSettingsDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="display-name">{t('designSystem.dialogDisplayName')}</Label>
+                  <Label htmlFor="display-name">
+                    {t('designSystem.dialogDisplayName')}
+                  </Label>
                   <Input id="display-name" defaultValue="StudioOS" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">{t('designSystem.dialogEmail')}</Label>
-                  <Input id="email" type="email" defaultValue="info@studioos.dev" />
+                  <Input
+                    id="email"
+                    type="email"
+                    defaultValue="info@studioos.dev"
+                  />
                 </div>
               </div>
               <DialogFooter>
@@ -104,7 +122,7 @@ export function DialogPage() {
 
         {/* Add participant dialog */}
         <div className="space-y-4">
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-foreground">
             {t('designSystem.dialogComplex')}
           </h2>
           <Dialog>
@@ -116,22 +134,31 @@ export function DialogPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>{t('designSystem.dialogAddParticipantTitle')}</DialogTitle>
+                <DialogTitle>
+                  {t('designSystem.dialogAddParticipantTitle')}
+                </DialogTitle>
                 <DialogDescription>
                   {t('designSystem.dialogAddParticipantDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="search">{t('designSystem.dialogSearch')}</Label>
-                  <Input id="search" placeholder={t('designSystem.dialogSearchPlaceholder')} />
+                  <Label htmlFor="search">
+                    {t('designSystem.dialogSearch')}
+                  </Label>
+                  <Input
+                    id="search"
+                    placeholder={t('designSystem.dialogSearchPlaceholder')}
+                  />
                 </div>
                 <div className="rounded-md border border-border p-3 text-sm text-muted-foreground text-center">
                   {t('designSystem.dialogNoResults')}
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline">{t('designSystem.alertDialogCancel')}</Button>
+                <Button variant="outline">
+                  {t('designSystem.alertDialogCancel')}
+                </Button>
                 <Button disabled>{t('designSystem.dialogAdd')}</Button>
               </DialogFooter>
             </DialogContent>
