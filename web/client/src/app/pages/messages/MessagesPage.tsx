@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { format, isToday, isYesterday } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { pt } from 'date-fns/locale/pt'
@@ -1038,7 +1039,7 @@ function detailsTitle(
 /** Subtitle: member count for groups, "Direct conversation" for DMs.
  *  Mirrors NewConversationDialog's pattern of title + descriptive
  *  subtitle inside the sheet header. */
-function detailsSubtitle(c: Conversation, t: (k: string) => string): string {
+function detailsSubtitle(c: Conversation, t: TFunction): string {
   if (c.kind === 'group') {
     return t('messages.details.membersCount', {
       count: c.participant_ids.length,

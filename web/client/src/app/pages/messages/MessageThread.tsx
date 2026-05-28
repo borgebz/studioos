@@ -15,7 +15,6 @@ import {
   Pin,
   PinOff,
   Plus,
-  Send,
   SmilePlus,
   Trash2,
   Users,
