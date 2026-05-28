@@ -76,4 +76,5 @@ export const paths = {
   enrollmentPeriods: '/enrollment-periods',
   enrollmentPeriodCreate: '/enrollment-periods/create',
   enrollmentPeriodEdit: '/enrollment-periods/:id/edit',
+  inventorySettings: '/inventory-settings',
 } as const

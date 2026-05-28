@@ -34,6 +34,7 @@
     "studios": "Studios",
     "classes": "Classes",
     "enrollmentPeriods": "Enrollment Periods",
+    "inventorySettings": "Inventory Settings",
     "designSystem": "Design System",
     "brand": "StudioOS",
     "back": "Go back",
@@ -1468,8 +1469,6 @@
       "time": "Time",
       "location": "Location",
       "contact": "Contact",
-      "organizer": "Organizer",
-      "organizerValue": "StudioOS Direction",
       "publishedAt": "Published",
       "updatedAt": "Last edited",
       "visibility": "Visibility",
@@ -1492,7 +1491,8 @@
       "addFile": "Add file",
       "reply": "Reply",
       "comment": "Comment",
-      "publishComment": "Post"
+      "publishComment": "Post",
+      "moreActions": "More actions"
     },
     "interest": {
       "primary": "I'll be there",
@@ -1521,9 +1521,15 @@
     },
     "comments": {
       "composerPlaceholder": "Write a comment…",
+      "replyPlaceholder": "Write a reply…",
       "empty": "No comments yet — be the first to write.",
       "loginToComment": "Sign in to comment.",
-      "moderate": "Moderate"
+      "moderate": "Moderate",
+      "replyingTo": "Replying to {{name}}",
+      "cancelReply": "Cancel",
+      "showReplies_one": "Show {{count}} reply",
+      "showReplies_other": "Show {{count}} replies",
+      "hideReplies": "Hide replies"
     },
     "posts": {
       "empty": "No updates yet.",
@@ -1984,6 +1990,10 @@
     "delete": "Delete",
     "deleting": "Deleting…",
     "done": "Done",
+    "active": "Active",
+    "inactive": "Inactive",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
     "currencySymbol": "€",
     "refresh": "Refresh",
     "resultCount_one": "{{count}} result",
@@ -2109,6 +2119,100 @@
       "alreadyMember": "Already a member",
       "addSuccess": "Student added.",
       "removeSuccess": "Student removed."
+    }
+  },
+  "inventorySettings": {
+    "title": "Inventory Settings",
+    "subtitle": "Manage the building blocks of the inventory: categories, colors, sizes, and size systems.",
+    "tab": {
+      "categories": "Categories",
+      "colors": "Colors",
+      "sizes": "Sizes",
+      "sizeSystems": "Size systems"
+    },
+    "categories": {
+      "create": "Create category",
+      "createTitle": "Create category",
+      "editTitle": "Edit category",
+      "dialogDesc": "Group products under a taxonomy. Categories can nest under a parent.",
+      "empty": "No categories yet.",
+      "saveSuccess": "Category saved.",
+      "deleteSuccess": "Category deleted.",
+      "deleteTitle": "Delete \"{{name}}\"?",
+      "deleteDesc": "Products in this category will lose their classification.",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Footwear",
+      "parentLabel": "Parent category",
+      "noParent": "— None —",
+      "systemsLabel": "Applicable size systems",
+      "noSystems": "No size systems yet. Create one first.",
+      "col": {
+        "name": "Name",
+        "parent": "Parent",
+        "systems": "Size systems",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
+    "colors": {
+      "create": "Create color",
+      "createTitle": "Create color",
+      "dialogDesc": "Add a color so variants can reference it.",
+      "empty": "No colors yet.",
+      "saveSuccess": "Color saved.",
+      "deleteSuccess": "Color deleted.",
+      "deleteTitle": "Delete \"{{name}}\"?",
+      "deleteDesc": "Product variants using this color may be affected.",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. Cobalt blue",
+      "hexLabel": "Hex code",
+      "hexHint": "Must be a hex code like #146664.",
+      "col": {
+        "name": "Name",
+        "hex": "Hex",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
+    "sizes": {
+      "create": "Create size",
+      "createTitle": "Create size",
+      "dialogDesc": "Add a size value belonging to a size system.",
+      "empty": "No sizes yet.",
+      "saveSuccess": "Size saved.",
+      "deleteSuccess": "Size deleted.",
+      "deleteTitle": "Delete \"{{name}}\"?",
+      "deleteDesc": "Variants using this size may be affected.",
+      "noSystemsHint": "Create a size system first.",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. 38",
+      "systemLabel": "Size system",
+      "systemPlaceholder": "Choose a size system",
+      "col": {
+        "name": "Name",
+        "system": "Size system",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
+    "sizeSystems": {
+      "create": "Create size system",
+      "createTitle": "Create size system",
+      "editTitle": "Edit size system",
+      "dialogDesc": "A grouping of sizes (e.g. EU shoes, US clothing).",
+      "empty": "No size systems yet.",
+      "saveSuccess": "Size system saved.",
+      "deleteSuccess": "Size system deleted.",
+      "deleteTitle": "Delete \"{{name}}\"?",
+      "deleteDesc": "Sizes inside this system may be affected.",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. EU Shoes",
+      "col": {
+        "name": "Name",
+        "sizes": "Sizes",
+        "status": "Status",
+        "actions": "Actions"
+      }
     }
   },
   "enrollmentPeriods": {

@@ -72,6 +72,7 @@ import { ClassesListPage } from '@/app/pages/classes/ClassesListPage'
 import { ClassFormPage } from '@/app/pages/classes/ClassFormPage'
 import { EnrollmentPeriodsListPage } from '@/app/pages/enrollment-periods/EnrollmentPeriodsListPage'
 import { EnrollmentPeriodFormPage } from '@/app/pages/enrollment-periods/EnrollmentPeriodFormPage'
+import { InventorySettingsPage } from '@/app/pages/inventory-settings/InventorySettingsPage'
 
 export function AppRoutes() {
   return (
@@ -430,6 +431,21 @@ export function AppRoutes() {
         element={
           <ProtectedRoute permission="enrollments.can_manage_periods">
             <EnrollmentPeriodFormPage mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.inventorySettings}
+        element={
+          <ProtectedRoute
+            permission={[
+              'inventory.view_category',
+              'inventory.view_color',
+              'inventory.view_size',
+              'inventory.view_sizesystem',
+            ]}
+          >
+            <InventorySettingsPage />
           </ProtectedRoute>
         }
       />

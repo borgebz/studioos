@@ -10,7 +10,6 @@ import {
   Loader2,
   MoreHorizontal,
   Palette,
-  Pencil,
   Power,
   Plus,
   Trash2,
@@ -114,17 +113,7 @@ export function ColorsTab() {
                 style={{ backgroundColor: c.hex_code }}
                 aria-hidden
               />
-              {canEdit ? (
-                <button
-                  type="button"
-                  className="text-left font-medium text-foreground hover:text-primary"
-                  onClick={() => setEditTarget(c)}
-                >
-                  {c.name}
-                </button>
-              ) : (
-                <span className="font-medium text-foreground">{c.name}</span>
-              )}
+              <span className="font-medium text-foreground">{c.name}</span>
             </div>
           )
         },
@@ -167,7 +156,7 @@ export function ColorsTab() {
         ),
         cell: (info) => {
           const c = info.row.original
-          if (!canEdit && !canDelete) return null
+          if (!canManage) return null
           const isToggling = togglingId === c.id
           return (
             <DropdownMenu>
@@ -186,20 +175,10 @@ export function ColorsTab() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                {canEdit && (
-                  <DropdownMenuItem onClick={() => setEditTarget(c)}>
-                    <Pencil className="size-4" />
-                    {t('common.edit')}
-                  </DropdownMenuItem>
-                )}
-                {canEdit && (
-                  <DropdownMenuItem onClick={() => handleToggle(c)}>
-                    <Power className="size-4" />
-                    {c.is_active
-                      ? t('common.deactivate')
-                      : t('common.activate')}
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={() => handleToggle(c)}>
+                  <Power className="size-4" />
+                  {c.is_active ? t('common.deactivate') : t('common.activate')}
+                </DropdownMenuItem>
                 {canDelete && (
                   <>
                     <DropdownMenuSeparator />
@@ -218,7 +197,7 @@ export function ColorsTab() {
         },
       }),
     ],
-    [columnHelper, t, canEdit, canDelete, togglingId, handleToggle]
+    [columnHelper, t, canManage, canDelete, togglingId, handleToggle]
   )
 
   const table = useReactTable({
@@ -231,7 +210,7 @@ export function ColorsTab() {
     <div className="flex flex-col flex-1 min-h-0 gap-4">
       <div className="flex justify-end shrink-0">
         <Authorized permission="inventory.add_color">
-          <Button onClick={() => setEditTarget('new')}>
+          <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4" />
             {t('inventorySettings.colors.create')}
           </Button>
@@ -253,15 +232,9 @@ export function ColorsTab() {
       />
 
       <ColorDialog
-        target={editTarget}
-        onClose={() => setEditTarget(null)}
-        onSaved={(c, mode) => {
-          setItems((prev) =>
-            mode === 'create'
-              ? [...prev, c]
-              : prev.map((it) => (it.id === c.id ? c : it))
-          )
-        }}
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSaved={(c) => setItems((prev) => [...prev, c])}
       />
 
       <ConfirmDeleteDialog
@@ -286,36 +259,30 @@ export function ColorsTab() {
   )
 }
 
-// ─── Create / edit dialog ────────────────────────────────────────────────
+// ─── Create dialog ────────────────────────────────────────────────────────
 
 interface ColorDialogProps {
-  target: Color | 'new' | null
+  open: boolean
   onClose: () => void
-  onSaved: (c: Color, mode: 'create' | 'edit') => void
+  onSaved: (c: Color) => void
 }
 
-function ColorDialog({ target, onClose, onSaved }: ColorDialogProps) {
+function ColorDialog({ open, onClose, onSaved }: ColorDialogProps) {
   const { t } = useTranslation()
   const [name, setName] = useState('')
-  const [hex, setHex] = useState('#000000')
+  const [hex, setHex] = useState('#146664')
   const [submitting, setSubmitting] = useState(false)
   const [nameError, setNameError] = useState<string | null>(null)
   const [hexError, setHexError] = useState<string | null>(null)
 
-  const open = target != null
-  const isEdit = target !== null && target !== 'new'
-
   useEffect(() => {
-    if (target === 'new') {
+    if (open) {
       setName('')
-      setHex('#000000')
-    } else if (target && target !== 'new') {
-      setName(target.name)
-      setHex(target.hex_code)
+      setHex('#146664')
+      setNameError(null)
+      setHexError(null)
     }
-    setNameError(null)
-    setHexError(null)
-  }, [target])
+  }, [open])
 
   const handleSubmit = async () => {
     const trimmedName = name.trim()
@@ -336,20 +303,11 @@ function ColorDialog({ target, onClose, onSaved }: ColorDialogProps) {
 
     setSubmitting(true)
     try {
-      if (target === 'new') {
-        const payload: CreateColor = { name: trimmedName, hex_code: hex }
-        const res = await apiClient.api.inventoryColorsCreate(payload)
-        if (res.data) {
-          onSaved(res.data, 'create')
-          toast.success(t('inventorySettings.colors.saveSuccess'))
-          onClose()
-        }
-      } else if (target) {
-        // No PATCH endpoint for color; recreate via delete-then-create is too
-        // dangerous. The API exposes only create/destroy/activate-deactivate,
-        // so editing name/hex is not supported server-side. We surface the
-        // limitation by disabling the field in edit mode.
-        toast.info(t('inventorySettings.colors.editUnsupported'))
+      const payload: CreateColor = { name: trimmedName, hex_code: hex }
+      const res = await apiClient.api.inventoryColorsCreate(payload)
+      if (res.data) {
+        onSaved(res.data)
+        toast.success(t('inventorySettings.colors.saveSuccess'))
         onClose()
       }
     } catch (err) {
@@ -369,9 +327,7 @@ function ColorDialog({ target, onClose, onSaved }: ColorDialogProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEdit
-              ? t('inventorySettings.colors.editTitle')
-              : t('inventorySettings.colors.createTitle')}
+            {t('inventorySettings.colors.createTitle')}
           </DialogTitle>
           <DialogDescription>
             {t('inventorySettings.colors.dialogDesc')}
@@ -388,7 +344,6 @@ function ColorDialog({ target, onClose, onSaved }: ColorDialogProps) {
               id="color-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              disabled={isEdit}
               placeholder={t('inventorySettings.colors.namePlaceholder')}
               autoFocus
             />
@@ -406,7 +361,6 @@ function ColorDialog({ target, onClose, onSaved }: ColorDialogProps) {
                 type="color"
                 aria-label={t('inventorySettings.colors.hexLabel')}
                 value={hex}
-                disabled={isEdit}
                 onChange={(e) => setHex(e.target.value)}
                 className="h-9 w-12 cursor-pointer rounded-md border border-input bg-background"
               />
@@ -414,7 +368,6 @@ function ColorDialog({ target, onClose, onSaved }: ColorDialogProps) {
                 id="color-hex"
                 value={hex}
                 onChange={(e) => setHex(e.target.value)}
-                disabled={isEdit}
                 placeholder="#146664"
                 className="font-mono uppercase"
                 maxLength={7}
@@ -430,11 +383,9 @@ function ColorDialog({ target, onClose, onSaved }: ColorDialogProps) {
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             {t('common.cancel')}
           </Button>
-          {!isEdit && (
-            <Button onClick={handleSubmit} disabled={submitting}>
-              {t('common.save')}
-            </Button>
-          )}
+          <Button onClick={handleSubmit} disabled={submitting}>
+            {t('common.save')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

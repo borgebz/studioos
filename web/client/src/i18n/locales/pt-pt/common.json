@@ -34,6 +34,7 @@
     "studios": "Estúdios",
     "classes": "Turmas",
     "enrollmentPeriods": "Períodos de Matrícula",
+    "inventorySettings": "Configuração de Inventário",
     "designSystem": "Sistema de Design",
     "brand": "StudioOS",
     "back": "Voltar",
@@ -1468,8 +1469,6 @@
       "time": "Hora",
       "location": "Local",
       "contact": "Contacto",
-      "organizer": "Organiza",
-      "organizerValue": "Direção StudioOS",
       "publishedAt": "Publicada",
       "updatedAt": "Última edição",
       "visibility": "Visibilidade",
@@ -1492,7 +1491,8 @@
       "addFile": "Adicionar ficheiro",
       "reply": "Responder",
       "comment": "Comentar",
-      "publishComment": "Publicar"
+      "publishComment": "Publicar",
+      "moreActions": "Mais acções"
     },
     "interest": {
       "primary": "Vou estar lá",
@@ -1521,9 +1521,15 @@
     },
     "comments": {
       "composerPlaceholder": "Escrever um comentário…",
+      "replyPlaceholder": "Escrever uma resposta…",
       "empty": "Sem comentários — seja o primeiro a escrever.",
       "loginToComment": "Inicie sessão para comentar.",
-      "moderate": "Moderar"
+      "moderate": "Moderar",
+      "replyingTo": "A responder a {{name}}",
+      "cancelReply": "Cancelar",
+      "showReplies_one": "Mostrar {{count}} resposta",
+      "showReplies_other": "Mostrar {{count}} respostas",
+      "hideReplies": "Ocultar respostas"
     },
     "posts": {
       "empty": "Sem actualizações por agora.",
@@ -1984,6 +1990,10 @@
     "delete": "Eliminar",
     "deleting": "A eliminar…",
     "done": "Concluído",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "activate": "Ativar",
+    "deactivate": "Desativar",
     "currencySymbol": "€",
     "refresh": "Atualizar",
     "resultCount_one": "{{count}} resultado",
@@ -2109,6 +2119,100 @@
       "alreadyMember": "Já é membro",
       "addSuccess": "Aluno adicionado.",
       "removeSuccess": "Aluno removido."
+    }
+  },
+  "inventorySettings": {
+    "title": "Configuração de Inventário",
+    "subtitle": "Gere os blocos do inventário: categorias, cores, tamanhos e sistemas de tamanhos.",
+    "tab": {
+      "categories": "Categorias",
+      "colors": "Cores",
+      "sizes": "Tamanhos",
+      "sizeSystems": "Sistemas de tamanhos"
+    },
+    "categories": {
+      "create": "Criar categoria",
+      "createTitle": "Criar categoria",
+      "editTitle": "Editar categoria",
+      "dialogDesc": "Agrupe produtos numa taxonomia. As categorias podem aninhar-se sob uma categoria-mãe.",
+      "empty": "Ainda não existem categorias.",
+      "saveSuccess": "Categoria guardada.",
+      "deleteSuccess": "Categoria eliminada.",
+      "deleteTitle": "Eliminar \"{{name}}\"?",
+      "deleteDesc": "Os produtos nesta categoria perderão a classificação.",
+      "nameLabel": "Nome",
+      "namePlaceholder": "ex.: Calçado",
+      "parentLabel": "Categoria-mãe",
+      "noParent": "— Nenhuma —",
+      "systemsLabel": "Sistemas de tamanhos aplicáveis",
+      "noSystems": "Ainda não há sistemas de tamanhos. Crie um primeiro.",
+      "col": {
+        "name": "Nome",
+        "parent": "Mãe",
+        "systems": "Sistemas de tamanhos",
+        "status": "Estado",
+        "actions": "Ações"
+      }
+    },
+    "colors": {
+      "create": "Criar cor",
+      "createTitle": "Criar cor",
+      "dialogDesc": "Adicione uma cor para as variantes a referenciarem.",
+      "empty": "Ainda não existem cores.",
+      "saveSuccess": "Cor guardada.",
+      "deleteSuccess": "Cor eliminada.",
+      "deleteTitle": "Eliminar \"{{name}}\"?",
+      "deleteDesc": "As variantes de produto que usem esta cor podem ficar afetadas.",
+      "nameLabel": "Nome",
+      "namePlaceholder": "ex.: Azul cobalto",
+      "hexLabel": "Código hex",
+      "hexHint": "Tem de ser um hex como #146664.",
+      "col": {
+        "name": "Nome",
+        "hex": "Hex",
+        "status": "Estado",
+        "actions": "Ações"
+      }
+    },
+    "sizes": {
+      "create": "Criar tamanho",
+      "createTitle": "Criar tamanho",
+      "dialogDesc": "Adicione um valor de tamanho pertencente a um sistema.",
+      "empty": "Ainda não existem tamanhos.",
+      "saveSuccess": "Tamanho guardado.",
+      "deleteSuccess": "Tamanho eliminado.",
+      "deleteTitle": "Eliminar \"{{name}}\"?",
+      "deleteDesc": "As variantes que usem este tamanho podem ficar afetadas.",
+      "noSystemsHint": "Crie primeiro um sistema de tamanhos.",
+      "nameLabel": "Nome",
+      "namePlaceholder": "ex.: 38",
+      "systemLabel": "Sistema de tamanhos",
+      "systemPlaceholder": "Escolher um sistema",
+      "col": {
+        "name": "Nome",
+        "system": "Sistema",
+        "status": "Estado",
+        "actions": "Ações"
+      }
+    },
+    "sizeSystems": {
+      "create": "Criar sistema",
+      "createTitle": "Criar sistema de tamanhos",
+      "editTitle": "Editar sistema de tamanhos",
+      "dialogDesc": "Um agrupamento de tamanhos (ex.: Calçado EU, Vestuário US).",
+      "empty": "Ainda não existem sistemas de tamanhos.",
+      "saveSuccess": "Sistema guardado.",
+      "deleteSuccess": "Sistema eliminado.",
+      "deleteTitle": "Eliminar \"{{name}}\"?",
+      "deleteDesc": "Os tamanhos dentro deste sistema podem ficar afetados.",
+      "nameLabel": "Nome",
+      "namePlaceholder": "ex.: Calçado EU",
+      "col": {
+        "name": "Nome",
+        "sizes": "Tamanhos",
+        "status": "Estado",
+        "actions": "Ações"
+      }
     }
   },
   "enrollmentPeriods": {

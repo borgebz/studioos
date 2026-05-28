@@ -261,6 +261,17 @@ export const navConfig: NavEntryConfig[] = [
         icon: CalendarRange,
         permission: 'enrollments.can_manage_periods',
       },
+      {
+        to: paths.inventorySettings,
+        labelKey: 'nav.inventorySettings',
+        icon: Package,
+        permission: [
+          'inventory.view_category',
+          'inventory.view_color',
+          'inventory.view_size',
+          'inventory.view_sizesystem',
+        ],
+      },
     ],
   },
 
