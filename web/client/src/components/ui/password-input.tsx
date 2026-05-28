@@ -33,7 +33,7 @@ function PasswordInput({
         variant="ghost"
         size="icon-xs"
         tabIndex={-1}
-        className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+        className="absolute right-2 top-1/2 z-10 -translate-y-1/2 text-muted-foreground hover:text-foreground"
         onClick={() => setVisible((v) => !v)}
         aria-label={toggleLabel ?? t('auth.onboarding.togglePassword')}
         aria-pressed={visible}

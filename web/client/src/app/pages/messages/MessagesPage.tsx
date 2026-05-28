@@ -18,9 +18,16 @@ import {
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { useIsMobile } from '@/hooks/useMobile'
 import { cn } from '@/lib/utils'
 
 import { ConversationDetailsContent } from './ConversationDetails'
@@ -30,6 +37,7 @@ import { NewConversationDialog } from './NewConversationDialog'
 import { participantName, type ConversationParticipant } from './types'
 import { useConversationSocket } from './useConversationSocket'
 import { triggerUnreadRefresh, useUnreadMessages } from './useUnreadMessages'
+import { useUserChannelSocket } from './useUserChannelSocket'
 
 function dateLocale(lang: string) {
   return lang.startsWith('pt') ? pt : enUS
@@ -58,6 +66,7 @@ export function MessagesPage() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const lang = i18n.language
+  const isMobile = useIsMobile()
 
   const [loadingList, setLoadingList] = useState(true)
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -86,7 +95,11 @@ export function MessagesPage() {
         if (cancelled) return
         const convs = res.data
         setConversations(convs)
-        if (convs.length && activeId === null) {
+        // On desktop we auto-open the first conversation so the right pane
+        // isn't an empty state on first load. On mobile we use a navigator
+        // pattern (inbox ↔ thread), so jumping straight into a thread on a
+        // hard refresh would hide the inbox — leave activeId null instead.
+        if (convs.length && activeId === null && !isMobile) {
           setActiveId(convs[0].id)
         }
         setParticipants(buildParticipantDict(convs))
@@ -217,9 +230,14 @@ export function MessagesPage() {
       // Skip if we already added it locally (echo of our own send).
       setMessages((prev) => {
         if (prev.some((m) => m.id === e.id)) return prev
+        // The backend tags system messages (member changes, renames) with
+        // kind=system so we render them as the localized hint bubble instead
+        // of a regular user bubble showing the raw JSON event payload.
+        const kind =
+          e.kind === 'system' ? MessageKindEnum.System : MessageKindEnum.User
         const msg: Message = {
           id: e.id,
-          kind: MessageKindEnum.User,
+          kind,
           sender_id: e.sender_id,
           body: e.body,
           file_url: e.file_url,
@@ -391,6 +409,34 @@ export function MessagesPage() {
     },
     onTypingStopped: (e) => {
       clearUserTyping(e.user_id)
+    },
+  })
+
+  // Page-level user-channel subscription. The sidebar already listens for
+  // unread-badge refreshes, but this page also needs to refetch its
+  // conversation list when membership changes — e.g. someone adds the
+  // current user to a new group, or a not-yet-loaded conversation receives
+  // a message — so the inbox stays in sync without a manual refresh.
+  const refetchConversationsRef = useRef<() => void>(() => {})
+  refetchConversationsRef.current = () => {
+    apiClient.api
+      .messagingConversationsList()
+      .then((res) => setConversations(res.data))
+      .catch(() => {})
+  }
+  useUserChannelSocket(Boolean(user), {
+    onConversationAdded: () => {
+      refetchConversationsRef.current()
+    },
+    onIncomingMessage: (e) => {
+      // If a brand-new conversation is being talked into (one that wasn't in
+      // our local list at mount), refetch so it shows up. For known
+      // conversations the per-conversation socket already drives the thread.
+      setConversations((prev) => {
+        if (prev.some((c) => c.id === e.conversation_id)) return prev
+        refetchConversationsRef.current()
+        return prev
+      })
     },
   })
 
@@ -599,6 +645,12 @@ export function MessagesPage() {
 
   const hasProfile = Boolean(user?.has_profile)
 
+  // On mobile we use a "navigator" pattern — inbox view vs thread view —
+  // instead of showing both side-by-side. The user picks a conversation
+  // from the list and the thread takes over the screen; a back button
+  // returns to the inbox.
+  const mobileShowThread = isMobile && activeId !== null
+
   // Profile is the opt-in to messaging — anyone without one gets a hard
   // gate at the page level. Their participation in coaching groups (etc.)
   // is still recorded server-side; other members will see them as
@@ -613,13 +665,22 @@ export function MessagesPage() {
   }
 
   return (
-    <PageLayout fullHeight>
-      <PageHeader title={t('messages.title')}>
-        <Button onClick={() => setNewDialogOpen(true)}>
-          <Plus className="size-4" aria-hidden="true" />
-          {t('messages.newMessage')}
-        </Button>
-      </PageHeader>
+    <PageLayout fullHeight className={cn(mobileShowThread && 'p-0')}>
+      {/* On mobile we suppress the page-level header when a conversation is
+       *  active — the thread header takes over the top bar.
+       *  On desktop the header always renders. */}
+      {!mobileShowThread && (
+        <PageHeader title={t('messages.title')}>
+          <Button
+            onClick={() => setNewDialogOpen(true)}
+            size={isMobile ? 'icon' : 'default'}
+            aria-label={isMobile ? t('messages.newMessage') : undefined}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            {!isMobile && t('messages.newMessage')}
+          </Button>
+        </PageHeader>
+      )}
 
       <NewConversationDialog
         open={newDialogOpen}
@@ -635,9 +696,20 @@ export function MessagesPage() {
           detailsOpen && 'md:grid-cols-[280px_1fr_320px]'
         )}
       >
-        {/* Rail — conversation list */}
-        <div className="flex min-w-0 min-h-0 flex-col rounded-lg border border-border bg-card">
-          <div className="border-b border-border p-3">
+        {/* Rail — conversation list. On mobile, hidden while the thread is
+         *  showing (we navigate between the two). Cards float over the
+         *  SidebarInset's grain background; a hint of translucency on the
+         *  card surface lets the paper texture register through the panel. */}
+        <div
+          className={cn(
+            'flex min-w-0 min-h-0 flex-col bg-card/95',
+            // Desktop card chrome — softer border + a touch of elevation so
+            // the rail reads as a card, not a flat column.
+            'md:rounded-lg md:border md:border-border/70 md:shadow-[0_1px_2px_0_rgb(0_0_0_/_0.04)]',
+            mobileShowThread && 'hidden md:flex'
+          )}
+        >
+          <div className="border-b border-border px-4 py-3 md:p-3">
             <div className="relative">
               <Search
                 aria-hidden="true"
@@ -647,7 +719,7 @@ export function MessagesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t('messages.searchPlaceholder')}
-                className="pl-9"
+                className="h-10 pl-9 md:h-9"
                 aria-label={t('messages.searchPlaceholder')}
               />
             </div>
@@ -672,8 +744,15 @@ export function MessagesPage() {
           </div>
         </div>
 
-        {/* Center — thread */}
-        <div className="flex min-w-0 min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
+        {/* Center — thread. On mobile, hidden until a conversation is
+         *  picked, then takes over the screen. */}
+        <div
+          className={cn(
+            'flex min-w-0 min-h-0 flex-col overflow-hidden bg-card/95',
+            'md:rounded-lg md:border md:border-border/70 md:shadow-[0_1px_2px_0_rgb(0_0_0_/_0.04)]',
+            !mobileShowThread && 'hidden md:flex'
+          )}
+        >
           {activeConversation && meId !== null ? (
             <MessageThread
               conversation={activeConversation}
@@ -683,6 +762,7 @@ export function MessagesPage() {
               loading={loadingThread}
               detailsOpen={detailsOpen}
               onToggleDetails={() => setDetailsOpen((v) => !v)}
+              onBack={isMobile ? () => setActiveId(null) : undefined}
               onSend={handleSend}
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -698,8 +778,51 @@ export function MessagesPage() {
           )}
         </div>
 
-        {/* Details — right panel, toggled by header click */}
-        {detailsOpen && activeConversation && meId !== null && (
+        {/* Details — desktop right panel (toggled by header click). On
+         *  mobile we open the same content as a Sheet so it overlays
+         *  the thread instead of stealing column space. */}
+        {detailsOpen && activeConversation && meId !== null && isMobile && (
+          <Sheet
+            open={detailsOpen}
+            onOpenChange={(o) => setDetailsOpen(o)}
+          >
+            <SheetContent
+              side="right"
+              className="w-full gap-0 sm:max-w-md"
+            >
+              <SheetHeader className="border-b border-border">
+                <SheetTitle className="text-sm font-semibold tracking-tight">
+                  {t('messages.details.title')}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
+                <ConversationDetailsContent
+                  conversation={activeConversation}
+                  messages={messages}
+                  participants={participants}
+                  meId={meId}
+                  onRefreshConversation={async () => {
+                    try {
+                      const res =
+                        await apiClient.api.messagingConversationsList()
+                      setConversations(res.data)
+                    } catch {
+                      // non-fatal — WS will eventually catch us up
+                    }
+                  }}
+                  onAfterLeave={() => {
+                    setConversations((prev) =>
+                      prev.filter((c) => c.id !== activeConversation.id)
+                    )
+                    setActiveId(null)
+                    setDetailsOpen(false)
+                  }}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+        {detailsOpen && activeConversation && meId !== null && !isMobile && (
           <div className="flex min-w-0 min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
             <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
               <h2 className="text-sm font-semibold tracking-tight">
@@ -774,9 +897,9 @@ function ConversationListSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <li
           key={i}
-          className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5 px-3 py-2.5"
+          className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3 md:gap-2.5 md:px-3 md:py-2.5"
         >
-          <Skeleton className="size-8 rounded-full" />
+          <Skeleton className="size-10 rounded-full md:size-8" />
           <div className="flex min-w-0 flex-col gap-1.5">
             <Skeleton className="h-3.5 w-32 max-w-full" />
             <Skeleton className="h-3 w-44 max-w-full" />
@@ -791,12 +914,14 @@ function ConversationListSkeleton() {
 function EmptyConversations() {
   const { t } = useTranslation()
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-      <MessageSquarePlus
-        className="size-8 text-muted-foreground"
+    <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+      <span
         aria-hidden="true"
-      />
-      <p className="text-sm text-muted-foreground">
+        className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground"
+      >
+        <MessageSquarePlus className="size-5" />
+      </span>
+      <p className="text-sm font-medium text-foreground">
         {t('messages.empty.noConversations')}
       </p>
     </div>

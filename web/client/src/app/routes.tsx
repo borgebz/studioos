@@ -64,6 +64,14 @@ import { EventsListPage } from '@/app/pages/events/EventsListPage'
 import { EventDetailPage } from '@/app/pages/events/EventDetailPage'
 import { EventFormPage } from '@/app/pages/events/EventFormPage'
 import { EventPostFormPage } from '@/app/pages/events/EventPostFormPage'
+import { ModalitiesListPage } from '@/app/pages/modalities/ModalitiesListPage'
+import { ModalityFormPage } from '@/app/pages/modalities/ModalityFormPage'
+import { StudiosListPage } from '@/app/pages/studios/StudiosListPage'
+import { StudioFormPage } from '@/app/pages/studios/StudioFormPage'
+import { ClassesListPage } from '@/app/pages/classes/ClassesListPage'
+import { ClassFormPage } from '@/app/pages/classes/ClassFormPage'
+import { EnrollmentPeriodsListPage } from '@/app/pages/enrollment-periods/EnrollmentPeriodsListPage'
+import { EnrollmentPeriodFormPage } from '@/app/pages/enrollment-periods/EnrollmentPeriodFormPage'
 
 export function AppRoutes() {
   return (
@@ -326,6 +334,102 @@ export function AppRoutes() {
         element={
           <ProtectedRoute permission="events.change_eventpost">
             <EventPostFormPage mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.modalities}
+        element={
+          <ProtectedRoute permission="modality.view_modality">
+            <ModalitiesListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.modalityCreate}
+        element={
+          <ProtectedRoute permission="modality.add_modality">
+            <ModalityFormPage mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.modalityEdit}
+        element={
+          <ProtectedRoute permission="modality.change_modality">
+            <ModalityFormPage mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.studios}
+        element={
+          <ProtectedRoute permission="studios.view_studio">
+            <StudiosListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.studioCreate}
+        element={
+          <ProtectedRoute permission="studios.add_studio">
+            <StudioFormPage mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.studioEdit}
+        element={
+          <ProtectedRoute permission="studios.change_studio">
+            <StudioFormPage mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.classes}
+        element={
+          <ProtectedRoute permission="classes.view_classe">
+            <ClassesListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.classCreate}
+        element={
+          <ProtectedRoute permission="classes.can_manage_classes">
+            <ClassFormPage mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.classEdit}
+        element={
+          <ProtectedRoute permission="classes.view_classe">
+            <ClassFormPage mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.enrollmentPeriods}
+        element={
+          <ProtectedRoute permission="enrollments.can_manage_periods">
+            <EnrollmentPeriodsListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.enrollmentPeriodCreate}
+        element={
+          <ProtectedRoute permission="enrollments.can_manage_periods">
+            <EnrollmentPeriodFormPage mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.enrollmentPeriodEdit}
+        element={
+          <ProtectedRoute permission="enrollments.can_manage_periods">
+            <EnrollmentPeriodFormPage mode="edit" />
           </ProtectedRoute>
         }
       />

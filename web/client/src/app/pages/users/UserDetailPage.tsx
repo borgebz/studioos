@@ -31,6 +31,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
@@ -298,10 +304,18 @@ function OverviewTab({
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
       <div className="flex flex-col gap-6">
         <CardSection title={t('users.detail.identityCard')}>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <Row label={t('users.edit.firstName')} value={user.first_name} />
-            <Row label={t('users.edit.lastName')} value={user.last_name} />
-            <Row label={t('users.edit.email')} value={user.email} />
+          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 text-sm">
+            <Row
+              label={t('users.edit.firstName')}
+              value={user.first_name}
+              stacked
+            />
+            <Row
+              label={t('users.edit.lastName')}
+              value={user.last_name}
+              stacked
+            />
+            <Row label={t('users.edit.email')} value={user.email} stacked />
             <Row
               label={t('users.edit.phone')}
               value={
@@ -310,10 +324,12 @@ function OverviewTab({
                   .join(' ')
                   .trim() || null
               }
+              stacked
             />
             <Row
               label={t('users.edit.language')}
-              value={user.language ?? null}
+              value={user.language ? t(`lang.${user.language}`) : null}
+              stacked
             />
           </dl>
         </CardSection>
@@ -348,7 +364,6 @@ function OverviewTab({
                   : t('users.detail.never')
               }
             />
-            <Row label={t('users.edit.userId')} value={String(user.id)} mono />
           </dl>
         </CardSection>
       </div>
@@ -360,11 +375,25 @@ function Row({
   label,
   value,
   mono = false,
+  stacked = false,
 }: {
   label: string
   value: string | null | undefined
   mono?: boolean
+  stacked?: boolean
 }) {
+  if (stacked) {
+    return (
+      <div className="flex flex-col gap-1 min-w-0">
+        <dt className="text-muted-foreground text-xs">{label}</dt>
+        <dd
+          className={cn('text-foreground truncate', mono && 'font-mono')}
+        >
+          {value || '—'}
+        </dd>
+      </div>
+    )
+  }
   return (
     <div className="flex justify-between gap-4">
       <dt className="text-muted-foreground shrink-0">{label}</dt>
@@ -619,87 +648,123 @@ function BillingTab({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      {entries.length > 0 && (
-        <CardSection
-          title={`${t('users.detail.billing.entries')} · ${entries.length}`}
-        >
-          <ul className="divide-y divide-border">
-            {entries.map((e) => (
-              <li
-                key={e.id}
-                className="flex items-center justify-between py-3 text-sm gap-3"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <Receipt className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="min-w-0">
-                    <div className="font-medium text-foreground truncate">
-                      {e.source_type}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {e.created_at
-                        ? format(new Date(e.created_at), 'd MMM yyyy', {
-                            locale: dateLocale,
-                          })
-                        : ''}
+    <TooltipProvider delayDuration={200}>
+      <div className="flex flex-col gap-6">
+        {entries.length > 0 && (
+          <CardSection
+            title={`${t('users.detail.billing.entries')} · ${entries.length}`}
+          >
+            <ul className="divide-y divide-border">
+              {entries.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex items-center justify-between py-3 text-sm gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Receipt className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <TruncatedText
+                        text={e.source_type}
+                        className="font-medium text-foreground"
+                      />
+                      <div className="text-xs text-muted-foreground">
+                        {e.created_at
+                          ? format(new Date(e.created_at), 'd MMM yyyy', {
+                              locale: dateLocale,
+                            })
+                          : ''}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-foreground tabular-nums">
-                    {t('common.currencySymbol')}
-                    {e.amount_due}
-                  </span>
-                  <Badge variant="outline" className="font-normal">
-                    {e.status}
-                  </Badge>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </CardSection>
-      )}
+                  <div className="flex items-center gap-3">
+                    <span className="text-foreground tabular-nums">
+                      {t('common.currencySymbol')}
+                      {e.amount_due}
+                    </span>
+                    <Badge variant="outline" className="font-normal">
+                      {e.status}
+                    </Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardSection>
+        )}
 
-      {fines.length > 0 && (
-        <CardSection
-          title={`${t('users.detail.billing.fines')} · ${fines.length}`}
-        >
-          <ul className="divide-y divide-border">
-            {fines.map((f) => (
-              <li
-                key={f.id}
-                className="flex items-center justify-between py-3 text-sm gap-3"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <ClipboardList className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="min-w-0">
-                    <div className="font-medium text-foreground truncate">
-                      {f.reason}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {f.created_at
-                        ? format(new Date(f.created_at), 'd MMM yyyy', {
-                            locale: dateLocale,
-                          })
-                        : ''}
+        {fines.length > 0 && (
+          <CardSection
+            title={`${t('users.detail.billing.fines')} · ${fines.length}`}
+          >
+            <ul className="divide-y divide-border">
+              {fines.map((f) => (
+                <li
+                  key={f.id}
+                  className="flex items-center justify-between py-3 text-sm gap-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ClipboardList className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <TruncatedText
+                        text={f.reason}
+                        className="font-medium text-foreground"
+                      />
+                      <div className="text-xs text-muted-foreground">
+                        {f.created_at
+                          ? format(new Date(f.created_at), 'd MMM yyyy', {
+                              locale: dateLocale,
+                            })
+                          : ''}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-foreground tabular-nums">
-                    {t('common.currencySymbol')}
-                    {f.amount}
-                  </span>
-                  <Badge variant="outline" className="font-normal">
-                    {f.status}
-                  </Badge>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </CardSection>
-      )}
+                  <div className="flex items-center gap-3">
+                    <span className="text-foreground tabular-nums">
+                      {t('common.currencySymbol')}
+                      {f.amount}
+                    </span>
+                    <Badge variant="outline" className="font-normal">
+                      {f.status}
+                    </Badge>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardSection>
+        )}
+      </div>
+    </TooltipProvider>
+  )
+}
+
+function TruncatedText({
+  text,
+  className,
+}: {
+  text: string | null | undefined
+  className?: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [overflowing, setOverflowing] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    setOverflowing(el.scrollWidth > el.clientWidth)
+  }, [text])
+
+  const content = (
+    <div ref={ref} className={cn('truncate', className)}>
+      {text || '—'}
     </div>
+  )
+
+  if (!overflowing || !text) return content
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{content}</TooltipTrigger>
+      <TooltipContent side="top">{text}</TooltipContent>
+    </Tooltip>
   )
 }
 

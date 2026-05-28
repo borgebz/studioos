@@ -75,6 +75,7 @@ import {
   eventDateLine,
 } from './events-helpers'
 import { toast } from 'sonner'
+import { parseApiError } from '@/lib/api-errors'
 
 interface EventDetailAug extends EventDetail {
   interest_count?: number
@@ -203,7 +204,7 @@ export function EventDetailPage() {
     try {
       if (next) await apiClient.api.eventsInterestsCreate(event.id)
       else await apiClient.api.eventsInterestsMeDestroy(event.id)
-    } catch {
+    } catch (err) {
       // rollback
       setEvent((prev) =>
         prev
@@ -217,7 +218,7 @@ export function EventDetailPage() {
             }
           : prev
       )
-      toast.error(t('common.unexpectedError'))
+      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
     }
   }
 

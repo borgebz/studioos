@@ -19,7 +19,6 @@ import { ConversationKindEnum } from '@/api/studioos-api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 
@@ -121,11 +120,11 @@ export function ConversationDetailsContent({
   }
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+    <div className="flex-1 min-h-0 overflow-y-auto px-5 py-5 sm:px-6">
       {isGroup && (
-        <>
+        <Section>
           <SectionLabel>{t('messages.details.groupName')}</SectionLabel>
-          <div className="mt-2">
+          <div className="mt-2.5">
             {renaming ? (
               <div className="flex items-center gap-2">
                 <Input
@@ -167,89 +166,91 @@ export function ConversationDetailsContent({
               </div>
             )}
           </div>
-
-          <Separator className="my-5" />
-        </>
+        </Section>
       )}
 
-      <div className="flex items-center justify-between">
-        <SectionLabel>
-          {isGroup
-            ? t('messages.details.membersCount', {
-                count: conversation.participant_ids.length,
-              })
-            : t('messages.details.about')}
-        </SectionLabel>
-        {isGroup && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-7 text-muted-foreground"
-            onClick={() => setAdding(true)}
-            aria-label={t('messages.details.addMember')}
-          >
-            <Plus className="size-3.5" />
-          </Button>
+      <Section>
+        <div className="flex items-center justify-between">
+          <SectionLabel>
+            {isGroup
+              ? t('messages.details.membersCount', {
+                  count: conversation.participant_ids.length,
+                })
+              : t('messages.details.about')}
+          </SectionLabel>
+          {isGroup && isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 text-muted-foreground"
+              onClick={() => setAdding(true)}
+              aria-label={t('messages.details.addMember')}
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          )}
+        </div>
+
+        {adding && isGroup && (
+          <AddMemberPicker
+            conversation={conversation}
+            onDone={async () => {
+              setAdding(false)
+              await onRefreshConversation?.()
+            }}
+            onCancel={() => setAdding(false)}
+          />
         )}
-      </div>
 
-      {adding && isGroup && (
-        <AddMemberPicker
-          conversation={conversation}
-          onDone={async () => {
-            setAdding(false)
-            await onRefreshConversation?.()
-          }}
-          onCancel={() => setAdding(false)}
-        />
-      )}
-
-      <div className="mt-3 space-y-3">
-        {otherParticipants.map((p) => {
-          const name = participantName(p, t, p.id)
-          return (
-            <div key={p.id} className="flex items-center gap-3">
-              <Avatar size="default">
-                {p.photoUrl && <AvatarImage src={p.photoUrl} alt={name} />}
-                <AvatarFallback>{getInitials(name)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-foreground">
-                  {name}
-                </div>
-                {!p.hasProfile && (
-                  <div className="truncate text-xs text-muted-foreground">
-                    {t('messages.noProfileYet')}
+        <ul className="mt-3 flex flex-col gap-0.5">
+          {otherParticipants.map((p) => {
+            const name = participantName(p, t, p.id)
+            return (
+              <li
+                key={p.id}
+                className="group/member flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-accent/40"
+              >
+                <Avatar size="default">
+                  {p.photoUrl && <AvatarImage src={p.photoUrl} alt={name} />}
+                  <AvatarFallback>{getInitials(name)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-foreground">
+                    {name}
                   </div>
+                  {!p.hasProfile && (
+                    <div className="truncate text-xs text-muted-foreground">
+                      {t('messages.noProfileYet')}
+                    </div>
+                  )}
+                </div>
+                {isGroup && isAdmin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-muted-foreground opacity-0 transition-opacity group-hover/member:opacity-100 focus-visible:opacity-100"
+                    onClick={() => void handleRemove(p.id)}
+                    aria-label={t('messages.details.removeMember')}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
                 )}
-              </div>
-              {isGroup && isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7 text-muted-foreground"
-                  onClick={() => void handleRemove(p.id)}
-                  aria-label={t('messages.details.removeMember')}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              )}
-            </div>
-          )
-        })}
-      </div>
+              </li>
+            )
+          })}
+        </ul>
+      </Section>
 
       {pinned.length > 0 && (
-        <>
-          <Separator className="my-5" />
+        <Section>
           <SectionLabel>
             {t('messages.details.pinnedCount', { count: pinned.length })}
           </SectionLabel>
-          <div className="mt-3 space-y-2">
+          <ul className="mt-3 flex flex-col gap-1.5">
             {pinned.map((m) => (
-              <div
+              <li
                 key={m.id}
-                className="flex items-start gap-2 rounded-md border border-border bg-background p-2.5 text-xs"
+                className="flex items-start gap-2 rounded-md border border-border/70 bg-muted/30 px-2.5 py-2 text-xs"
               >
                 <Pin
                   aria-hidden="true"
@@ -258,41 +259,48 @@ export function ConversationDetailsContent({
                 <p className="line-clamp-3 text-foreground/80">
                   {m.body || m.original_filename || t('messages.attachment')}
                 </p>
-              </div>
+              </li>
             ))}
-          </div>
-        </>
+          </ul>
+        </Section>
       )}
 
       {files.length > 0 && (
-        <>
-          <Separator className="my-5" />
+        <Section>
           <SectionLabel>
             {t('messages.details.filesCount', { count: files.length })}
           </SectionLabel>
-          <div className="mt-3 space-y-2">
+          <ul className="mt-3 flex flex-col gap-1.5">
             {files.map((m) => (
-              <FileChip key={m.id} message={m} />
+              <li key={m.id}>
+                <FileChip message={m} />
+              </li>
             ))}
-          </div>
-        </>
+          </ul>
+        </Section>
       )}
 
       {isGroup && (
-        <>
-          <Separator className="my-5" />
+        <div className="mt-8 border-t border-border/60 pt-5">
           <Button
-            variant="outline"
-            className="w-full text-destructive hover:text-destructive"
+            variant="ghost"
+            className="w-full justify-center text-destructive hover:bg-destructive/8 hover:text-destructive"
             onClick={() => void handleLeave()}
           >
             <LogOut className="size-4" />
             {t('messages.details.leave')}
           </Button>
-        </>
+        </div>
       )}
     </div>
   )
+}
+
+/** Visual block grouping inside the details panel. Uses generous bottom
+ *  margin between sections instead of explicit Separator rules so the
+ *  surface reads as paragraphs of structured content. */
+function Section({ children }: { children: React.ReactNode }) {
+  return <section className="mb-8 last:mb-0">{children}</section>
 }
 
 function AddMemberPicker({
@@ -400,6 +408,7 @@ function AddMemberPicker({
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
+  // Sentence case per UI guidelines — never uppercase app labels.
   return (
     <div className="text-xs font-medium text-muted-foreground">{children}</div>
   )

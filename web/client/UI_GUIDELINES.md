@@ -1564,3 +1564,44 @@ The table below mirrors those files. **Do not add a "visible to: direction / coo
 ### `hidePermission`
 
 Sidebar groups in `nav-config.ts` may declare `hidePermission` to disappear when the user holds that permission. The current usage swaps the student-facing "Payments" group out for the admin-facing "Billing" group based on whether the user can `billing.can_cancel_billingentry`. Use sparingly — most gating should be additive (`permission`), not subtractive.
+
+---
+
+## 29. Data Display — Never Expose Internal IDs
+
+Database primary keys and internal identifiers are **implementation details**, not user-facing information. Users don't think about row IDs — they think about the thing the row represents (the student, the coaching, the listing). Surfacing a raw `id` (or `uuid`, `pk`, `internal_ref`) clutters the UI, leaks schema details, and forces users to mentally translate numbers into meaning.
+
+### The rule
+
+- **Never render a model's primary key as a labeled field** in detail pages, sidebars, summary cards, tables, or any other view a non-developer touches.
+- This applies to integer PKs (`User #3`, `Coaching #142`), UUIDs (`b3f2…`), and any equivalent surrogate identifier that has no business meaning.
+- The same rule applies to "raw" enum/code values that have a translated label — show `Português`, not `pt`; show `Em revisão`, not `IN_REVIEW`.
+
+### What to show instead
+
+| Instead of | Show |
+|---|---|
+| `ID do utilizador: 3` | (remove the row entirely) |
+| `Coaching #142` in the page header | The coaching's title or `modality · date · time` |
+| `Referência: #12` on enrollment review | (only if "#12" is a real human-facing reference the school prints on receipts — see "Human-facing references" below) |
+| `Status: PENDING` | `Estado: Pendente` |
+| `Idioma: pt` | `Idioma: Português` |
+
+If you find yourself reaching for the ID because nothing else uniquely identifies the row, that's a signal the entity is missing a proper display name — fix that first (add a `name`, `title`, `label`, or composed `__str__`) rather than papering over it with the PK.
+
+### Human-facing references (allowed)
+
+Some entities legitimately carry a short, human-facing reference number that the school uses on receipts, in emails, or over the phone — e.g. an invoice number (`FT 2026/0042`), a printed enrollment voucher, a ticket code. These are **business identifiers**, not database PKs, and they're fine to show. The test is: would a member of the school staff read this number out loud to a parent? If yes, it's a reference. If no, it's an ID and it doesn't belong in the UI.
+
+When in doubt, omit. A missing piece of information is recoverable; a UI that reads like a database admin tool is not.
+
+### Where this rule applies (current debt)
+
+- `UserDetailPage` "Metadados" card currently shows `ID do utilizador: 3` — remove the row.
+- Any "Resumo" / "Metadata" sidebar that includes a `#id` line should drop it unless the value is a real human reference.
+
+### Where this rule does **not** apply
+
+- URL paths: `/users/:id`, `/coachings/:id/edit` — URLs are addresses, not display content. Routing by ID is fine.
+- `data-*` attributes, `key` props, dev tooling, and the Design System pages — these are dev surfaces, not user surfaces.
+- Error messages aimed at the developer ("entity not found, id=3") logged to the console — but never surfaced verbatim to the user via toast.

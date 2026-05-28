@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { Heart, MapPin, Plus, Ticket } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import type { EventList } from '@/api/studioos-api'
@@ -13,6 +14,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { Authorized, usePermissions } from '@/auth/permissions'
 import { paths } from '@/app/paths'
 import { cn } from '@/lib/utils'
+import { parseApiError } from '@/lib/api-errors'
 import {
   EventCover,
   EventStateBadge,
@@ -140,7 +142,7 @@ export function EventsListPage() {
     try {
       if (next) await apiClient.api.eventsInterestsCreate(e.id)
       else await apiClient.api.eventsInterestsMeDestroy(e.id)
-    } catch {
+    } catch (err) {
       setItems((prev) =>
         prev.map((it) =>
           it.id === e.id
@@ -155,6 +157,7 @@ export function EventsListPage() {
             : it
         )
       )
+      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
     }
   }
 

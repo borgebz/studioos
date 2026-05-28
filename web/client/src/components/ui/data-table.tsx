@@ -63,8 +63,29 @@ export function getSelectionColumn<TData>(): ColumnDef<TData, unknown> {
 // Shared pieces
 // ---------------------------------------------------------------------------
 
-const TH_CLASS =
-  'text-muted-foreground h-10 px-3 text-left align-middle text-xs font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
+const TH_BASE =
+  'text-muted-foreground h-10 px-3 align-middle text-xs font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]'
+
+/**
+ * Resolve a column's horizontal alignment. Columns can opt into right or
+ * centre alignment via `meta.align`. As a small ergonomic default, the
+ * built-in actions column (id `actions`) right-aligns automatically — that
+ * matches the Saleor pattern of row actions hugging the table's right edge.
+ */
+function resolveAlign<TData>(
+  column: Header<TData, unknown>['column']
+): 'left' | 'right' | 'center' {
+  const meta = column.columnDef.meta
+  if (meta?.align) return meta.align
+  if (column.id === 'actions') return 'right'
+  return 'left'
+}
+
+function alignClass(align: 'left' | 'right' | 'center'): string {
+  if (align === 'right') return 'text-right'
+  if (align === 'center') return 'text-center'
+  return 'text-left'
+}
 
 /**
  * Renders a header cell's label alongside its filter icon (when
@@ -82,9 +103,22 @@ function HeaderCellContent<TData>({
     header.getContext()
   )
   const meta = header.column.columnDef.meta
-  if (!meta?.filter) return <>{content}</>
+  const align = resolveAlign(header.column)
+  if (!meta?.filter) {
+    if (align === 'left') return <>{content}</>
+    return (
+      <div
+        className={cn(
+          'flex items-center',
+          align === 'right' && 'justify-end',
+          align === 'center' && 'justify-center'
+        )}
+      >
+        <span className="min-w-0 truncate">{content}</span>
+      </div>
+    )
+  }
 
-  const align = meta.align ?? 'left'
   return (
     <div
       className={cn(
@@ -117,7 +151,7 @@ function ColGroup<TData>({ table }: { table: TanstackTable<TData> }) {
 }
 
 const STICKY_TH_CLASS = cn(
-  TH_CLASS,
+  TH_BASE,
   // The header must be fully opaque so scrolled rows don't bleed through —
   // sticky positioning keeps the th painted, but a translucent background
   // would still let the underlying rows show. Inset shadow (not border) keeps
@@ -218,11 +252,14 @@ export function DataTable<TData>({
           key={row.id}
           data-state={row.getIsSelected() ? 'selected' : undefined}
         >
-          {row.getVisibleCells().map((cell) => (
-            <TableCell key={cell.id}>
-              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </TableCell>
-          ))}
+          {row.getVisibleCells().map((cell) => {
+            const align = resolveAlign(cell.column)
+            return (
+              <TableCell key={cell.id} className={alignClass(align)}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            )
+          })}
         </TableRow>
       ))}
       {loadingMoreRows}
@@ -286,15 +323,18 @@ export function DataTable<TData>({
             <thead>
               {table.getHeaderGroups().map((hg) => (
                 <tr key={hg.id}>
-                  {hg.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      colSpan={header.colSpan}
-                      className={STICKY_TH_CLASS}
-                    >
-                      <HeaderCellContent header={header} />
-                    </th>
-                  ))}
+                  {hg.headers.map((header) => {
+                    const align = resolveAlign(header.column)
+                    return (
+                      <th
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        className={cn(STICKY_TH_CLASS, alignClass(align))}
+                      >
+                        <HeaderCellContent header={header} />
+                      </th>
+                    )
+                  })}
                 </tr>
               ))}
             </thead>
@@ -321,18 +361,24 @@ export function DataTable<TData>({
         <TableHeader className="bg-muted/40">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-transparent">
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  colSpan={header.colSpan}
-                  style={{
-                    width:
-                      header.getSize() !== 150 ? header.getSize() : undefined,
-                  }}
-                >
-                  <HeaderCellContent header={header} />
-                </TableHead>
-              ))}
+              {headerGroup.headers.map((header) => {
+                const align = resolveAlign(header.column)
+                return (
+                  <TableHead
+                    key={header.id}
+                    colSpan={header.colSpan}
+                    className={alignClass(align)}
+                    style={{
+                      width:
+                        header.getSize() !== 150
+                          ? header.getSize()
+                          : undefined,
+                    }}
+                  >
+                    <HeaderCellContent header={header} />
+                  </TableHead>
+                )
+              })}
             </TableRow>
           ))}
         </TableHeader>

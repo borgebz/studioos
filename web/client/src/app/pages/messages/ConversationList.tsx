@@ -31,8 +31,9 @@ export function ConversationList({
   const { t } = useTranslation()
   return (
     <ul className="flex flex-col">
-      {conversations.map((c) => {
+      {conversations.map((c, i) => {
         const isActive = c.id === activeId
+        const isLast = i === conversations.length - 1
         const others = c.participant_ids.filter((id) => id !== meId)
         const primary = others[0] !== undefined ? participants[others[0]] : null
         const label = formatLabel(c, participants, meId, t)
@@ -45,28 +46,36 @@ export function ConversationList({
               type="button"
               onClick={() => onSelect(c.id)}
               className={cn(
-                'group relative grid w-full grid-cols-[auto_1fr_auto] items-center gap-2.5 px-3 py-2.5 text-left transition-colors',
+                // Bigger touch targets + breathing room on mobile, tighter on
+                // desktop where the rail is a narrow 280px column.
+                'group relative grid w-full grid-cols-[auto_1fr_auto] items-start gap-3 px-4 py-3 text-left transition-colors md:items-center md:gap-2.5 md:px-3 md:py-2.5',
                 isActive
-                  ? 'bg-accent text-accent-foreground'
-                  : 'hover:bg-accent/40'
+                  ? 'bg-primary/8 text-foreground'
+                  : 'hover:bg-accent/40 active:bg-accent/60'
               )}
               aria-current={isActive ? 'true' : undefined}
             >
               {isActive && (
                 <span
                   aria-hidden="true"
-                  className="absolute inset-y-2 left-0 w-0.5 rounded-r bg-primary"
+                  className="absolute inset-y-2 left-0 w-[3px] rounded-r-full bg-primary"
                 />
               )}
               {c.kind === ConversationKindEnum.Group ? (
                 <span
                   aria-hidden="true"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary md:size-9"
                 >
-                  <Users className="size-4" />
+                  <Users className="size-5 md:size-4" />
                 </span>
               ) : (
-                <Avatar size="default">
+                <Avatar
+                  // On mobile we want a slightly larger avatar to match the
+                  // row's increased vertical rhythm. Override via className
+                  // since the variant size jumps from 32px → 40px in one step.
+                  size="default"
+                  className="size-10 md:size-8"
+                >
                   {primary?.photoUrl && (
                     <AvatarImage src={primary.photoUrl} alt={label} />
                   )}
@@ -114,6 +123,14 @@ export function ConversationList({
                 )}
               </div>
             </button>
+            {/* Hairline divider between rows — skipped on the last row and
+             *  on the active row (the row tint already isolates it). */}
+            {!isLast && !isActive && (
+              <div
+                aria-hidden="true"
+                className="mx-4 h-px bg-border/60 md:mx-3"
+              />
+            )}
           </li>
         )
       })}

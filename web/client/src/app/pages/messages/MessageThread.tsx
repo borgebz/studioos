@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { pt } from 'date-fns/locale/pt'
 import {
+  ChevronLeft,
   Download,
   Eye,
   MoreHorizontal,
@@ -70,6 +71,8 @@ interface MessageThreadProps {
   onTyping: () => void
   /** Fired on send / blur / unmount so peers stop showing my bubble. */
   onTypingStopped: () => void
+  /** Mobile-only: when defined, header renders a back arrow returning to inbox. */
+  onBack?: () => void
 }
 
 export function MessageThread({
@@ -89,6 +92,7 @@ export function MessageThread({
   typingUserIds,
   onTyping,
   onTypingStopped,
+  onBack,
 }: MessageThreadProps) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
@@ -153,43 +157,56 @@ export function MessageThread({
 
   return (
     <>
-      {/* Header — click toggles in-grid details panel */}
-      <button
-        type="button"
-        onClick={onToggleDetails}
-        className={cn(
-          'flex shrink-0 items-center gap-3 border-b border-border px-6 py-4 text-left transition-colors hover:bg-accent/40',
-          detailsOpen && 'bg-accent/30'
-        )}
-        aria-label={t('messages.openDetails')}
-        aria-expanded={detailsOpen}
-      >
-        {conversation.kind === 'group' ? (
-          <span
-            aria-hidden="true"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+      {/* Header — back arrow (mobile only) + clickable strip that toggles details */}
+      <div className="flex shrink-0 items-center border-b border-border">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex size-11 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground"
+            aria-label={t('common.back')}
           >
-            <Users className="size-5" />
-          </span>
-        ) : (
-          <Avatar size="lg">
-            {primary?.photoUrl && (
-              <AvatarImage src={primary.photoUrl} alt={headerLabel} />
-            )}
-            <AvatarFallback>{getInitials(headerLabel)}</AvatarFallback>
-          </Avatar>
+            <ChevronLeft className="size-5" />
+          </button>
         )}
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-base font-semibold tracking-tight text-foreground">
-            {headerLabel}
-          </div>
-          {headerSub && (
-            <div className="truncate text-xs text-muted-foreground">
-              {headerSub}
-            </div>
+        <button
+          type="button"
+          onClick={onToggleDetails}
+          className={cn(
+            'flex flex-1 items-center gap-3 text-left transition-colors hover:bg-accent/40',
+            onBack ? 'px-3 py-3' : 'px-6 py-4',
+            detailsOpen && 'bg-accent/30'
           )}
-        </div>
-      </button>
+          aria-label={t('messages.openDetails')}
+          aria-expanded={detailsOpen}
+        >
+          {conversation.kind === 'group' ? (
+            <span
+              aria-hidden="true"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+            >
+              <Users className="size-5" />
+            </span>
+          ) : (
+            <Avatar size="lg">
+              {primary?.photoUrl && (
+                <AvatarImage src={primary.photoUrl} alt={headerLabel} />
+              )}
+              <AvatarFallback>{getInitials(headerLabel)}</AvatarFallback>
+            </Avatar>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-base font-semibold tracking-tight text-foreground">
+              {headerLabel}
+            </div>
+            {headerSub && (
+              <div className="truncate text-xs text-muted-foreground">
+                {headerSub}
+              </div>
+            )}
+          </div>
+        </button>
+      </div>
 
       {/* Pinned bar */}
       {pinnedMessages.length > 0 && (
@@ -209,10 +226,12 @@ export function MessageThread({
         </div>
       )}
 
-      {/* Messages */}
+      {/* Messages — paper canvas. The .grain class layers a subtle dot
+       *  texture behind the content so messages feel like they sit on
+       *  stationery instead of a flat panel. */}
       <div
         ref={scrollRef}
-        className="relative flex-1 min-h-0 overflow-y-auto bg-muted/40 px-6 py-5"
+        className="grain relative flex-1 min-h-0 overflow-y-auto bg-muted/30 px-6 py-5"
       >
         {loading ? (
           <ThreadSkeleton />

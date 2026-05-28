@@ -1,7 +1,10 @@
 import {
+  Building2,
   CalendarDays,
+  CalendarRange,
   ClipboardCheck,
   CreditCard,
+  GraduationCap,
   Home,
   Inbox,
   MessageCircle,
@@ -9,8 +12,10 @@ import {
   Package,
   Palette,
   Receipt,
+  Settings,
   ShieldAlert,
   ShoppingBag,
+  Sparkles,
   Store,
   Ticket,
   Tag,
@@ -223,6 +228,38 @@ export const navConfig: NavEntryConfig[] = [
         labelKey: 'nav.myPenalties',
         icon: TriangleAlert,
         permission: 'billing.view_fine',
+      },
+    ],
+  },
+
+  // -- School Setup (admin) --
+  {
+    labelKey: 'nav.schoolSetup',
+    icon: Settings,
+    children: [
+      {
+        to: paths.modalities,
+        labelKey: 'nav.modalities',
+        icon: Sparkles,
+        permission: 'modality.view_modality',
+      },
+      {
+        to: paths.studios,
+        labelKey: 'nav.studios',
+        icon: Building2,
+        permission: 'studios.view_studio',
+      },
+      {
+        to: paths.classes,
+        labelKey: 'nav.classes',
+        icon: GraduationCap,
+        permission: 'classes.view_classe',
+      },
+      {
+        to: paths.enrollmentPeriods,
+        labelKey: 'nav.enrollmentPeriods',
+        icon: CalendarRange,
+        permission: 'enrollments.can_manage_periods',
       },
     ],
   },

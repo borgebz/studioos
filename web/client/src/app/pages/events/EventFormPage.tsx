@@ -36,11 +36,7 @@ import { RichTextEditor } from '@/components/shared/RichTextEditor'
 import { paths } from '@/app/paths'
 import { cn } from '@/lib/utils'
 import { eventFormSchema, type EventFormValues } from './event-schema'
-import {
-  EventStateBadge,
-  EventVisibilityBadge,
-  EventCover,
-} from './events-helpers'
+import { EventStateBadge, EventVisibilityBadge } from './events-helpers'
 import { usePermissions } from '@/auth/permissions'
 
 interface EventFormPageProps {
@@ -326,15 +322,10 @@ export function EventFormPage({ mode }: EventFormPageProps) {
                     )}
                   </div>
                   <div>
-                    <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                      <Label htmlFor="description">
-                        {t('events.form.shortDescription')}{' '}
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <span className="text-xs text-muted-foreground">
-                        {t('events.form.shortDescriptionHint')}
-                      </span>
-                    </div>
+                    <Label htmlFor="description" className="mb-1.5">
+                      {t('events.form.shortDescription')}{' '}
+                      <span className="text-destructive">*</span>
+                    </Label>
                     <Textarea
                       id="description"
                       rows={2}
@@ -655,29 +646,74 @@ function CoverUpload({
   const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
+  const pick = (file: File | undefined) => {
+    if (file) onPick(file)
+  }
   return (
     <div className="space-y-3">
-      <div className="relative overflow-hidden rounded-md border border-border bg-muted/30">
-        {url ? (
+      {url ? (
+        <div className="relative overflow-hidden rounded-md border border-border bg-muted/30">
           <img
             src={url}
             alt="cover"
             className="aspect-[16/9] w-full object-cover"
           />
-        ) : (
-          <EventCover src={null} alt="" aspect="aspect-[16/9]" />
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => inputRef.current?.click()}
+        </div>
+      ) : (
+        <div
+          className="flex aspect-[16/9] w-full flex-col items-center justify-center rounded-md border-2 border-dashed border-border bg-muted/10 p-6 text-center transition-colors hover:border-primary/40 hover:bg-primary/5"
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.currentTarget.classList.add('border-primary/40', 'bg-primary/5')
+          }}
+          onDragLeave={(e) => {
+            e.currentTarget.classList.remove(
+              'border-primary/40',
+              'bg-primary/5'
+            )
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            e.currentTarget.classList.remove(
+              'border-primary/40',
+              'bg-primary/5'
+            )
+            pick(e.dataTransfer.files?.[0])
+          }}
         >
-          <Upload className="size-4" />
-          {url ? t('events.form.coverReplace') : t('events.form.coverUpload')}
-        </Button>
+          <ImagePlus className="mb-2 size-8 text-muted-foreground" />
+          <p className="text-sm">
+            {t('events.form.coverDropzone')}{' '}
+            <label className="cursor-pointer font-medium text-primary hover:underline">
+              {t('events.form.coverBrowse')}
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  pick(e.target.files?.[0])
+                  e.target.value = ''
+                }}
+              />
+            </label>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t('events.form.coverHint')}
+          </p>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {url && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => inputRef.current?.click()}
+          >
+            <Upload className="size-4" />
+            {t('events.form.coverReplace')}
+          </Button>
+        )}
         <Button
           type="button"
           variant="outline"
