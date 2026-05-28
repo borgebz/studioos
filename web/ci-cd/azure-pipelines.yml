@@ -19,9 +19,12 @@ pr:
 
 stages:
   # =============================================================================
-  # CI — runs on every push and PR
+  # CI — runs on every PR and on pushes to non-main branches.
+  # Skipped on direct pushes to main: tests already ran when the PR was opened,
+  # and admin direct-merges to main bypass them intentionally during iteration.
   # =============================================================================
   - stage: Test
+    condition: ne(variables['Build.SourceBranch'], 'refs/heads/main')
     displayName: "Test"
     jobs:
       - job: Build
