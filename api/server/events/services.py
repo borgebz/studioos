@@ -3,6 +3,7 @@ import logging
 from collections import defaultdict
 
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Exists, OuterRef, Q
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, ValidationError
 
@@ -115,7 +116,9 @@ def get_event_post(*, event, post_id):
 
 def get_event_comment(*, event, comment_id):
     try:
-        return EventComment.objects.get(event=event, pk=comment_id)
+        return EventComment.objects.select_related(
+            "owner", "owner__profile"
+        ).get(event=event, pk=comment_id)
     except EventComment.DoesNotExist:
         raise AppNotFound("EventCommentNotFound")
 
@@ -157,13 +160,34 @@ def create_event(*, created_by=None, **data):
     return event
 
 
-def list_events(*, user):
-    if user.is_authenticated and user.has_perm("events.can_view_unpublished_event"):
-        return Event.objects.prefetch_related("class_targets").all()
-
-    return Event.objects.prefetch_related("class_targets").filter(
-        visibility_state=EventVisibilityState.PUBLISHED
+def _annotate_event_qs_for_user(qs, *, user):
+    qs = qs.annotate(
+        interest_count=Count(
+            "interests",
+            filter=Q(interests__deleted_at__isnull=True),
+            distinct=True,
+        ),
     )
+    if user.is_authenticated:
+        qs = qs.annotate(
+            interested=Exists(
+                EventInterest.objects.filter(
+                    event=OuterRef("pk"),
+                    user=user,
+                )
+            ),
+        )
+    return qs
+
+
+def list_events(*, user):
+    qs = Event.objects.prefetch_related("class_targets")
+    qs = _annotate_event_qs_for_user(qs, user=user)
+
+    if user.is_authenticated and user.has_perm("events.can_view_unpublished_event"):
+        return qs.all()
+
+    return qs.filter(visibility_state=EventVisibilityState.PUBLISHED)
 
 
 def update_event(*, event, updated_by=None, **data):
@@ -303,9 +327,10 @@ def create_interest(*, event, user):
     ):
         raise ValidationError({"messages": ["EventNotPublished"]})
 
-    exists = EventInterest.objects.filter(event=event, user=user).exists()
-    if exists:
-        raise ValidationError({"messages": ["InterestAlreadyExists"]})
+    # Idempotent: if the user already has an active interest, return it as-is.
+    existing = EventInterest.objects.filter(event=event, user=user).first()
+    if existing is not None:
+        return existing
 
     interest = EventInterest(
         event=event,
@@ -317,15 +342,20 @@ def create_interest(*, event, user):
     try:
         interest.save()
     except IntegrityError:
+        # Race condition: another request created the interest between the
+        # check above and the save. Treat as idempotent success.
+        existing = EventInterest.objects.filter(event=event, user=user).first()
+        if existing is not None:
+            return existing
         raise ValidationError({"messages": ["InterestAlreadyExists"]})
     return interest
 
 
 def delete_my_interest(*, event, user):
-    try:
-        interest = EventInterest.objects.get(event=event, user=user)
-    except EventInterest.DoesNotExist:
-        raise AppNotFound("InterestNotFound")
+    interest = EventInterest.objects.filter(event=event, user=user).first()
+    if interest is None:
+        # Idempotent: nothing to delete is a successful no-op.
+        return
 
     interest.delete(deleted_by=user)
 
@@ -339,7 +369,7 @@ def list_comments(*, event, user):
 
     qs = (
         EventComment.objects.filter(event=event)
-        .select_related("owner")
+        .select_related("owner", "owner__profile")
         .order_by("created_at")
     )
     comments = list(qs)
@@ -355,6 +385,12 @@ def create_comment(*, event, user, body, parent_comment_id=None):
         "events.can_view_unpublished_event"
     ):
         raise ValidationError({"messages": ["EventNotPublished"]})
+
+    # Posting is gated on having a profile — read-only browsers without a
+    # profile can still see the conversation but cannot contribute. Mirrors
+    # the messaging app's NoProfileGate pattern.
+    if not (hasattr(user, "profile") and user.profile is not None):
+        raise ValidationError({"messages": ["ProfileRequiredToComment"]})
 
     parent_comment = None
 

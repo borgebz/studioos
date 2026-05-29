@@ -143,6 +143,43 @@ def list_bookings(*, variant_id, user, filters=None, include_cancelled=False):
     return queryset
 
 
+def list_school_bookings(*, filters=None, include_cancelled=False):
+    """
+    School-wide bookings list: every booking whose variant belongs to a
+    school-owned product. Used by the back-office bookings page that needs
+    to render occupancy across the entire school catalogue in one shot.
+
+    Permission gating is done at the view layer — this service trusts the
+    caller has already been authorised.
+    """
+    queryset = VariantBooking.objects.filter(
+        variant__product__owner_type=Product.OwnerType.SCHOOL,
+    ).select_related(
+        "variant",
+        "variant__product",
+        "created_by",
+        "approved_by_user",
+    )
+
+    if not include_cancelled:
+        queryset = queryset.exclude(status=VariantBooking.Status.CANCELLED)
+
+    if filters:
+        if filters.get("status"):
+            queryset = queryset.filter(status=filters["status"])
+
+        if filters.get("booking_type"):
+            queryset = queryset.filter(booking_type=filters["booking_type"])
+
+        if filters.get("start_at"):
+            queryset = queryset.filter(end_at__gte=filters["start_at"])
+
+        if filters.get("end_at"):
+            queryset = queryset.filter(start_at__lte=filters["end_at"])
+
+    return queryset.order_by("start_at")
+
+
 def get_booking(*, booking_id, user):
     try:
         booking = VariantBooking.objects.get(id=booking_id)

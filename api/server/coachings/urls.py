@@ -72,6 +72,11 @@ urlpatterns = [
     ),
     # --- Coaching CRUD ---
     path(
+        "check-availability/",
+        views.CoachingAvailabilityView.as_view(),
+        name="coaching-check-availability",
+    ),
+    path(
         "<int:pk>/",
         views.CoachingDetailView.as_view(),
         name="coaching-detail",

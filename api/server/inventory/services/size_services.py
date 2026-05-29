@@ -28,7 +28,11 @@ def list_sizes(*, size_system_id=None, is_active=None):
     if size_system_id is not None:
         qs = qs.filter(size_system_id=size_system_id)
 
-    return qs.order_by("sort_order", "name")
+    # Group sizes by their owning size system in admin listings: callers
+    # without a `size_system_id` filter expect a tidy "all sizes" view sorted
+    # System A → System B → …, then by the system's intrinsic ordering
+    # (sort_order, name) within each group.
+    return qs.order_by("size_system__name", "sort_order", "name")
 
 
 # CREATE

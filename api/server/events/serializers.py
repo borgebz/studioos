@@ -29,10 +29,28 @@ def event_cover_photo_absolute_url(*, serializer, obj):
     return url
 
 
+def _resolve_interest_count(obj):
+    annotated = getattr(obj, "interest_count", None)
+    if annotated is not None:
+        return annotated
+    return obj.interests.count()
+
+
+def _resolve_interested(obj, request):
+    if request is None or not request.user.is_authenticated:
+        return False
+    annotated = getattr(obj, "interested", None)
+    if annotated is not None:
+        return bool(annotated)
+    return obj.interests.filter(user=request.user).exists()
+
+
 class EventListSerializer(serializers.ModelSerializer):
     """Compact shape for GET /events/ list responses."""
 
     cover_photo_url = serializers.SerializerMethodField()
+    interest_count = serializers.SerializerMethodField()
+    interested = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -43,11 +61,21 @@ class EventListSerializer(serializers.ModelSerializer):
             "location",
             "event_date",
             "event_state",
+            "interest_count",
+            "interested",
         ]
 
     @extend_schema_field(serializers.URLField(allow_blank=True))
     def get_cover_photo_url(self, obj):
         return event_cover_photo_absolute_url(serializer=self, obj=obj)
+
+    @extend_schema_field(serializers.IntegerField())
+    def get_interest_count(self, obj):
+        return _resolve_interest_count(obj)
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_interested(self, obj):
+        return _resolve_interested(obj, self.context.get("request"))
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -57,6 +85,8 @@ class EventSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     class_target_classe_ids = serializers.SerializerMethodField()
+    interest_count = serializers.SerializerMethodField()
+    interested = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -75,6 +105,8 @@ class EventSerializer(serializers.ModelSerializer):
             "class_target_classe_ids",
             "publication_scheduled_at",
             "published_at",
+            "interest_count",
+            "interested",
             "created_at",
             "updated_at",
         ]
@@ -86,6 +118,14 @@ class EventSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
     def get_class_target_classe_ids(self, obj):
         return sorted(ct.classe_id for ct in obj.class_targets.all())
+
+    @extend_schema_field(serializers.IntegerField())
+    def get_interest_count(self, obj):
+        return _resolve_interest_count(obj)
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_interested(self, obj):
+        return _resolve_interested(obj, self.context.get("request"))
 
 
 def _validate_cover_image(value):
@@ -198,6 +238,8 @@ class EventInterestSerializer(serializers.ModelSerializer):
 
 
 class EventCommentSerializer(serializers.ModelSerializer):
+    owner_name = serializers.SerializerMethodField()
+    owner_photo_url = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
 
     class Meta:
@@ -206,12 +248,31 @@ class EventCommentSerializer(serializers.ModelSerializer):
             "id",
             "event",
             "owner",
+            "owner_name",
+            "owner_photo_url",
             "body",
             "parent_comment",
             "replies",
             "created_at",
             "updated_at",
         ]
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_owner_name(self, obj):
+        profile = getattr(obj.owner, "profile", None)
+        if profile and profile.display_name:
+            return profile.display_name
+        return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_owner_photo_url(self, obj):
+        profile = getattr(obj.owner, "profile", None)
+        if not profile or not profile.photo:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(profile.photo.url)
+        return profile.photo.url
 
     @extend_schema_field(serializers.ListField(child=serializers.JSONField()))
     def get_replies(self, obj):

@@ -12,6 +12,8 @@ from coachings.models import CoachingStatus
 from coachings.serializers import (
     AddParticipantSerializer,
     CoachingApproveSerializer,
+    CoachingAvailabilityQuerySerializer,
+    CoachingAvailabilitySerializer,
     CoachingCancelSerializer,
     CoachingClassSerializer,
     DirectCoordinationCoachingCreateSerializer,
@@ -80,6 +82,35 @@ class CoachingCollectionView(APIView):
         return Response(
             CoachingClassSerializer(coaching).data, status=status.HTTP_201_CREATED
         )
+
+
+class CoachingAvailabilityView(APIView):
+    """
+    ``GET /api/coachings/check-availability/`` — preview teacher/studio busy slots
+    for a coaching being created or edited. Used by the form to surface conflicts
+    before submission.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id="CheckCoachingAvailability",
+        parameters=[CoachingAvailabilityQuerySerializer],
+        responses={
+            200: CoachingAvailabilitySerializer,
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_any_perm(
+        "coachings.can_schedule_coaching",
+        "coachings.change_coachingclass",
+        "coachings.add_coachingclass",
+    )
+    def get(self, request):
+        q = CoachingAvailabilityQuerySerializer(data=request.query_params)
+        q.is_valid(raise_exception=True)
+        result = services.check_coaching_availability(**q.validated_data)
+        return Response(CoachingAvailabilitySerializer(result).data)
 
 
 class CoachingRequestCreateView(APIView):

@@ -13,6 +13,7 @@ from enrollments.models import (
     EnrollmentStatus,
     EnrollmentType,
     ConsentType,
+    PeriodType,
 )
 
 # ---------------------------------------------------------------------------
@@ -56,6 +57,17 @@ class EnrollmentListQuerySerializer(serializers.Serializer):
 # ---------------------------------------------------------------------------
 # Enrollment Period
 # ---------------------------------------------------------------------------
+
+
+class EnrollmentPeriodAdminListQuerySerializer(serializers.Serializer):
+    """Query params for ``GET /api/enrollments/periods/admin/``."""
+
+    is_open = serializers.BooleanField(required=False)
+    period_type = serializers.ChoiceField(
+        choices=PeriodType.choices,
+        required=False,
+    )
+    academic_year = serializers.CharField(required=False)
 
 
 class EnrollmentPeriodSerializer(serializers.ModelSerializer):

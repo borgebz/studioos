@@ -472,6 +472,42 @@ def _assert_studio_modality_compatible(*, studio, modality):
         raise ValidationError({"messages": ["StudioModalityIncompatible"]})
 
 
+def _find_scheduled_conflicts(
+    *,
+    teacher_id,
+    studio_id,
+    start_datetime,
+    end_datetime,
+    exclude_pk=None,
+):
+    """Return overlapping SCHEDULED coachings for the teacher and studio."""
+    teacher_conflicts = []
+    if teacher_id is not None:
+        teacher_qs = CoachingClass.objects.filter(
+            teacher_id=teacher_id,
+            status=CoachingStatus.SCHEDULED,
+            start_datetime__lt=end_datetime,
+            end_datetime__gt=start_datetime,
+        )
+        if exclude_pk:
+            teacher_qs = teacher_qs.exclude(pk=exclude_pk)
+        teacher_conflicts = list(teacher_qs.select_related("modality"))
+
+    studio_conflicts = []
+    if studio_id is not None:
+        studio_qs = CoachingClass.objects.filter(
+            studio_id=studio_id,
+            status=CoachingStatus.SCHEDULED,
+            start_datetime__lt=end_datetime,
+            end_datetime__gt=start_datetime,
+        )
+        if exclude_pk:
+            studio_qs = studio_qs.exclude(pk=exclude_pk)
+        studio_conflicts = list(studio_qs.select_related("modality"))
+
+    return teacher_conflicts, studio_conflicts
+
+
 def _assert_no_scheduled_conflict(
     *,
     teacher_id,
@@ -480,26 +516,16 @@ def _assert_no_scheduled_conflict(
     end_datetime,
     exclude_pk=None,
 ):
-    teacher_qs = CoachingClass.objects.filter(
+    teacher_conflicts, studio_conflicts = _find_scheduled_conflicts(
         teacher_id=teacher_id,
-        status=CoachingStatus.SCHEDULED,
-        start_datetime__lt=end_datetime,
-        end_datetime__gt=start_datetime,
-    )
-    if exclude_pk:
-        teacher_qs = teacher_qs.exclude(pk=exclude_pk)
-    if teacher_qs.exists():
-        raise ValidationError({"messages": ["TeacherScheduleConflict"]})
-
-    studio_qs = CoachingClass.objects.filter(
         studio_id=studio_id,
-        status=CoachingStatus.SCHEDULED,
-        start_datetime__lt=end_datetime,
-        end_datetime__gt=start_datetime,
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+        exclude_pk=exclude_pk,
     )
-    if exclude_pk:
-        studio_qs = studio_qs.exclude(pk=exclude_pk)
-    if studio_qs.exists():
+    if teacher_conflicts:
+        raise ValidationError({"messages": ["TeacherScheduleConflict"]})
+    if studio_conflicts:
         raise ValidationError({"messages": ["StudioScheduleConflict"]})
 
 
@@ -543,6 +569,62 @@ def _ensure_scheduled_slot_free(
         end_datetime=end_datetime,
         exclude_pk=exclude_pk,
     )
+
+
+def check_coaching_availability(
+    *,
+    teacher_id,
+    studio_id=None,
+    date_from,
+    date_to,
+    exclude_coaching_id=None,
+):
+    """Return SCHEDULED coachings blocking the teacher and studio within a window.
+
+    Used by the form-side availability preview before submitting a coaching.
+    Mirrors the conflict detection used at create/approve/update time, but returns
+    the busy slots instead of raising. Caller is expected to redact at the
+    serializer boundary.
+    """
+    if date_from is None or date_to is None or date_from >= date_to:
+        raise ValidationError({"messages": ["InvalidDateRange"]})
+
+    teacher_busy = []
+    if teacher_id is not None:
+        teacher_qs = (
+            CoachingClass.objects.filter(
+                teacher_id=teacher_id,
+                status=CoachingStatus.SCHEDULED,
+                start_datetime__lt=date_to,
+                end_datetime__gt=date_from,
+            )
+            .select_related("modality")
+            .order_by("start_datetime")
+        )
+        if exclude_coaching_id:
+            teacher_qs = teacher_qs.exclude(pk=exclude_coaching_id)
+        teacher_busy = list(teacher_qs)
+
+    studio_busy = []
+    if studio_id is not None:
+        studio_qs = (
+            CoachingClass.objects.filter(
+                studio_id=studio_id,
+                status=CoachingStatus.SCHEDULED,
+                start_datetime__lt=date_to,
+                end_datetime__gt=date_from,
+            )
+            .select_related("modality")
+            .order_by("start_datetime")
+        )
+        if exclude_coaching_id:
+            studio_qs = studio_qs.exclude(pk=exclude_coaching_id)
+        studio_busy = list(studio_qs)
+
+    return {
+        "teacher_busy": teacher_busy,
+        "studio_busy": studio_busy,
+    }
 
 
 _WEEKDAY_CODES = {"MO": 0, "TU": 1, "WE": 2, "TH": 3, "FR": 4, "SA": 5, "SU": 6}

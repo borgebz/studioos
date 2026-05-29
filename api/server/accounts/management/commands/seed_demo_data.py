@@ -2065,17 +2065,44 @@ class Command(BaseCommand):
             return
         now = timezone.now()
 
+        # Self-heal: earlier versions of this command keyed `get_or_create` on
+        # (variant, start_at, end_at) where `start_at` came from
+        # `timezone.now()`, so every re-run inserted a fresh duplicate. Before
+        # we touch anything, collapse each (variant, title) group down to a
+        # single row so subsequent `update_or_create` calls have one true row
+        # to update on every machine this seed ever ran against.
+        from django.db.models import Count
+
+        dup_groups = (
+            VariantBooking.objects.values("variant_id", "title")
+            .annotate(n=Count("id"))
+            .filter(n__gt=1)
+        )
+        for group in dup_groups:
+            rows = list(
+                VariantBooking.objects.filter(
+                    variant_id=group["variant_id"], title=group["title"]
+                ).order_by("id")
+            )
+            # Keep the oldest row so any FKs / history pointing to it survive.
+            for stale in rows[1:]:
+                stale.delete()
+
         def _create(variant, *, booking_type, status, days_from, length_days, title):
             start = now + timedelta(days=days_from)
             end = start + timedelta(days=length_days)
-            VariantBooking.objects.get_or_create(
+            # Key on (variant, title) so re-running the seed updates the
+            # existing demo booking in place instead of inserting a fresh row
+            # each time (which used to leave a trail of duplicates because
+            # `start_at` shifts with every `timezone.now()` call).
+            VariantBooking.objects.update_or_create(
                 variant=variant,
-                start_at=start,
-                end_at=end,
+                title=title,
                 defaults={
+                    "start_at": start,
+                    "end_at": end,
                     "booking_type": booking_type,
                     "status": status,
-                    "title": title,
                     "notes": "Seed.",
                     "approved_by_user": users["direction"],
                     "created_by": actor,
@@ -2122,14 +2149,14 @@ class Command(BaseCommand):
         if len(school_variants) > 4:
             past_start = now - timedelta(days=20)
             past_end = now - timedelta(days=15)
-            booking, created = VariantBooking.objects.get_or_create(
+            VariantBooking.objects.update_or_create(
                 variant=school_variants[4],
-                start_at=past_start,
-                end_at=past_end,
+                title="Empréstimo concluído",
                 defaults={
+                    "start_at": past_start,
+                    "end_at": past_end,
                     "booking_type": VariantBooking.BookingType.LOAN,
                     "status": VariantBooking.Status.COMPLETED,
-                    "title": "Empréstimo concluído",
                     "notes": "Seed.",
                     "actual_start_at": past_start + timedelta(hours=2),
                     "actual_end_at": past_end - timedelta(hours=2),

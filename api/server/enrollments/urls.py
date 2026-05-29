@@ -7,6 +7,7 @@ from enrollments.views import (
     EnrollmentListView,
     EnrollmentPaymentConfirmView,
     EnrollmentPaymentListCreateView,
+    EnrollmentPeriodAdminListView,
     EnrollmentPeriodCloseView,
     EnrollmentPeriodCreateView,
     EnrollmentPeriodDetailView,
@@ -22,6 +23,11 @@ app_name = "enrollments"
 urlpatterns = [
     # Periods
     path("periods/", EnrollmentPeriodListView.as_view(), name="period-list"),
+    path(
+        "periods/admin/",
+        EnrollmentPeriodAdminListView.as_view(),
+        name="period-admin-list",
+    ),
     path(
         "periods/create/",
         EnrollmentPeriodCreateView.as_view(),

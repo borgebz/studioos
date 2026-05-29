@@ -197,6 +197,34 @@ class CoachingListQuerySerializer(serializers.Serializer):
         return super().to_internal_value(data)
 
 
+class CoachingAvailabilityQuerySerializer(serializers.Serializer):
+    """Query params for ``GET /api/coachings/check-availability/``."""
+
+    teacher_id = serializers.IntegerField()
+    studio_id = serializers.IntegerField(required=False, allow_null=True)
+    date_from = serializers.DateTimeField()
+    date_to = serializers.DateTimeField()
+    exclude_coaching_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class CoachingBusySlotSerializer(serializers.ModelSerializer):
+    """Redacted view of a SCHEDULED coaching used for the form availability preview.
+
+    No student names, no notes — just enough to recognize the block on a calendar.
+    """
+
+    modality = ModalitySerializer(read_only=True)
+
+    class Meta:
+        model = CoachingClass
+        fields = ["id", "start_datetime", "end_datetime", "modality"]
+
+
+class CoachingAvailabilitySerializer(serializers.Serializer):
+    teacher_busy = CoachingBusySlotSerializer(many=True)
+    studio_busy = CoachingBusySlotSerializer(many=True)
+
+
 # --- Read models (nested resources for responses) ---
 
 

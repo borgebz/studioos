@@ -44,7 +44,33 @@ def _age_in_months(*, birth_date: date, on_date: date) -> int:
 # ---------------------------------------------------------------------------
 
 
+def _assert_no_other_open_period(*, period=None):
+    """
+    Enforce the global single-open-period invariant.
+
+    Raises ValidationError("ConflictingOpenPeriod") if another period
+    is currently open. When checking on PATCH/open of an existing period,
+    pass it via `period` so it is excluded from the lookup.
+    """
+    qs = EnrollmentPeriod.objects.filter(is_open=True)
+    if period is not None and period.pk is not None:
+        qs = qs.exclude(pk=period.pk)
+    conflicting = qs.only("pk").first()
+    if conflicting is not None:
+        raise ValidationError(
+            {
+                "messages": ["ConflictingOpenPeriod"],
+                "conflicting_period_id": [conflicting.pk],
+            }
+        )
+
+
 def create_period(*, created_by=None, **data):
+    # Creates are always allowed; new periods land as drafts (is_open=False).
+    # If a caller tries to create a period already open while another is open,
+    # block it to keep the invariant intact.
+    if data.get("is_open"):
+        _assert_no_other_open_period()
     period = EnrollmentPeriod(**data, created_by=created_by)
     period.full_clean()
     period.save()
@@ -52,6 +78,10 @@ def create_period(*, created_by=None, **data):
 
 
 def update_period(*, period, updated_by=None, **data):
+    # Only re-check the invariant when this PATCH flips is_open from False → True.
+    # Editing dates/prices on an already-open period must not raise a false conflict.
+    if "is_open" in data and data["is_open"] and not period.is_open:
+        _assert_no_other_open_period(period=period)
     for field, value in data.items():
         setattr(period, field, value)
     period.updated_by = updated_by
@@ -61,6 +91,8 @@ def update_period(*, period, updated_by=None, **data):
 
 
 def open_period(*, period, updated_by=None):
+    if not period.is_open:
+        _assert_no_other_open_period(period=period)
     period.is_open = True
     period.updated_by = updated_by
     period.full_clean()

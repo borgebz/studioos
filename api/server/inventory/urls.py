@@ -39,6 +39,7 @@ from inventory.views.product_variant_views import (
 from inventory.views.variant_booking_views import (
     BookingDetailView,
     BookingListCreateView,
+    SchoolBookingListView,
 )
 
 urlpatterns = [
@@ -70,5 +71,6 @@ urlpatterns = [
     path("products/<int:product_id>/variants/", ProductVariantListCreateView.as_view()),
     path("variants/<int:variant_id>/", ProductVariantDetailView.as_view()),
     path("variants/<int:variant_id>/bookings/", BookingListCreateView.as_view()),
+    path("school/bookings/", SchoolBookingListView.as_view()),
     path("bookings/<int:booking_id>/", BookingDetailView.as_view()),
 ]

@@ -58,6 +58,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.save_text_message(body)
 
     async def chat_message(self, event):
+        # Forward `kind` so clients can distinguish system messages (member
+        # changes, renames) from regular user messages without falling back to
+        # rendering raw JSON bodies as plain text.
         await self.send(
             text_data=json.dumps(
                 {
@@ -67,6 +70,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "body": event["body"],
                     "file_url": event["file_url"],
                     "original_filename": event["original_filename"],
+                    "kind": event.get("kind", "user"),
                     "created_at": event["created_at"],
                 }
             )

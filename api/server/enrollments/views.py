@@ -21,12 +21,14 @@ from enrollments.serializers import (
     EnrollmentListQuerySerializer,
     EnrollmentPaymentCreateSerializer,
     EnrollmentPaymentReadSerializer,
+    EnrollmentPeriodAdminListQuerySerializer,
     EnrollmentPeriodSerializer,
     EnrollmentReadSerializer,
     EnrollmentSubmitSerializer,
     EnrollmentUpdateSerializer,
     FileUploadSerializer,
 )
+from core.exceptions import AppNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,45 @@ class EnrollmentPeriodListView(APIView):
     )
     def get(self, request):
         periods = services.list_periods(filters={"is_open": True})
+        return Response(EnrollmentPeriodSerializer(periods, many=True).data)
+
+
+class EnrollmentPeriodAdminListView(APIView):
+    """
+    GET /api/enrollments/periods/admin/
+    Direction only. Lists periods regardless of open state, with filters:
+    `is_open`, `period_type`, `academic_year`.
+
+    The public `/periods/` endpoint hard-filters to open periods and is the
+    one consumed by the parent enrollment form. This endpoint is for the
+    admin period-management UI which needs full visibility.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[EnrollmentPeriodAdminListQuerySerializer],
+        responses={
+            200: EnrollmentPeriodSerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("enrollments.can_manage_periods")
+    def get(self, request):
+        q = EnrollmentPeriodAdminListQuerySerializer(data=request.query_params)
+        q.is_valid(raise_exception=True)
+        # Note: gate filter inclusion on raw query_params, not validated_data.
+        # DRF's BooleanField(required=False) materializes as False when the
+        # param is absent, which would silently filter out open periods on an
+        # unfiltered request.
+        filters = {}
+        if "is_open" in request.query_params:
+            filters["is_open"] = q.validated_data["is_open"]
+        if "period_type" in request.query_params:
+            filters["period_type"] = q.validated_data["period_type"]
+        if "academic_year" in request.query_params:
+            filters["academic_year"] = q.validated_data["academic_year"]
+        periods = services.list_periods(filters=filters or None)
         return Response(EnrollmentPeriodSerializer(periods, many=True).data)
 
 
@@ -107,6 +148,15 @@ class EnrollmentPeriodDetailView(APIView):
     )
     def get(self, request, pk):
         period = services.get_period(pk=pk)
+        # Public callers (unauthenticated or without can_manage_periods) can only
+        # see open periods. Admins keep full visibility on closed/draft periods.
+        user = request.user
+        is_admin = (
+            user.is_authenticated
+            and user.has_perm("enrollments.can_manage_periods")
+        )
+        if not is_admin and not period.is_open:
+            raise AppNotFound("EnrollmentPeriodNotFound")
         return Response(EnrollmentPeriodSerializer(period).data)
 
     @extend_schema(

@@ -155,11 +155,13 @@ INVENTORY_PERMISSIONS = [
 
 MARKETPLACE_PERMISSIONS_MANAGEMENT = [
     "marketplace.manage_school_listings",
-    "marketplace.view_productlisting",
     "marketplace.view_all_transactions",
 ]
 
+# Personal marketplace — every authenticated role gets this (browse + own
+# listings + own transactions). School-level management is layered on top.
 MARKETPLACE_PERMISSIONS_USER = [
+    "marketplace.view_productlisting",
     "marketplace.view_own_listings",
     "marketplace.view_own_transactions",
 ]
@@ -172,16 +174,23 @@ MARKETPLACE_PERMISSIONS_USER = [
 #   parent and student are separate tracks with own-data access.
 #
 # Principles:
-# - direction: full management of every module.
-# - coordination: day-to-day operations (scheduling, reviews, class mgmt),
-#     but NOT role/user admin or enrollment-period management.
-# - collaborator: read-only view of operational data + messaging.
+# - direction: full management of every module (only role allowed to delete
+#     users/roles or create billing entries).
+# - coordination: full school operations — scheduling, reviews, class mgmt,
+#     enrollment periods, inventory setup, role mgmt (no delete), school +
+#     personal marketplace. Cannot delete users or create billing entries.
+# - collaborator: read-only view of operational data + messaging + full
+#     marketplace (school + personal).
 # - teacher / teacher_external: own availability, accept/reject coaching,
-#     view classes, messaging, and profile.
+#     view classes, messaging, profile, personal marketplace.
 # - parent: request coaching for dependents, confirm dependent attendance,
-#     view billing/fines, view classes, marketplace participation.
+#     view billing/fines, view classes, personal marketplace.
 # - student: request coaching, participate, view own billing, view classes,
-#     marketplace participation.
+#     personal marketplace.
+#
+# Every authenticated role gets:
+#   - studios.view_studio (read-only access for embedded data + selectors)
+#   - MARKETPLACE_PERMISSIONS_USER (browse + own listings/transactions)
 # ---------------------------------------------------------------------------
 
 ROLE_PERMISSIONS = {
@@ -248,17 +257,20 @@ ROLE_PERMISSIONS = {
         *MARKETPLACE_PERMISSIONS_USER,
     ],
     "coordination": [
-        # accounts (view/invite only — no role management)
+        # accounts (view/invite + role management — no user delete/deactivate)
         "accounts.view_user",
-        "accounts.view_role",
         "accounts.can_list_users",
         "accounts.can_invite_user",
         "accounts.can_have_profile",
-        # enrollments
+        "accounts.view_role",
+        "accounts.add_role",
+        "accounts.change_role",
+        # enrollments (full — including periods)
         "enrollments.can_review_enrollment",
         "enrollments.can_approve_enrollment",
         "enrollments.can_reject_enrollment",
         "enrollments.can_cancel_enrollment",
+        "enrollments.can_manage_periods",
         "enrollments.can_manage_enrollment_payments",
         # studios
         "studios.add_studio",
@@ -289,7 +301,9 @@ ROLE_PERMISSIONS = {
         "billing.can_review_fine",
         # messaging
         *MESSAGING_PERMISSIONS,
-        # marketplace
+        # inventory (full school setup)
+        *INVENTORY_PERMISSIONS,
+        # marketplace (school + personal)
         *MARKETPLACE_PERMISSIONS_MANAGEMENT,
         *MARKETPLACE_PERMISSIONS_USER,
     ],
@@ -305,6 +319,9 @@ ROLE_PERMISSIONS = {
         "classes.view_classemember",
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
+        # marketplace (school + personal)
+        *MARKETPLACE_PERMISSIONS_MANAGEMENT,
+        *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
     "teacher": [
@@ -312,7 +329,6 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "accounts.can_have_profile",
         "studios.view_studio",
-        "modality.view_modality",
         "modality.view_usermodality",
         # own availability management
         *AVAILABILITY_PERMISSIONS,
@@ -320,11 +336,12 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
-        # classes (read-only)
-        "classes.view_classe",
+        # classes (read-only on members of their own classes)
         "classes.view_classemember",
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
+        # marketplace (personal)
+        *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
     "teacher_external": [
@@ -332,7 +349,6 @@ ROLE_PERMISSIONS = {
         "accounts.view_user",
         "accounts.can_have_profile",
         "studios.view_studio",
-        "modality.view_modality",
         "modality.view_usermodality",
         # own availability management
         *AVAILABILITY_PERMISSIONS,
@@ -340,11 +356,12 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingclass",
         *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
-        # classes (read-only)
-        "classes.view_classe",
+        # classes (read-only on members of their own classes)
         "classes.view_classemember",
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
+        # marketplace (personal)
+        *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
     "parent": [
@@ -376,7 +393,6 @@ ROLE_PERMISSIONS = {
         "accounts.can_have_profile",
         "accounts.can_participate_in_coaching",
         "studios.view_studio",
-        "modality.view_modality",
         # availability (read-only — see teacher availability)
         "availability.view_teacheravailability",
         # coaching: request + participate
@@ -384,8 +400,7 @@ ROLE_PERMISSIONS = {
         "coachings.add_coachingclass",
         "coachings.view_coachingparticipant",
         "coachings.add_coachingparticipant",
-        # classes (read-only — see own classes)
-        "classes.view_classe",
+        # classes (read-only — see own class membership)
         "classes.view_classemember",
         # billing (view own entries)
         "billing.view_billingentry",

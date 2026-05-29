@@ -11,6 +11,8 @@ from core.pagination import paginated_response
 from core.permissions import require_perm
 from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
 from inventory.serializers.variant_booking_serializers import (
+    SchoolBookingQuerySerializer,
+    SchoolBookingRowSerializer,
     VariantBookingSerializer,
     VariantBookingWriteSerializer,
 )
@@ -19,6 +21,7 @@ from inventory.services.variant_booking_services import (
     delete_booking,
     get_booking,
     list_bookings,
+    list_school_bookings,
     update_booking,
 )
 
@@ -100,6 +103,48 @@ class BookingListCreateView(APIView):
         return Response(
             VariantBookingSerializer(booking).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class SchoolBookingListView(APIView):
+    """
+    School-wide bookings list — flattens the per-variant nested endpoint so
+    the back-office bookings page can render a single paginated table /
+    calendar across every school-owned variant. Read-only; write actions
+    continue to go through the per-variant endpoint where ownership checks
+    happen.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[SchoolBookingQuerySerializer],
+        responses={
+            200: paginated_list_schema(
+                name="InventorySchoolBookingList",
+                results_serializer=SchoolBookingRowSerializer,
+            ),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("inventory.view_school_product")
+    def get(self, request):
+        include_cancelled = request.query_params.get(
+            "include_cancelled", ""
+        ).lower() in ("true", "1")
+
+        filters, err = _filters_dict(request.query_params)
+        if err is not None:
+            return err
+
+        bookings = list_school_bookings(
+            filters=filters,
+            include_cancelled=include_cancelled,
+        )
+        return paginated_response(
+            request=request,
+            items=bookings,
+            serializer_class=SchoolBookingRowSerializer,
         )
 
 

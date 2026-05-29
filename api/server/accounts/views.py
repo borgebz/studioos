@@ -66,6 +66,7 @@ class LoginView(APIView):
     Accepts email + password and stores JWT in httpOnly cookies.
     """
 
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle]
 
@@ -125,6 +126,7 @@ class RefreshView(APIView):
     new tokens are set as httpOnly cookies (same as login).
     """
 
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     @extend_schema(
@@ -169,6 +171,7 @@ class LogoutView(APIView):
     and clears auth cookies.
     """
 
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     @extend_schema(
