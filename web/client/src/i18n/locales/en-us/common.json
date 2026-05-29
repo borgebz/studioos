@@ -10,6 +10,7 @@
     "myRequests": "My Requests",
     "requestCoaching": "Request Coaching",
     "reviewRequests": "Review Requests",
+    "myAvailability": "My Availability",
     "marketplace": "Marketplace",
     "browse": "Browse",
     "myInventory": "My Items",
@@ -17,10 +18,12 @@
     "schoolCatalog": "School Catalog",
     "schoolInventory": "School Inventory",
     "schoolListings": "School Listings",
+    "inventoryBookings": "Bookings",
     "people": "People",
     "users": "Users",
     "enrollmentRequests": "Enrollments",
     "invites": "Invite Users",
+    "roles": "Roles & Permissions",
     "billing": "Billing",
     "billingEntries": "Entries",
     "billingFines": "Fines",
@@ -487,7 +490,44 @@
     "title": "StudioOS",
     "welcomeBefore": "Welcome. Visit ",
     "welcomeLink": "the design system",
-    "welcomeAfter": " to explore the component library."
+    "welcomeAfter": " to explore the component library.",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "quickActions": "Quick actions",
+    "quickActionsDesc": "Shortcuts you reach for the most.",
+    "thisWeek": "this week",
+    "actions": {
+      "createCoaching": "Schedule coaching",
+      "requestCoaching": "Request coaching",
+      "inviteUser": "Invite user",
+      "createEvent": "Create event",
+      "myAvailability": "Availability",
+      "openEnrollmentPeriod": "Enrollment period",
+      "reviewEnrollments": "Review enrollments"
+    },
+    "weeklyCoachings": "My week",
+    "weeklyCoachingsAll": "Coachings this week",
+    "noCoachingsThisDay": "No coachings on this day.",
+    "noCoachingsThisWeek": "No coachings this week.",
+    "dayFree": "Day free",
+    "viewCalendar": "View calendar",
+    "kpi": {
+      "title": "School at a glance",
+      "pendingEnrollments": "Enrollments to review",
+      "activeEnrollments": "Active enrollments",
+      "coachingsThisWeek": "Coachings this week",
+      "upcomingEvents": "Upcoming events"
+    },
+    "chart": {
+      "title": "Coachings by studio",
+      "subtitle": "Last 14 days",
+      "empty": "No coachings in this range."
+    },
+    "nextCoaching": {
+      "title": "Next session",
+      "empty": "You have no upcoming sessions."
+    }
   },
   "notFound": {
     "title": "Wrong studio",
@@ -511,6 +551,33 @@
     "availabilityNotes": "Notes",
     "previousWeek": "Previous week",
     "nextWeek": "Next week",
+    "availability": {
+      "title": "Schedule",
+      "viewSchedule": "View teacher schedule",
+      "descTeacher": "{{teacher}}'s availability and existing sessions",
+      "descTeacherStudio": "{{teacher}} and {{studio}} — availability and existing sessions",
+      "empty": "Nothing scheduled in this period",
+      "dayFree": "Free all day",
+      "legend": {
+        "teacherAvailability": "Teacher availability",
+        "notAvailable": "Not available",
+        "yourSlot": "Your slot"
+      },
+      "popover": {
+        "teacherBusy": "Teacher already scheduled",
+        "studioBusy": "Studio already booked"
+      },
+      "hint": {
+        "checking": "Checking availability…",
+        "free": "Slot is free for teacher and studio",
+        "teacherConflicts_one": "Teacher already scheduled at this time",
+        "teacherConflicts_other": "Teacher has {{count}} overlapping sessions",
+        "studioConflicts_one": "Studio already booked at this time",
+        "studioConflicts_other": "Studio has {{count}} overlapping bookings",
+        "bothConflicts": "Teacher ({{teacher}}) and studio ({{studio}}) have conflicts",
+        "view": "View"
+      }
+    },
     "studio": "Studio",
     "selectStudio": "Select studio",
     "schedule": "Schedule",
@@ -1050,6 +1117,9 @@
     "internalNotes": "Internal notes",
     "internalNotesPlaceholder": "Visible only to staff…",
     "deleteVariant": "Delete variant",
+    "viewBookings": "View bookings",
+    "variantBookingsTitle": "Variant bookings",
+    "variantBookingsDesc": "When this variant is reserved, on loan, or otherwise held.",
     "pageTitle": "Marketplace",
     "browseTitle": "Browse Marketplace",
     "browseEmpty": "No listings available.",
@@ -1080,7 +1150,60 @@
     "sortBy": "Sort by",
     "sortRecent": "Most recent",
     "sortPriceAsc": "Price: low to high",
-    "sortPriceDesc": "Price: high to low"
+    "sortPriceDesc": "Price: high to low",
+    "detail": {
+      "back": "Back to marketplace",
+      "ownedByYou": "Listed by you",
+      "ownedBySchool": "Listed by the school",
+      "ownedByMember": "Listed by {{name}}",
+      "memberPlaceholder": "Member",
+      "specs": "Specifications",
+      "specSize": "Size",
+      "specCondition": "Condition",
+      "specBrand": "Brand",
+      "specMaterial": "Material",
+      "specSku": "Reference",
+      "specColors": "Colors",
+      "specNotes": "Seller notes",
+      "noDescription": "No description.",
+      "askingPriceLabel": "Asking price",
+      "bookingWindows": "Existing bookings",
+      "bookingWindowsDesc": "Periods already taken — pick a free range when you request.",
+      "noBookingWindows": "No bookings yet.",
+      "requestBooking": "Request booking",
+      "requestPurchase": "Request to buy",
+      "requestLoan": "Request a loan",
+      "requestClaim": "Claim this item",
+      "messageOwner": "Message seller",
+      "messageOwnerSoon": "Coming soon",
+      "favorite": "Favorite",
+      "unfavorite": "Remove favorite",
+      "editListing": "Edit listing",
+      "favoritesCount_one": "{{count}} favorite",
+      "favoritesCount_other": "{{count}} favorites",
+      "notFound": "Listing not found.",
+      "notFoundDesc": "It may have been removed or is no longer available."
+    },
+    "requestBooking": {
+      "titleRent": "Request booking",
+      "titleSell": "Request to buy",
+      "titleLend": "Request a loan",
+      "titleDonate": "Claim this item",
+      "descriptionRent": "Pick the dates you'd like. The seller will accept or counter.",
+      "descriptionNonRent": "Leave a message for the seller. They'll reply directly.",
+      "startAt": "Start date",
+      "endAt": "End date",
+      "notes": "Message",
+      "notesPlaceholder": "Hi! I'm interested in this item…",
+      "cancel": "Cancel",
+      "submit": "Send request",
+      "submitting": "Sending…",
+      "success": "Request sent",
+      "errorDatesRequired": "Pick a start and end date.",
+      "errorEndBeforeStart": "End date must be after start.",
+      "windowsLegendBooked": "Already booked",
+      "windowsLegendRequest": "Your request"
+    }
   },
   "mediaUpload": {
     "dragDropHint": "Drag & drop images here, or use the buttons below",
@@ -1333,6 +1456,8 @@
     "periodClosed": "Enrollment closed",
     "periodClosedTitle": "Enrollment is currently closed",
     "periodClosedBody": "There are no active enrollment periods at this time. Please check back later or contact the school for more information.",
+    "noPeriodForTypeTitle": "Not open for this enrollment type",
+    "noPeriodForTypeBody": "The current enrollment period does not accept this type. Try the other option or come back when the right period opens.",
     "periodDates": "{{start}} → {{end}}",
     "periodNewAndRenewals": "Accepting new students & renewals",
     "periodNewOnly": "Accepting new students",
@@ -1529,7 +1654,11 @@
       "cancelReply": "Cancel",
       "showReplies_one": "Show {{count}} reply",
       "showReplies_other": "Show {{count}} replies",
-      "hideReplies": "Hide replies"
+      "hideReplies": "Hide replies",
+      "noProfileTitle": "Set up your profile to join the conversation",
+      "noProfileDescription": "You can read what others are saying — add a display name to your profile to post or reply.",
+      "noProfileCta": "Go to my profile",
+      "anonymousAuthor": "Member"
     },
     "posts": {
       "empty": "No updates yet.",
@@ -1589,7 +1718,7 @@
       "coverDropzone": "Drag an image or",
       "coverBrowse": "browse files",
       "body": "Event body",
-      "bodyHint": "Shown on the public event page. Supports rich formatting.",
+      "bodyHint": "Shown on the public event page.",
       "bodyPlaceholder": "Tell the story of the event — programme, expectations, practical info…",
       "locationContact": "Location & contact",
       "locationLabel": "Location",
@@ -1620,7 +1749,16 @@
       "cancelConfirmBody": "The event stays visible but marked as cancelled.",
       "footerStatusReady": "Ready to publish",
       "footerStatusDraft": "Draft · not visible",
-      "ready": "Ready to publish"
+      "footerStatusScheduled": "Publishes on {{date}}",
+      "footerStatusPublished": "Live · visible to everyone",
+      "footerStatusArchived": "Archived · visible only to staff",
+      "ready": "Ready to publish",
+      "saveChanges": "Save changes",
+      "publishNow": "Publish now",
+      "scheduleForLater": "Schedule for later…",
+      "saveAndSchedule": "Save & schedule",
+      "currentStatus": "Current status",
+      "scheduledFor": "Scheduled for {{date}}"
     },
     "post": {
       "createTitle": "New update",
@@ -1641,7 +1779,6 @@
       "titleLabel": "Update title",
       "titlePlaceholder": "e.g. Final programme confirmed",
       "bodyLabel": "Body",
-      "bodyHint": "Rich text · formatting supported",
       "previewLabel": "Preview",
       "previewSub": "How it will appear in the event timeline",
       "saved": "Update saved.",
@@ -1666,6 +1803,182 @@
       "cancelled": "cancelled the event",
       "archived": "archived the event",
       "completed": "marked as completed"
+    }
+  },
+  "variantBookings": {
+    "empty": "No bookings for this variant this week.",
+    "allDay": "All day"
+  },
+  "inventoryBookings": {
+    "title": "Inventory bookings",
+    "subtitle": "Reservations, loans, donations and other holds on school-owned variants.",
+    "create": "New booking",
+    "includeCancelled": "Include cancelled",
+    "empty": "No bookings match.",
+    "saveSuccess": "Booking saved.",
+    "deleteSuccess": "Booking deleted.",
+    "deleteTitle": "Delete this booking?",
+    "deleteDesc": "Removing a booking frees the variant for the corresponding window. Cancel instead if you want to keep a record.",
+    "col": {
+      "variant": "Variant",
+      "title": "Title",
+      "type": "Type",
+      "status": "Status",
+      "window": "Window",
+      "actions": "Actions"
+    },
+    "filters": {
+      "type": "Type",
+      "allTypes": "All types",
+      "status": "Status",
+      "allStatuses": "All statuses"
+    },
+    "type": {
+      "reservation": "Reservation",
+      "loan": "Loan",
+      "rent": "Rent",
+      "sale": "Sale",
+      "donation": "Donation",
+      "schoolUse": "School use",
+      "maintenance": "Maintenance",
+      "blocked": "Blocked"
+    },
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "blocked": "Blocked",
+      "cancelled": "Cancelled"
+    },
+    "dialog": {
+      "createTitle": "New booking",
+      "editTitle": "Edit booking",
+      "description": "Bookings hold a variant for a specific purpose and window.",
+      "variantLabel": "Variant",
+      "variantPickerEmpty": "Pick a variant",
+      "variantSearchPlaceholder": "Search school products…",
+      "variantNoMatches": "No products match.",
+      "show": "Show variants",
+      "hide": "Hide variants",
+      "noVariants": "No variants for this product.",
+      "typeLabel": "Type",
+      "titleLabel": "Title",
+      "titlePlaceholder": "What this hold is for",
+      "startDate": "Start date",
+      "startTime": "Start time",
+      "endDate": "End date",
+      "endTime": "End time",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Optional notes.",
+      "existingBookingsTitle": "Existing bookings for this item",
+      "noExistingBookings": "No bookings yet for this item",
+      "dayFree": "Free all day",
+      "legendBooked": "Booked",
+      "yourSlot": "Your slot"
+    },
+    "errors": {
+      "variantRequired": "Pick a variant.",
+      "startRequired": "Pick a start date.",
+      "endRequired": "Pick an end date.",
+      "startBeforeEnd": "The start must be before the end.",
+      "titleRequired": "Give the booking a short title."
+    }
+  },
+  "availability": {
+    "title": "My availability",
+    "subtitle": "Time windows you signal as available. Showing the next {{days}} days.",
+    "create": "Add slot",
+    "empty": "You haven't signalled any availability yet.",
+    "saveSuccess": "Availability saved.",
+    "deleteSuccess": "Availability removed.",
+    "recurring": "Recurring",
+    "recurringStartingHint": "From {{date}}",
+    "anyModality": "Any modality",
+    "col": {
+      "when": "When",
+      "time": "Time",
+      "modality": "Modality",
+      "notes": "Notes",
+      "actions": "Actions"
+    },
+    "weekday": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "dialog": {
+      "createTitle": "Add availability",
+      "editTitle": "Edit availability",
+      "description": "Signal when you're available so coordination can schedule coachings against your time.",
+      "recurringLabel": "Recurring availability",
+      "recurringHint": "Repeats on the weekdays you pick, within a date range."
+    },
+    "fields": {
+      "date": "Date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "weekdays": "Days of the week",
+      "validFrom": "Recurring from",
+      "validUntil": "Recurring until",
+      "openEnded": "Open-ended",
+      "modality": "Modality",
+      "anyModality": "Any modality",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes (visible to coordination)."
+    },
+    "errors": {
+      "dateRequired": "Pick a date.",
+      "daysRequired": "Pick at least one weekday.",
+      "timeRequired": "Set both start and end times.",
+      "startBeforeEnd": "Start time must be before end time.",
+      "fromRequired": "Pick the first day the rule applies.",
+      "untilAfterFrom": "End date must be on or after the start date."
+    },
+    "deleteOneOffTitle": "Remove this availability slot?",
+    "deleteOneOffDesc": "Coordination will no longer see this time as available.",
+    "deleteRecurringTitle": "Remove this recurring availability?",
+    "deleteRecurringDesc": "All future occurrences of this rule will disappear."
+  },
+  "rolesAdmin": {
+    "title": "Roles & Permissions",
+    "subtitle": "Define which abilities each role grants. Built-in roles can be edited but not deleted.",
+    "create": "Create role",
+    "searchPlaceholder": "Search roles…",
+    "empty": "No roles yet.",
+    "saveSuccess": "Role saved.",
+    "deleteSuccess": "Role deleted.",
+    "deleteTitle": "Delete role \"{{name}}\"?",
+    "deleteDesc": "Users currently assigned to this role will lose its permissions.",
+    "col": {
+      "name": "Name",
+      "code": "Code",
+      "description": "Description",
+      "permissionCount": "Permissions",
+      "actions": "Actions"
+    },
+    "form": {
+      "createTitle": "Create role",
+      "editTitle": "Edit role",
+      "general": "General information",
+      "summary": "Summary",
+      "totalPermissions": "Permissions granted",
+      "codeLabel": "Code",
+      "codeHelper": "Lowercase letters, numbers and underscores. Immutable.",
+      "codeHint": "Must start with a letter; only lowercase, numbers, underscores.",
+      "nameLabel": "Display name",
+      "namePlaceholder": "e.g. Coordination",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Short description of what this role can do.",
+      "permissionsSection": "Permissions",
+      "permissionsHint": "Pick the abilities this role grants. Grouped by app.",
+      "permissionsSearch": "Search permissions…",
+      "noPermissionResults": "No permissions match.",
+      "selectAll": "Select all",
+      "deselectAll": "Clear all"
     }
   },
   "enrollmentRequests": {
@@ -1990,6 +2303,7 @@
     "delete": "Delete",
     "deleting": "Deleting…",
     "done": "Done",
+    "loading": "Loading…",
     "active": "Active",
     "inactive": "Inactive",
     "activate": "Activate",
@@ -2121,9 +2435,66 @@
       "removeSuccess": "Student removed."
     }
   },
+  "inventoryValues": {
+    "color": {
+      "beige": "Beige",
+      "black": "Black",
+      "blue": "Blue",
+      "brown": "Brown",
+      "gray": "Gray",
+      "green": "Green",
+      "orange": "Orange",
+      "pink": "Pink",
+      "purple": "Purple",
+      "red": "Red",
+      "white": "White",
+      "yellow": "Yellow"
+    },
+    "sizeSystem": {
+      "clothingEu": "EU Clothing",
+      "clothingInternational": "International Clothing",
+      "kidsAge": "Kids — by age",
+      "kidsHeight": "Kids — by height",
+      "oneSize": "One size",
+      "shoesEu": "EU Shoes"
+    },
+    "category": {
+      "vestuarioDeTreino": "Training wear",
+      "figurinosDeEspetaculo": "Performance costumes",
+      "calcado": "Footwear",
+      "acessoriosDeDanca": "Dance accessories",
+      "aderecosDeCena": "Stage props",
+      "cenografiaEPalco": "Scenography & stage",
+      "materialDeTreino": "Training equipment",
+      "maquilhagemECaracterizacao": "Makeup & characterization"
+    }
+  },
+  "roleValues": {
+    "name": {
+      "collaborator": "Collaborator",
+      "coordination": "Coordination",
+      "direction": "Direction",
+      "parent": "Parent",
+      "student": "Student",
+      "teacher": "Teacher",
+      "externalTeacher": "External Teacher",
+      "internalTeacher": "Internal Teacher"
+    },
+    "description": {
+      "collaborator": "Limited helper access for day-to-day operations.",
+      "coordination": "School operations: scheduling, billing, and communication.",
+      "direction": "Full administrative access including governance.",
+      "parent": "Guardian of one or more enrolled students.",
+      "student": "Enrolled student with personal access only.",
+      "teacher": "Teaching staff with class and coaching access.",
+      "externalTeacher": "Guest teacher — no employment relationship.",
+      "internalTeacher": "Employed teacher with full internal access."
+    }
+  },
   "inventorySettings": {
     "title": "Inventory Settings",
     "subtitle": "Manage the building blocks of the inventory: categories, colors, sizes, and size systems.",
+    "createShort": "Create",
     "tab": {
       "categories": "Categories",
       "colors": "Colors",
@@ -2239,6 +2610,17 @@
       "status": "Status",
       "actions": "Actions"
     },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All",
+      "statusOpen": "Open only",
+      "statusClosed": "Closed only",
+      "type": "Type",
+      "typeAll": "All types",
+      "academicYear": "Academic year",
+      "academicYearPlaceholder": "e.g. 2026/2027",
+      "clear": "Clear filters"
+    },
     "form": {
       "createTitle": "Create enrollment period",
       "editTitle": "Edit enrollment period",
@@ -2303,6 +2685,11 @@
     "AtLeastOneModalityRequired": "At least one modality must be selected.",
     "DateOfBirthMustBeInPast": "Date of birth must be in the past.",
     "EnrollmentPeriodNotOpen": "The enrollment period is not open.",
+    "EnrollmentPeriodNotFound": "The enrollment period was not found.",
+    "EnrollmentPeriodTypeIncompatible": "The selected period does not accept this enrollment type.",
+    "NoOpenEnrollmentPeriod": "There is no open enrollment period for the selected type.",
+    "EnrollmentAlreadySubmittedForThisPeriod": "An enrollment with this email has already been submitted for this period.",
+    "ConflictingOpenPeriod": "Another enrollment period is already open. Close it before opening a new one.",
     "StudentAgeBelowModalityMinimum": "The student is below the minimum age for this modality.",
     "StudentAgeAboveModalityMaximum": "The student is above the maximum age for this modality.",
     "ModalityNameAlreadyExists": "A modality with this name already exists.",
@@ -2330,6 +2717,18 @@
     "CoachingNotEligibleForParticipantApproval": "This coaching is not eligible for participant approval.",
     "CoachingNotEligibleForParticipantCancellation": "This coaching is not eligible for participant cancellation.",
     "CannotCancelAnotherParticipantsRegistration": "You cannot cancel another participant's registration.",
-    "RecurringCoachingNotFound": "The recurring coaching was not found."
+    "RecurringCoachingNotFound": "The recurring coaching was not found.",
+    "InvalidVisibilityTransition": "This visibility change is not allowed from the current state.",
+    "EventClassTargetRequiredWhenTargetIsClasses": "Select at least one class to notify.",
+    "CompletedEventRequiresDate": "Set a date before marking the event as completed.",
+    "EventNotPublished": "This event isn't published yet.",
+    "InterestAlreadyExists": "You've already marked interest in this event.",
+    "DuplicateEventFile": "A file with this name is already attached.",
+    "CannotClearClassTargetsOnPublishedEvent": "Class targets can't be cleared after publishing.",
+    "ClassTargetAlreadyExists": "This class is already targeted.",
+    "ParentCommentNotFound": "The comment you replied to no longer exists.",
+    "CommentEditNotAllowed": "You can't edit this comment.",
+    "CommentDeleteNotAllowed": "You can't delete this comment.",
+    "ProfileRequiredToComment": "Create a profile before posting comments."
   }
 }

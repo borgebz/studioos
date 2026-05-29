@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Check, ChevronRight, Megaphone, Plus } from 'lucide-react'
+import { CalendarClock, ChevronDown, Megaphone } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
 import type {
@@ -18,15 +18,26 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout } from '@/components/shared/PageLayout'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { TimePicker } from '@/components/shared/TimePicker'
 import { RichTextEditor } from '@/components/shared/RichTextEditor'
 import { ImageUpload } from '@/components/shared/ImageUpload'
 import { paths } from '@/app/paths'
-import { cn } from '@/lib/utils'
-import { eventFormSchema, type EventFormValues } from './event-schema'
+import { parseApiError } from '@/lib/api-errors'
+import {
+  eventFormSchema,
+  type EventFormValues,
+} from './event-schema'
 import { EventStateBadge, EventVisibilityBadge } from './events-helpers'
 import { usePermissions } from '@/auth/permissions'
 
@@ -34,19 +45,7 @@ interface EventFormPageProps {
   mode: 'create' | 'edit'
 }
 
-const VIS_OPTIONS: VisibilityStateEnum[] = [
-  VisibilityStateEnum.Draft,
-  VisibilityStateEnum.Scheduled,
-  VisibilityStateEnum.Published,
-  VisibilityStateEnum.Archived,
-]
-
-const STATE_OPTIONS: EventStateEnum[] = [
-  EventStateEnum.Planned,
-  EventStateEnum.DateTbd,
-  EventStateEnum.Cancelled,
-  EventStateEnum.Completed,
-]
+type SubmitAction = 'save' | 'publish' | 'schedule'
 
 function combineDateTime(date: Date, hhmm: string): string {
   const [h, m] = hhmm.split(':').map((s) => Number(s) || 0)
@@ -77,6 +76,10 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   const [loading, setLoading] = useState(mode === 'edit')
   const [submitting, setSubmitting] = useState(false)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
+  const [scheduleMode, setScheduleMode] = useState(false)
+  const [currentVisibility, setCurrentVisibility] = useState<
+    VisibilityStateEnum | undefined
+  >(undefined)
   const dataLoaded = useRef<number | null>(null)
 
   const form = useForm<EventFormValues>({
@@ -103,7 +106,6 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   const values = watch()
 
   const dateUnknown = watch('date_unknown')
-  const visibility = watch('visibility_state')
   const eventState = watch('event_state')
   const shortDescLen = (values.description ?? '').length
 
@@ -137,6 +139,11 @@ export function EventFormPage({ mode }: EventFormPageProps) {
           cover_file: null,
         })
         setCoverPreview(e.cover_photo_url ?? null)
+        setCurrentVisibility(e.visibility_state)
+        // If we're editing a Scheduled event, surface the schedule card by default.
+        if (e.visibility_state === VisibilityStateEnum.Scheduled) {
+          setScheduleMode(true)
+        }
       }
       setLoading(false)
     }
@@ -154,10 +161,17 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   }, [dateUnknown, eventState, setValue])
 
   // ── Submit handlers ───────────────────────────────────────────────────
-  const submit = async (
-    vals: EventFormValues,
-    opts: { publishAfter: boolean } = { publishAfter: false }
-  ) => {
+  //
+  // The form is for editing content (title, body, date, etc.). Visibility
+  // transitions are explicit footer actions — we never expose the visibility
+  // enum as a form field. Allowed `action` values:
+  //
+  //   'save'      → save content; keep current visibility (no transition).
+  //   'publish'   → save content; then call publish endpoint.
+  //   'schedule'  → save content; then call schedule-publication endpoint
+  //                 with publication_scheduled_at + time from the form.
+  //
+  const submit = async (vals: EventFormValues, action: SubmitAction) => {
     setSubmitting(true)
     try {
       const event_date_iso =
@@ -188,53 +202,33 @@ export function EventFormPage({ mode }: EventFormPageProps) {
       }
       if (!result) throw new Error('no result')
 
-      // Visibility + state actions (when distinct from default behaviour).
-      if (
-        opts.publishAfter ||
-        vals.visibility_state === VisibilityStateEnum.Published
+      if (action === 'publish' && can('events.can_publish_event')) {
+        const r = await apiClient.api.eventsPublishCreate(result.id, {})
+        result = r.data
+      } else if (
+        action === 'schedule' &&
+        can('events.can_schedule_event_publication') &&
+        vals.publication_scheduled_at
       ) {
-        if (can('events.can_publish_event')) {
-          await apiClient.api
-            .eventsPublishCreate(result.id, {})
-            .catch(() => null)
-        }
-      } else if (vals.visibility_state === VisibilityStateEnum.Scheduled) {
-        if (
-          can('events.can_schedule_event_publication') &&
-          vals.publication_scheduled_at
-        ) {
-          const iso = combineDateTime(
-            vals.publication_scheduled_at,
-            vals.publication_scheduled_time || '09:00'
-          )
-          await apiClient.api
-            .eventsSchedulePublicationCreate(result.id, {
-              publication_scheduled_at: iso,
-            })
-            .catch(() => null)
-        }
-      } else if (vals.visibility_state === VisibilityStateEnum.Archived) {
-        if (can('events.can_archive_event')) {
-          await apiClient.api.eventsArchiveCreate(result.id).catch(() => null)
-        }
-      }
-      // State actions (cancel / complete) — only when changed away from saved state.
-      if (vals.event_state === EventStateEnum.Cancelled) {
-        if (can('events.can_cancel_event')) {
-          await apiClient.api.eventsCancelCreate(result.id).catch(() => null)
-        }
-      } else if (vals.event_state === EventStateEnum.Completed) {
-        if (can('events.can_complete_event')) {
-          await apiClient.api.eventsCompleteCreate(result.id).catch(() => null)
-        }
+        const iso = combineDateTime(
+          vals.publication_scheduled_at,
+          vals.publication_scheduled_time || '09:00'
+        )
+        const r = await apiClient.api.eventsSchedulePublicationCreate(
+          result.id,
+          { publication_scheduled_at: iso }
+        )
+        result = r.data
       }
 
       toast.success(
-        opts.publishAfter ? t('events.form.publishOk') : t('events.form.saveOk')
+        action === 'publish'
+          ? t('events.form.publishOk')
+          : t('events.form.saveOk')
       )
       navigate(paths.eventsDetail.replace(':id', String(result.id)))
-    } catch {
-      toast.error(t('events.form.saveError'))
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('events.form.saveError'))
     } finally {
       setSubmitting(false)
     }
@@ -247,17 +241,15 @@ export function EventFormPage({ mode }: EventFormPageProps) {
 
   if (loading) {
     return (
-      <div className="flex h-full flex-col">
-        <div className="flex-1 overflow-auto p-6">
-          <div className="mx-auto w-full max-w-6xl">
-            <PageHeader
-              title={t('events.form.editTitle')}
-              backTo={paths.events}
-            />
-            <Skeleton className="h-[600px] w-full" />
-          </div>
+      <PageLayout>
+        <div className="mx-auto w-full max-w-6xl">
+          <PageHeader
+            title={t('events.form.editTitle')}
+            backTo={paths.events}
+          />
+          <Skeleton className="h-[600px] w-full" />
         </div>
-      </div>
+      </PageLayout>
     )
   }
 
@@ -270,358 +262,404 @@ export function EventFormPage({ mode }: EventFormPageProps) {
       ? paths.eventsDetail.replace(':id', String(numericId))
       : paths.events
 
+  const footer = (
+    <>
+      <Button
+        variant="ghost"
+        type="button"
+        onClick={() => navigate(backTo)}
+        disabled={submitting}
+      >
+        {t('common.cancel')}
+      </Button>
+      <FooterActions
+        mode={mode}
+        visibility={currentVisibility}
+        scheduleMode={scheduleMode}
+        submitting={submitting}
+        canPublish={can('events.can_publish_event')}
+        canSchedule={can('events.can_schedule_event_publication')}
+        onSave={() => handleSubmit((v) => submit(v, 'save'))()}
+        onPublish={() => handleSubmit((v) => submit(v, 'publish'))()}
+        onSchedule={() => handleSubmit((v) => submit(v, 'schedule'))()}
+        onChooseSchedule={() => setScheduleMode(true)}
+        onChoosePublishNow={() => setScheduleMode(false)}
+      />
+    </>
+  )
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-auto p-6 pb-[88px]">
-        <div className="mx-auto w-full max-w-6xl">
-          <PageHeader title={title} backTo={backTo}>
-            <span className="font-mono text-xs text-muted-foreground">
-              {mode === 'edit' && formState.isDirty
-                ? ''
-                : mode === 'edit'
-                  ? t('events.form.savedAuto', { ago: '·' })
-                  : ''}
-            </span>
-          </PageHeader>
+    <PageLayout footer={footer}>
+      <div className="mx-auto w-full max-w-6xl">
+        <PageHeader title={title} backTo={backTo} />
 
-          <form
-            id="page-form"
-            onSubmit={handleSubmit((v) => submit(v))}
-            className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6"
-          >
-            {/* LEFT — main column */}
-            <div className="space-y-6">
-              <CardSection title={t('events.form.general')}>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="title" className="mb-1.5 block">
-                      {t('events.form.titleLabel')}{' '}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="title"
-                      placeholder={t('events.form.titlePlaceholder')}
-                      {...register('title')}
-                    />
-                    {formState.errors.title && (
-                      <p className="mt-1 text-xs text-destructive">
-                        {t('validation.required')}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="description" className="mb-1.5">
-                      {t('events.form.shortDescription')}{' '}
-                      <span className="text-destructive">*</span>
-                    </Label>
-                    <Textarea
-                      id="description"
-                      rows={2}
-                      placeholder={t('events.form.shortDescriptionPlaceholder')}
-                      maxLength={160}
-                      {...register('description')}
-                    />
-                    <div className="mt-1 flex justify-end font-mono text-[11px] text-muted-foreground">
-                      {t('events.form.shortDescriptionCounter', {
-                        count: shortDescLen,
-                      })}
-                    </div>
+        <form
+          id="page-form"
+          onSubmit={handleSubmit((v) => submit(v, 'save'))}
+          className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6"
+        >
+          {/* LEFT — main column */}
+          <div className="space-y-6">
+            <CardSection title={t('events.form.general')}>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="title" className="mb-1.5 block">
+                    {t('events.form.titleLabel')}{' '}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="title"
+                    placeholder={t('events.form.titlePlaceholder')}
+                    {...register('title')}
+                  />
+                  {formState.errors.title && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {t('validation.required')}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="description" className="mb-1.5">
+                    {t('events.form.shortDescription')}{' '}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id="description"
+                    rows={2}
+                    placeholder={t('events.form.shortDescriptionPlaceholder')}
+                    maxLength={160}
+                    {...register('description')}
+                  />
+                  <div className="mt-1 flex justify-end font-mono text-[11px] text-muted-foreground">
+                    {t('events.form.shortDescriptionCounter', {
+                      count: shortDescLen,
+                    })}
                   </div>
                 </div>
-              </CardSection>
+              </div>
+            </CardSection>
 
-              <CardSection
-                title={t('events.form.cover')}
-                description={t('events.form.coverHint')}
-              >
-                <ImageUpload
-                  variant="cover"
-                  aspectRatio={16 / 9}
-                  value={coverPreview}
-                  onChange={(file) => onCoverPick(file)}
-                  onRemove={() => {
-                    setCoverPreview(null)
-                    setValue('cover_file', null, { shouldDirty: true })
-                  }}
-                />
-              </CardSection>
+            <CardSection
+              title={t('events.form.cover')}
+              description={t('events.form.coverHint')}
+            >
+              <ImageUpload
+                variant="cover"
+                aspectRatio={16 / 9}
+                value={coverPreview}
+                onChange={(file) => onCoverPick(file)}
+                onRemove={() => {
+                  setCoverPreview(null)
+                  setValue('cover_file', null, { shouldDirty: true })
+                }}
+              />
+            </CardSection>
 
-              <CardSection
-                title={t('events.form.body')}
-                description={t('events.form.bodyHint')}
-              >
-                <Controller
-                  control={control}
-                  name="body"
-                  render={({ field }) => (
-                    <RichTextEditor
-                      value={field.value ?? ''}
-                      onChange={field.onChange}
-                      placeholder={t('events.form.bodyPlaceholder')}
-                      minHeight={260}
-                      showCount
-                    />
+            <CardSection
+              title={t('events.form.body')}
+              description={t('events.form.bodyHint')}
+            >
+              <Controller
+                control={control}
+                name="body"
+                render={({ field }) => (
+                  <RichTextEditor
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    placeholder={t('events.form.bodyPlaceholder')}
+                    minHeight={260}
+                    showCount
+                  />
+                )}
+              />
+            </CardSection>
+          </div>
+
+          {/* RIGHT — meta rail */}
+          <div className="space-y-6">
+            {/* Current status (edit mode only — read-only) */}
+            {mode === 'edit' && currentVisibility && (
+              <CardSection title={t('events.form.currentStatus')}>
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {t('events.details.visibility')}
+                    </span>
+                    <EventVisibilityBadge value={currentVisibility} />
+                  </div>
+                  {eventState && (
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-muted-foreground">
+                        {t('events.details.state')}
+                      </span>
+                      <EventStateBadge value={eventState} />
+                    </div>
                   )}
-                />
-              </CardSection>
-
-              <CardSection title={t('events.form.locationContact')}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <Label className="mb-1.5 block">
-                      {t('events.form.locationLabel')}
-                    </Label>
-                    <Input
-                      placeholder={t('events.form.locationPlaceholder')}
-                      {...register('location')}
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label className="mb-1.5 block">
-                      {t('events.form.contactLabel')}
-                    </Label>
-                    <Input
-                      type="email"
-                      placeholder={t('events.form.contactPlaceholder')}
-                      {...register('contact_info')}
-                    />
-                  </div>
                 </div>
               </CardSection>
-            </div>
+            )}
 
-            {/* RIGHT — meta rail */}
-            <div className="space-y-6">
-              {/* Visibility */}
-              <CardSection title={t('events.form.visibilitySection')}>
+            {/* Date & time */}
+            <CardSection title={t('events.form.dateSection')}>
+              <div className="space-y-3">
                 <Controller
                   control={control}
-                  name="visibility_state"
+                  name="event_date"
                   render={({ field }) => (
-                    <div className="space-y-2">
-                      {VIS_OPTIONS.map((v) => (
-                        <RadioCard
-                          key={v}
-                          selected={field.value === v}
-                          onSelect={() => field.onChange(v)}
-                          label={t(`events.visibility.${v}`)}
-                          description={t(`events.visibilityDesc.${v}`)}
-                          right={<EventVisibilityBadge value={v} />}
-                        />
-                      ))}
-                    </div>
+                    <DatePicker
+                      value={field.value ?? undefined}
+                      onChange={(d) => field.onChange(d ?? null)}
+                      disabled={dateUnknown}
+                    />
                   )}
                 />
-              </CardSection>
-
-              {/* State */}
-              <CardSection title={t('events.form.stateSection')}>
-                <Controller
-                  control={control}
-                  name="event_state"
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      {STATE_OPTIONS.map((v) => (
-                        <RadioCard
-                          key={v}
-                          selected={field.value === v}
-                          onSelect={() => field.onChange(v)}
-                          label={t(`events.state.${v}`)}
-                          description={t(`events.stateDesc.${v}`)}
-                          right={<EventStateBadge value={v} />}
-                        />
-                      ))}
-                    </div>
-                  )}
-                />
-              </CardSection>
-
-              {/* Date & time */}
-              <CardSection title={t('events.form.dateSection')}>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <Controller
                     control={control}
-                    name="event_date"
+                    name="event_time"
                     render={({ field }) => (
-                      <DatePicker
-                        value={field.value ?? undefined}
-                        onChange={(d) => field.onChange(d ?? null)}
+                      <TimePicker
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
                         disabled={dateUnknown}
                       />
                     )}
                   />
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <Controller
-                      control={control}
-                      name="event_time"
-                      render={({ field }) => (
-                        <TimePicker
-                          value={field.value ?? ''}
-                          onChange={field.onChange}
-                          disabled={dateUnknown}
-                        />
-                      )}
-                    />
-                  </div>
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={dateUnknown}
-                      onChange={(e) =>
-                        setValue('date_unknown', e.target.checked, {
-                          shouldDirty: true,
-                        })
-                      }
-                      className="size-4 rounded border-border accent-primary"
-                    />
-                    {t('events.form.dateUnknown')}
-                  </label>
+                </div>
+                <label
+                  htmlFor="date_unknown"
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                >
+                  <Checkbox
+                    id="date_unknown"
+                    checked={dateUnknown}
+                    onCheckedChange={(checked) =>
+                      setValue('date_unknown', checked === true, {
+                        shouldDirty: true,
+                      })
+                    }
+                  />
+                  {t('events.form.dateUnknown')}
+                </label>
+              </div>
+            </CardSection>
+
+            {/* Location & contact — in right rail for column balance */}
+            <CardSection title={t('events.form.locationContact')}>
+              <div className="space-y-3">
+                <div>
+                  <Label className="mb-1.5 block">
+                    {t('events.form.locationLabel')}
+                  </Label>
+                  <Input
+                    placeholder={t('events.form.locationPlaceholder')}
+                    {...register('location')}
+                  />
+                </div>
+                <div>
+                  <Label className="mb-1.5 block">
+                    {t('events.form.contactLabel')}
+                  </Label>
+                  <Input
+                    type="email"
+                    placeholder={t('events.form.contactPlaceholder')}
+                    {...register('contact_info')}
+                  />
+                </div>
+              </div>
+            </CardSection>
+
+            {/* Schedule publication — only when user toggled "Schedule for later" */}
+            {scheduleMode && (
+              <CardSection
+                title={t('events.form.scheduleSection')}
+                description={t('events.form.scheduleHint')}
+              >
+                <div className="space-y-3">
+                  <Controller
+                    control={control}
+                    name="publication_scheduled_at"
+                    render={({ field }) => (
+                      <DatePicker
+                        value={field.value ?? undefined}
+                        onChange={(d) => field.onChange(d ?? null)}
+                        placeholder={t('events.form.schedulePlaceholder')}
+                      />
+                    )}
+                  />
+                  <Controller
+                    control={control}
+                    name="publication_scheduled_time"
+                    render={({ field }) => (
+                      <TimePicker
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
                 </div>
               </CardSection>
-
-              {/* Schedule publication — only when visibility=scheduled */}
-              {visibility === VisibilityStateEnum.Scheduled && (
-                <CardSection
-                  title={t('events.form.scheduleSection')}
-                  description={t('events.form.scheduleHint')}
-                >
-                  <div className="space-y-3">
-                    <Controller
-                      control={control}
-                      name="publication_scheduled_at"
-                      render={({ field }) => (
-                        <DatePicker
-                          value={field.value ?? undefined}
-                          onChange={(d) => field.onChange(d ?? null)}
-                          placeholder={t('events.form.schedulePlaceholder')}
-                        />
-                      )}
-                    />
-                    <Controller
-                      control={control}
-                      name="publication_scheduled_time"
-                      render={({ field }) => (
-                        <TimePicker
-                          value={field.value ?? ''}
-                          onChange={field.onChange}
-                        />
-                      )}
-                    />
-                  </div>
-                </CardSection>
-              )}
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* Sticky footer */}
-      <div className="sticky bottom-0 z-10 border-t border-border bg-background">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-3">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {visibility === VisibilityStateEnum.Published ? (
-              <span className="inline-flex items-center gap-1.5">
-                <Check className="size-3.5 text-emerald-600" />
-                {t('events.form.footerStatusReady')}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5">
-                {t('events.form.footerStatusDraft')}
-              </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+        </form>
+      </div>
+    </PageLayout>
+  )
+}
+
+// ─── Footer actions ────────────────────────────────────────────────────────
+
+function FooterActions({
+  mode,
+  visibility,
+  scheduleMode,
+  submitting,
+  canPublish,
+  canSchedule,
+  onSave,
+  onPublish,
+  onSchedule,
+  onChooseSchedule,
+  onChoosePublishNow,
+}: {
+  mode: 'create' | 'edit'
+  visibility?: VisibilityStateEnum
+  scheduleMode: boolean
+  submitting: boolean
+  canPublish: boolean
+  canSchedule: boolean
+  onSave: () => void
+  onPublish: () => void
+  onSchedule: () => void
+  onChooseSchedule: () => void
+  onChoosePublishNow: () => void
+}) {
+  const { t } = useTranslation()
+
+  // Editing a Published or Archived event: only content-save is allowed.
+  // Visibility transitions belong to the detail page (Manage panel).
+  const draftLike =
+    mode === 'create' ||
+    !visibility ||
+    visibility === VisibilityStateEnum.Draft ||
+    visibility === VisibilityStateEnum.Scheduled
+
+  if (!draftLike) {
+    return (
+      <Button type="button" onClick={onSave} disabled={submitting}>
+        {t('events.form.saveChanges')}
+      </Button>
+    )
+  }
+
+  // Schedule mode is on: primary is "Save & schedule", but user can still
+  // choose to publish now (turns schedule mode off and fires publish) or
+  // save as a plain draft.
+  if (scheduleMode) {
+    return (
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={() => {
+            onChoosePublishNow()
+            onSave()
+          }}
+          disabled={submitting}
+        >
+          {t('events.form.saveDraft')}
+        </Button>
+        <div className="inline-flex">
+          <Button
+            type="button"
+            className="rounded-r-none"
+            onClick={onSchedule}
+            disabled={submitting || !canSchedule}
+          >
+            <CalendarClock className="size-4" />
+            {t('events.form.saveAndSchedule')}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                className="rounded-l-none border-l border-primary-foreground/20 px-2"
+                disabled={submitting || (!canPublish && !canSchedule)}
+                aria-label={t('events.form.publishNow')}
+              >
+                <ChevronDown className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                disabled={!canPublish}
+                onClick={() => {
+                  onChoosePublishNow()
+                  onPublish()
+                }}
+              >
+                <Megaphone className="size-4" />
+                {t('events.form.publishNow')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    )
+  }
+
+  // Draft / new event: Save draft + split Publish button (Now / Schedule).
+  return (
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        type="button"
+        onClick={onSave}
+        disabled={submitting}
+      >
+        {mode === 'edit'
+          ? t('events.form.saveChanges')
+          : t('events.form.saveDraft')}
+      </Button>
+      <div className="inline-flex">
+        <Button
+          type="button"
+          className="rounded-r-none"
+          onClick={onPublish}
+          disabled={submitting || !canPublish}
+        >
+          <Megaphone className="size-4" />
+          {t('events.form.publishNow')}
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
               type="button"
-              onClick={() => navigate(backTo)}
-              disabled={submitting}
+              className="rounded-l-none border-l border-primary-foreground/20 px-2"
+              disabled={submitting || (!canPublish && !canSchedule)}
+              aria-label={t('events.form.scheduleForLater')}
             >
-              {t('events.form.discard')}
+              <ChevronDown className="size-4" />
             </Button>
-            <Button
-              variant="outline"
-              type="button"
-              disabled={submitting}
-              onClick={() =>
-                handleSubmit((v) =>
-                  submit(
-                    { ...v, visibility_state: VisibilityStateEnum.Draft },
-                    { publishAfter: false }
-                  )
-                )()
-              }
-            >
-              {t('events.form.saveDraft')}
-            </Button>
-            <Button
-              type="button"
-              form="page-form"
-              disabled={submitting || !can('events.can_publish_event')}
-              onClick={() =>
-                handleSubmit((v) =>
-                  submit(
-                    { ...v, visibility_state: VisibilityStateEnum.Published },
-                    { publishAfter: true }
-                  )
-                )()
-              }
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem
+              disabled={!canPublish}
+              onClick={onPublish}
             >
               <Megaphone className="size-4" />
-              {t('events.form.saveAndPublish')}
-            </Button>
-          </div>
-        </div>
+              {t('events.form.publishNow')}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              disabled={!canSchedule}
+              onClick={onChooseSchedule}
+            >
+              <CalendarClock className="size-4" />
+              {t('events.form.scheduleForLater')}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   )
 }
-
-// ─── Radio card ───────────────────────────────────────────────────────────
-
-function RadioCard({
-  selected,
-  onSelect,
-  label,
-  description,
-  right,
-}: {
-  selected: boolean
-  onSelect: () => void
-  label: string
-  description: string
-  right?: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      role="radio"
-      aria-checked={selected}
-      className={cn(
-        'grid w-full grid-cols-[18px_1fr_auto] items-center gap-3 rounded-md border px-3 py-2.5 text-left transition-colors',
-        selected
-          ? 'border-primary bg-primary/5'
-          : 'border-border bg-background hover:bg-accent/40'
-      )}
-    >
-      <span
-        className={cn(
-          'grid size-4 place-items-center rounded-full border-[1.5px]',
-          selected ? 'border-primary' : 'border-muted-foreground/50'
-        )}
-      >
-        {selected && <span className="size-2 rounded-full bg-primary" />}
-      </span>
-      <div>
-        <div className="text-sm font-semibold">{label}</div>
-        <div className="text-xs text-muted-foreground">{description}</div>
-      </div>
-      {right}
-    </button>
-  )
-}
-
-// Silence unused-import lint if some helpers above are conditionally rendered.
-void ChevronRight
-void Plus

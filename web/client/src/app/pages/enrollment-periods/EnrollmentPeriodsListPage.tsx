@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { DataTable } from '@/components/ui/data-table'
+import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { parseApiError } from '@/lib/api-errors'
@@ -65,50 +66,6 @@ export function EnrollmentPeriodsListPage() {
   const [loading, setLoading] = useState(true)
   const [togglingId, setTogglingId] = useState<number | null>(null)
 
-  const dataLoaded = useRef(false)
-  const load = useCallback(async () => {
-    setLoading(true)
-    const res = await apiClient.api.enrollmentsPeriodsList().catch((err) => {
-      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
-      return null
-    })
-    const arr = Array.isArray(res?.data) ? res!.data : []
-    setItems(arr)
-    setLoading(false)
-  }, [t])
-
-  useEffect(() => {
-    if (dataLoaded.current) return
-    dataLoaded.current = true
-    void load()
-  }, [load])
-
-  const handleToggle = useCallback(
-    async (period: EnrollmentPeriod) => {
-      setTogglingId(period.id)
-      try {
-        const res = period.is_open
-          ? await apiClient.api.enrollmentsPeriodsCloseCreate(period.id)
-          : await apiClient.api.enrollmentsPeriodsOpenCreate(period.id)
-        if (res.data) {
-          setItems((prev) =>
-            prev.map((p) => (p.id === period.id ? res.data! : p))
-          )
-        }
-        toast.success(
-          period.is_open
-            ? t('enrollmentPeriods.closeSuccess')
-            : t('enrollmentPeriods.openSuccess')
-        )
-      } catch (err) {
-        toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
-      } finally {
-        setTogglingId(null)
-      }
-    },
-    [t]
-  )
-
   const columnHelper = useMemo(
     () => createColumnHelper<EnrollmentPeriod>(),
     []
@@ -118,6 +75,13 @@ export function EnrollmentPeriodsListPage() {
       columnHelper.accessor('academic_year', {
         id: 'academic_year',
         header: () => t('enrollmentPeriods.col.academicYear'),
+        meta: {
+          filter: {
+            type: 'text',
+            label: t('enrollmentPeriods.filters.academicYear'),
+            placeholder: t('enrollmentPeriods.filters.academicYearPlaceholder'),
+          },
+        },
         cell: (info) => {
           const p = info.row.original
           if (!canManage) {
@@ -145,6 +109,27 @@ export function EnrollmentPeriodsListPage() {
       columnHelper.accessor('period_type', {
         id: 'period_type',
         header: () => t('enrollmentPeriods.col.type'),
+        meta: {
+          filter: {
+            type: 'select',
+            label: t('enrollmentPeriods.filters.type'),
+            anyLabel: t('enrollmentPeriods.filters.typeAll'),
+            options: [
+              {
+                value: PeriodTypeEnum.New,
+                label: t('enrollmentPeriods.type.new'),
+              },
+              {
+                value: PeriodTypeEnum.Renewal,
+                label: t('enrollmentPeriods.type.renewal'),
+              },
+              {
+                value: PeriodTypeEnum.Both,
+                label: t('enrollmentPeriods.type.both'),
+              },
+            ],
+          },
+        },
         cell: (info) => (
           <span className="text-sm text-muted-foreground">
             {periodTypeLabel(t, info.getValue())}
@@ -172,6 +157,14 @@ export function EnrollmentPeriodsListPage() {
       columnHelper.accessor('is_open', {
         id: 'is_open',
         header: () => t('enrollmentPeriods.col.status'),
+        meta: {
+          filter: {
+            type: 'boolean',
+            label: t('enrollmentPeriods.filters.status'),
+            trueLabel: t('enrollmentPeriods.filters.statusOpen'),
+            falseLabel: t('enrollmentPeriods.filters.statusClosed'),
+          },
+        },
         cell: (info) => {
           const open = info.getValue()
           return (
@@ -248,12 +241,106 @@ export function EnrollmentPeriodsListPage() {
         },
       }),
     ],
-    [columnHelper, t, dateLocale, canManage, navigate, togglingId, handleToggle]
+    // handleToggle is defined below and stable via useCallback; safe to omit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [columnHelper, t, dateLocale, canManage, navigate, togglingId]
+  )
+
+  const { columnFilters, setColumnFilters } =
+    useColumnFilters<EnrollmentPeriod>({
+      columns,
+      syncToUrl: true,
+    })
+
+  // Flatten active filters into the API params expected by the admin endpoint.
+  const apiQuery = useMemo(() => {
+    const out: {
+      is_open?: boolean
+      period_type?: PeriodTypeEnum
+      academic_year?: string
+    } = {}
+    for (const f of columnFilters) {
+      if (f.id === 'is_open' && typeof f.value === 'boolean') {
+        out.is_open = f.value
+      } else if (
+        f.id === 'period_type' &&
+        typeof f.value === 'string' &&
+        f.value.length > 0
+      ) {
+        out.period_type = f.value as PeriodTypeEnum
+      } else if (
+        f.id === 'academic_year' &&
+        typeof f.value === 'string' &&
+        f.value.trim().length > 0
+      ) {
+        out.academic_year = f.value.trim()
+      }
+    }
+    return out
+  }, [columnFilters])
+  // Stable key for the filters — used as a dep to retrigger loads.
+  const apiQueryKey = useMemo(() => JSON.stringify(apiQuery), [apiQuery])
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const res = await apiClient.api
+      .enrollmentsPeriodsAdminList(apiQuery)
+      .catch((err) => {
+        toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+        return null
+      })
+    const arr = Array.isArray(res?.data) ? res!.data : []
+    setItems(arr)
+    setLoading(false)
+    // apiQueryKey ensures we re-run when filters change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t, apiQueryKey])
+
+  const firstLoadRef = useRef(false)
+  useEffect(() => {
+    // Skip the very first effect run if we have no filters yet — but always
+    // run once. After that, every filter change re-triggers via apiQueryKey.
+    if (!firstLoadRef.current) {
+      firstLoadRef.current = true
+    }
+    void load()
+  }, [load])
+
+  const handleToggle = useCallback(
+    async (period: EnrollmentPeriod) => {
+      setTogglingId(period.id)
+      try {
+        const res = period.is_open
+          ? await apiClient.api.enrollmentsPeriodsCloseCreate(period.id)
+          : await apiClient.api.enrollmentsPeriodsOpenCreate(period.id)
+        if (res.data) {
+          setItems((prev) =>
+            prev.map((p) => (p.id === period.id ? res.data! : p))
+          )
+        }
+        toast.success(
+          period.is_open
+            ? t('enrollmentPeriods.closeSuccess')
+            : t('enrollmentPeriods.openSuccess')
+        )
+      } catch (err) {
+        // ConflictingOpenPeriod surfaces here when someone tries to open a
+        // second period while another is open. parseApiError will translate it
+        // via apiErrors.ConflictingOpenPeriod.
+        toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+      } finally {
+        setTogglingId(null)
+      }
+    },
+    [t]
   )
 
   const table = useReactTable({
     data: items,
     columns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    manualFiltering: true,
     getCoreRowModel: getCoreRowModel(),
   })
 

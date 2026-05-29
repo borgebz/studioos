@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
-import { useForm, Controller, type Resolver } from 'react-hook-form'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -86,12 +86,20 @@ export function EnrollmentPage() {
   const { theme, setTheme } = useTheme()
   const currentLang = i18n.language.startsWith('pt') ? 'pt' : 'en'
 
-  const [period, setPeriod] = useState<EnrollmentPeriod | null>(null)
+  // All currently-open periods. With the new single-open-period invariant on
+  // the API there is at most one — but we keep this as an array so the UI still
+  // works correctly if the invariant ever loosens, and so we can match the
+  // user's chosen enrollment_type against a period whose period_type is
+  // `both` or matches the type.
+  const [periods, setPeriods] = useState<EnrollmentPeriod[]>([])
   const [modalities, setModalities] = useState<ApiModality[]>([])
   const [isLoadingData, setIsLoadingData] = useState(true)
-  const [noPeriod, setNoPeriod] = useState(false)
   const [files, setFiles] = useState<File[]>([])
   const [submitted, setSubmitted] = useState<EnrollmentRead | null>(null)
+  // Tracks whether the parent has explicitly picked the enrollment type.
+  // The form's default value is `"new"`, but we don't want to reveal the rest
+  // of the form (or the price banner) until the choice is intentional.
+  const [hasChosenType, setHasChosenType] = useState(false)
 
   const dataLoaded = useRef(false)
 
@@ -113,28 +121,58 @@ export function EnrollmentPage() {
     const load = async () => {
       try {
         const [periodsRes, modalitiesRes] = await Promise.all([
+          // Public endpoint returns open periods only — exactly what we need
+          // here. Closed periods are not visible to anonymous callers.
           apiClient.api.enrollmentsPeriodsList().catch(() => null),
           apiClient.api.modalitiesList().catch(() => null),
         ])
-        if (periodsRes?.data) {
-          const openPeriod = periodsRes.data.find((p) => p.is_open)
-          if (openPeriod) {
-            setPeriod(openPeriod)
-          } else {
-            setNoPeriod(true)
-          }
-        } else {
-          setNoPeriod(true)
-        }
+        const open = (periodsRes?.data ?? []).filter((p) => p.is_open)
+        setPeriods(open)
         if (modalitiesRes?.data) setModalities(modalitiesRes.data)
-      } catch {
-        setNoPeriod(true)
       } finally {
         setIsLoadingData(false)
       }
     }
     void load()
   }, [])
+
+  // Watch the form's enrollment_type so we can derive the matching period.
+  const enrollmentType = useWatch({
+    control,
+    name: 'enrollment_type',
+  }) as 'new' | 'renewal' | undefined
+
+  // With the single-open-period invariant there is at most one open period;
+  // we still treat `periods` as an array defensively.
+  const openPeriod = periods[0] ?? null
+  // A `both`-type period accepts either enrollment_type, so we know the pricing
+  // applies regardless of the parent's pick — show the banner immediately.
+  const isBothPeriod = openPeriod?.period_type === 'both'
+
+  // The open period that matches the user's chosen enrollment_type. This is
+  // what we submit against and what the banner renders pricing from.
+  const matchingPeriod = useMemo<EnrollmentPeriod | null>(() => {
+    if (!openPeriod || !enrollmentType) return null
+    if (
+      openPeriod.period_type === 'both' ||
+      openPeriod.period_type === enrollmentType
+    ) {
+      return openPeriod
+    }
+    return null
+  }, [openPeriod, enrollmentType])
+
+  // Banner visibility rule:
+  // - `both` periods → show as soon as we know the period (no pick needed).
+  // - typed periods (`new` / `renewal`) → keep hidden until the parent
+  //   explicitly clicks a radio, so the prices feel like an answer to the
+  //   pick, not a fact that was always there.
+  const showBanner = matchingPeriod !== null && (isBothPeriod || hasChosenType)
+
+  // Inline empty state: type picked but the open period doesn't cover it.
+  const typeHasNoPeriod = hasChosenType && openPeriod !== null && !matchingPeriod
+  // True when there are no open periods at all (and we've finished loading).
+  const noOpenPeriodAtAll = !isLoadingData && periods.length === 0
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark')
   const toggleLang = () => {
@@ -165,10 +203,15 @@ export function EnrollmentPage() {
   }
 
   const onSubmit = async (data: EnrollmentFormValues) => {
+    if (!matchingPeriod) {
+      // Guardrail: submit button is gated behind matchingPeriod, but be defensive.
+      toast.error(t('enrollments.periodClosedTitle'))
+      return
+    }
     try {
       const res = await apiClient.api.enrollmentsCreate({
         ...data,
-        period_id: period?.id ?? undefined,
+        period_id: matchingPeriod.id,
         consent_rgpd: true,
         consent_internal_regulation: true,
       } as Parameters<typeof apiClient.api.enrollmentsCreate>[0])
@@ -182,8 +225,8 @@ export function EnrollmentPage() {
     }
   }
 
-  const daysLeft = period
-    ? differenceInCalendarDays(new Date(period.end_date), new Date())
+  const daysLeft = matchingPeriod
+    ? differenceInCalendarDays(new Date(matchingPeriod.end_date), new Date())
     : 0
 
   if (isLoadingData) {
@@ -218,7 +261,7 @@ export function EnrollmentPage() {
     )
   }
 
-  if (noPeriod) {
+  if (noOpenPeriodAtAll) {
     return (
       <main className="grain min-h-svh bg-background text-foreground">
         <div className="mx-auto flex min-h-svh max-w-xl flex-col items-center justify-center px-6 text-center">
@@ -306,71 +349,6 @@ export function EnrollmentPage() {
           </p>
         </div>
 
-        {/* Period banner */}
-        {period && (
-          <div className="relative mb-8 rounded-lg border border-primary/20 bg-background p-5 before:absolute before:inset-0 before:rounded-lg before:bg-primary/5">
-            <div className="relative flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-                  </span>
-                  <span className="text-xs font-medium text-primary">
-                    {t('enrollments.periodOpen')} ·{' '}
-                    {format(new Date(period.start_date), 'dd MMM', {
-                      locale: currentLang === 'pt' ? pt : undefined,
-                    })}{' '}
-                    →{' '}
-                    {format(new Date(period.end_date), 'dd MMM yyyy', {
-                      locale: currentLang === 'pt' ? pt : undefined,
-                    })}
-                  </span>
-                </div>
-                <p className="text-sm font-medium">
-                  {periodTypeLabel(t, period.period_type)}
-                </p>
-                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                  {period.enrollment_fee && (
-                    <span>
-                      {t('enrollments.enrollmentFee')} ·{' '}
-                      <b className="text-foreground">
-                        €{period.enrollment_fee}
-                      </b>
-                    </span>
-                  )}
-                  {period.insurance_general && (
-                    <span>
-                      {t('enrollments.insuranceGeneral')} ·{' '}
-                      <b className="text-foreground">
-                        €{period.insurance_general}
-                      </b>
-                    </span>
-                  )}
-                  {period.insurance_intensive && (
-                    <span>
-                      {t('enrollments.insuranceIntensive')} ·{' '}
-                      <b className="text-foreground">
-                        €{period.insurance_intensive}
-                      </b>
-                    </span>
-                  )}
-                </div>
-              </div>
-              {daysLeft > 0 && (
-                <div className="text-right">
-                  <span className="text-2xl font-semibold tabular-nums">
-                    {daysLeft}
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    {t('enrollments.daysLeft')}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Form */}
         <form
           id="enrollment-form"
@@ -399,7 +377,7 @@ export function EnrollmentPage() {
                     <label
                       key={opt.value}
                       className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
-                        field.value === opt.value
+                        hasChosenType && field.value === opt.value
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:bg-accent'
                       }`}
@@ -407,17 +385,20 @@ export function EnrollmentPage() {
                       <input
                         type="radio"
                         className="sr-only"
-                        checked={field.value === opt.value}
-                        onChange={() => field.onChange(opt.value)}
+                        checked={hasChosenType && field.value === opt.value}
+                        onChange={() => {
+                          field.onChange(opt.value)
+                          setHasChosenType(true)
+                        }}
                       />
                       <div
                         className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 transition-colors ${
-                          field.value === opt.value
+                          hasChosenType && field.value === opt.value
                             ? 'border-primary bg-primary'
                             : 'border-muted-foreground/40'
                         }`}
                       >
-                        {field.value === opt.value && (
+                        {hasChosenType && field.value === opt.value && (
                           <div className="flex h-full items-center justify-center">
                             <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />
                           </div>
@@ -436,6 +417,96 @@ export function EnrollmentPage() {
             />
           </CardSection>
 
+          {/* Contextual price banner.
+              - `both` periods: shown immediately (parents see the prices that
+                apply regardless of which type they pick).
+              - `new`/`renewal` periods: hidden until the parent explicitly
+                picks a type, so the prices read as a response to the pick.
+              All pricing data is already loaded from the periods endpoint —
+              no extra fetch. */}
+          {showBanner && matchingPeriod && (
+            <div className="relative rounded-lg border border-primary/20 bg-background p-5 before:absolute before:inset-0 before:rounded-lg before:bg-primary/5">
+              <div className="relative flex flex-wrap items-start justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+                    </span>
+                    <span className="text-xs font-medium text-primary">
+                      {t('enrollments.periodOpen')} ·{' '}
+                      {format(new Date(matchingPeriod.start_date), 'dd MMM', {
+                        locale: currentLang === 'pt' ? pt : undefined,
+                      })}{' '}
+                      →{' '}
+                      {format(
+                        new Date(matchingPeriod.end_date),
+                        'dd MMM yyyy',
+                        {
+                          locale: currentLang === 'pt' ? pt : undefined,
+                        }
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium">
+                    {periodTypeLabel(t, matchingPeriod.period_type)}
+                  </p>
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    {matchingPeriod.enrollment_fee && (
+                      <span>
+                        {t('enrollments.enrollmentFee')} ·{' '}
+                        <b className="text-foreground">
+                          €{matchingPeriod.enrollment_fee}
+                        </b>
+                      </span>
+                    )}
+                    {matchingPeriod.insurance_general && (
+                      <span>
+                        {t('enrollments.insuranceGeneral')} ·{' '}
+                        <b className="text-foreground">
+                          €{matchingPeriod.insurance_general}
+                        </b>
+                      </span>
+                    )}
+                    {matchingPeriod.insurance_intensive && (
+                      <span>
+                        {t('enrollments.insuranceIntensive')} ·{' '}
+                        <b className="text-foreground">
+                          €{matchingPeriod.insurance_intensive}
+                        </b>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {daysLeft > 0 && (
+                  <div className="text-right">
+                    <span className="text-2xl font-semibold tabular-nums">
+                      {daysLeft}
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      {t('enrollments.daysLeft')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Inline empty state — type picked but no open period covers it. */}
+          {typeHasNoPeriod && (
+            <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
+              <p className="text-sm font-medium">
+                {t('enrollments.noPeriodForTypeTitle')}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('enrollments.noPeriodForTypeBody')}
+              </p>
+            </div>
+          )}
+
+          {/* Sections 2–7 stay visible whenever there is an open period at
+              all — the parent can fill the form even before picking a type.
+              Submit stays disabled until a matching period is resolved. */}
           {/* 2. Student Information */}
           <CardSection
             title={t('enrollments.studentInfo')}
@@ -953,7 +1024,11 @@ export function EnrollmentPage() {
           >
             {t('enrollments.cancel')}
           </Button>
-          <Button type="submit" form="enrollment-form" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            form="enrollment-form"
+            disabled={isSubmitting || !matchingPeriod}
+          >
             {isSubmitting
               ? t('enrollments.submitting')
               : t('enrollments.submit')}

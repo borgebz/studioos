@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next'
-import { Calendar, Heart, MapPin } from 'lucide-react'
+import { Calendar, MapPin } from 'lucide-react'
 import type { EventList } from '@/api/studioos-api'
 import { EventStateEnum } from '@/api/studioos-api'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   EventCover,
   EventStateBadge,
+  InterestButton,
   useDateFormatter,
   eventDateLine,
 } from './events-helpers'
@@ -101,33 +101,14 @@ export function EventCard({
           </div>
         )}
 
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/60 pt-3">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <Heart className="size-3.5" />
-              {event.interest_count ?? 0}
-            </span>
-          </div>
+        <div className="mt-auto flex items-center justify-end border-t border-border/60 pt-3">
           {onToggleInterest && (
-            <Button
-              type="button"
-              variant={interested ? 'secondary' : 'outline'}
-              size="sm"
+            <InterestButton
+              count={event.interest_count ?? 0}
+              active={interested}
               disabled={dim}
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggleInterest()
-              }}
-              className={cn(
-                'h-7 gap-1.5 px-2.5 text-xs',
-                interested && 'text-primary'
-              )}
-            >
-              <Heart className={cn('size-3.5', interested && 'fill-primary')} />
-              {interested
-                ? t('events.interest.secondaryActive')
-                : t('events.interest.secondary')}
-            </Button>
+              onClick={onToggleInterest}
+            />
           )}
         </div>
       </div>

@@ -39,6 +39,7 @@ export const paths = {
   enrollmentReview: '/enrollment/requests/:id',
   marketplace: '/marketplace/browse',
   marketplaceCreate: '/marketplace/create',
+  marketplaceDetail: '/marketplace/:id',
   marketplaceEdit: '/marketplace/:id/edit',
   myListings: '/marketplace/my-listings',
   myInventory: '/marketplace/my-inventory',
@@ -77,4 +78,9 @@ export const paths = {
   enrollmentPeriodCreate: '/enrollment-periods/create',
   enrollmentPeriodEdit: '/enrollment-periods/:id/edit',
   inventorySettings: '/inventory-settings',
+  roles: '/roles',
+  roleCreate: '/roles/create',
+  roleEdit: '/roles/:code/edit',
+  myAvailability: '/my-availability',
+  inventoryBookings: '/inventory/bookings',
 } as const

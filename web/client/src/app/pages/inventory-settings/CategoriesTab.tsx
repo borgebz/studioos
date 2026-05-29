@@ -11,7 +11,6 @@ import {
   Loader2,
   MoreHorizontal,
   Pencil,
-  Plus,
   Power,
   Trash2,
 } from 'lucide-react'
@@ -23,7 +22,7 @@ import type {
   PatchedUpdateCategory,
   SizeSystem,
 } from '@/api/studioos-api'
-import { Authorized, usePermissions } from '@/auth/permissions'
+import { usePermissions } from '@/auth/permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,6 +53,7 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
+import { translateApiValue } from '@/lib/translate-api-value'
 
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
 
@@ -80,7 +80,15 @@ function toRow(c: Category): CategoryRow {
   }
 }
 
-export function CategoriesTab() {
+interface CategoriesTabProps {
+  createOpen: boolean
+  onCloseCreate: () => void
+}
+
+export function CategoriesTab({
+  createOpen,
+  onCloseCreate,
+}: CategoriesTabProps) {
   const { t } = useTranslation()
   const { can } = usePermissions()
 
@@ -90,7 +98,7 @@ export function CategoriesTab() {
   const [items, setItems] = useState<CategoryRow[]>([])
   const [systems, setSystems] = useState<SizeSystem[]>([])
   const [loading, setLoading] = useState(true)
-  const [editTarget, setEditTarget] = useState<CategoryRow | 'new' | null>(null)
+  const [editTarget, setEditTarget] = useState<CategoryRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<CategoryRow | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const dataLoaded = useRef(false)
@@ -151,9 +159,14 @@ export function CategoriesTab() {
         header: () => t('inventorySettings.categories.col.name'),
         cell: (info) => {
           const c = info.row.original
+          const label = translateApiValue(
+            'inventoryValues.category',
+            c.name,
+            t
+          )
           if (!canEdit) {
             return (
-              <span className="font-medium text-foreground">{c.name}</span>
+              <span className="font-medium text-foreground">{label}</span>
             )
           }
           return (
@@ -162,7 +175,7 @@ export function CategoriesTab() {
               className="text-left font-medium text-foreground hover:text-primary"
               onClick={() => setEditTarget(c)}
             >
-              {c.name}
+              {label}
             </button>
           )
         },
@@ -175,10 +188,11 @@ export function CategoriesTab() {
           if (p == null)
             return <span className="text-muted-foreground">—</span>
           const parent = categoryById.get(p)
+          const parentLabel = parent
+            ? translateApiValue('inventoryValues.category', parent.name, t)
+            : `#${p}`
           return (
-            <span className="text-sm text-muted-foreground">
-              {parent?.name ?? `#${p}`}
-            </span>
+            <span className="text-sm text-muted-foreground">{parentLabel}</span>
           )
         },
       }),
@@ -281,17 +295,16 @@ export function CategoriesTab() {
     getCoreRowModel: getCoreRowModel(),
   })
 
-  return (
-    <div className="flex flex-col flex-1 min-h-0 gap-4">
-      <div className="flex justify-end shrink-0">
-        <Authorized permission="inventory.add_category">
-          <Button onClick={() => setEditTarget('new')}>
-            <Plus className="h-4 w-4" />
-            {t('inventorySettings.categories.create')}
-          </Button>
-        </Authorized>
-      </div>
+  // Combine the parent-controlled create signal with the in-tab edit target
+  // into a single value the dialog accepts.
+  const dialogTarget: CategoryRow | 'new' | null = editTarget
+    ? editTarget
+    : createOpen
+      ? 'new'
+      : null
 
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
       <DataTable
         table={table}
         fillHeight
@@ -307,10 +320,13 @@ export function CategoriesTab() {
       />
 
       <CategoryDialog
-        target={editTarget}
+        target={dialogTarget}
         allCategories={items}
         systems={systems}
-        onClose={() => setEditTarget(null)}
+        onClose={() => {
+          setEditTarget(null)
+          onCloseCreate()
+        }}
         onSaved={(c, mode) => {
           setItems((prev) =>
             mode === 'create'
@@ -323,7 +339,13 @@ export function CategoriesTab() {
       <ConfirmDeleteDialog
         open={deleteTarget != null}
         title={t('inventorySettings.categories.deleteTitle', {
-          name: deleteTarget?.name ?? '',
+          name: deleteTarget
+            ? translateApiValue(
+                'inventoryValues.category',
+                deleteTarget.name,
+                t
+              )
+            : '',
         })}
         description={t('inventorySettings.categories.deleteDesc')}
         successMessage={t('inventorySettings.categories.deleteSuccess')}
@@ -490,7 +512,7 @@ function CategoryDialog({
                 </SelectItem>
                 {parentOptions.map((c) => (
                   <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
+                    {translateApiValue('inventoryValues.category', c.name, t)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -508,15 +530,20 @@ function CategoryDialog({
               <ul className="space-y-1 rounded-md border border-border p-2 max-h-44 overflow-auto">
                 {systems.map((s) => {
                   const checked = systemIds.includes(s.id)
+                  const label = translateApiValue(
+                    'inventoryValues.sizeSystem',
+                    s.name,
+                    t
+                  )
                   return (
                     <li key={s.id}>
                       <label className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-accent/40 cursor-pointer">
                         <Checkbox
                           checked={checked}
                           onCheckedChange={() => toggleSystem(s.id)}
-                          aria-label={s.name}
+                          aria-label={label}
                         />
-                        <span className="text-sm">{s.name}</span>
+                        <span className="text-sm">{label}</span>
                       </label>
                     </li>
                   )

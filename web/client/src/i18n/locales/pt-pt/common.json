@@ -10,6 +10,7 @@
     "myRequests": "Os Meus Pedidos",
     "requestCoaching": "Pedir Coaching",
     "reviewRequests": "Rever Pedidos",
+    "myAvailability": "A Minha Disponibilidade",
     "marketplace": "Marketplace",
     "browse": "Explorar",
     "myInventory": "Os Meus Artigos",
@@ -17,10 +18,12 @@
     "schoolCatalog": "Catálogo da Escola",
     "schoolInventory": "Inventário da Escola",
     "schoolListings": "Anúncios da Escola",
+    "inventoryBookings": "Reservas",
     "people": "Pessoas",
     "users": "Utilizadores",
     "enrollmentRequests": "Matrículas",
     "invites": "Convidar Utilizadores",
+    "roles": "Papéis e Permissões",
     "billing": "Faturação",
     "billingEntries": "Lançamentos",
     "billingFines": "Multas",
@@ -487,7 +490,44 @@
     "title": "StudioOS",
     "welcomeBefore": "Bem-vindo. Visita o ",
     "welcomeLink": "sistema de design",
-    "welcomeAfter": " para explorar a biblioteca de componentes."
+    "welcomeAfter": " para explorar a biblioteca de componentes.",
+    "greetingMorning": "Bom dia",
+    "greetingAfternoon": "Boa tarde",
+    "greetingEvening": "Boa noite",
+    "quickActions": "Ações rápidas",
+    "quickActionsDesc": "Atalhos para o teu dia a dia.",
+    "thisWeek": "esta semana",
+    "actions": {
+      "createCoaching": "Agendar coaching",
+      "requestCoaching": "Pedir coaching",
+      "inviteUser": "Convidar utilizador",
+      "createEvent": "Criar evento",
+      "myAvailability": "Disponibilidade",
+      "openEnrollmentPeriod": "Período de matrícula",
+      "reviewEnrollments": "Rever matrículas"
+    },
+    "weeklyCoachings": "A minha semana",
+    "weeklyCoachingsAll": "Coachings esta semana",
+    "noCoachingsThisDay": "Sem coachings neste dia.",
+    "noCoachingsThisWeek": "Sem coachings esta semana.",
+    "dayFree": "Dia livre",
+    "viewCalendar": "Ver calendário",
+    "kpi": {
+      "title": "Resumo da escola",
+      "pendingEnrollments": "Matrículas por rever",
+      "activeEnrollments": "Matrículas ativas",
+      "coachingsThisWeek": "Coachings esta semana",
+      "upcomingEvents": "Eventos a vir"
+    },
+    "chart": {
+      "title": "Coachings por estúdio",
+      "subtitle": "Últimos 14 dias",
+      "empty": "Sem coachings no período."
+    },
+    "nextCoaching": {
+      "title": "Próxima sessão",
+      "empty": "Não tens sessões agendadas."
+    }
   },
   "notFound": {
     "title": "Estúdio errado",
@@ -511,6 +551,33 @@
     "availabilityNotes": "Notas",
     "previousWeek": "Semana anterior",
     "nextWeek": "Próxima semana",
+    "availability": {
+      "title": "Agenda",
+      "viewSchedule": "Ver agenda do professor",
+      "descTeacher": "Disponibilidade e sessões marcadas de {{teacher}}",
+      "descTeacherStudio": "{{teacher}} e {{studio}} — disponibilidade e sessões marcadas",
+      "empty": "Nada agendado neste período",
+      "dayFree": "Livre o dia todo",
+      "legend": {
+        "teacherAvailability": "Disponibilidade do professor",
+        "notAvailable": "Indisponível",
+        "yourSlot": "O teu horário"
+      },
+      "popover": {
+        "teacherBusy": "Professor já tem sessão marcada",
+        "studioBusy": "Estúdio já reservado"
+      },
+      "hint": {
+        "checking": "A verificar disponibilidade…",
+        "free": "Horário livre para professor e estúdio",
+        "teacherConflicts_one": "Professor já tem uma sessão a esta hora",
+        "teacherConflicts_other": "Professor tem {{count}} sessões sobrepostas",
+        "studioConflicts_one": "Estúdio já está reservado a esta hora",
+        "studioConflicts_other": "Estúdio tem {{count}} reservas sobrepostas",
+        "bothConflicts": "Professor ({{teacher}}) e estúdio ({{studio}}) têm conflitos",
+        "view": "Ver"
+      }
+    },
     "studio": "Estúdio",
     "selectStudio": "Selecionar estúdio",
     "schedule": "Agendamento",
@@ -1050,6 +1117,9 @@
     "internalNotes": "Notas internas",
     "internalNotesPlaceholder": "Visível apenas para staff…",
     "deleteVariant": "Eliminar variante",
+    "viewBookings": "Ver reservas",
+    "variantBookingsTitle": "Reservas da variante",
+    "variantBookingsDesc": "Quando esta variante está reservada, emprestada ou retida.",
     "pageTitle": "Marketplace",
     "browseTitle": "Explorar Marketplace",
     "browseEmpty": "Nenhum anúncio disponível.",
@@ -1080,7 +1150,60 @@
     "sortBy": "Ordenar por",
     "sortRecent": "Mais recentes",
     "sortPriceAsc": "Preço: menor",
-    "sortPriceDesc": "Preço: maior"
+    "sortPriceDesc": "Preço: maior",
+    "detail": {
+      "back": "Voltar ao marketplace",
+      "ownedByYou": "Anunciado por ti",
+      "ownedBySchool": "Anunciado pela escola",
+      "ownedByMember": "Anunciado por {{name}}",
+      "memberPlaceholder": "Membro",
+      "specs": "Especificações",
+      "specSize": "Tamanho",
+      "specCondition": "Condição",
+      "specBrand": "Marca",
+      "specMaterial": "Material",
+      "specSku": "Referência",
+      "specColors": "Cores",
+      "specNotes": "Notas do anunciante",
+      "noDescription": "Sem descrição.",
+      "askingPriceLabel": "Preço pedido",
+      "bookingWindows": "Reservas existentes",
+      "bookingWindowsDesc": "Períodos já ocupados — escolha um intervalo livre ao pedir.",
+      "noBookingWindows": "Sem reservas neste momento.",
+      "requestBooking": "Pedir reserva",
+      "requestPurchase": "Pedir compra",
+      "requestLoan": "Pedir empréstimo",
+      "requestClaim": "Pedir este artigo",
+      "messageOwner": "Mensagem ao anunciante",
+      "messageOwnerSoon": "Em breve",
+      "favorite": "Favorito",
+      "unfavorite": "Remover favorito",
+      "editListing": "Editar anúncio",
+      "favoritesCount_one": "{{count}} favorito",
+      "favoritesCount_other": "{{count}} favoritos",
+      "notFound": "Anúncio não encontrado.",
+      "notFoundDesc": "O anúncio pode ter sido removido ou já não estar disponível."
+    },
+    "requestBooking": {
+      "titleRent": "Pedir reserva",
+      "titleSell": "Pedir compra",
+      "titleLend": "Pedir empréstimo",
+      "titleDonate": "Pedir este artigo",
+      "descriptionRent": "Indique as datas pretendidas. O anunciante vai aprovar ou propor um novo intervalo.",
+      "descriptionNonRent": "Deixe uma mensagem ao anunciante. Receberá uma resposta diretamente.",
+      "startAt": "Data de início",
+      "endAt": "Data de fim",
+      "notes": "Mensagem",
+      "notesPlaceholder": "Olá! Tenho interesse neste artigo…",
+      "cancel": "Cancelar",
+      "submit": "Enviar pedido",
+      "submitting": "A enviar…",
+      "success": "Pedido enviado",
+      "errorDatesRequired": "Indique as datas de início e fim.",
+      "errorEndBeforeStart": "A data de fim deve ser depois do início.",
+      "windowsLegendBooked": "Já reservado",
+      "windowsLegendRequest": "O teu pedido"
+    }
   },
   "mediaUpload": {
     "dragDropHint": "Arraste e solte imagens aqui, ou use os botões abaixo",
@@ -1333,6 +1456,8 @@
     "periodClosed": "Inscrições encerradas",
     "periodClosedTitle": "As inscrições estão encerradas",
     "periodClosedBody": "Não existem períodos de inscrição ativos neste momento. Volte mais tarde ou contacte a escola para mais informações.",
+    "noPeriodForTypeTitle": "Não está aberto para este tipo de inscrição",
+    "noPeriodForTypeBody": "O período de inscrição atual não aceita este tipo. Experimente a outra opção ou volte quando o período certo abrir.",
     "periodDates": "{{start}} → {{end}}",
     "periodNewAndRenewals": "Novos alunos e renovações",
     "periodNewOnly": "Apenas novos alunos",
@@ -1529,7 +1654,11 @@
       "cancelReply": "Cancelar",
       "showReplies_one": "Mostrar {{count}} resposta",
       "showReplies_other": "Mostrar {{count}} respostas",
-      "hideReplies": "Ocultar respostas"
+      "hideReplies": "Ocultar respostas",
+      "noProfileTitle": "Cria o teu perfil para participar na conversa",
+      "noProfileDescription": "Podes ler o que os outros estão a dizer — adiciona um nome ao teu perfil para publicar ou responder.",
+      "noProfileCta": "Ir para o meu perfil",
+      "anonymousAuthor": "Membro"
     },
     "posts": {
       "empty": "Sem actualizações por agora.",
@@ -1545,9 +1674,9 @@
     },
     "visibility": {
       "draft": "Rascunho",
-      "scheduled": "Agendada",
-      "published": "Publicada",
-      "archived": "Arquivada"
+      "scheduled": "Agendado",
+      "published": "Publicado",
+      "archived": "Arquivado"
     },
     "visibilityDesc": {
       "draft": "Visível só para a Direção",
@@ -1589,7 +1718,7 @@
       "coverDropzone": "Arraste uma imagem ou",
       "coverBrowse": "escolha um ficheiro",
       "body": "Corpo do evento",
-      "bodyHint": "Aparece na página pública do evento. Aceita formatação rica.",
+      "bodyHint": "Aparece na página pública do evento.",
       "bodyPlaceholder": "Conte a história do evento — programa, expectativas, instruções práticas…",
       "locationContact": "Local & contacto",
       "locationLabel": "Local",
@@ -1620,7 +1749,16 @@
       "cancelConfirmBody": "O evento mantém-se visível mas marcado como cancelado.",
       "footerStatusReady": "Pronto a publicar",
       "footerStatusDraft": "Rascunho · não visível",
-      "ready": "Pronto a publicar"
+      "footerStatusScheduled": "Publica em {{date}}",
+      "footerStatusPublished": "Em directo · visível para todos",
+      "footerStatusArchived": "Arquivado · visível só para a Direção",
+      "ready": "Pronto a publicar",
+      "saveChanges": "Guardar alterações",
+      "publishNow": "Publicar agora",
+      "scheduleForLater": "Agendar para mais tarde…",
+      "saveAndSchedule": "Guardar & agendar",
+      "currentStatus": "Estado actual",
+      "scheduledFor": "Agendado para {{date}}"
     },
     "post": {
       "createTitle": "Nova actualização",
@@ -1641,7 +1779,6 @@
       "titleLabel": "Título do post",
       "titlePlaceholder": "Ex.: Programa final confirmado",
       "bodyLabel": "Corpo",
-      "bodyHint": "Texto rico · pode usar formatação",
       "previewLabel": "Pré-visualização",
       "previewSub": "Como vai aparecer na timeline do evento",
       "saved": "Actualização guardada.",
@@ -1666,6 +1803,182 @@
       "cancelled": "cancelou o evento",
       "archived": "arquivou o evento",
       "completed": "marcou como concluído"
+    }
+  },
+  "variantBookings": {
+    "empty": "Sem reservas para esta variante nesta semana.",
+    "allDay": "Todo o dia"
+  },
+  "inventoryBookings": {
+    "title": "Reservas de inventário",
+    "subtitle": "Reservas, empréstimos, doações e outras retenções sobre variantes pertencentes à escola.",
+    "create": "Nova reserva",
+    "includeCancelled": "Incluir canceladas",
+    "empty": "Nenhuma reserva corresponde.",
+    "saveSuccess": "Reserva guardada.",
+    "deleteSuccess": "Reserva eliminada.",
+    "deleteTitle": "Eliminar esta reserva?",
+    "deleteDesc": "Eliminar liberta a variante para a janela correspondente. Se quiser manter o registo, cancele em vez de eliminar.",
+    "col": {
+      "variant": "Variante",
+      "title": "Título",
+      "type": "Tipo",
+      "status": "Estado",
+      "window": "Janela",
+      "actions": "Ações"
+    },
+    "filters": {
+      "type": "Tipo",
+      "allTypes": "Todos os tipos",
+      "status": "Estado",
+      "allStatuses": "Todos os estados"
+    },
+    "type": {
+      "reservation": "Reserva",
+      "loan": "Empréstimo",
+      "rent": "Aluguer",
+      "sale": "Venda",
+      "donation": "Doação",
+      "schoolUse": "Uso pela escola",
+      "maintenance": "Manutenção",
+      "blocked": "Bloqueado"
+    },
+    "status": {
+      "pending": "Pendente",
+      "confirmed": "Confirmada",
+      "completed": "Concluída",
+      "blocked": "Bloqueada",
+      "cancelled": "Cancelada"
+    },
+    "dialog": {
+      "createTitle": "Nova reserva",
+      "editTitle": "Editar reserva",
+      "description": "As reservas retêm uma variante para um propósito específico durante uma janela.",
+      "variantLabel": "Variante",
+      "variantPickerEmpty": "Escolher variante",
+      "variantSearchPlaceholder": "Pesquisar produtos da escola…",
+      "variantNoMatches": "Nenhum produto corresponde.",
+      "show": "Mostrar variantes",
+      "hide": "Ocultar variantes",
+      "noVariants": "Sem variantes para este produto.",
+      "typeLabel": "Tipo",
+      "titleLabel": "Título",
+      "titlePlaceholder": "Para que serve esta retenção",
+      "startDate": "Data de início",
+      "startTime": "Hora de início",
+      "endDate": "Data de fim",
+      "endTime": "Hora de fim",
+      "notesLabel": "Notas",
+      "notesPlaceholder": "Notas opcionais.",
+      "existingBookingsTitle": "Reservas existentes deste item",
+      "noExistingBookings": "Sem reservas para este item",
+      "dayFree": "Livre o dia todo",
+      "legendBooked": "Reservado",
+      "yourSlot": "A tua reserva"
+    },
+    "errors": {
+      "variantRequired": "Escolha uma variante.",
+      "startRequired": "Escolha uma data de início.",
+      "endRequired": "Escolha uma data de fim.",
+      "startBeforeEnd": "O início tem de ser antes do fim.",
+      "titleRequired": "Indique um título curto para a reserva."
+    }
+  },
+  "availability": {
+    "title": "A minha disponibilidade",
+    "subtitle": "Janelas de tempo que sinaliza como disponíveis. A mostrar os próximos {{days}} dias.",
+    "create": "Adicionar disponibilidade",
+    "empty": "Ainda não sinalizou disponibilidade.",
+    "saveSuccess": "Disponibilidade guardada.",
+    "deleteSuccess": "Disponibilidade removida.",
+    "recurring": "Recorrente",
+    "recurringStartingHint": "A partir de {{date}}",
+    "anyModality": "Qualquer modalidade",
+    "col": {
+      "when": "Quando",
+      "time": "Horário",
+      "modality": "Modalidade",
+      "notes": "Notas",
+      "actions": "Ações"
+    },
+    "weekday": {
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb",
+      "sun": "Dom"
+    },
+    "dialog": {
+      "createTitle": "Adicionar disponibilidade",
+      "editTitle": "Editar disponibilidade",
+      "description": "Sinalize quando está disponível para a coordenação agendar coachings consigo.",
+      "recurringLabel": "Disponibilidade recorrente",
+      "recurringHint": "Repete nos dias da semana que escolher, dentro de um intervalo de datas."
+    },
+    "fields": {
+      "date": "Data",
+      "startTime": "Hora de início",
+      "endTime": "Hora de fim",
+      "weekdays": "Dias da semana",
+      "validFrom": "Recorrência desde",
+      "validUntil": "Recorrência até",
+      "openEnded": "Sem fim",
+      "modality": "Modalidade",
+      "anyModality": "Qualquer modalidade",
+      "notes": "Notas",
+      "notesPlaceholder": "Notas opcionais (visíveis para a coordenação)."
+    },
+    "errors": {
+      "dateRequired": "Escolha uma data.",
+      "daysRequired": "Escolha pelo menos um dia da semana.",
+      "timeRequired": "Defina hora de início e fim.",
+      "startBeforeEnd": "A hora de início tem de ser antes da hora de fim.",
+      "fromRequired": "Escolha o primeiro dia em que a regra se aplica.",
+      "untilAfterFrom": "A data de fim tem de ser igual ou posterior à de início."
+    },
+    "deleteOneOffTitle": "Remover esta disponibilidade?",
+    "deleteOneOffDesc": "A coordenação deixará de ver esta janela como disponível.",
+    "deleteRecurringTitle": "Remover esta disponibilidade recorrente?",
+    "deleteRecurringDesc": "Todas as ocorrências futuras desta regra desaparecem."
+  },
+  "rolesAdmin": {
+    "title": "Papéis e Permissões",
+    "subtitle": "Defina as capacidades que cada papel concede. Os papéis pré-definidos podem ser editados mas não eliminados.",
+    "create": "Criar papel",
+    "searchPlaceholder": "Pesquisar papéis…",
+    "empty": "Ainda não existem papéis.",
+    "saveSuccess": "Papel guardado.",
+    "deleteSuccess": "Papel eliminado.",
+    "deleteTitle": "Eliminar o papel \"{{name}}\"?",
+    "deleteDesc": "Os utilizadores atualmente associados a este papel perderão as suas permissões.",
+    "col": {
+      "name": "Nome",
+      "code": "Código",
+      "description": "Descrição",
+      "permissionCount": "Permissões",
+      "actions": "Ações"
+    },
+    "form": {
+      "createTitle": "Criar papel",
+      "editTitle": "Editar papel",
+      "general": "Informação geral",
+      "summary": "Resumo",
+      "totalPermissions": "Permissões concedidas",
+      "codeLabel": "Código",
+      "codeHelper": "Letras minúsculas, números e underscores. Imutável.",
+      "codeHint": "Deve começar por letra; apenas minúsculas, números, underscores.",
+      "nameLabel": "Nome",
+      "namePlaceholder": "ex.: Coordenação",
+      "descriptionLabel": "Descrição",
+      "descriptionPlaceholder": "Descrição curta do que este papel pode fazer.",
+      "permissionsSection": "Permissões",
+      "permissionsHint": "Escolha as capacidades que este papel concede. Agrupadas por app.",
+      "permissionsSearch": "Pesquisar permissões…",
+      "noPermissionResults": "Nenhuma permissão corresponde.",
+      "selectAll": "Selecionar todas",
+      "deselectAll": "Limpar todas"
     }
   },
   "enrollmentRequests": {
@@ -1990,6 +2303,7 @@
     "delete": "Eliminar",
     "deleting": "A eliminar…",
     "done": "Concluído",
+    "loading": "A carregar…",
     "active": "Ativo",
     "inactive": "Inativo",
     "activate": "Ativar",
@@ -2121,9 +2435,66 @@
       "removeSuccess": "Aluno removido."
     }
   },
+  "inventoryValues": {
+    "color": {
+      "beige": "Bege",
+      "black": "Preto",
+      "blue": "Azul",
+      "brown": "Castanho",
+      "gray": "Cinzento",
+      "green": "Verde",
+      "orange": "Laranja",
+      "pink": "Rosa",
+      "purple": "Roxo",
+      "red": "Vermelho",
+      "white": "Branco",
+      "yellow": "Amarelo"
+    },
+    "sizeSystem": {
+      "clothingEu": "Vestuário UE",
+      "clothingInternational": "Vestuário internacional",
+      "kidsAge": "Crianças — por idade",
+      "kidsHeight": "Crianças — por altura",
+      "oneSize": "Tamanho único",
+      "shoesEu": "Calçado UE"
+    },
+    "category": {
+      "vestuarioDeTreino": "Vestuário de Treino",
+      "figurinosDeEspetaculo": "Figurinos de Espetáculo",
+      "calcado": "Calçado",
+      "acessoriosDeDanca": "Acessórios de Dança",
+      "aderecosDeCena": "Adereços de Cena",
+      "cenografiaEPalco": "Cenografia e Palco",
+      "materialDeTreino": "Material de Treino",
+      "maquilhagemECaracterizacao": "Maquilhagem e Caracterização"
+    }
+  },
+  "roleValues": {
+    "name": {
+      "collaborator": "Colaborador",
+      "coordination": "Coordenação",
+      "direction": "Direção",
+      "parent": "Encarregado de educação",
+      "student": "Aluno",
+      "teacher": "Professor",
+      "externalTeacher": "Professor externo",
+      "internalTeacher": "Professor interno"
+    },
+    "description": {
+      "collaborator": "Acesso limitado para apoiar a operação do dia-a-dia.",
+      "coordination": "Operações da escola: horários, faturação e comunicação.",
+      "direction": "Acesso administrativo total, incluindo governança.",
+      "parent": "Encarregado de educação de um ou mais alunos.",
+      "student": "Aluno inscrito, com acesso apenas a dados pessoais.",
+      "teacher": "Equipa docente com acesso a turmas e coachings.",
+      "externalTeacher": "Professor convidado — sem vínculo laboral.",
+      "internalTeacher": "Professor contratado com acesso interno completo."
+    }
+  },
   "inventorySettings": {
     "title": "Configuração de Inventário",
     "subtitle": "Gere os blocos do inventário: categorias, cores, tamanhos e sistemas de tamanhos.",
+    "createShort": "Criar",
     "tab": {
       "categories": "Categorias",
       "colors": "Cores",
@@ -2239,6 +2610,17 @@
       "status": "Estado",
       "actions": "Ações"
     },
+    "filters": {
+      "status": "Estado",
+      "statusAll": "Todos",
+      "statusOpen": "Apenas abertos",
+      "statusClosed": "Apenas fechados",
+      "type": "Tipo",
+      "typeAll": "Todos os tipos",
+      "academicYear": "Ano letivo",
+      "academicYearPlaceholder": "ex.: 2026/2027",
+      "clear": "Limpar filtros"
+    },
     "form": {
       "createTitle": "Criar período de matrícula",
       "editTitle": "Editar período de matrícula",
@@ -2303,6 +2685,11 @@
     "AtLeastOneModalityRequired": "Deve selecionar pelo menos uma modalidade.",
     "DateOfBirthMustBeInPast": "A data de nascimento deve ser no passado.",
     "EnrollmentPeriodNotOpen": "O período de inscrição não está aberto.",
+    "EnrollmentPeriodNotFound": "O período de inscrição não foi encontrado.",
+    "EnrollmentPeriodTypeIncompatible": "O período selecionado não aceita este tipo de inscrição.",
+    "NoOpenEnrollmentPeriod": "Não existe um período de inscrição aberto para o tipo selecionado.",
+    "EnrollmentAlreadySubmittedForThisPeriod": "Já foi submetida uma inscrição com este email para este período.",
+    "ConflictingOpenPeriod": "Já existe outro período de inscrição aberto. Feche-o antes de abrir um novo.",
     "StudentAgeBelowModalityMinimum": "O aluno está abaixo da idade mínima para esta modalidade.",
     "StudentAgeAboveModalityMaximum": "O aluno está acima da idade máxima para esta modalidade.",
     "ModalityNameAlreadyExists": "Já existe uma modalidade com este nome.",
@@ -2330,6 +2717,18 @@
     "CoachingNotEligibleForParticipantApproval": "Esta aula não permite aprovação de participantes.",
     "CoachingNotEligibleForParticipantCancellation": "Esta aula não permite cancelamento de participantes.",
     "CannotCancelAnotherParticipantsRegistration": "Não pode cancelar a inscrição de outro participante.",
-    "RecurringCoachingNotFound": "A aula recorrente não foi encontrada."
+    "RecurringCoachingNotFound": "A aula recorrente não foi encontrada.",
+    "InvalidVisibilityTransition": "Esta alteração de visibilidade não é permitida a partir do estado actual.",
+    "EventClassTargetRequiredWhenTargetIsClasses": "Selecione pelo menos uma turma para notificar.",
+    "CompletedEventRequiresDate": "Defina uma data antes de marcar o evento como concluído.",
+    "EventNotPublished": "Este evento ainda não foi publicado.",
+    "InterestAlreadyExists": "Já marcou interesse neste evento.",
+    "DuplicateEventFile": "Já existe um ficheiro com este nome.",
+    "CannotClearClassTargetsOnPublishedEvent": "As turmas alvo não podem ser removidas após a publicação.",
+    "ClassTargetAlreadyExists": "Esta turma já está incluída.",
+    "ParentCommentNotFound": "O comentário a que respondeu já não existe.",
+    "CommentEditNotAllowed": "Não pode editar este comentário.",
+    "CommentDeleteNotAllowed": "Não pode eliminar este comentário.",
+    "ProfileRequiredToComment": "Cria o teu perfil antes de publicar comentários."
   }
 }

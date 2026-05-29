@@ -1,8 +1,10 @@
 import {
   Building2,
+  CalendarClock,
   CalendarDays,
   CalendarRange,
   ClipboardCheck,
+  ShieldCheck,
   CreditCard,
   GraduationCap,
   Home,
@@ -10,7 +12,6 @@ import {
   MessageCircle,
   MessageSquarePlus,
   Package,
-  Palette,
   Receipt,
   Settings,
   ShieldAlert,
@@ -116,6 +117,12 @@ export const navConfig: NavEntryConfig[] = [
         icon: ClipboardCheck,
         permission: 'coachings.change_coachingclass',
       },
+      {
+        to: paths.myAvailability,
+        labelKey: 'nav.myAvailability',
+        icon: CalendarClock,
+        permission: 'accounts.can_teach',
+      },
     ],
   },
 
@@ -162,6 +169,12 @@ export const navConfig: NavEntryConfig[] = [
         icon: Store,
         permission: 'marketplace.manage_school_listings',
       },
+      {
+        to: paths.inventoryBookings,
+        labelKey: 'nav.inventoryBookings',
+        icon: CalendarClock,
+        permission: 'inventory.view_school_product',
+      },
     ],
   },
 
@@ -187,6 +200,12 @@ export const navConfig: NavEntryConfig[] = [
         labelKey: 'nav.enrollmentRequests',
         icon: ClipboardCheck,
         permission: 'enrollments.can_review_enrollment',
+      },
+      {
+        to: paths.roles,
+        labelKey: 'nav.roles',
+        icon: ShieldCheck,
+        permission: 'accounts.view_role',
       },
     ],
   },
@@ -241,19 +260,19 @@ export const navConfig: NavEntryConfig[] = [
         to: paths.modalities,
         labelKey: 'nav.modalities',
         icon: Sparkles,
-        permission: 'modality.view_modality',
+        permission: 'modality.change_modality',
       },
       {
         to: paths.studios,
         labelKey: 'nav.studios',
         icon: Building2,
-        permission: 'studios.view_studio',
+        permission: 'studios.change_studio',
       },
       {
         to: paths.classes,
         labelKey: 'nav.classes',
         icon: GraduationCap,
-        permission: 'classes.view_classe',
+        permission: 'classes.can_manage_classes',
       },
       {
         to: paths.enrollmentPeriods,
@@ -275,6 +294,4 @@ export const navConfig: NavEntryConfig[] = [
     ],
   },
 
-  // -- Dev-only --
-  { to: paths.designSystem, labelKey: 'nav.designSystem', icon: Palette },
 ]

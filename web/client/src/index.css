@@ -331,3 +331,9 @@
   background-size: 10px 10px;
   pointer-events: none;
 }
+/* Opt-in: bound the grain to the element's box instead of the viewport.
+ * Used when .grain decorates a partial column (e.g. the right-hand form
+ * panel on Login/Onboarding) and grain must not bleed onto sibling panels. */
+.grain-bounded::before {
+  position: absolute;
+}

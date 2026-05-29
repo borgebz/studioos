@@ -255,7 +255,7 @@ export function LoginPage() {
 
         {/* ─── Paper (right) ─── */}
         <div
-          className="grain relative flex min-h-svh flex-col p-7"
+          className="grain grain-bounded relative flex min-h-svh flex-col p-7"
           style={{ borderLeft: '1px solid var(--login-rule)' }}
         >
           {/* Top */}

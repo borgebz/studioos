@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { NavLink, useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Archive,
@@ -12,7 +12,6 @@ import {
   CornerDownRight,
   Download,
   FileText,
-  Heart,
   Image as ImageIcon,
   Inbox,
   MapPin,
@@ -23,6 +22,7 @@ import {
   Send,
   Sparkles,
   Trash2,
+  UserCircle2,
   X,
 } from 'lucide-react'
 
@@ -37,7 +37,7 @@ import { VisibilityStateEnum } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,12 +58,14 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { SanitizedHtml } from '@/components/shared/RichTextEditor'
 import { usePermissions } from '@/auth/permissions'
+import { useAuth } from '@/auth/useAuth'
 import { paths } from '@/app/paths'
 import { cn } from '@/lib/utils'
 import {
   EventCover,
   EventStateBadge,
   EventVisibilityBadge,
+  InterestButton,
   isCancelled,
   isCompleted,
   isDraft,
@@ -89,6 +91,8 @@ export function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const numericId = id ? Number(id) : NaN
   const { can } = usePermissions()
+  const { user } = useAuth()
+  const hasProfile = Boolean(user?.has_profile)
   const fmt = useDateFormatter()
 
   const [event, setEvent] = useState<EventDetailAug | null>(null)
@@ -201,8 +205,8 @@ export function EventDetailPage() {
         setEvent((prev) => (prev ? { ...prev, ...updated } : prev))
         toast.success(t('events.form.saveOk'))
       }
-    } catch {
-      toast.error(t('events.form.saveError'))
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('events.form.saveError'))
     } finally {
       setActionBusy(false)
       setConfirmAction(null)
@@ -304,16 +308,13 @@ export function EventDetailPage() {
         {/* Body */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
           {/* MAIN COLUMN */}
-          <div className="min-w-0 space-y-8">
-            {/* About body */}
-            <section>
-              <h2 className="mb-4 text-lg font-semibold">
-                {t('events.sections.body')}
-              </h2>
+          <div className="min-w-0 space-y-6">
+            {/* Body */}
+            <section className="rounded-lg border border-border bg-card p-6">
               {event.body ? (
                 <SanitizedHtml html={event.body} />
               ) : (
-                <p className="text-sm text-muted-foreground italic">
+                <p className="text-sm italic text-muted-foreground">
                   {t('events.noDescription')}
                 </p>
               )}
@@ -333,7 +334,7 @@ export function EventDetailPage() {
               </section>
             )}
 
-            {/* Posts feed — CARDS variant */}
+            {/* Posts feed */}
             <section>
               <div className="mb-4 flex items-baseline justify-between gap-3">
                 <h2 className="text-lg font-semibold">
@@ -354,80 +355,114 @@ export function EventDetailPage() {
                   </Button>
                 )}
               </div>
-              {posts.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">
-                  {t('events.posts.empty')}
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {posts.map((p) => (
-                    <PostCard
-                      key={p.id}
-                      post={p}
-                      onEdit={
-                        canAddPost
-                          ? () =>
-                              navigate(
-                                paths.eventsPostEdit
-                                  .replace(':id', String(event.id))
-                                  .replace(':postId', String(p.id))
-                              )
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              )}
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                {posts.length === 0 ? (
+                  <p className="px-5 py-6 text-sm italic text-muted-foreground">
+                    {t('events.posts.empty')}
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {posts.map((p) => (
+                      <li key={p.id}>
+                        <PostCard
+                          post={p}
+                          onEdit={
+                            canAddPost
+                              ? () =>
+                                  navigate(
+                                    paths.eventsPostEdit
+                                      .replace(':id', String(event.id))
+                                      .replace(':postId', String(p.id))
+                                  )
+                              : undefined
+                          }
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </section>
 
             {/* Comments */}
             <section>
               <h2 className="mb-4 text-lg font-semibold">
-                {t('events.sections.comments')}{' '}
-                <span className="font-mono text-sm font-normal text-muted-foreground">
-                  · {totalCommentCount(comments)}
-                </span>
+                {t('events.sections.comments')}
               </h2>
-              {cancelled ? (
-                <p className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-                  {t('events.cancelled.commentsDisabled')}
-                </p>
-              ) : canComment && !replyTo ? (
-                <CommentComposer
-                  eventId={event.id}
-                  onPosted={(c) => setComments((p) => [c, ...p])}
-                />
-              ) : !canComment ? (
-                <p className="text-sm text-muted-foreground italic">
-                  {t('events.comments.loginToComment')}
-                </p>
-              ) : null}
-              {comments.length === 0 ? (
-                <p className="mt-4 text-sm text-muted-foreground italic">
-                  {t('events.comments.empty')}
-                </p>
-              ) : (
-                <div className="mt-6 space-y-6">
-                  {comments
-                    .filter((c) => !c.parent_comment)
-                    .map((c) => (
-                      <CommentThread
-                        key={c.id}
-                        comment={c}
-                        allComments={comments}
-                        eventId={event.id}
-                        canReply={canComment && !cancelled}
-                        replyToId={replyTo?.id ?? null}
-                        onStartReply={setReplyTo}
-                        onCancelReply={() => setReplyTo(null)}
-                        onReplyPosted={(c) => {
-                          setComments((prev) => [...prev, c])
-                          setReplyTo(null)
-                        }}
-                      />
-                    ))}
-                </div>
-              )}
+
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                {/* Composer / gate header */}
+                {cancelled ? (
+                  <div className="border-b border-border bg-muted/40 px-5 py-4 text-sm text-muted-foreground">
+                    {t('events.cancelled.commentsDisabled')}
+                  </div>
+                ) : !canComment ? (
+                  <div className="border-b border-border bg-muted/40 px-5 py-4 text-sm italic text-muted-foreground">
+                    {t('events.comments.loginToComment')}
+                  </div>
+                ) : !hasProfile ? (
+                  <NoProfileCommentGate />
+                ) : !replyTo ? (
+                  <CommentComposer
+                    eventId={event.id}
+                    embedded
+                    authorName={
+                      user?.profile?.display_name ||
+                      user?.full_name ||
+                      t('events.comments.anonymousAuthor')
+                    }
+                    authorPhotoUrl={user?.profile?.photo_url}
+                    onPosted={(c) => setComments((p) => [c, ...p])}
+                  />
+                ) : (
+                  <div className="border-b border-border bg-muted/40 px-5 py-3 text-xs text-muted-foreground">
+                    {t('events.comments.replyingTo', {
+                      name:
+                        commentDisplayName(
+                          replyTo,
+                          t('events.comments.anonymousAuthor')
+                        ),
+                    })}
+                  </div>
+                )}
+
+                {/* Thread list */}
+                {comments.length === 0 ? (
+                  <div className="px-5 py-8 text-center text-sm italic text-muted-foreground">
+                    {t('events.comments.empty')}
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-border">
+                    {comments
+                      .filter((c) => !c.parent_comment)
+                      .map((c) => (
+                        <li key={c.id}>
+                          <CommentThread
+                            comment={c}
+                            allComments={comments}
+                            eventId={event.id}
+                            canReply={
+                              canComment && hasProfile && !cancelled
+                            }
+                            replyToId={replyTo?.id ?? null}
+                            composerAuthorName={
+                              user?.profile?.display_name ||
+                              user?.full_name ||
+                              t('events.comments.anonymousAuthor')
+                            }
+                            composerAuthorPhotoUrl={user?.profile?.photo_url}
+                            onStartReply={setReplyTo}
+                            onCancelReply={() => setReplyTo(null)}
+                            onReplyPosted={(c) => {
+                              setComments((prev) => [...prev, c])
+                              setReplyTo(null)
+                            }}
+                          />
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
             </section>
           </div>
 
@@ -608,65 +643,18 @@ function InsetHero({
             )}
           </div>
         </div>
-        {/* Interest CTA — primary on hero, disabled when cancelled */}
+        {/* Interest CTA — shared InterestButton, disabled when cancelled */}
         <div className="shrink-0">
-          <PrimaryInterestCta
+          <InterestButton
             count={event.interest_count ?? 0}
             active={interested}
             disabled={cancelled}
             onClick={onToggleInterest}
+            size="default"
           />
         </div>
       </div>
     </div>
-  )
-}
-
-function PrimaryInterestCta({
-  count,
-  active,
-  disabled,
-  onClick,
-}: {
-  count: number
-  active: boolean
-  disabled?: boolean
-  onClick: () => void
-}) {
-  const { t } = useTranslation()
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'inline-flex items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-semibold shadow-xs transition-colors',
-        active
-          ? 'border-border bg-background text-foreground hover:bg-accent'
-          : 'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
-        disabled && 'cursor-not-allowed opacity-60'
-      )}
-    >
-      {active ? (
-        <Check className="size-4" />
-      ) : (
-        <Heart className="size-4" />
-      )}
-      <span>{t('events.interest.primary')}</span>
-      {count > 0 && (
-        <span
-          className={cn(
-            'ml-1 rounded px-1.5 py-0.5 font-mono text-[11px] font-medium',
-            active
-              ? 'bg-muted text-muted-foreground'
-              : 'bg-primary-foreground/15 text-primary-foreground'
-          )}
-          aria-label={t('events.sections.interest', { count })}
-        >
-          {count}
-        </span>
-      )}
-    </button>
   )
 }
 
@@ -877,7 +865,7 @@ function PostCard({ post, onEdit }: { post: EventPost; onEdit?: () => void }) {
   const when = post.published_at ?? post.created_at
   const isNew = isWithinDays(post.published_at ?? post.created_at, 7)
   return (
-    <article className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4">
+    <article className="flex flex-col gap-2 px-5 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Avatar className="size-8">
@@ -896,7 +884,7 @@ function PostCard({ post, onEdit }: { post: EventPost; onEdit?: () => void }) {
         </div>
         <div className="flex items-center gap-2">
           {isNew && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-[10.5px] font-medium text-teal-800 dark:bg-teal-900/30 dark:text-teal-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-medium text-muted-foreground">
               <Sparkles className="size-3" />
               {t('events.posts.newBadge')}
             </span>
@@ -908,7 +896,7 @@ function PostCard({ post, onEdit }: { post: EventPost; onEdit?: () => void }) {
               onClick={onEdit}
               aria-label={t('events.edit')}
             >
-              <MoreHorizontal className="size-4" />
+              <Pencil className="size-4" />
             </Button>
           )}
         </div>
@@ -972,8 +960,71 @@ function FileRow({ file }: { file: EventFile }) {
 
 // ─── Comments ─────────────────────────────────────────────────────────────
 
-function totalCommentCount(comments: EventComment[]): number {
-  return comments.length
+function commentDisplayName(c: EventComment, fallback: string): string {
+  return c.owner_name?.trim() || fallback
+}
+
+function initialsOf(name: string): string {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function CommentAvatar({
+  name,
+  photoUrl,
+  size = 36,
+  emphasis = 'parent',
+}: {
+  name: string
+  photoUrl?: string | null
+  size?: number
+  emphasis?: 'parent' | 'reply' | 'composer'
+}) {
+  const initials = initialsOf(name)
+  const sizeClass = size <= 28 ? 'size-7 text-[10px]' : 'size-9 text-xs'
+  const fallbackClass =
+    emphasis === 'composer'
+      ? 'bg-primary text-primary-foreground font-semibold'
+      : emphasis === 'reply'
+        ? 'bg-muted text-muted-foreground font-semibold'
+        : 'bg-primary/10 text-primary font-semibold'
+  return (
+    <Avatar className={cn(sizeClass.split(' ')[0])}>
+      {photoUrl && <AvatarImage src={photoUrl} alt={name} />}
+      <AvatarFallback className={cn(fallbackClass, sizeClass.split(' ')[1])}>
+        {initials}
+      </AvatarFallback>
+    </Avatar>
+  )
+}
+
+function NoProfileCommentGate() {
+  const { t } = useTranslation()
+  return (
+    <div className="flex items-start gap-3 border-b border-border bg-muted/30 px-5 py-4">
+      <div className="grid size-10 shrink-0 place-items-center rounded-full bg-background text-muted-foreground">
+        <UserCircle2 className="size-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-foreground">
+          {t('events.comments.noProfileTitle')}
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {t('events.comments.noProfileDescription')}
+        </p>
+      </div>
+      <Button asChild size="sm" variant="outline" className="shrink-0">
+        <NavLink to={paths.accountSettings}>
+          {t('events.comments.noProfileCta')}
+        </NavLink>
+      </Button>
+    </div>
+  )
 }
 
 function CommentComposer({
@@ -982,6 +1033,9 @@ function CommentComposer({
   parentAuthor,
   placeholder,
   autoFocus,
+  embedded,
+  authorName,
+  authorPhotoUrl,
   onPosted,
   onCancel,
 }: {
@@ -990,6 +1044,9 @@ function CommentComposer({
   parentAuthor?: string
   placeholder?: string
   autoFocus?: boolean
+  embedded?: boolean
+  authorName: string
+  authorPhotoUrl?: string | null
   onPosted: (c: EventComment) => void
   onCancel?: () => void
 }) {
@@ -1007,17 +1064,23 @@ function CommentComposer({
       })
       onPosted(r.data)
       setValue('')
-    } catch {
-      toast.error(t('common.unexpectedError'))
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div
+      className={cn(
+        embedded
+          ? 'border-b border-border bg-muted/30'
+          : 'rounded-md border border-border bg-card'
+      )}
+    >
       {parentAuthor && (
-        <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between border-b border-border px-4 py-1.5 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <CornerDownRight className="size-3.5" />
             {t('events.comments.replyingTo', { name: parentAuthor })}
@@ -1034,12 +1097,12 @@ function CommentComposer({
           )}
         </div>
       )}
-      <div className="flex items-start gap-3 p-3">
-        <Avatar className="size-8 shrink-0">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-            U
-          </AvatarFallback>
-        </Avatar>
+      <div className="flex items-start gap-3 p-4">
+        <CommentAvatar
+          name={authorName}
+          photoUrl={authorPhotoUrl}
+          emphasis="composer"
+        />
         <div className="flex-1">
           <textarea
             value={value}
@@ -1064,16 +1127,21 @@ function CommentComposer({
 }
 
 function CommentBody({ comment }: { comment: EventComment }) {
+  const { t } = useTranslation()
   const fmt = useDateFormatter()
+  const name = commentDisplayName(
+    comment,
+    t('events.comments.anonymousAuthor')
+  )
   return (
     <>
       <div className="mb-1 flex items-baseline gap-2">
-        <span className="text-sm font-semibold">#{comment.owner}</span>
-        <span className="font-mono text-xs text-muted-foreground">
-          · {fmt.formatRelative(comment.created_at)}
+        <span className="text-sm font-semibold text-foreground">{name}</span>
+        <span className="font-mono text-[11px] text-muted-foreground">
+          {fmt.formatRelative(comment.created_at)}
         </span>
       </div>
-      <SanitizedHtml html={comment.body} className="text-sm" />
+      <SanitizedHtml html={comment.body} className="text-sm leading-relaxed" />
     </>
   )
 }
@@ -1084,6 +1152,8 @@ function CommentThread({
   eventId,
   canReply,
   replyToId,
+  composerAuthorName,
+  composerAuthorPhotoUrl,
   onStartReply,
   onCancelReply,
   onReplyPosted,
@@ -1093,6 +1163,8 @@ function CommentThread({
   eventId: number
   canReply: boolean
   replyToId: number | null
+  composerAuthorName: string
+  composerAuthorPhotoUrl?: string | null
   onStartReply: (c: EventComment) => void
   onCancelReply: () => void
   onReplyPosted: (c: EventComment) => void
@@ -1106,19 +1178,21 @@ function CommentThread({
       : allComments.filter((c) => c.parent_comment === comment.id)
 
   const isReplying = replyToId === comment.id
+  const anonName = t('events.comments.anonymousAuthor')
+  const parentName = commentDisplayName(comment, anonName)
 
   return (
-    <div>
+    <article className="px-5 py-4">
       <div className="grid grid-cols-[36px_1fr] gap-3">
-        <Avatar className="size-9">
-          <AvatarFallback className="bg-muted text-foreground text-xs">
-            U
-          </AvatarFallback>
-        </Avatar>
+        <CommentAvatar
+          name={parentName}
+          photoUrl={comment.owner_photo_url}
+          emphasis="parent"
+        />
         <div className="min-w-0">
           <CommentBody comment={comment} />
           {canReply && (
-            <div className="mt-2">
+            <div className="mt-2.5">
               <button
                 type="button"
                 onClick={() =>
@@ -1137,14 +1211,16 @@ function CommentThread({
       </div>
 
       {(isReplying || replies.length > 0) && (
-        <div className="mt-4 ml-4 space-y-4 border-l border-border pl-5">
+        <div className="mt-4 ml-4 space-y-4 border-l-2 border-border pl-5">
           {isReplying && canReply && (
             <CommentComposer
               eventId={eventId}
               parentId={comment.id}
-              parentAuthor={`#${comment.owner}`}
+              parentAuthor={parentName}
               placeholder={t('events.comments.replyPlaceholder')}
               autoFocus
+              authorName={composerAuthorName}
+              authorPhotoUrl={composerAuthorPhotoUrl}
               onPosted={onReplyPosted}
               onCancel={onCancelReply}
             />
@@ -1165,23 +1241,30 @@ function CommentThread({
                 </button>
               )}
               {!collapsed &&
-                replies.map((r) => (
-                  <div key={r.id} className="grid grid-cols-[28px_1fr] gap-3">
-                    <Avatar className="size-7">
-                      <AvatarFallback className="bg-muted text-foreground text-[10px]">
-                        U
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <CommentBody comment={r} />
+                replies.map((r) => {
+                  const replyName = commentDisplayName(r, anonName)
+                  return (
+                    <div
+                      key={r.id}
+                      className="grid grid-cols-[28px_1fr] gap-3"
+                    >
+                      <CommentAvatar
+                        name={replyName}
+                        photoUrl={r.owner_photo_url}
+                        size={28}
+                        emphasis="reply"
+                      />
+                      <div className="min-w-0">
+                        <CommentBody comment={r} />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
             </>
           )}
         </div>
       )}
-    </div>
+    </article>
   )
 }
 

@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router-dom'
+import { Plus } from 'lucide-react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button } from '@/components/ui/button'
+import { Authorized } from '@/auth/permissions'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { paths } from '@/app/paths'
@@ -18,12 +22,50 @@ function isTabKey(v: string | null): v is TabKey {
   return TAB_KEYS.includes(v as TabKey)
 }
 
+/**
+ * Per-tab metadata for the shared "Create" affordance in the page header.
+ * Lifting this up keeps the tabs row compact (no extra row for a single
+ * button) and ensures consistent labeling/permissions per tab.
+ */
+const CREATE_META: Record<
+  TabKey,
+  { permission: string; labelKey: string; shortLabelKey: string }
+> = {
+  categories: {
+    permission: 'inventory.add_category',
+    labelKey: 'inventorySettings.categories.create',
+    shortLabelKey: 'inventorySettings.createShort',
+  },
+  colors: {
+    permission: 'inventory.add_color',
+    labelKey: 'inventorySettings.colors.create',
+    shortLabelKey: 'inventorySettings.createShort',
+  },
+  sizes: {
+    permission: 'inventory.add_size',
+    labelKey: 'inventorySettings.sizes.create',
+    shortLabelKey: 'inventorySettings.createShort',
+  },
+  'size-systems': {
+    permission: 'inventory.add_sizesystem',
+    labelKey: 'inventorySettings.sizeSystems.create',
+    shortLabelKey: 'inventorySettings.createShort',
+  },
+}
+
 export function InventorySettingsPage() {
   const { t } = useTranslation()
   const [search, setSearch] = useSearchParams()
   const current: TabKey = isTabKey(search.get('tab'))
     ? (search.get('tab') as TabKey)
     : 'categories'
+
+  const [createOpen, setCreateOpen] = useState(false)
+
+  // Switching tabs cancels any in-flight create dialog from a sibling tab.
+  useEffect(() => {
+    setCreateOpen(false)
+  }, [current])
 
   const handleChange = (value: string) => {
     if (isTabKey(value)) {
@@ -33,10 +75,21 @@ export function InventorySettingsPage() {
     }
   }
 
+  const meta = CREATE_META[current]
+
   return (
     <PageLayout fullHeight>
       <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
-        <PageHeader title={t('inventorySettings.title')} backTo={paths.home} />
+        <PageHeader title={t('inventorySettings.title')} backTo={paths.home}>
+          <Authorized permission={meta.permission}>
+            <Button onClick={() => setCreateOpen(true)} size="sm">
+              <Plus className="h-4 w-4" />
+              {/* Long label fits on md+ screens; short "Create" reads fine on mobile */}
+              <span className="hidden sm:inline">{t(meta.labelKey)}</span>
+              <span className="sm:hidden">{t(meta.shortLabelKey)}</span>
+            </Button>
+          </Authorized>
+        </PageHeader>
 
         <p className="-mt-4 mb-6 text-sm text-muted-foreground shrink-0">
           {t('inventorySettings.subtitle')}
@@ -66,25 +119,37 @@ export function InventorySettingsPage() {
             value="categories"
             className="flex flex-col flex-1 min-h-0 m-0"
           >
-            <CategoriesTab />
+            <CategoriesTab
+              createOpen={current === 'categories' && createOpen}
+              onCloseCreate={() => setCreateOpen(false)}
+            />
           </TabsContent>
           <TabsContent
             value="colors"
             className="flex flex-col flex-1 min-h-0 m-0"
           >
-            <ColorsTab />
+            <ColorsTab
+              createOpen={current === 'colors' && createOpen}
+              onCloseCreate={() => setCreateOpen(false)}
+            />
           </TabsContent>
           <TabsContent
             value="sizes"
             className="flex flex-col flex-1 min-h-0 m-0"
           >
-            <SizesTab />
+            <SizesTab
+              createOpen={current === 'sizes' && createOpen}
+              onCloseCreate={() => setCreateOpen(false)}
+            />
           </TabsContent>
           <TabsContent
             value="size-systems"
             className="flex flex-col flex-1 min-h-0 m-0"
           >
-            <SizeSystemsTab />
+            <SizeSystemsTab
+              createOpen={current === 'size-systems' && createOpen}
+              onCloseCreate={() => setCreateOpen(false)}
+            />
           </TabsContent>
         </Tabs>
       </div>

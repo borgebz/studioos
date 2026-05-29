@@ -421,7 +421,7 @@ export function MarketplaceListPage() {
                 variant="browse"
                 onOpen={() =>
                   navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id))
+                    paths.marketplaceDetail.replace(':id', String(item.id))
                   )
                 }
               />

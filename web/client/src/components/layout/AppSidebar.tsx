@@ -298,7 +298,8 @@ export function AppSidebar() {
 
                 const isActive =
                   entry.to === paths.home
-                    ? location.pathname === '/'
+                    ? location.pathname === paths.home ||
+                      location.pathname === '/'
                     : location.pathname.startsWith(entry.to)
                 const Icon = entry.icon
 

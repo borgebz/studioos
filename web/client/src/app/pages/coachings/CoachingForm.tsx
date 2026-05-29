@@ -6,12 +6,12 @@ import { enUS, pt } from 'date-fns/locale'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
+  AlertTriangle,
   CalendarCheck,
   CalendarClock,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
+  CheckCircle2,
   Info,
+  Loader2,
   Repeat,
   Trash2,
   UserCheck,
@@ -24,10 +24,10 @@ import { usePermissions } from '@/auth/permissions'
 import {
   CoachingClassStatusEnum,
   RecurrenceTypeEnum,
+  type CoachingAvailability,
   type CoachingClass,
   type Modality as ApiModality,
   type Studio as ApiStudio,
-  type ExpandedSlot,
   type TeacherSummary,
   type UserResponse,
 } from '@/api/studioos-api'
@@ -40,7 +40,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
@@ -57,6 +56,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { TeacherStudioAvailabilityDialog } from './TeacherStudioAvailabilityDialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,12 +73,6 @@ import { PageLayout } from '@/components/shared/PageLayout'
 import { CardSection } from '@/components/shared/CardSection'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { TimePicker } from '@/components/shared/TimePicker'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
 import {
@@ -137,6 +131,30 @@ function userToStudent(u: UserResponse): StudentOption {
 
 function pad(n: number) {
   return n.toString().padStart(2, '0')
+}
+
+function buildCurrentSlot(
+  date: Date | undefined,
+  startTime: string,
+  endTime: string
+) {
+  if (!date || !startTime || !endTime) return null
+  const [sh, sm] = startTime.split(':').map(Number)
+  const [eh, em] = endTime.split(':').map(Number)
+  if (
+    Number.isNaN(sh) ||
+    Number.isNaN(sm) ||
+    Number.isNaN(eh) ||
+    Number.isNaN(em)
+  ) {
+    return null
+  }
+  const start = new Date(date)
+  start.setHours(sh, sm, 0, 0)
+  const end = new Date(date)
+  end.setHours(eh, em, 0, 0)
+  if (end <= start) return null
+  return { start, end }
 }
 
 function buildEditDefaults(coaching: CoachingClass): CoachingFormValues {
@@ -569,7 +587,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
                         size="icon"
                         disabled={!teacherId}
                         onClick={() => setAvailabilityOpen(true)}
-                        title={t('coachings.viewAvailability')}
+                        title={t('coachings.availability.viewSchedule')}
                       >
                         <CalendarClock className="h-4 w-4" />
                       </Button>
@@ -722,6 +740,22 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
                     </div>
                   </div>
                 </div>
+
+                {/* Inline availability hint */}
+                <AvailabilityHint
+                  teacherId={teacherId ? Number(teacherId) : null}
+                  studioId={studioId ? Number(studioId) : null}
+                  startDatetime={(() => {
+                    const slot = buildCurrentSlot(date, startTime, endTime)
+                    return slot ? slot.start.toISOString() : null
+                  })()}
+                  endDatetime={(() => {
+                    const slot = buildCurrentSlot(date, startTime, endTime)
+                    return slot ? slot.end.toISOString() : null
+                  })()}
+                  excludeCoachingId={isEdit && coaching ? coaching.id : null}
+                  onOpenDrawer={() => setAvailabilityOpen(true)}
+                />
 
                 {!isEdit && (
                   <>
@@ -1274,9 +1308,9 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
         />
       )}
 
-      {/* Teacher Availability */}
+      {/* Teacher + Studio Availability */}
       {teacherId && (
-        <TeacherAvailabilityDialog
+        <TeacherStudioAvailabilityDialog
           open={availabilityOpen}
           onClose={() => setAvailabilityOpen(false)}
           teacherId={Number(teacherId)}
@@ -1284,6 +1318,14 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
             const teacher = teachers.find((tch) => tch.id === Number(teacherId))
             return teacher ? teacherName(teacher) : ''
           })()}
+          studioId={studioId ? Number(studioId) : null}
+          studioLabel={
+            studioId
+              ? studios.find((s) => s.id === Number(studioId))?.name
+              : undefined
+          }
+          currentSlot={buildCurrentSlot(date, startTime, endTime)}
+          excludeCoachingId={isEdit && coaching ? coaching.id : null}
         />
       )}
 
@@ -1455,257 +1497,123 @@ function AddParticipantDialog({
   )
 }
 
-function TeacherAvailabilityDialog({
-  open,
-  onClose,
+interface AvailabilityHintProps {
+  teacherId: number | null
+  studioId: number | null
+  startDatetime: string | null
+  endDatetime: string | null
+  excludeCoachingId: number | null
+  onOpenDrawer: () => void
+}
+
+function AvailabilityHint({
   teacherId,
-  teacherLabel,
-}: {
-  open: boolean
-  onClose: () => void
-  teacherId: number
-  teacherLabel: string
-}) {
-  const { t, i18n } = useTranslation()
-  const [slots, setSlots] = useState<ExpandedSlot[]>([])
+  studioId,
+  startDatetime,
+  endDatetime,
+  excludeCoachingId,
+  onOpenDrawer,
+}: AvailabilityHintProps) {
+  const { t } = useTranslation()
+  const [result, setResult] = useState<CoachingAvailability | null>(null)
   const [loading, setLoading] = useState(false)
-  const hasLoaded = useRef(false)
-  const [weekStart, setWeekStart] = useState(() => {
-    const now = new Date()
-    const day = now.getDay()
-    const diff = day === 0 ? -6 : 1 - day
-    const monday = new Date(now)
-    monday.setDate(now.getDate() + diff)
-    monday.setHours(0, 0, 0, 0)
-    return monday
-  })
 
-  const dateLocale =
-    i18n.language === 'pt' || i18n.language === 'pt-PT' ? pt : enUS
-
-  const weekEnd = useMemo(() => {
-    const end = new Date(weekStart)
-    end.setDate(weekStart.getDate() + 6)
-    end.setHours(23, 59, 59, 999)
-    return end
-  }, [weekStart])
-
-  const weekDays = useMemo(() => {
-    const days: Date[] = []
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(weekStart)
-      d.setDate(weekStart.getDate() + i)
-      days.push(d)
-    }
-    return days
-  }, [weekStart])
+  const inputsReady =
+    teacherId !== null && startDatetime !== null && endDatetime !== null
 
   useEffect(() => {
-    if (!open) return
+    if (!inputsReady) {
+      setResult(null)
+      return
+    }
+    let cancelled = false
     setLoading(true)
-    apiClient.api
-      .availabilityTeachersList(teacherId, {
-        date_from: weekStart.toISOString(),
-        date_to: weekEnd.toISOString(),
-      })
-      .then((res) => {
-        setSlots(res.data)
-        hasLoaded.current = true
-      })
-      .catch(() => setSlots([]))
-      .finally(() => setLoading(false))
-  }, [open, teacherId, weekStart, weekEnd])
-
-  const slotsByDay = useMemo(() => {
-    const map = new Map<string, ExpandedSlot[]>()
-    for (const day of weekDays) {
-      map.set(format(day, 'yyyy-MM-dd'), [])
+    const handle = window.setTimeout(() => {
+      apiClient.api
+        .checkCoachingAvailability({
+          teacher_id: teacherId!,
+          studio_id: studioId ?? undefined,
+          date_from: startDatetime!,
+          date_to: endDatetime!,
+          exclude_coaching_id: excludeCoachingId ?? undefined,
+        })
+        .then((res) => {
+          if (!cancelled) setResult(res.data)
+        })
+        .catch(() => {
+          if (!cancelled) setResult(null)
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+    }, 400)
+    return () => {
+      cancelled = true
+      window.clearTimeout(handle)
     }
-    for (const slot of slots) {
-      const key = slot.start_datetime.slice(0, 10)
-      const arr = map.get(key)
-      if (arr) arr.push(slot)
-    }
-    return map
-  }, [slots, weekDays])
+  }, [
+    inputsReady,
+    teacherId,
+    studioId,
+    startDatetime,
+    endDatetime,
+    excludeCoachingId,
+  ])
 
-  const prevWeek = () => {
-    setWeekStart((prev) => {
-      const d = new Date(prev)
-      d.setDate(d.getDate() - 7)
-      return d
-    })
+  if (!inputsReady) return null
+
+  if (loading && !result) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        {t('coachings.availability.hint.checking')}
+      </div>
+    )
   }
 
-  const nextWeek = () => {
-    setWeekStart((prev) => {
-      const d = new Date(prev)
-      d.setDate(d.getDate() + 7)
-      return d
-    })
-  }
+  if (!result) return null
 
-  const hasSlots = slots.length > 0
+  const teacherCount = result.teacher_busy.length
+  const studioCount = result.studio_busy.length
+  const total = teacherCount + studioCount
+
+  if (total === 0) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400">
+        <CheckCircle2 className="h-3.5 w-3.5" />
+        {t('coachings.availability.hint.free')}
+      </div>
+    )
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarClock className="h-5 w-5" />
-            {t('coachings.teacherAvailability')}
-          </DialogTitle>
-          <DialogDescription>
-            {teacherLabel} — {t('coachings.teacherAvailabilityDesc')}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex items-center justify-between py-2">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={prevWeek}
-            aria-label={t('coachings.previousWeek')}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium">
-            {format(weekStart, 'dd MMM', { locale: dateLocale })} —{' '}
-            {format(weekEnd, 'dd MMM yyyy', { locale: dateLocale })}
-          </span>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={nextWeek}
-            aria-label={t('coachings.nextWeek')}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {loading && !hasLoaded.current ? (
-          <div className="space-y-3 py-4">
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <Skeleton key={i} className="h-8 rounded" />
-              ))}
-            </div>
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 7 }).map((_, j) => (
-                  <Skeleton key={j} className="h-6 rounded" />
-                ))}
-              </div>
-            ))}
-          </div>
-        ) : !hasSlots && !loading ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <CalendarClock className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">
-              {t('coachings.noAvailability')}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <div
-              className={`grid grid-cols-7 gap-1.5 transition-opacity duration-200 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}
-            >
-              {weekDays.map((day) => {
-                const key = format(day, 'yyyy-MM-dd')
-                const daySlots = slotsByDay.get(key) ?? []
-                const isToday = format(new Date(), 'yyyy-MM-dd') === key
-                return (
-                  <div key={key} className="min-h-[140px]">
-                    <div
-                      className={`text-center text-xs font-medium py-1.5 rounded-t-md ${
-                        isToday
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
-                    >
-                      <div className="capitalize">
-                        {format(day, 'EEE', { locale: dateLocale })}
-                      </div>
-                      <div className="text-[11px]">{format(day, 'dd')}</div>
-                    </div>
-                    <div className="space-y-1 p-1">
-                      {daySlots.map((slot) => {
-                        const start = new Date(slot.start_datetime)
-                        const end = new Date(slot.end_datetime)
-                        const hasDetails = slot.modality || slot.notes
-                        const slotContent = (
-                          <div
-                            key={slot.id}
-                            className="rounded-md bg-primary/10 border border-primary/20 px-1.5 py-1 cursor-default"
-                          >
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-primary shrink-0" />
-                              <span className="text-xs font-medium text-primary">
-                                {format(start, 'HH:mm')}–{format(end, 'HH:mm')}
-                              </span>
-                              {slot.is_recurring && (
-                                <Repeat className="h-2.5 w-2.5 text-muted-foreground shrink-0 ml-auto" />
-                              )}
-                            </div>
-                            {slot.modality && (
-                              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                                {slot.modality.name}
-                              </p>
-                            )}
-                            {slot.notes && (
-                              <p className="text-[11px] text-muted-foreground truncate italic mt-0.5">
-                                {slot.notes}
-                              </p>
-                            )}
-                          </div>
-                        )
-                        if (hasDetails) {
-                          return (
-                            <TooltipProvider key={slot.id}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  {slotContent}
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                  <div className="space-y-1">
-                                    <p className="font-medium">
-                                      {format(start, 'HH:mm')}–
-                                      {format(end, 'HH:mm')}
-                                    </p>
-                                    {slot.modality && (
-                                      <p>
-                                        {t('coachings.modality')}:{' '}
-                                        {slot.modality.name}
-                                      </p>
-                                    )}
-                                    {slot.notes && (
-                                      <p className="italic">
-                                        {t('coachings.availabilityNotes')}:{' '}
-                                        {slot.notes}
-                                      </p>
-                                    )}
-                                    {slot.is_recurring && (
-                                      <p className="flex items-center gap-1">
-                                        <Repeat className="h-3 w-3" />
-                                        {t('coachings.recurring')}
-                                      </p>
-                                    )}
-                                  </div>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )
-                        }
-                        return slotContent
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+    <div className="flex items-center justify-between gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
+      <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+        <span>
+          {teacherCount > 0 && studioCount > 0
+            ? t('coachings.availability.hint.bothConflicts', {
+                teacher: teacherCount,
+                studio: studioCount,
+              })
+            : teacherCount > 0
+              ? t('coachings.availability.hint.teacherConflicts', {
+                  count: teacherCount,
+                })
+              : t('coachings.availability.hint.studioConflicts', {
+                  count: studioCount,
+                })}
+        </span>
+      </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 text-amber-800 hover:text-amber-900 dark:text-amber-300"
+        onClick={onOpenDrawer}
+      >
+        {t('coachings.availability.hint.view')}
+      </Button>
+    </div>
   )
 }

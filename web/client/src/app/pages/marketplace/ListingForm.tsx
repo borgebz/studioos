@@ -4,7 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Trash2, Plus, Pencil, ImageIcon, Check, Info } from 'lucide-react'
+import {
+  Trash2,
+  Plus,
+  Pencil,
+  ImageIcon,
+  Check,
+  Info,
+  CalendarClock,
+} from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
 import { enumOptions } from '@/lib/enum-options'
@@ -57,8 +65,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { VariantBookingsCalendar } from '@/components/shared/VariantBookingsCalendar'
 import { CardSection } from '@/components/shared/CardSection'
 import { ColorSwatchPicker } from '@/components/shared/ColorSwatchPicker'
 import { MediaUpload, type MediaFile } from '@/components/shared/MediaUpload'
@@ -236,6 +252,11 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editingVariant, setEditingVariant] = useState<VariantData | null>(null)
   const [draft, setDraft] = useState<VariantData>(createVariant())
+  // The bookings calendar opens against a saved variant — newly drafted
+  // variants don't have a server id yet, so the button is disabled for them.
+  const [bookingsVariantId, setBookingsVariantId] = useState<number | null>(
+    null
+  )
 
   // Form — defaults depend on mode
   const formDefaults = useMemo(() => {
@@ -771,6 +792,28 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
 
                           {/* Actions */}
                           <div className="flex items-center gap-1 shrink-0">
+                            {(() => {
+                              // Show the bookings calendar only when this row
+                              // maps to a saved server-side variant (numeric id).
+                              const savedVariantId = Number(variant.id)
+                              const hasSavedVariant =
+                                Number.isFinite(savedVariantId) &&
+                                !variant.id.startsWith('variant-')
+                              if (!hasSavedVariant) return null
+                              return (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 min-h-11 min-w-11 md:min-h-0 md:min-w-0"
+                                  aria-label={t('marketplace.viewBookings')}
+                                  onClick={() =>
+                                    setBookingsVariantId(savedVariantId)
+                                  }
+                                >
+                                  <CalendarClock className="h-4 w-4" />
+                                </Button>
+                              )
+                            })()}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1360,6 +1403,29 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Variant bookings calendar */}
+      <Dialog
+        open={bookingsVariantId != null}
+        onOpenChange={(o) => {
+          if (!o) setBookingsVariantId(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5" />
+              {t('marketplace.variantBookingsTitle')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('marketplace.variantBookingsDesc')}
+            </DialogDescription>
+          </DialogHeader>
+          {bookingsVariantId != null && (
+            <VariantBookingsCalendar variantId={bookingsVariantId} />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Discard Confirmation */}
       <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>

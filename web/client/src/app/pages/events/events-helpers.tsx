@@ -11,21 +11,26 @@ import {
   Drama,
   Eye,
   EyeOff,
+  Heart,
   HelpCircle,
   Pencil,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { EventStateEnum, VisibilityStateEnum } from '@/api/studioos-api'
 import type { Event as EventDetail, EventList } from '@/api/studioos-api'
 import { cn } from '@/lib/utils'
 
 // ─── badges ────────────────────────────────────────────────────────────────
 
+// State badges follow the UI guideline status palette: only Cancelled (red)
+// and Completed (emerald) earn a colored treatment. Planned and Date TBD are
+// neutral — they describe a normal lifecycle stage, not an exceptional state.
 const STATE_STYLES: Record<EventStateEnum, string> = {
   [EventStateEnum.Planned]:
-    'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300 border-transparent',
+    'bg-muted text-muted-foreground border-transparent',
   [EventStateEnum.DateTbd]:
-    'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 border-transparent',
+    'bg-muted text-muted-foreground border-transparent',
   [EventStateEnum.Cancelled]:
     'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-transparent',
   [EventStateEnum.Completed]:
@@ -193,6 +198,64 @@ export function EventCover({
         </div>
       )}
     </div>
+  )
+}
+
+// ─── Interest button ──────────────────────────────────────────────────────
+//
+// Single button used everywhere an event surfaces an interest toggle: list
+// cards, the featured tile on /events, and the detail page hero. Layout is
+// [heart  count · label] — heart icon first (filled when active), count
+// directly to its right, then the label. Visual treatment is shared so the
+// affordance reads the same on every surface; size scales for context.
+
+export function InterestButton({
+  count,
+  active,
+  disabled,
+  onClick,
+  size = 'sm',
+  className,
+}: {
+  count: number
+  active?: boolean
+  disabled?: boolean
+  onClick: () => void
+  size?: 'sm' | 'default'
+  className?: string
+}) {
+  const { t } = useTranslation()
+  const label = active
+    ? t('events.interest.secondaryActive')
+    : t('events.interest.secondary')
+  return (
+    <Button
+      type="button"
+      variant={active ? 'secondary' : 'outline'}
+      size={size}
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      className={cn(active && 'text-primary', className)}
+      aria-pressed={active}
+      aria-label={t('events.sections.interest', { count })}
+    >
+      <Heart
+        className={cn(
+          size === 'default' ? 'size-4' : 'size-3.5',
+          active && 'fill-primary text-primary'
+        )}
+      />
+      {count > 0 && (
+        <span className="font-mono text-xs">
+          {count}
+          <span className="mx-1 text-muted-foreground">·</span>
+        </span>
+      )}
+      <span>{label}</span>
+    </Button>
   )
 }
 

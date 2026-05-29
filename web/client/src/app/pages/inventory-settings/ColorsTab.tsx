@@ -6,18 +6,11 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import {
-  Loader2,
-  MoreHorizontal,
-  Palette,
-  Power,
-  Plus,
-  Trash2,
-} from 'lucide-react'
+import { Loader2, MoreHorizontal, Palette, Power, Trash2 } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
 import type { Color, CreateColor } from '@/api/studioos-api'
-import { Authorized, usePermissions } from '@/auth/permissions'
+import { usePermissions } from '@/auth/permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,12 +33,18 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
+import { translateApiValue } from '@/lib/translate-api-value'
 
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
 
 const HEX_RE = /^#[0-9a-f]{6}$/i
 
-export function ColorsTab() {
+interface ColorsTabProps {
+  createOpen: boolean
+  onCloseCreate: () => void
+}
+
+export function ColorsTab({ createOpen, onCloseCreate }: ColorsTabProps) {
   const { t } = useTranslation()
   const { can } = usePermissions()
 
@@ -56,7 +55,6 @@ export function ColorsTab() {
 
   const [items, setItems] = useState<Color[]>([])
   const [loading, setLoading] = useState(true)
-  const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Color | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const dataLoaded = useRef(false)
@@ -113,7 +111,9 @@ export function ColorsTab() {
                 style={{ backgroundColor: c.hex_code }}
                 aria-hidden
               />
-              <span className="font-medium text-foreground">{c.name}</span>
+              <span className="font-medium text-foreground">
+                {translateApiValue('inventoryValues.color', c.name, t)}
+              </span>
             </div>
           )
         },
@@ -207,16 +207,7 @@ export function ColorsTab() {
   })
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-4">
-      <div className="flex justify-end shrink-0">
-        <Authorized permission="inventory.add_color">
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" />
-            {t('inventorySettings.colors.create')}
-          </Button>
-        </Authorized>
-      </div>
-
+    <div className="flex flex-col flex-1 min-h-0">
       <DataTable
         table={table}
         fillHeight
@@ -233,14 +224,16 @@ export function ColorsTab() {
 
       <ColorDialog
         open={createOpen}
-        onClose={() => setCreateOpen(false)}
+        onClose={onCloseCreate}
         onSaved={(c) => setItems((prev) => [...prev, c])}
       />
 
       <ConfirmDeleteDialog
         open={deleteTarget != null}
         title={t('inventorySettings.colors.deleteTitle', {
-          name: deleteTarget?.name ?? '',
+          name: deleteTarget
+            ? translateApiValue('inventoryValues.color', deleteTarget.name, t)
+            : '',
         })}
         description={t('inventorySettings.colors.deleteDesc')}
         successMessage={t('inventorySettings.colors.deleteSuccess')}

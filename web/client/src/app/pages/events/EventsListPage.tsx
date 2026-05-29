@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Heart, MapPin, Plus, Ticket } from 'lucide-react'
+import { MapPin, Plus, Ticket } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import type { EventList } from '@/api/studioos-api'
 import { VisibilityStateEnum } from '@/api/studioos-api'
@@ -18,6 +18,7 @@ import { parseApiError } from '@/lib/api-errors'
 import {
   EventCover,
   EventStateBadge,
+  InterestButton,
   isCancelled,
   isCompleted,
   isUpcoming,
@@ -320,21 +321,12 @@ function FeaturedEventCard({
             )}
             <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
               <Button onClick={onOpen}>{t('events.open')}</Button>
-              <Button variant="outline" onClick={onToggleInterest}>
-                <Heart
-                  className={cn(
-                    'size-4',
-                    event.interested && 'fill-primary text-primary'
-                  )}
-                />
-                <span className="font-semibold">
-                  {event.interest_count ?? 0}
-                </span>
-                <span className="text-muted-foreground">·</span>
-                {event.interested
-                  ? t('events.interest.primaryActive')
-                  : t('events.interest.secondary')}
-              </Button>
+              <InterestButton
+                count={event.interest_count ?? 0}
+                active={event.interested}
+                onClick={onToggleInterest}
+                size="default"
+              />
             </div>
           </div>
         </div>

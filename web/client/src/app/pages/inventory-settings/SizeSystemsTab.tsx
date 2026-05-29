@@ -10,7 +10,6 @@ import {
   Loader2,
   MoreHorizontal,
   Pencil,
-  Plus,
   Power,
   Ruler,
   Trash2,
@@ -22,7 +21,7 @@ import type {
   PatchedUpdateSizeSystem,
   SizeSystem,
 } from '@/api/studioos-api'
-import { Authorized, usePermissions } from '@/auth/permissions'
+import { usePermissions } from '@/auth/permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,10 +44,19 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
+import { translateApiValue } from '@/lib/translate-api-value'
 
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
 
-export function SizeSystemsTab() {
+interface SizeSystemsTabProps {
+  createOpen: boolean
+  onCloseCreate: () => void
+}
+
+export function SizeSystemsTab({
+  createOpen,
+  onCloseCreate,
+}: SizeSystemsTabProps) {
   const { t } = useTranslation()
   const { can } = usePermissions()
 
@@ -57,7 +65,7 @@ export function SizeSystemsTab() {
 
   const [items, setItems] = useState<SizeSystem[]>([])
   const [loading, setLoading] = useState(true)
-  const [editTarget, setEditTarget] = useState<SizeSystem | 'new' | null>(null)
+  const [editTarget, setEditTarget] = useState<SizeSystem | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SizeSystem | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const dataLoaded = useRef(false)
@@ -107,9 +115,14 @@ export function SizeSystemsTab() {
         header: () => t('inventorySettings.sizeSystems.col.name'),
         cell: (info) => {
           const ss = info.row.original
+          const label = translateApiValue(
+            'inventoryValues.sizeSystem',
+            ss.name,
+            t
+          )
           if (!canEdit) {
             return (
-              <span className="font-medium text-foreground">{ss.name}</span>
+              <span className="font-medium text-foreground">{label}</span>
             )
           }
           return (
@@ -118,7 +131,7 @@ export function SizeSystemsTab() {
               className="text-left font-medium text-foreground hover:text-primary"
               onClick={() => setEditTarget(ss)}
             >
-              {ss.name}
+              {label}
             </button>
           )
         },
@@ -222,17 +235,14 @@ export function SizeSystemsTab() {
     getCoreRowModel: getCoreRowModel(),
   })
 
-  return (
-    <div className="flex flex-col flex-1 min-h-0 gap-4">
-      <div className="flex justify-end shrink-0">
-        <Authorized permission="inventory.add_sizesystem">
-          <Button onClick={() => setEditTarget('new')}>
-            <Plus className="h-4 w-4" />
-            {t('inventorySettings.sizeSystems.create')}
-          </Button>
-        </Authorized>
-      </div>
+  const dialogTarget: SizeSystem | 'new' | null = editTarget
+    ? editTarget
+    : createOpen
+      ? 'new'
+      : null
 
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
       <DataTable
         table={table}
         fillHeight
@@ -248,8 +258,11 @@ export function SizeSystemsTab() {
       />
 
       <SizeSystemDialog
-        target={editTarget}
-        onClose={() => setEditTarget(null)}
+        target={dialogTarget}
+        onClose={() => {
+          setEditTarget(null)
+          onCloseCreate()
+        }}
         onSaved={(ss, mode) => {
           setItems((prev) =>
             mode === 'create'
@@ -262,7 +275,13 @@ export function SizeSystemsTab() {
       <ConfirmDeleteDialog
         open={deleteTarget != null}
         title={t('inventorySettings.sizeSystems.deleteTitle', {
-          name: deleteTarget?.name ?? '',
+          name: deleteTarget
+            ? translateApiValue(
+                'inventoryValues.sizeSystem',
+                deleteTarget.name,
+                t
+              )
+            : '',
         })}
         description={t('inventorySettings.sizeSystems.deleteDesc')}
         successMessage={t('inventorySettings.sizeSystems.deleteSuccess')}

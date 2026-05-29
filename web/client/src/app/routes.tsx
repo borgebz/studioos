@@ -43,6 +43,7 @@ import { EnrollmentReviewPage } from '@/app/pages/enrollments/EnrollmentReviewPa
 import { MarketplaceListPage } from '@/app/pages/marketplace/MarketplaceListPage'
 import { CreateListingPage } from '@/app/pages/marketplace/CreateListingPage'
 import { EditListingPage } from '@/app/pages/marketplace/EditListingPage'
+import { ListingDetailPage } from '@/app/pages/marketplace/ListingDetailPage'
 import { MyListingsPage } from '@/app/pages/marketplace/MyListingsPage'
 import { SchoolListingsPage } from '@/app/pages/marketplace/SchoolListingsPage'
 import { MyInventoryPage } from '@/app/pages/inventory/MyInventoryPage'
@@ -73,6 +74,10 @@ import { ClassFormPage } from '@/app/pages/classes/ClassFormPage'
 import { EnrollmentPeriodsListPage } from '@/app/pages/enrollment-periods/EnrollmentPeriodsListPage'
 import { EnrollmentPeriodFormPage } from '@/app/pages/enrollment-periods/EnrollmentPeriodFormPage'
 import { InventorySettingsPage } from '@/app/pages/inventory-settings/InventorySettingsPage'
+import { RolesListPage } from '@/app/pages/roles/RolesListPage'
+import { RoleFormPage } from '@/app/pages/roles/RoleFormPage'
+import { MyAvailabilityPage } from '@/app/pages/availability/MyAvailabilityPage'
+import { InventoryBookingsPage } from '@/app/pages/inventory-bookings/InventoryBookingsPage'
 
 export function AppRoutes() {
   return (
@@ -170,6 +175,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute permission="marketplace.manage_school_listings">
             <CreateListingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.marketplaceDetail}
+        element={
+          <ProtectedRoute permission="marketplace.view_productlisting">
+            <ListingDetailPage />
           </ProtectedRoute>
         }
       />
@@ -341,7 +354,7 @@ export function AppRoutes() {
       <Route
         path={paths.modalities}
         element={
-          <ProtectedRoute permission="modality.view_modality">
+          <ProtectedRoute permission="modality.change_modality">
             <ModalitiesListPage />
           </ProtectedRoute>
         }
@@ -365,7 +378,7 @@ export function AppRoutes() {
       <Route
         path={paths.studios}
         element={
-          <ProtectedRoute permission="studios.view_studio">
+          <ProtectedRoute permission="studios.change_studio">
             <StudiosListPage />
           </ProtectedRoute>
         }
@@ -389,7 +402,7 @@ export function AppRoutes() {
       <Route
         path={paths.classes}
         element={
-          <ProtectedRoute permission="classes.view_classe">
+          <ProtectedRoute permission="classes.can_manage_classes">
             <ClassesListPage />
           </ProtectedRoute>
         }
@@ -405,7 +418,7 @@ export function AppRoutes() {
       <Route
         path={paths.classEdit}
         element={
-          <ProtectedRoute permission="classes.view_classe">
+          <ProtectedRoute permission="classes.can_manage_classes">
             <ClassFormPage mode="edit" />
           </ProtectedRoute>
         }
@@ -446,6 +459,46 @@ export function AppRoutes() {
             ]}
           >
             <InventorySettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.roles}
+        element={
+          <ProtectedRoute permission="accounts.view_role">
+            <RolesListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.roleCreate}
+        element={
+          <ProtectedRoute permission="accounts.add_role">
+            <RoleFormPage mode="create" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.roleEdit}
+        element={
+          <ProtectedRoute permission="accounts.view_role">
+            <RoleFormPage mode="edit" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.myAvailability}
+        element={
+          <ProtectedRoute permission="availability.view_teacheravailability">
+            <MyAvailabilityPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.inventoryBookings}
+        element={
+          <ProtectedRoute permission="inventory.view_school_product">
+            <InventoryBookingsPage />
           </ProtectedRoute>
         }
       />

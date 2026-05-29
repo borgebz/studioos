@@ -6,18 +6,11 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import {
-  Loader2,
-  MoreHorizontal,
-  Plus,
-  Power,
-  Rows3,
-  Trash2,
-} from 'lucide-react'
+import { Loader2, MoreHorizontal, Power, Rows3, Trash2 } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
 import type { CreateSize, Size, SizeSystem } from '@/api/studioos-api'
-import { Authorized, usePermissions } from '@/auth/permissions'
+import { usePermissions } from '@/auth/permissions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,10 +40,16 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
+import { translateApiValue } from '@/lib/translate-api-value'
 
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
 
-export function SizesTab() {
+interface SizesTabProps {
+  createOpen: boolean
+  onCloseCreate: () => void
+}
+
+export function SizesTab({ createOpen, onCloseCreate }: SizesTabProps) {
   const { t } = useTranslation()
   const { can } = usePermissions()
 
@@ -60,7 +59,6 @@ export function SizesTab() {
   const [items, setItems] = useState<Size[]>([])
   const [systems, setSystems] = useState<SizeSystem[]>([])
   const [loading, setLoading] = useState(true)
-  const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Size | null>(null)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const dataLoaded = useRef(false)
@@ -125,11 +123,16 @@ export function SizesTab() {
       columnHelper.accessor('size_system', {
         id: 'system',
         header: () => t('inventorySettings.sizes.col.system'),
-        cell: (info) => (
-          <span className="text-sm text-muted-foreground">
-            {systemNameById.get(info.getValue()) ?? '—'}
-          </span>
-        ),
+        cell: (info) => {
+          const raw = systemNameById.get(info.getValue())
+          return (
+            <span className="text-sm text-muted-foreground">
+              {raw
+                ? translateApiValue('inventoryValues.sizeSystem', raw, t)
+                : '—'}
+            </span>
+          )
+        },
       }),
       columnHelper.accessor('is_active', {
         id: 'is_active',
@@ -211,24 +214,12 @@ export function SizesTab() {
   })
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 gap-4">
-      <div className="flex justify-end shrink-0">
-        <Authorized permission="inventory.add_size">
-          <Button
-            onClick={() => setCreateOpen(true)}
-            disabled={systems.length === 0}
-            title={
-              systems.length === 0
-                ? t('inventorySettings.sizes.noSystemsHint')
-                : undefined
-            }
-          >
-            <Plus className="h-4 w-4" />
-            {t('inventorySettings.sizes.create')}
-          </Button>
-        </Authorized>
-      </div>
-
+    <div className="flex flex-col flex-1 min-h-0">
+      {canAdd && systems.length === 0 && (
+        <p className="-mt-1 mb-3 text-xs text-muted-foreground shrink-0">
+          {t('inventorySettings.sizes.noSystemsHint')}
+        </p>
+      )}
       <DataTable
         table={table}
         fillHeight
@@ -244,9 +235,9 @@ export function SizesTab() {
       />
 
       <SizeDialog
-        open={createOpen}
+        open={createOpen && systems.length > 0}
         systems={systems}
-        onClose={() => setCreateOpen(false)}
+        onClose={onCloseCreate}
         onSaved={(s) => setItems((prev) => [...prev, s])}
       />
 
@@ -381,7 +372,7 @@ function SizeDialog({ open, systems, onClose, onSaved }: SizeDialogProps) {
               <SelectContent>
                 {systems.map((s) => (
                   <SelectItem key={s.id} value={String(s.id)}>
-                    {s.name}
+                    {translateApiValue('inventoryValues.sizeSystem', s.name, t)}
                   </SelectItem>
                 ))}
               </SelectContent>
