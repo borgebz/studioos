@@ -13,7 +13,6 @@ import { PageLayout } from '@/components/shared/PageLayout'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Authorized, usePermissions } from '@/auth/permissions'
 import { paths } from '@/app/paths'
-import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
 import {
   EventCover,

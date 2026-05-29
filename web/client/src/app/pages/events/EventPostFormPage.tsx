@@ -11,7 +11,6 @@ import { apiClient } from '@/api/api-client'
 import type { Event as EventDetail, EventPost } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Checkbox } from '@/components/ui/checkbox'
 import {

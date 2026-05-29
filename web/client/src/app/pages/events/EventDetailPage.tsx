@@ -77,9 +77,6 @@ import { toast } from 'sonner'
 import { parseApiError } from '@/lib/api-errors'
 
 interface EventDetailAug extends EventDetail {
-  interest_count?: number
-  interested?: boolean
-  comment_count?: number
   cancel_reason?: string
   cancelled_at?: string | null
   cancelled_by_name?: string | null
