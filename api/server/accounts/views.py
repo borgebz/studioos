@@ -11,6 +11,7 @@ from .serializers import (
     CompleteOnboardingSerializer,
     CreateUserSerializer,
     EmailExportQuerySerializer,
+    InvitableUserSummarySerializer,
     InviteSingleSerializer,
     LoginSerializer,
     MeSerializer,
@@ -38,6 +39,7 @@ from .services import (
     get_profile_for_user,
     invite_user,
     list_emails_for_export,
+    list_invitable_users,
     list_public_profiles,
     list_teachers,
     list_users,
@@ -310,6 +312,30 @@ class TeacherListView(APIView):
     def get(self, request):
         users = list_teachers()
         return Response(TeacherSummarySerializer(users, many=True).data)
+
+
+class InvitableUserListView(APIView):
+    """
+    GET /api/accounts/invitable/ — users who can be invited as coaching
+    participants (``accounts.can_participate_in_coaching``). The requester is
+    intentionally excluded so they don't see themselves in the picker.
+
+    Open to anyone with ``coachings.add_coachingclass`` so students, teachers
+    and guardians can populate the invite list on the coaching-request form.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: InvitableUserSummarySerializer(many=True),
+            **DEFAULT_ERROR_RESPONSES,
+        },
+    )
+    @require_perm("coachings.add_coachingclass")
+    def get(self, request):
+        users = list_invitable_users(exclude_user_id=request.user.pk)
+        return Response(InvitableUserSummarySerializer(users, many=True).data)
 
 
 class MeView(APIView):

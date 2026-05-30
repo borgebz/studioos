@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
@@ -10,7 +11,7 @@ from marketplace.models import Listing, ListingFavorite
 
 logger = logging.getLogger(__name__)
 
-# Variant statuses that cannot be listed
+# Variant statuses that cannot be listed / offered to buyers.
 _NON_LISTABLE_STATUSES = (
     ProductVariant.Status.SOLD,
     ProductVariant.Status.DONATED,
@@ -26,15 +27,20 @@ _LISTING_ALLOWED_ORDERING = {
     "-asking_price",
 }
 
-# Booking statuses that represent an active hold on the variant
+# Booking statuses that represent an active hold on a variant
 _ACTIVE_BOOKING_STATUSES = VariantBooking.ACTIVE_HOLD_STATUSES
 
-# Shared eager-loading paths — avoids N+1 in every list/detail endpoint
-_LISTING_SELECT_RELATED = (
-    "variant__product__category",
-    "variant__size",
+# Shared eager-loading paths — a listing now fans out to its product's variants,
+# so we prefetch the whole product → variants → (size, colors, media, bookings)
+# tree to avoid N+1 in list/detail endpoints.
+_LISTING_SELECT_RELATED = ("product__category", "product__owner")
+_LISTING_PREFETCH = (
+    "product__media",
+    "product__variants__size",
+    "product__variants__colors__color",
+    "product__variants__media_links__product_media",
+    "product__variants__bookings",
 )
-_LISTING_PREFETCH = ("variant__product__media",)
 
 
 def _get_listing_or_404(listing_id):
@@ -49,14 +55,21 @@ def _get_listing_or_404(listing_id):
 
 
 def _assert_can_manage(*, user, listing):
-    """Owner check: member listings → product owner; school listings → manage_school_listings perm."""
-    product = listing.variant.product
+    """Owner check: member listings → product owner; school listings → manage perm."""
+    product = listing.product
     if product.owner_type == Product.OwnerType.SCHOOL:
         if not user.has_perm("marketplace.manage_school_listings"):
             raise PermissionDenied()
     else:
         if product.owner_id != user.id:
             raise PermissionDenied()
+
+
+def _product_has_listable_variant(product):
+    return any(
+        v.deleted_at is None and v.status not in _NON_LISTABLE_STATUSES
+        for v in product.variants.all()
+    )
 
 
 def _compute_available_from(variant):
@@ -87,14 +100,44 @@ def _check_date_overlap(*, variant, start_at, end_at, exclude_booking_id=None):
 
 
 def _exclude_soft_deleted_relations(qs):
-    """Exclude listings whose variant or product has been soft-deleted.
+    """Exclude listings whose product has been soft-deleted.
 
     Django FK joins do NOT apply the related model's SoftDeleteManager,
     so we must guard explicitly.
     """
-    return qs.exclude(variant__deleted_at__isnull=False).exclude(
-        variant__product__deleted_at__isnull=False
-    )
+    return qs.exclude(product__deleted_at__isnull=False)
+
+
+def _apply_listing_filters(qs, filters, *, public=False):
+    """Shared filter application for the listing list endpoints."""
+    ordering = "-created_at"
+    if not filters:
+        return qs.order_by(ordering)
+
+    if filters.get("search"):
+        term = filters["search"]
+        qs = qs.filter(
+            Q(title__icontains=term)
+            | Q(description__icontains=term)
+            | Q(product__name__icontains=term)
+        )
+    if filters.get("listing_type"):
+        qs = qs.filter(listing_type=filters["listing_type"])
+    if not public and filters.get("status"):
+        qs = qs.filter(status=filters["status"])
+    if filters.get("category_id"):
+        qs = qs.filter(product__category_id=filters["category_id"])
+    # Variant-scoped filters mean "the product has a variant matching X".
+    if filters.get("size_id"):
+        qs = qs.filter(product__variants__size_id=filters["size_id"])
+    if filters.get("color_id"):
+        qs = qs.filter(product__variants__colors__color_id=filters["color_id"])
+    if filters.get("condition"):
+        qs = qs.filter(product__variants__condition=filters["condition"])
+    if filters.get("ordering") and filters["ordering"] in _LISTING_ALLOWED_ORDERING:
+        ordering = filters["ordering"]
+
+    return qs.distinct().order_by(ordering)
 
 
 def list_listings(*, user, filters=None):
@@ -105,36 +148,15 @@ def list_listings(*, user, filters=None):
                 is_public=True,
             )
         )
-        .exclude(variant__status__in=_NON_LISTABLE_STATUSES)
+        # Only surface listings whose product still has a listable variant.
+        .filter(
+            product__variants__status=ProductVariant.Status.AVAILABLE,
+            product__variants__deleted_at__isnull=True,
+        )
         .select_related(*_LISTING_SELECT_RELATED)
         .prefetch_related(*_LISTING_PREFETCH)
     )
-
-    ordering = "-created_at"
-    if filters:
-        if filters.get("search"):
-            term = filters["search"]
-            from django.db.models import Q
-
-            qs = qs.filter(
-                Q(title__icontains=term)
-                | Q(description__icontains=term)
-                | Q(variant__product__name__icontains=term)
-            )
-        if filters.get("listing_type"):
-            qs = qs.filter(listing_type=filters["listing_type"])
-        if filters.get("category_id"):
-            qs = qs.filter(variant__product__category_id=filters["category_id"])
-        if filters.get("size_id"):
-            qs = qs.filter(variant__size_id=filters["size_id"])
-        if filters.get("color_id"):
-            qs = qs.filter(variant__colors__color_id=filters["color_id"]).distinct()
-        if filters.get("condition"):
-            qs = qs.filter(variant__condition=filters["condition"])
-        if filters.get("ordering") and filters["ordering"] in _LISTING_ALLOWED_ORDERING:
-            ordering = filters["ordering"]
-
-    return qs.order_by(ordering)
+    return _apply_listing_filters(qs, filters, public=True)
 
 
 def get_listing(*, listing_id, user):
@@ -152,7 +174,7 @@ def get_listing(*, listing_id, user):
     if user.has_perm("marketplace.view_productlisting"):
         return listing
 
-    product = listing.variant.product
+    product = listing.product
     if product.owner_type == Product.OwnerType.MEMBER and product.owner_id == user.id:
         return listing
     if product.owner_type == Product.OwnerType.SCHOOL and user.has_perm(
@@ -167,33 +189,14 @@ def list_my_listings(*, user, filters=None):
     qs = (
         _exclude_soft_deleted_relations(
             Listing.objects.filter(
-                variant__product__owner=user,
-                variant__product__owner_type=Product.OwnerType.MEMBER,
+                product__owner=user,
+                product__owner_type=Product.OwnerType.MEMBER,
             )
         )
         .select_related(*_LISTING_SELECT_RELATED)
         .prefetch_related(*_LISTING_PREFETCH)
     )
-
-    ordering = "-created_at"
-    if filters:
-        if filters.get("search"):
-            term = filters["search"]
-            from django.db.models import Q
-
-            qs = qs.filter(
-                Q(title__icontains=term)
-                | Q(description__icontains=term)
-                | Q(variant__product__name__icontains=term)
-            )
-        if filters.get("listing_type"):
-            qs = qs.filter(listing_type=filters["listing_type"])
-        if filters.get("status"):
-            qs = qs.filter(status=filters["status"])
-        if filters.get("ordering") and filters["ordering"] in _LISTING_ALLOWED_ORDERING:
-            ordering = filters["ordering"]
-
-    return qs.order_by(ordering)
+    return _apply_listing_filters(qs, filters)
 
 
 def list_favorited_listings(*, user):
@@ -210,51 +213,52 @@ def list_favorited_listings(*, user):
     )
 
 
+def list_school_listings(*, user, filters=None):
+    qs = (
+        _exclude_soft_deleted_relations(
+            Listing.objects.filter(product__owner_type=Product.OwnerType.SCHOOL)
+        )
+        .select_related(*_LISTING_SELECT_RELATED)
+        .prefetch_related(*_LISTING_PREFETCH)
+    )
+    return _apply_listing_filters(qs, filters)
+
+
 @transaction.atomic
 def create_listing(*, user, school_only=False, **data):
-    variant_id = data.get("variant_id")
+    """Create a listing for a product (and all its variants).
+
+    Either reference an existing inventory product via ``product_id`` or create
+    the product + its variants inline via the nested ``product`` dict (which the
+    inventory services already understand, including ``variants`` and ``media``).
+    """
+    from inventory import services as inventory_services
+
+    product_id = data.get("product_id")
     nested_product = data.get("product")
 
-    if not variant_id and not nested_product:
-        raise ValidationError({"messages": ["VariantIdOrProductRequired"]})
+    if not product_id and not nested_product:
+        raise ValidationError({"messages": ["ProductIdOrProductRequired"]})
 
-    if variant_id:
-        try:
-            variant = ProductVariant.objects.select_related("product").get(
-                id=variant_id
-            )
-        except ProductVariant.DoesNotExist:
-            raise AppNotFound("VariantNotFound")
-
-        if variant.status in _NON_LISTABLE_STATUSES:
-            raise ValidationError({"messages": ["VariantNotListable"]})
-
-        if school_only and variant.product.owner_type != Product.OwnerType.SCHOOL:
-            raise ValidationError({"messages": ["VariantMustBeSchoolOwned"]})
-
-        is_owner = (
-            variant.product.owner_type == Product.OwnerType.MEMBER
-            and variant.product.owner_id == user.id
-        )
-        is_school_manager = (
-            variant.product.owner_type == Product.OwnerType.SCHOOL
-            and user.has_perm("marketplace.manage_school_listings")
-        )
-        if not is_owner and not is_school_manager:
-            raise ValidationError({"messages": ["VariantOwnershipRequired"]})
+    if product_id:
+        if school_only:
+            product = inventory_services.get_school_product(pk=product_id, user=user)
+        else:
+            product = inventory_services.get_product(pk=product_id, user=user)
+    elif school_only:
+        product = inventory_services.create_school_product(user=user, **nested_product)
     else:
-        # Inline product + variant creation delegated to inventory services
-        from inventory import services as inventory_services
+        product = inventory_services.create_product(user=user, **nested_product)
 
-        product_data = nested_product
-        variant_data = product_data.pop("variant", {})
-        product = inventory_services.create_product(user=user, **product_data)
-        variant = inventory_services.create_variant(
-            product_id=product.id, user=user, **variant_data
-        )
+    if school_only and product.owner_type != Product.OwnerType.SCHOOL:
+        raise ValidationError({"messages": ["ProductMustBeSchoolOwned"]})
+
+    # OneToOne — a product can only carry a single listing.
+    if Listing.objects.filter(product=product).exists():
+        raise ValidationError({"messages": ["ProductAlreadyListed"]})
 
     listing = Listing(
-        variant=variant,
+        product=product,
         listing_type=data["listing_type"],
         title=data["title"],
         description=data.get("description", ""),
@@ -285,17 +289,35 @@ def update_listing(*, listing_id, user, **data):
 
     listing.updated_by = user
 
-    # Inline product update
-    if data.get("product"):
-        inventory_services.update_product(
-            pk=listing.variant.product_id, user=user, **data["product"]
-        )
+    product = listing.product
+    is_school = product.owner_type == Product.OwnerType.SCHOOL
 
-    # Inline variant update
-    if data.get("variant"):
-        inventory_services.update_variant(
-            variant_id=listing.variant_id, user=user, **data["variant"]
-        )
+    # Inline product field updates
+    if data.get("product"):
+        if is_school:
+            inventory_services.update_school_product(
+                pk=product.id, user=user, **data["product"]
+            )
+        else:
+            inventory_services.update_product(
+                pk=product.id, user=user, **data["product"]
+            )
+
+    # Add / update variants. Removal is expressed as status=inactive (the
+    # variant stays in inventory but drops out of the listing).
+    variants = data.get("variants")
+    if variants is not None:
+        for v in variants:
+            variant_id = v.get("id")
+            payload = {k: val for k, val in v.items() if k != "id"}
+            if variant_id:
+                inventory_services.update_variant(
+                    variant_id=variant_id, user=user, **payload
+                )
+            else:
+                inventory_services.create_variant(
+                    product_id=product.id, user=user, **payload
+                )
 
     listing.save()
     return listing
@@ -309,8 +331,8 @@ def publish_listing(*, listing_id, user):
     if listing.status == Listing.ListingStatus.ACTIVE:
         raise ValidationError({"messages": ["ListingAlreadyPublished"]})
 
-    if listing.variant.status in _NON_LISTABLE_STATUSES:
-        raise ValidationError({"messages": ["VariantNotListable"]})
+    if not _product_has_listable_variant(listing.product):
+        raise ValidationError({"messages": ["NoListableVariant"]})
 
     listing.status = Listing.ListingStatus.ACTIVE
     listing.is_public = True
@@ -358,42 +380,11 @@ def remove_favorite(*, listing_id, user):
     fav.delete(deleted_by=user)
 
 
-def list_school_listings(*, user, filters=None):
-    qs = (
-        _exclude_soft_deleted_relations(
-            Listing.objects.filter(
-                variant__product__owner_type=Product.OwnerType.SCHOOL
-            )
-        )
-        .select_related(*_LISTING_SELECT_RELATED)
-        .prefetch_related(*_LISTING_PREFETCH)
-    )
-
-    ordering = "-created_at"
-    if filters:
-        if filters.get("search"):
-            term = filters["search"]
-            from django.db.models import Q
-
-            qs = qs.filter(
-                Q(title__icontains=term)
-                | Q(description__icontains=term)
-                | Q(variant__product__name__icontains=term)
-            )
-        if filters.get("listing_type"):
-            qs = qs.filter(listing_type=filters["listing_type"])
-        if filters.get("status"):
-            qs = qs.filter(status=filters["status"])
-        if filters.get("ordering") and filters["ordering"] in _LISTING_ALLOWED_ORDERING:
-            ordering = filters["ordering"]
-
-    return qs.order_by(ordering)
-
-
 def get_availability(*, listing_id):
+    """Active booking windows for every variant of the listing's product."""
     listing = _get_listing_or_404(listing_id)
     bookings = VariantBooking.objects.filter(
-        variant=listing.variant,
+        variant__product=listing.product,
         status__in=_ACTIVE_BOOKING_STATUSES,
-    ).values("start_at", "end_at", "status")
+    ).values("variant_id", "start_at", "end_at", "status")
     return list(bookings)

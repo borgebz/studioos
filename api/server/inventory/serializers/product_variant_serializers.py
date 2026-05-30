@@ -57,6 +57,7 @@ class ProductVariantReadSerializer(serializers.ModelSerializer):
             "status",
             "acquisition_type",
             "acquired_at",
+            "asking_price",
             "internal_notes",
             "public_notes",
             "size",
@@ -132,12 +133,14 @@ class ProductVariantWriteSerializer(serializers.ModelSerializer):
         model = ProductVariant
         extra_kwargs = {
             "sku": {"required": False, "allow_null": True, "allow_blank": True},
+            "asking_price": {"required": False, "allow_null": True},
         }
         fields = [
             "sku",
             "condition",
             "status",
             "acquisition_type",
+            "asking_price",
             "internal_notes",
             "public_notes",
             "size_id",

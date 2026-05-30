@@ -66,7 +66,7 @@ _PRODUCT_ALLOWED_ORDERING = {
 def list_products(*, user, filters=None):
     queryset = Product.objects.filter(
         owner_type=Product.OwnerType.MEMBER, owner_id=user.id
-    ).select_related("category", "owner")
+    ).select_related("category", "owner", "listing")
 
     ordering = "-updated_at"
     if filters:
@@ -91,7 +91,7 @@ def list_school_products(*, user, filters=None):
 
     queryset = Product.objects.filter(
         owner_type=Product.OwnerType.SCHOOL
-    ).select_related("category")
+    ).select_related("category", "listing")
 
     ordering = "-updated_at"
     if filters:
@@ -112,7 +112,9 @@ def list_school_products(*, user, filters=None):
 
 def get_product(*, pk, user):
     try:
-        product = Product.objects.select_related("category", "owner").get(id=pk)
+        product = Product.objects.select_related("category", "owner", "listing").get(
+            id=pk
+        )
     except Product.DoesNotExist:
         raise AppNotFound("ProductNotFound")
 
@@ -127,7 +129,7 @@ def get_school_product(*, pk, user):
         raise PermissionDenied()
 
     try:
-        return Product.objects.select_related("category").get(
+        return Product.objects.select_related("category", "listing").get(
             id=pk, owner_type=Product.OwnerType.SCHOOL
         )
     except Product.DoesNotExist:
@@ -397,6 +399,7 @@ def _handle_variants(*, product, variants, created_by=None):
             acquisition_type=v.get("acquisition_type")
             or ProductVariant.AcquisitionType.OTHER,
             acquired_at=v.get("acquired_at"),
+            asking_price=v.get("asking_price"),
             internal_notes=v.get("internal_notes") or "",
             public_notes=v.get("public_notes") or "",
             created_by=created_by,

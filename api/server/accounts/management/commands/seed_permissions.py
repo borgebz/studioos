@@ -326,17 +326,21 @@ ROLE_PERMISSIONS = {
     ],
     "teacher": [
         "accounts.can_teach",
+        "accounts.can_participate_in_coaching",
         "accounts.view_user",
         "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_usermodality",
         # own availability management
         *AVAILABILITY_PERMISSIONS,
-        # coaching interaction
+        # coaching interaction (teach + request + participate, same basic flow as student)
         "coachings.view_coachingclass",
+        "coachings.add_coachingclass",
+        "coachings.add_coachingparticipant",
         *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
         # classes (read-only on members of their own classes)
+        "classes.view_classe",
         "classes.view_classemember",
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
@@ -346,17 +350,21 @@ ROLE_PERMISSIONS = {
     ],
     "teacher_external": [
         "accounts.can_teach",
+        "accounts.can_participate_in_coaching",
         "accounts.view_user",
         "accounts.can_have_profile",
         "studios.view_studio",
         "modality.view_usermodality",
         # own availability management
         *AVAILABILITY_PERMISSIONS,
-        # coaching interaction
+        # coaching interaction (teach + request + participate, same basic flow as student)
         "coachings.view_coachingclass",
+        "coachings.add_coachingclass",
+        "coachings.add_coachingparticipant",
         *COACHINGS_PERMISSIONS_TEACHER,
         "coachings.view_coachingparticipant",
         # classes (read-only on members of their own classes)
+        "classes.view_classe",
         "classes.view_classemember",
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
@@ -401,6 +409,7 @@ ROLE_PERMISSIONS = {
         "coachings.view_coachingparticipant",
         "coachings.add_coachingparticipant",
         # classes (read-only — see own class membership)
+        "classes.view_classe",
         "classes.view_classemember",
         # billing (view own entries)
         "billing.view_billingentry",

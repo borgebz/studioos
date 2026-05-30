@@ -17,10 +17,10 @@ class Listing(BaseModel):
         ACTIVE = "active", "Active"
         CLOSED = "closed", "Closed"
 
-    variant = models.ForeignKey(
-        "inventory.ProductVariant",
+    product = models.OneToOneField(
+        "inventory.Product",
         on_delete=models.CASCADE,
-        related_name="listings",
+        related_name="listing",
     )
     listing_type = models.CharField(max_length=20, choices=ListingType.choices)
     status = models.CharField(

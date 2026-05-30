@@ -222,6 +222,12 @@ class ProductVariant(BaseModel):
     acquisition_type = models.CharField(max_length=20, choices=AcquisitionType.choices)
     acquired_at = models.DateTimeField(null=True, blank=True)
 
+    # Optional per-variant marketplace price override. When null, the variant
+    # inherits its listing's asking_price. See marketplace.Listing.
+    asking_price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+
     internal_notes = models.TextField(blank=True, null=True)
     public_notes = models.TextField(blank=True, null=True)
 

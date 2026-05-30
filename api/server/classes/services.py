@@ -15,8 +15,43 @@ def _classe_detail_queryset():
     return Classe.objects.prefetch_related("members__student")
 
 
-def list_classes():
-    return Classe.objects.prefetch_related("members__student").all()
+def list_classes(*, requesting_user=None):
+    """
+    List classes visible to the requesting user.
+
+    - Direction / coordination / teachers (have ``classes.can_manage_classes`` or
+      ``accounts.can_teach``) see every class.
+    - Students (``accounts.can_participate_in_coaching``) see only classes
+      they are an active member of.
+    - Guardians (``coachings.can_confirm_dependent_coaching_attendance``)
+      see classes where any of their dependents is an active member.
+    """
+    qs = Classe.objects.prefetch_related("members__student")
+    if requesting_user is None or not requesting_user.is_authenticated:
+        return qs.all()
+
+    if requesting_user.has_perm(
+        "classes.can_manage_classes"
+    ) or requesting_user.has_perm("accounts.can_teach"):
+        return qs.all()
+
+    member_user_ids = [requesting_user.id]
+    if requesting_user.has_perm(
+        "coachings.can_confirm_dependent_coaching_attendance"
+    ):
+        from accounts.models import User
+
+        dependent_ids = list(
+            User.objects.filter(parent_id=requesting_user.id).values_list(
+                "id", flat=True
+            )
+        )
+        member_user_ids.extend(dependent_ids)
+
+    return qs.filter(
+        members__student_id__in=member_user_ids,
+        members__deleted_at__isnull=True,
+    ).distinct()
 
 
 def get_classe(*, pk):

@@ -56,7 +56,11 @@ class CoachingCollectionView(APIView):
     def get(self, request):
         q = CoachingListQuerySerializer(data=request.query_params)
         q.is_valid(raise_exception=True)
-        coachings = services.list_coachings(**q.validated_data)
+        params = dict(q.validated_data)
+        # for_me_roles is OR-combined against request.user (see serializer docstring)
+        if params.get("for_me_roles"):
+            params["for_me_user_id"] = request.user.id
+        coachings = services.list_coachings(**params)
         return paginated_response(
             request=request,
             items=coachings,

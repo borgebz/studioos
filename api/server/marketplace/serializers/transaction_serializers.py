@@ -6,6 +6,7 @@ from marketplace.models import ProductTransaction
 
 class TransactionRequestSerializer(serializers.Serializer):
     listing_id = serializers.IntegerField()
+    variant_id = serializers.IntegerField()
     start_at = serializers.DateTimeField(required=False, allow_null=True)
     end_at = serializers.DateTimeField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_blank=True, default="")

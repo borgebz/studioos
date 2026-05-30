@@ -245,6 +245,96 @@ def _bulk_roster_direct_coordination(
         ) from exc
 
 
+def _invite_explicit_participants_to_request(
+    *,
+    coaching,
+    requesting_user,
+    participant_ids,
+    actual_student,
+):
+    """
+    Invite a list of arbitrary students to a student-requested coaching.
+
+    Mirrors the INVITED + ``invited_by_staff=False`` shape used by
+    :func:`_bulk_roster_coaching_request` so invitees must each accept.
+
+    Skips the actual student and anyone already rostered (e.g. via classe_id),
+    enforces the modality capacity across the *union* of all participants,
+    and surfaces validation errors with stable PascalCase i18n keys.
+    """
+    already_rostered = set(
+        CoachingParticipant.objects.filter(coaching_class=coaching).values_list(
+            "student_id", flat=True
+        )
+    )
+    target_ids = []
+    seen = set()
+    for sid in participant_ids:
+        if sid in seen:
+            continue
+        seen.add(sid)
+        if sid == actual_student.pk:
+            continue
+        if sid in already_rostered:
+            continue
+        target_ids.append(sid)
+
+    if not target_ids:
+        return
+
+    max_cap = coaching.modality.max_capacity
+    if max_cap is not None:
+        total = len(already_rostered) + len(target_ids)
+        if total > max_cap:
+            raise ValidationError(
+                {"messages": ["CoachingParticipantCapacityReached"]}
+            )
+
+    assert_user_ids_can_participate_in_coaching(user_ids=target_ids)
+
+    pending = []
+    for sid in target_ids:
+        participant = CoachingParticipant(
+            coaching_class=coaching,
+            student_id=sid,
+            status=CoachingParticipantStatus.INVITED,
+            invited_by_staff=False,
+            created_by=requesting_user,
+        )
+        try:
+            participant.full_clean()
+        except DjangoValidationError as exc:
+            logger.warning(
+                "Explicit invite model validation failed coaching=%s student_id=%s detail=%s",
+                coaching.pk,
+                sid,
+                getattr(exc, "error_dict", None) or exc,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["BulkRosterParticipantInvalid"],
+                    "student_id": ["BulkRosterParticipantInvalid"],
+                }
+            ) from exc
+        pending.append(participant)
+
+    for participant in pending:
+        try:
+            participant.save()
+        except IntegrityError as exc:
+            logger.warning(
+                "Explicit invite integrity failure coaching=%s student_id=%s",
+                coaching.pk,
+                participant.student_id,
+            )
+            raise ValidationError(
+                {
+                    "messages": ["ParticipantAlreadyEnrolled"],
+                    "student_id": ["ParticipantAlreadyEnrolled"],
+                }
+            ) from exc
+
+
 def _bulk_roster_coaching_request(*, coaching, requesting_user, classe_id):
     """
     Fill roster for a student-requested coaching from a classe's members.
@@ -886,6 +976,8 @@ def list_coachings(
     modality_id=None,
     requested_by_id=None,
     participant_id=None,
+    for_me_user_id=None,
+    for_me_roles=None,
     recurring_coaching_id=None,
     date_from=None,
     date_to=None,
@@ -906,13 +998,34 @@ def list_coachings(
             participants__student_id=participant_id,
             participants__deleted_at__isnull=True,
         )
+    if for_me_user_id is not None and for_me_roles:
+        roles = set(for_me_roles)
+        q = models.Q()
+        if "requester" in roles:
+            q |= models.Q(requested_by_id=for_me_user_id)
+        if "teacher" in roles:
+            q |= models.Q(teacher_id=for_me_user_id)
+        if "participant" in roles:
+            q |= models.Q(
+                participants__student_id=for_me_user_id,
+                participants__deleted_at__isnull=True,
+            )
+        if "dependent" in roles:
+            q |= models.Q(
+                participants__student__parent_id=for_me_user_id,
+                participants__deleted_at__isnull=True,
+            )
+        qs = qs.filter(q).distinct()
     if recurring_coaching_id is not None:
         qs = qs.filter(recurring_coaching_id=recurring_coaching_id)
     if date_from is not None:
         qs = qs.filter(end_datetime__gte=date_from)
     if date_to is not None:
         qs = qs.filter(start_datetime__lte=date_to)
-    return qs
+    # Default to most-recent-first so list pages (My Coachings, Review
+    # Requests, calendar feeds) open with the freshest items at the top.
+    # Tied dates get a stable secondary order by id.
+    return qs.order_by("-start_datetime", "-id")
 
 
 @transaction.atomic
@@ -927,6 +1040,7 @@ def create_coaching_request(
     studio_id=None,
     classe_id=None,
     student=None,
+    participant_ids=None,
 ):
     actual_student = student or requesting_user
 
@@ -1004,6 +1118,14 @@ def create_coaching_request(
             coaching=coaching,
             requesting_user=requesting_user,
             classe_id=classe_id,
+        )
+
+    if participant_ids:
+        _invite_explicit_participants_to_request(
+            coaching=coaching,
+            requesting_user=requesting_user,
+            participant_ids=participant_ids,
+            actual_student=actual_student,
         )
 
     from messaging.services import get_or_create_coaching_conversation

@@ -5,6 +5,7 @@ from .views import (
     BulkInviteCreateView,
     DeactivateUserView,
     EmailExportView,
+    InvitableUserListView,
     InviteCreateView,
     LoginView,
     LogoutView,
@@ -61,6 +62,11 @@ urlpatterns = [
     path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),
     path("users/", UserListView.as_view(), name="user-list"),
     path("teachers/", TeacherListView.as_view(), name="teacher-list"),
+    path(
+        "invitable/",
+        InvitableUserListView.as_view(),
+        name="invitable-user-list",
+    ),
     # Email export
     path("emails/export/", EmailExportView.as_view(), name="email-export"),
     # Profile

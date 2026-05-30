@@ -124,6 +124,23 @@ class TeacherSummarySerializer(serializers.ModelSerializer):
         ]
 
 
+class InvitableUserSummarySerializer(serializers.ModelSerializer):
+    """
+    Minimal user row for invite pickers (users with
+    ``accounts.can_participate_in_coaching``). Used by anyone creating a
+    coaching request to populate the participant search.
+    """
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+        ]
+
+
 class UserResponseSerializer(serializers.ModelSerializer):
     """Output serializer for user data in API responses."""
 
@@ -253,6 +270,15 @@ class ProfileSerializer(PhotoUrlMixin, serializers.ModelSerializer):
         return value
 
 
+class MeDependentSerializer(serializers.Serializer):
+    """A child/dependent the requesting user is the guardian of."""
+
+    id = serializers.IntegerField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+
+
 class MeSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     email = serializers.EmailField()
@@ -262,6 +288,7 @@ class MeSerializer(serializers.Serializer):
     language = serializers.CharField()
     profile = serializers.SerializerMethodField(allow_null=True)
     has_profile = serializers.SerializerMethodField()
+    dependents = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.BooleanField())
     def get_has_profile(self, obj):
@@ -288,6 +315,18 @@ class MeSerializer(serializers.Serializer):
         if profile is None:
             return None
         return ProfileSummarySerializer(profile, context=self.context).data
+
+    @extend_schema_field(MeDependentSerializer(many=True))
+    def get_dependents(self, obj):
+        # Children whose guardian field points at this user. Drives the
+        # "Solicitar para" picker on the coaching-request flow so guardians
+        # always pick which dependent the request is for.
+        from accounts.models import User
+
+        deps = User.objects.filter(parent_id=obj.id, is_active=True).order_by(
+            "first_name", "last_name", "email"
+        )
+        return MeDependentSerializer(deps, many=True).data
 
 
 class TokenPairSerializer(serializers.Serializer):

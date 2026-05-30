@@ -193,6 +193,20 @@ def assert_user_can_participate_in_coaching(*, user):
         raise ValidationError({"messages": ["UserCannotParticipateInCoaching"]})
 
 
+def list_invitable_users(*, exclude_user_id=None):
+    """
+    Return active users who can be invited as coaching participants.
+
+    Filters users by ``accounts.can_participate_in_coaching`` (the same rule
+    used everywhere participants are rostered) and optionally excludes the
+    requester so they don't see themselves in the picker.
+    """
+    qs = _coaching_participant_users_queryset().filter(is_active=True)
+    if exclude_user_id is not None:
+        qs = qs.exclude(pk=exclude_user_id)
+    return qs.order_by("first_name", "last_name", "email")
+
+
 def assert_user_ids_can_participate_in_coaching(*, user_ids):
     """
     Raise ``ValidationError`` with ``UserCannotParticipateInCoaching`` if any listed user

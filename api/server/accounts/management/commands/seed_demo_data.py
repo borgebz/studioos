@@ -1976,12 +1976,12 @@ class Command(BaseCommand):
             listing = listings["member_sell_tutu"]
             ProductTransaction.objects.get_or_create(
                 listing=listing,
-                variant=listing.variant,
+                variant=listing.product.variants.first(),
                 requester=users["parent2"],
                 defaults={
                     "transaction_type": ProductTransaction.TransactionType.SELL,
                     "status": ProductTransaction.TransactionStatus.PENDING,
-                    "owner": listing.variant.product.owner or users["direction"],
+                    "owner": listing.product.owner or users["direction"],
                     "agreed_price": Decimal("45.00"),
                     "notes": "Pedido demo (PENDING).",
                     "created_by": users["parent2"],
@@ -1993,12 +1993,12 @@ class Command(BaseCommand):
             listing = listings["member_sell_collant"]
             ProductTransaction.objects.get_or_create(
                 listing=listing,
-                variant=listing.variant,
+                variant=listing.product.variants.first(),
                 requester=users["student1"],
                 defaults={
                     "transaction_type": ProductTransaction.TransactionType.SELL,
                     "status": ProductTransaction.TransactionStatus.ACCEPTED,
-                    "owner": listing.variant.product.owner or users["direction"],
+                    "owner": listing.product.owner or users["direction"],
                     "agreed_price": Decimal("20.00"),
                     "notes": "Aceite, à espera de entrega.",
                     "created_by": users["student1"],
@@ -2010,12 +2010,12 @@ class Command(BaseCommand):
             listing = listings["member_closed_hiphop"]
             tx, _ = ProductTransaction.objects.get_or_create(
                 listing=listing,
-                variant=listing.variant,
+                variant=listing.product.variants.first(),
                 requester=users["student3"],
                 defaults={
                     "transaction_type": ProductTransaction.TransactionType.SELL,
                     "status": ProductTransaction.TransactionStatus.COMPLETED,
-                    "owner": listing.variant.product.owner or users["direction"],
+                    "owner": listing.product.owner or users["direction"],
                     "agreed_price": Decimal("18.00"),
                     "notes": "Vendido e entregue.",
                     "created_by": users["student3"],
@@ -2039,12 +2039,12 @@ class Command(BaseCommand):
             listing = listings["member_donate_pontas"]
             ProductTransaction.objects.get_or_create(
                 listing=listing,
-                variant=listing.variant,
+                variant=listing.product.variants.first(),
                 requester=users["parent2"],
                 defaults={
                     "transaction_type": ProductTransaction.TransactionType.DONATE,
                     "status": ProductTransaction.TransactionStatus.REJECTED,
-                    "owner": listing.variant.product.owner or users["direction"],
+                    "owner": listing.product.owner or users["direction"],
                     "notes": "Não aceitou o pedido.",
                     "created_by": users["parent2"],
                 },
@@ -2300,7 +2300,7 @@ class Command(BaseCommand):
         # 4) LISTING-linked thread between buyer & seller.
         listing = listings.get("member_sell_tutu")
         if listing is not None:
-            seller = listing.variant.product.owner or users["direction"]
+            seller = listing.product.owner or users["direction"]
             buyer = users["parent2"]
             listing_conv, _ = Conversation.objects.get_or_create(
                 kind=ConversationKind.LISTING,

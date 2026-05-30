@@ -35,6 +35,10 @@ _VALID_VISIBILITY_TRANSITIONS = {
         EventVisibilityState.ARCHIVED,
     ],
     EventVisibilityState.SCHEDULED: [
+        # Self-transition allowed: rescheduling a Scheduled event hits the
+        # same endpoint, just with a new publication_scheduled_at. The Beat
+        # task is replaced atomically below.
+        EventVisibilityState.SCHEDULED,
         EventVisibilityState.PUBLISHED,
         EventVisibilityState.DRAFT,
         EventVisibilityState.ARCHIVED,
@@ -107,6 +111,18 @@ def get_event(*, pk):
         raise AppNotFound("EventNotFound")
 
 
+def get_event_for_read(*, pk, user):
+    """
+    Read-side fetch: returns the event only if `user` is part of its audience
+    (or has the staff bypass perm). 404 — never 403 — for non-audience users
+    so we don't leak the existence of restricted events.
+    """
+    event = get_event(pk=pk)
+    if not _user_can_see_event(event=event, user=user):
+        raise AppNotFound("EventNotFound")
+    return event
+
+
 def get_event_post(*, event, post_id):
     try:
         return EventPost.objects.select_related("event").get(event=event, pk=post_id)
@@ -137,6 +153,79 @@ def _validate_event_class_targets_for_publish(*, event):
         raise ValidationError(
             {"messages": ["EventClassTargetRequiredWhenTargetIsClasses"]}
         )
+
+
+def _audience_is_locked(event):
+    """
+    Audience (notification_target + class_target_classe_ids) cannot be edited
+    once the event is in a terminal-ish state: published, completed, or
+    cancelled. Scheduled and Draft events remain editable.
+    """
+    if event.visibility_state == EventVisibilityState.PUBLISHED:
+        return True
+    if event.event_state in (EventState.COMPLETED, EventState.CANCELLED):
+        return True
+    return False
+
+
+def _user_can_see_event(*, event, user):
+    """
+    Read-side audience visibility check. Mirrors the email recipient logic in
+    events/emails.py: when notification_target is "classes", only members of
+    the targeted classes can see the event (plus staff with the
+    can_view_unpublished_event permission, which doubles as the
+    can-see-anything-anywhere bypass for the management UI).
+    """
+    if event.notification_target != NotificationTarget.CLASSES:
+        return True
+    if user.is_authenticated and user.has_perm("events.can_view_unpublished_event"):
+        return True
+    if not user.is_authenticated:
+        return False
+
+    from classes.models import ClasseMember
+
+    target_class_ids = EventClassTarget.objects.filter(event=event).values_list(
+        "classe_id", flat=True
+    )
+    return ClasseMember.objects.filter(
+        classe_id__in=list(target_class_ids),
+        student=user,
+        deleted_at__isnull=True,
+    ).exists()
+
+
+def _audience_filter_qs(qs, *, user):
+    """
+    Restrict a queryset of Events so class-restricted events are only included
+    when the user is a member of any targeted class. Staff with
+    can_view_unpublished_event are excluded from this filter (they see
+    everything).
+    """
+    if user.is_authenticated and user.has_perm("events.can_view_unpublished_event"):
+        return qs
+
+    if not user.is_authenticated:
+        # Anonymous: hide every class-restricted event.
+        return qs.exclude(notification_target=NotificationTarget.CLASSES)
+
+    from classes.models import ClasseMember
+
+    membership_class_ids = ClasseMember.objects.filter(
+        student=user, deleted_at__isnull=True
+    ).values_list("classe_id", flat=True)
+
+    # Event is visible if either:
+    #   - it is not class-restricted, OR
+    #   - the user is a member of one of its targeted classes.
+    return qs.filter(
+        Q(notification_target=NotificationTarget.ALL)
+        | Q(
+            notification_target=NotificationTarget.CLASSES,
+            class_targets__classe_id__in=list(membership_class_ids),
+            class_targets__deleted_at__isnull=True,
+        )
+    ).distinct()
 
 
 def create_event(*, created_by=None, **data):
@@ -187,7 +276,9 @@ def list_events(*, user):
     if user.is_authenticated and user.has_perm("events.can_view_unpublished_event"):
         return qs.all()
 
-    return qs.filter(visibility_state=EventVisibilityState.PUBLISHED)
+    # Non-staff: only published events, and only those in the user's audience.
+    qs = qs.filter(visibility_state=EventVisibilityState.PUBLISHED)
+    return _audience_filter_qs(qs, user=user)
 
 
 def update_event(*, event, updated_by=None, **data):
@@ -198,6 +289,17 @@ def update_event(*, event, updated_by=None, **data):
             data = {k: v for k, v in data.items() if k != "cover_photo"}
         else:
             data["cover_photo_hash"] = new_cover_hash
+
+    # Lock audience changes once the event is published/completed/cancelled.
+    # Class-target lockdown is enforced in replace_event_class_targets; we
+    # mirror the same rule here for notification_target so a payload like
+    # `{notification_target: "classes"}` is rejected before we touch the row.
+    if (
+        "notification_target" in data
+        and data["notification_target"] != event.notification_target
+        and _audience_is_locked(event)
+    ):
+        raise ValidationError({"messages": ["EventAudienceLocked"]})
 
     terminal_states = frozenset(
         {
@@ -218,6 +320,17 @@ def update_event(*, event, updated_by=None, **data):
     event.updated_by = updated_by
     event.full_clean()
     event.save()
+
+    # Enforce the invariant: "everyone" events cannot carry class targets.
+    # When notification_target is (or becomes) ALL we wipe any class targets
+    # the event still has, so the two fields can never drift apart. The same
+    # check inside replace_event_class_targets covers the view's explicit
+    # path; this branch covers the case where the view only sends
+    # notification_target and never calls the replace helper.
+    if event.notification_target == NotificationTarget.ALL:
+        for ect in EventClassTarget.objects.filter(event=event):
+            ect.delete(deleted_by=updated_by)
+
     return event
 
 
@@ -573,6 +686,24 @@ def replace_event_class_targets(
 
     unique_ids = list(dict.fromkeys(classe_ids))
     desired = set(unique_ids)
+
+    # Invariant: when the event is broadcasting to everyone we never keep any
+    # class targets. The frontend already clears the list when the user flips
+    # the toggle, but we don't trust it — and a stale/race payload would
+    # otherwise leave inconsistent rows behind.
+    if event.notification_target == NotificationTarget.ALL:
+        desired = set()
+
+    current = set(
+        EventClassTarget.objects.filter(event=event).values_list("classe_id", flat=True)
+    )
+
+    # Lock audience changes once the event is published/completed/cancelled.
+    # The legacy CannotClearClassTargetsOnPublishedEvent path remains for the
+    # narrower "published + clearing while target=classes" race that pre-dated
+    # the broader lockdown, so existing clients see the same error code.
+    if desired != current and _audience_is_locked(event):
+        raise ValidationError({"messages": ["EventAudienceLocked"]})
 
     if (
         not desired

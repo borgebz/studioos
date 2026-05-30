@@ -32,6 +32,15 @@ class CoachingRequestSerializer(serializers.Serializer):
     end_datetime = serializers.DateTimeField()
     notes = serializers.CharField(required=False, allow_blank=True)
     classe_id = serializers.IntegerField(required=False, allow_null=True)
+    participant_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list,
+        help_text=(
+            "Explicit student user IDs to invite as participants. Merged with "
+            "classe members when classe_id is also provided; duplicates removed."
+        ),
+    )
     on_behalf_of = serializers.IntegerField(
         required=False,
         allow_null=True,
@@ -155,15 +164,34 @@ class ParticipantCancelSerializer(serializers.Serializer):
     cancellation_reason = serializers.CharField(required=False, allow_blank=True)
 
 
+FOR_ME_ROLE_CHOICES = ("requester", "teacher", "participant", "dependent")
+
+
 class CoachingListQuerySerializer(serializers.Serializer):
     """Query params for ``GET /api/coachings/``.
 
-    ``teacher_id``, ``studio_id``, ``modality_id`` and ``status`` accept
-    multiple values (repeat the param, e.g. ``?status=scheduled&status=requested``)
-    and are translated into ``__in`` lookups by the service.
+    ``teacher_id``, ``studio_id``, ``modality_id``, ``status`` and ``for_me_roles``
+    accept multiple values (repeat the param, e.g. ``?status=scheduled&status=requested``)
+    and are translated into ``__in`` / OR lookups by the service.
+
+    ``for_me_roles`` OR-combines per-user relationship filters against the
+    *requesting* user — used by "My Coachings" pages where the role-mix varies
+    (a teacher who is also a student should see both teaching and participated
+    coachings). Each value:
+
+    - ``requester``    → ``requested_by_id = me``
+    - ``teacher``      → ``teacher_id = me``
+    - ``participant``  → ``participants.student_id = me``
+    - ``dependent``    → ``participants.student.parent_id = me``
     """
 
-    _MULTI_FIELDS = ("teacher_id", "studio_id", "modality_id", "status")
+    _MULTI_FIELDS = (
+        "teacher_id",
+        "studio_id",
+        "modality_id",
+        "status",
+        "for_me_roles",
+    )
 
     teacher_id = serializers.ListField(child=serializers.IntegerField(), required=False)
     studio_id = serializers.ListField(child=serializers.IntegerField(), required=False)
@@ -178,6 +206,14 @@ class CoachingListQuerySerializer(serializers.Serializer):
     participant_id = serializers.IntegerField(
         required=False,
         help_text="Filter coachings where this user is a participant.",
+    )
+    for_me_roles = serializers.ListField(
+        child=serializers.ChoiceField(choices=FOR_ME_ROLE_CHOICES),
+        required=False,
+        help_text=(
+            "OR-combined relationship filters against the requesting user. "
+            "Accepts: requester, teacher, participant, dependent."
+        ),
     )
     recurring_coaching_id = serializers.IntegerField(required=False)
     date_from = serializers.DateTimeField(required=False)

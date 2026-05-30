@@ -26,7 +26,7 @@ class ClasseListCreateView(APIView):
     )
     @require_perm("classes.view_classe")
     def get(self, request):
-        classes = services.list_classes()
+        classes = services.list_classes(requesting_user=request.user)
         return Response(ClasseListSerializer(classes, many=True).data)
 
     @extend_schema(

@@ -8,6 +8,7 @@ from core.exceptions import AppNotFound
 from inventory.models import Product, ProductVariant, VariantBooking
 from marketplace.models import Listing, ProductTransaction
 from marketplace.services.listing_services import (
+    _NON_LISTABLE_STATUSES,
     _check_date_overlap,
     _compute_available_from,
     _get_listing_or_404,
@@ -140,7 +141,17 @@ def request_transaction(*, user, **data):
     if listing.status != Listing.ListingStatus.ACTIVE:
         raise ValidationError({"messages": ["ListingNotActive"]})
 
-    variant = listing.variant
+    variant_id = data.get("variant_id")
+    try:
+        variant = ProductVariant.objects.select_related("product").get(
+            id=variant_id, product=listing.product
+        )
+    except ProductVariant.DoesNotExist:
+        raise ValidationError({"messages": ["VariantNotInListing"]})
+
+    if variant.status in _NON_LISTABLE_STATUSES:
+        raise ValidationError({"messages": ["VariantNotAvailable"]})
+
     transaction_type = listing.listing_type  # mirrors listing type
 
     start_at = data.get("start_at")

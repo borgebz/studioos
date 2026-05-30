@@ -110,7 +110,7 @@ class EventDetailView(APIView):
         responses={200: EventSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     def get(self, request, pk):
-        event = services.get_event(pk=pk)
+        event = services.get_event_for_read(pk=pk, user=request.user)
 
         if event.visibility_state != EventVisibilityState.PUBLISHED:
             if not (
@@ -274,7 +274,7 @@ class EventInterestCreateView(APIView):
         responses={201: EventInterestSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     def post(self, request, event_id):
-        event = services.get_event(pk=event_id)
+        event = services.get_event_for_read(pk=event_id, user=request.user)
         interest = services.create_interest(event=event, user=request.user)
         return Response(
             EventInterestSerializer(interest).data,
@@ -289,7 +289,7 @@ class MyEventInterestDeleteView(APIView):
         responses={204: None, **DEFAULT_ERROR_RESPONSES},
     )
     def delete(self, request, event_id):
-        event = services.get_event(pk=event_id)
+        event = services.get_event_for_read(pk=event_id, user=request.user)
         services.delete_my_interest(event=event, user=request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -304,7 +304,7 @@ class EventCommentListCreateView(APIView):
         responses={200: EventCommentSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
     )
     def get(self, request, event_id):
-        event = services.get_event(pk=event_id)
+        event = services.get_event_for_read(pk=event_id, user=request.user)
         roots, children_map = services.list_comments(event=event, user=request.user)
         serializer = EventCommentSerializer(
             roots,
@@ -321,7 +321,7 @@ class EventCommentListCreateView(APIView):
         responses={201: EventCommentSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     def post(self, request, event_id):
-        event = services.get_event(pk=event_id)
+        event = services.get_event_for_read(pk=event_id, user=request.user)
 
         serializer = EventCommentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -384,7 +384,7 @@ class EventPostListCreateView(APIView):
         responses={200: EventPostSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
     )
     def get(self, request, event_id):
-        event = services.get_event(pk=event_id)
+        event = services.get_event_for_read(pk=event_id, user=request.user)
         posts = services.list_posts(event=event, user=request.user)
         return Response(
             EventPostSerializer(posts, many=True).data,
@@ -424,7 +424,7 @@ class EventPostDetailView(APIView):
         responses={200: EventPostSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     def get(self, request, event_id, post_id):
-        event = services.get_event(pk=event_id)
+        event = services.get_event_for_read(pk=event_id, user=request.user)
         post = services.get_event_post(event=event, post_id=post_id)
 
         if post.published_at is None:
@@ -531,7 +531,7 @@ class EventFileListCreateView(APIView):
         responses={200: EventFileSerializer(many=True), **DEFAULT_ERROR_RESPONSES},
     )
     def get(self, request, event_id):
-        event = services.get_event(pk=event_id)
+        event = services.get_event_for_read(pk=event_id, user=request.user)
         files = services.list_event_files(event=event, user=request.user)
         serializer = EventFileSerializer(
             files,

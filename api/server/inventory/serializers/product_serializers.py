@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from inventory.models import Product, ProductMedia
@@ -96,6 +97,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     )
     media = ProductMediaSerializer(many=True, read_only=True)
     school_details = SchoolProductDetailsSerializer(read_only=True)
+    listing = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -112,6 +114,25 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             "status",
             "media",
             "school_details",
+            "listing",
             "created_at",
             "updated_at",
         ]
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_listing(self, obj):
+        """The marketplace listing wrapping this product, if any (OneToOne)."""
+        from django.core.exceptions import ObjectDoesNotExist
+
+        try:
+            listing = obj.listing
+        except ObjectDoesNotExist:
+            return None
+        if listing is None or listing.deleted_at is not None:
+            return None
+        return {
+            "id": listing.id,
+            "listing_type": listing.listing_type,
+            "status": listing.status,
+            "is_public": listing.is_public,
+        }

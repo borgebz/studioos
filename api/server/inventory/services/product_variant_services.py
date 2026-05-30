@@ -191,6 +191,7 @@ def create_variant(*, product_id, user, **data):
         acquisition_type=data.get("acquisition_type")
         or ProductVariant.AcquisitionType.OTHER,
         acquired_at=data.get("acquired_at"),
+        asking_price=data.get("asking_price"),
         internal_notes=data.get("internal_notes", ""),
         public_notes=data.get("public_notes", ""),
         created_by=user,
@@ -263,6 +264,7 @@ def update_variant(*, variant_id, user, **data):
         "status",
         "acquisition_type",
         "acquired_at",
+        "asking_price",
         "internal_notes",
         "public_notes",
     ]:
