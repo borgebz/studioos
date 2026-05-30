@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 import { CalendarClock, XCircle } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
-import type { ListingDetail } from '@/api/studioos-api'
+import type { ListingDetail, ListingVariant } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -39,6 +39,8 @@ import { parseApiError } from '@/lib/api-errors'
 
 interface RequestBookingDialogProps {
   listing: ListingDetail
+  /** The variant the buyer selected on the detail page. */
+  variant: ListingVariant
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmitted?: () => void
@@ -74,13 +76,17 @@ function startOfDay(date: Date | undefined): Date | undefined {
 
 export function RequestBookingDialog({
   listing,
+  variant,
   open,
   onOpenChange,
   onSubmitted,
 }: RequestBookingDialogProps) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language.startsWith('pt') ? pt : enUS
-  const isRent = listing.listing_type === 'rent'
+  // The backend's `_DATE_REQUIRED_TYPES` covers rent AND lend — both block
+  // the variant for a window of time. Sell / donate are one-shot transfers.
+  const needsDates =
+    listing.listing_type === 'rent' || listing.listing_type === 'lend'
 
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [endDate, setEndDate] = useState<Date | undefined>()
@@ -109,8 +115,8 @@ export function RequestBookingDialog({
   // Booked windows from the server, dropped into the calendar as red bands
   // so the user can see what's already taken before picking a range.
   const bookingBands: WeekStripBand[] = useMemo(() => {
-    if (!isRent) return []
-    const windows = (listing.active_booking_windows ?? []) as BookingWindow[]
+    if (!needsDates) return []
+    const windows = (variant?.booking_windows ?? []) as BookingWindow[]
     const out: WeekStripBand[] = []
     windows.forEach((w, i) => {
       if (!w.start_at || !w.end_at) return
@@ -124,12 +130,12 @@ export function RequestBookingDialog({
       })
     })
     return out
-  }, [listing.active_booking_windows, isRent, t])
+  }, [variant?.booking_windows, needsDates, t])
 
   // The user's tentative pick is drawn as a teal "highlight" band so they
   // can sanity-check it against the red ones before sending.
   const requestBands: WeekStripBand[] = useMemo(() => {
-    if (!isRent || !startDate) return []
+    if (!needsDates || !startDate) return []
     const s = startOfDay(startDate)!
     const e = endOfDay(endDate ?? startDate)!
     return [
@@ -142,10 +148,10 @@ export function RequestBookingDialog({
         end: e,
       },
     ]
-  }, [isRent, startDate, endDate, t])
+  }, [needsDates, startDate, endDate, t])
 
   const legend: WeekStripLegendEntry[] = useMemo(() => {
-    if (!isRent) return []
+    if (!needsDates) return []
     const items: WeekStripLegendEntry[] = []
     if (bookingBands.length > 0) {
       items.push({
@@ -162,10 +168,10 @@ export function RequestBookingDialog({
       })
     }
     return items
-  }, [isRent, bookingBands.length, startDate, t])
+  }, [needsDates, bookingBands.length, startDate, t])
 
   const handleSubmit = async () => {
-    if (isRent) {
+    if (needsDates) {
       if (!startDate || !endDate) {
         toast.error(t('marketplace.requestBooking.errorDatesRequired'))
         return
@@ -180,8 +186,9 @@ export function RequestBookingDialog({
     try {
       await apiClient.api.marketplaceListingsRequestCreate(listing.id, {
         listing_id: listing.id,
-        start_at: isRent && startDate ? startOfDay(startDate)!.toISOString() : null,
-        end_at: isRent && endDate ? endOfDay(endDate)!.toISOString() : null,
+        variant_id: variant.id,
+        start_at: needsDates && startDate ? startOfDay(startDate)!.toISOString() : null,
+        end_at: needsDates && endDate ? endOfDay(endDate)!.toISOString() : null,
         notes: notes.trim(),
       })
       toast.success(t('marketplace.requestBooking.success'))
@@ -200,14 +207,14 @@ export function RequestBookingDialog({
         <DialogHeader>
           <DialogTitle>{t(titleKey)}</DialogTitle>
           <DialogDescription>
-            {isRent
+            {needsDates
               ? t('marketplace.requestBooking.descriptionRent')
               : t('marketplace.requestBooking.descriptionNonRent')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">
-          {isRent && (
+          {needsDates && (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -283,7 +290,7 @@ export function RequestBookingDialog({
           </Button>
         </DialogFooter>
 
-        {isRent && startDate && endDate && (
+        {needsDates && startDate && endDate && (
           <p className="text-xs text-muted-foreground tabular-nums">
             {format(startOfDay(startDate)!, 'PPP', { locale: dateLocale })}
             {' – '}

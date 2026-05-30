@@ -160,6 +160,17 @@ export function MessageThread({
     }
   }, [messages, atBottom, scrollToBottom])
 
+  // Typing bubbles grow the scroll height below the last message. If the
+  // user is pinned to the bottom, keep them pinned so the bubble stays
+  // visible; otherwise leave their scroll position alone.
+  useEffect(() => {
+    if (typingUserIds.length > 0 && atBottom) {
+      requestAnimationFrame(() => scrollToBottom('smooth'))
+    }
+    // atBottom intentionally omitted — we only react to typing changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typingUserIds.length, scrollToBottom])
+
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
     const el = e.currentTarget
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight
@@ -307,7 +318,7 @@ export function MessageThread({
       >
         {loading ? (
           <ThreadSkeleton />
-        ) : messages.length === 0 ? (
+        ) : messages.length === 0 && typingUserIds.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <p className="text-sm text-muted-foreground">
               {t('messages.empty.noMessages')}
@@ -388,6 +399,12 @@ export function MessageThread({
                 })}
               </div>
             ))}
+            {typingUserIds.length > 0 && (
+              <TypingBubbles
+                userIds={typingUserIds}
+                participants={participants}
+              />
+            )}
           </div>
         )}
 
@@ -411,17 +428,10 @@ export function MessageThread({
         )}
       </div>
 
-      {/* Composer card — floats above the safe-area; the typing indicator
-       *  sits inside the same card so it doesn't read as a separate strip. */}
+      {/* Composer card — floats above the safe-area. The typing indicator
+       *  lives inside the messages canvas (rendered as a bubble) rather than
+       *  here, so the composer reads as a single calm input row. */}
       <div className="shrink-0 overflow-hidden rounded-xl border border-border bg-card px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-sm md:px-7 md:py-4">
-        {typingUserIds.length > 0 && (
-          <div className="mb-2">
-            <TypingIndicator
-              userIds={typingUserIds}
-              participants={participants}
-            />
-          </div>
-        )}
         <div className="mx-auto max-w-[680px]">
           {file && (
             <div className="mb-2 flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-1.5 text-xs">
@@ -912,7 +922,7 @@ function BubbleActions({
   )
 }
 
-function TypingIndicator({
+function TypingBubbles({
   userIds,
   participants,
 }: {
@@ -920,30 +930,57 @@ function TypingIndicator({
   participants: Record<number, ConversationParticipant>
 }) {
   const { t } = useTranslation()
-  // Resolve names: prefer first name. Show up to 3, summarize the rest.
-  const names = userIds.map((id) => {
-    const name = participantName(participants[id], t, id)
-    return name.split(' ')[0]
-  })
-  let label: string
-  if (names.length === 1) {
-    label = t('messages.typing.one', { name: names[0] })
-  } else if (names.length === 2) {
-    label = t('messages.typing.two', { a: names[0], b: names[1] })
-  } else {
-    label = t('messages.typing.many', { count: names.length })
-  }
   return (
-    <div
-      className="mx-auto flex max-w-[680px] items-center gap-2 text-[11.5px] text-muted-foreground"
-      aria-live="polite"
-    >
-      <span className="inline-flex items-end gap-0.5 leading-none">
-        <span className="size-1 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:0ms]" />
-        <span className="size-1 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:120ms]" />
-        <span className="size-1 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:240ms]" />
-      </span>
-      <span>{label}</span>
+    <div className="pt-1" aria-live="polite">
+      {userIds.map((id) => (
+        <TypingBubble
+          key={id}
+          userId={id}
+          participants={participants}
+          t={t}
+        />
+      ))}
+    </div>
+  )
+}
+
+function TypingBubble({
+  userId,
+  participants,
+  t,
+}: {
+  userId: number
+  participants: Record<number, ConversationParticipant>
+  t: (k: string, opts?: Record<string, unknown>) => string
+}) {
+  const sender = participants[userId]
+  const senderName = participantName(sender, t, userId)
+  return (
+    <div className="w-full py-0.5">
+      <div className="ml-10 mb-0.5 px-1 text-[11px] font-medium text-muted-foreground">
+        {senderName}
+      </div>
+      <div className="flex w-full items-center justify-start gap-2">
+        <div className="w-8 shrink-0">
+          <Avatar size="default">
+            {sender?.photoUrl && (
+              <AvatarImage src={sender.photoUrl} alt={senderName} />
+            )}
+            <AvatarFallback>{getInitials(senderName)}</AvatarFallback>
+          </Avatar>
+        </div>
+        <div
+          role="status"
+          aria-label={t('messages.typing.aria', { name: senderName })}
+          className="flex items-center rounded-lg border border-border bg-card px-3.5 py-2.5 shadow-sm"
+        >
+          <span className="inline-flex items-end gap-1 leading-none">
+            <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:0ms]" />
+            <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:120ms]" />
+            <span className="size-1.5 rounded-full bg-muted-foreground/70 animate-typing-dot [animation-delay:240ms]" />
+          </span>
+        </div>
+      </div>
     </div>
   )
 }

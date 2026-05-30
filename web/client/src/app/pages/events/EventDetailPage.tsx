@@ -33,7 +33,11 @@ import type {
   EventFile,
   EventPost,
 } from '@/api/studioos-api'
-import { VisibilityStateEnum } from '@/api/studioos-api'
+import {
+  NotificationEnum,
+  NotificationTargetEnum,
+  VisibilityStateEnum,
+} from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
@@ -56,6 +60,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { SanitizedHtml } from '@/components/shared/RichTextEditor'
 import { usePermissions } from '@/auth/permissions'
 import { useAuth } from '@/auth/useAuth'
@@ -73,6 +78,7 @@ import {
   useDateFormatter,
   eventDateLine,
 } from './events-helpers'
+import { PublishNotificationDialog } from './PublishNotificationDialog'
 import { toast } from 'sonner'
 import { parseApiError } from '@/lib/api-errors'
 
@@ -98,11 +104,12 @@ export function EventDetailPage() {
   const [comments, setComments] = useState<EventComment[]>([])
   const [loading, setLoading] = useState(true)
   const [confirmAction, setConfirmAction] = useState<
-    null | 'cancel' | 'archive' | 'complete' | 'delete' | 'publish'
+    null | 'cancel' | 'archive' | 'complete' | 'delete'
   >(null)
   const [actionBusy, setActionBusy] = useState(false)
   const [reschedAlert, setReschedAlert] = useState(false)
   const [replyTo, setReplyTo] = useState<EventComment | null>(null)
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false)
 
   const canEdit = can('events.change_event')
   const canPublish = can('events.can_publish_event')
@@ -175,6 +182,25 @@ export function EventDetailPage() {
     }
   }
 
+  const performPublish = async (notification: NotificationEnum) => {
+    if (!event) return
+    setActionBusy(true)
+    try {
+      const r = await apiClient.api.eventsPublishCreate(event.id, {
+        notification,
+      })
+      if (r.data) {
+        setEvent((prev) => (prev ? { ...prev, ...r.data } : prev))
+        toast.success(t('events.form.publishOk'))
+      }
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('events.form.saveError'))
+    } finally {
+      setActionBusy(false)
+      setPublishDialogOpen(false)
+    }
+  }
+
   const performAction = async () => {
     if (!event || !confirmAction) return
     setActionBusy(true)
@@ -188,9 +214,6 @@ export function EventDetailPage() {
         updated = r.data
       } else if (confirmAction === 'complete') {
         const r = await apiClient.api.eventsCompleteCreate(event.id)
-        updated = r.data
-      } else if (confirmAction === 'publish') {
-        const r = await apiClient.api.eventsPublishCreate(event.id, {})
         updated = r.data
       } else if (confirmAction === 'delete') {
         await apiClient.api.eventsDestroy(event.id)
@@ -213,7 +236,7 @@ export function EventDetailPage() {
   if (loading || !event) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={t('events.title')} backTo={paths.events} />
           <DetailSkeleton />
         </div>
@@ -228,7 +251,7 @@ export function EventDetailPage() {
 
   return (
     <PageLayout>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={t('events.title')} backTo={paths.events}>
           {isStaff && canEdit && (
             <Button
@@ -331,55 +354,63 @@ export function EventDetailPage() {
               </section>
             )}
 
-            {/* Posts feed */}
-            <section>
-              <div className="mb-4 flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-semibold">
-                  {t('events.sections.posts')}
-                </h2>
-                {canAddPost && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      navigate(
-                        paths.eventsPostCreate.replace(':id', String(event.id))
-                      )
-                    }
-                  >
-                    <Plus className="size-4" />
-                    {t('events.actions.newPost')}
-                  </Button>
-                )}
-              </div>
-              <div className="overflow-hidden rounded-lg border border-border bg-card">
-                {posts.length === 0 ? (
-                  <p className="px-5 py-6 text-sm italic text-muted-foreground">
-                    {t('events.posts.empty')}
-                  </p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {posts.map((p) => (
-                      <li key={p.id}>
-                        <PostCard
-                          post={p}
-                          onEdit={
-                            canAddPost
-                              ? () =>
-                                  navigate(
-                                    paths.eventsPostEdit
-                                      .replace(':id', String(event.id))
-                                      .replace(':postId', String(p.id))
-                                  )
-                              : undefined
-                          }
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </section>
+            {/* Posts feed — hidden entirely for read-only users when empty.
+                Nothing to display and no affordance to add one, so the empty
+                card + heading would be dead UI. Staff (canAddPost) keep the
+                empty state because they can still publish updates. */}
+            {(canAddPost || posts.length > 0) && (
+              <section>
+                <div className="mb-4 flex items-baseline justify-between gap-3">
+                  <h2 className="text-lg font-semibold">
+                    {t('events.sections.posts')}
+                  </h2>
+                  {canAddPost && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        navigate(
+                          paths.eventsPostCreate.replace(
+                            ':id',
+                            String(event.id)
+                          )
+                        )
+                      }
+                    >
+                      <Plus className="size-4" />
+                      {t('events.actions.newPost')}
+                    </Button>
+                  )}
+                </div>
+                <div className="overflow-hidden rounded-lg border border-border bg-card">
+                  {posts.length === 0 ? (
+                    <p className="px-5 py-6 text-sm italic text-muted-foreground">
+                      {t('events.posts.empty')}
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {posts.map((p) => (
+                        <li key={p.id}>
+                          <PostCard
+                            post={p}
+                            onEdit={
+                              canAddPost
+                                ? () =>
+                                    navigate(
+                                      paths.eventsPostEdit
+                                        .replace(':id', String(event.id))
+                                        .replace(':postId', String(p.id))
+                                    )
+                                : undefined
+                            }
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* Comments */}
             <section>
@@ -513,6 +544,7 @@ export function EventDetailPage() {
                 cancelled={cancelled}
                 draft={draft}
                 onAction={setConfirmAction}
+                onPublish={() => setPublishDialogOpen(true)}
                 onSchedule={() =>
                   navigate(paths.eventsEdit.replace(':id', String(event.id)))
                 }
@@ -537,14 +569,12 @@ export function EventDetailPage() {
               {confirmAction === 'archive' && t('events.actions.archive')}
               {confirmAction === 'complete' &&
                 t('events.actions.markCompleted')}
-              {confirmAction === 'publish' && t('events.actions.publishNow')}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === 'cancel' && t('events.form.cancelConfirmBody')}
               {confirmAction === 'delete' && t('events.form.deleteConfirmBody')}
               {(confirmAction === 'archive' ||
-                confirmAction === 'complete' ||
-                confirmAction === 'publish') &&
+                confirmAction === 'complete') &&
                 ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -560,7 +590,6 @@ export function EventDetailPage() {
                   'bg-destructive text-destructive-foreground hover:bg-destructive/90'
               )}
             >
-              {confirmAction === 'publish' && t('events.actions.publishNow')}
               {confirmAction === 'cancel' && t('events.actions.cancelEvent')}
               {confirmAction === 'archive' && t('events.actions.archive')}
               {confirmAction === 'complete' &&
@@ -570,6 +599,14 @@ export function EventDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PublishNotificationDialog
+        open={publishDialogOpen}
+        onOpenChange={(o) => !actionBusy && setPublishDialogOpen(o)}
+        kind="event"
+        submitting={actionBusy}
+        onConfirm={performPublish}
+      />
     </PageLayout>
   )
 }
@@ -697,7 +734,7 @@ function RailRow({ label, value }: { label: string; value: React.ReactNode }) {
 
 // ─── Manage panel (staff) ─────────────────────────────────────────────────
 
-type ConfirmAction = 'cancel' | 'archive' | 'complete' | 'delete' | 'publish'
+type ConfirmAction = 'cancel' | 'archive' | 'complete' | 'delete'
 
 function ManagePanel({
   event,
@@ -711,6 +748,7 @@ function ManagePanel({
   cancelled,
   draft,
   onAction,
+  onPublish,
   onSchedule,
 }: {
   event: EventDetailAug
@@ -724,6 +762,7 @@ function ManagePanel({
   cancelled: boolean
   draft: boolean
   onAction: (a: ConfirmAction) => void
+  onPublish: () => void
   onSchedule: () => void
 }) {
   const { t } = useTranslation()
@@ -805,6 +844,18 @@ function ManagePanel({
             ) : null
           }
         />
+        <RailRow
+          label={t('events.sections.audience')}
+          value={
+            <span className="text-sm font-medium">
+              {event.notification_target === NotificationTargetEnum.Classes
+                ? t('events.audience.selectedCount', {
+                    count: event.class_target_classe_ids?.length ?? 0,
+                  })
+                : t('events.audience.everyone')}
+            </span>
+          }
+        />
         {event.published_at && (
           <RailRow
             label={t('events.details.publishedAt')}
@@ -830,7 +881,7 @@ function ManagePanel({
           <Separator className="my-4" />
           <div className="flex flex-col gap-2">
             {showPublish && (
-              <Button onClick={() => onAction('publish')}>
+              <Button onClick={onPublish}>
                 <Megaphone className="size-4" />
                 {t('events.actions.publishNow')}
               </Button>

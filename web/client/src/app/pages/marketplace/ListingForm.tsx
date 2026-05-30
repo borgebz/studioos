@@ -28,7 +28,7 @@ import type {
   Color,
   ListingDetail,
   ProductDetail,
-  ProductVariantRead,
+  ListingVariant,
   SizeSystem,
   SchoolListingCreateMultipart,
   PatchedListingUpdate,
@@ -190,7 +190,7 @@ function buildEditDefaults(listing: ListingDetail): CreateListingFormValues {
   }
 }
 
-function buildEditVariant(v: ProductVariantRead): VariantData {
+function buildEditVariant(v: ListingVariant): VariantData {
   return {
     id: String(v.id),
     condition: v.condition ?? 'good',
@@ -245,7 +245,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
     isEdit && listing ? buildEditMedia(listing.product) : []
   )
   const [variants, setVariants] = useState<VariantData[]>(() =>
-    isEdit && listing?.variant ? [buildEditVariant(listing.variant)] : []
+    isEdit && listing?.variants ? listing.variants.map(buildEditVariant) : []
   )
   const [discardOpen, setDiscardOpen] = useState(false)
   const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null)
@@ -331,15 +331,14 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
     void load()
   }, [])
 
-  // In edit mode, resolve sizeSystemId once categories load
+  // In edit mode, resolve each variant's sizeSystemId once categories load
   useEffect(() => {
-    if (!isEdit || categories.length === 0 || !listing?.variant?.size) return
+    if (!isEdit || categories.length === 0) return
 
-    const targetSizeId = listing.variant.size.id
     setVariants((prev) =>
       prev.map((v) => {
-        if (v.sizeSystemId) return v // already resolved
-        // Search through all categories' size systems
+        if (v.sizeSystemId || !v.sizeId) return v // already resolved / no size
+        const targetSizeId = Number(v.sizeId)
         for (const cat of categories) {
           const cats = [cat, ...((cat.subcategories as Category[]) ?? [])]
           for (const c of cats) {
@@ -353,7 +352,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
         return v
       })
     )
-  }, [isEdit, categories, listing])
+  }, [isEdit, categories])
 
   const openAddVariant = useCallback(() => {
     setEditingVariant(null)
@@ -460,22 +459,21 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                 }
               : {}),
           },
-          ...(variants.length > 0
-            ? {
-                variant: {
-                  condition: variants[0].condition,
-                  acquisition_type: variants[0].acquisitionType || null,
-                  status: variants[0].status || 'available',
-                  sku: variants[0].sku || null,
-                  size_id: variants[0].sizeId
-                    ? Number(variants[0].sizeId)
-                    : null,
-                  color_ids: variants[0].selectedColorIds,
-                  notes: variants[0].publicNotes || '',
-                  internal_notes: variants[0].internalNotes || '',
-                },
-              }
-            : {}),
+          variants: variants.map((v) => {
+            const isExisting = !v.id.startsWith('variant-')
+            return {
+              ...(isExisting ? { id: Number(v.id) } : {}),
+              condition: v.condition,
+              acquisition_type: v.acquisitionType || null,
+              status: v.status || 'available',
+              acquired_at: v.acquiredAt || null,
+              sku: v.sku || null,
+              size_id: v.sizeId ? Number(v.sizeId) : null,
+              color_ids: v.selectedColorIds,
+              public_notes: v.publicNotes || '',
+              internal_notes: v.internalNotes || '',
+            }
+          }),
         }
 
         await apiClient.api.marketplaceSchoolListingsPartialUpdate(
@@ -517,7 +515,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
             sku: v.sku || null,
             size_id: v.sizeId ? Number(v.sizeId) : null,
             color_ids: v.selectedColorIds,
-            notes: v.publicNotes || '',
+            public_notes: v.publicNotes || '',
             internal_notes: v.internalNotes || '',
           })),
           ...(data.inventory_code || data.storage_location || data.school_notes

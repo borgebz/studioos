@@ -158,7 +158,7 @@ export function MyListingsPage() {
           </span>
         ),
       }),
-      columnHelper.accessor('variant_condition', {
+      columnHelper.display({
         id: 'condition',
         header: () =>
           t('marketplace.col.condition', { defaultValue: 'Condition' }),
@@ -183,13 +183,17 @@ export function MyListingsPage() {
           },
         },
         cell: (info) => {
-          const v = info.getValue()
+          const conditions = info.row.original.condition_summary ?? []
           return (
             <span className="text-xs text-muted-foreground">
-              {v
-                ? t(`marketplace.condition${capitalize(String(v))}`, {
-                    defaultValue: String(v),
-                  })
+              {conditions.length > 0
+                ? conditions
+                    .map((c) =>
+                      t(`marketplace.condition${capitalize(String(c))}`, {
+                        defaultValue: String(c),
+                      })
+                    )
+                    .join(', ')
                 : '—'}
             </span>
           )

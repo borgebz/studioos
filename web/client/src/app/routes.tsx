@@ -49,6 +49,7 @@ import { SchoolListingsPage } from '@/app/pages/marketplace/SchoolListingsPage'
 import { MyInventoryPage } from '@/app/pages/inventory/MyInventoryPage'
 import { SchoolInventoryPage } from '@/app/pages/inventory/SchoolInventoryPage'
 import { CreateProductPage } from '@/app/pages/inventory/CreateProductPage'
+import { ProductDetailPage } from '@/app/pages/inventory/ProductDetailPage'
 import { InviteUsersPage } from '@/app/pages/invites/InviteUsersPage'
 import { UsersListPage } from '@/app/pages/users/UsersListPage'
 import { UserDetailPage } from '@/app/pages/users/UserDetailPage'
@@ -116,6 +117,7 @@ export function AppRoutes() {
             permission={[
               'accounts.can_participate_in_coaching',
               'accounts.can_teach',
+              'coachings.can_confirm_dependent_coaching_attendance',
             ]}
           >
             <MyCoachingRequestsPage />
@@ -125,7 +127,7 @@ export function AppRoutes() {
       <Route
         path={paths.coachingsRequest}
         element={
-          <ProtectedRoute permission="accounts.can_participate_in_coaching">
+          <ProtectedRoute permission="coachings.add_coachingclass">
             <RequestCoachingPage />
           </ProtectedRoute>
         }
@@ -219,6 +221,14 @@ export function AppRoutes() {
         }
       />
       <Route
+        path={paths.myInventoryDetail}
+        element={
+          <ProtectedRoute permission="marketplace.view_own_listings">
+            <ProductDetailPage context="personal" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path={paths.schoolInventory}
         element={
           <ProtectedRoute permission="inventory.view_school_product">
@@ -231,6 +241,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute permission="inventory.add_school_product">
             <CreateProductPage context="school" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.schoolInventoryDetail}
+        element={
+          <ProtectedRoute permission="inventory.view_school_product">
+            <ProductDetailPage context="school" />
           </ProtectedRoute>
         }
       />

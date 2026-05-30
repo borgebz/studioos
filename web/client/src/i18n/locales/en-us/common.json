@@ -7,7 +7,7 @@
     "home": "Home",
     "calendar": "Calendar",
     "coachings": "Coachings",
-    "myRequests": "My Requests",
+    "myCoachings": "My Coachings",
     "requestCoaching": "Request Coaching",
     "reviewRequests": "Review Requests",
     "myAvailability": "My Availability",
@@ -527,6 +527,24 @@
     "nextCoaching": {
       "title": "Next session",
       "empty": "You have no upcoming sessions."
+    },
+    "dependents": {
+      "title": "Your dependents",
+      "description": "Check on the sessions of each child you look after.",
+      "nextSession": "Next session",
+      "nextSessionToday": "Today, {{time}}",
+      "nextSessionTomorrow": "Tomorrow, {{time}}",
+      "noSessions": "No sessions scheduled.",
+      "viewCalendar": "View schedule"
+    },
+    "pending": {
+      "title": "Waiting on you",
+      "description": "Pending actions that need your attention.",
+      "staffCoachings": "Coachings to approve",
+      "staffCompletion": "Completions to validate",
+      "staffEnrollments": "Enrollments to review",
+      "teacherConfirm": "Sessions for you to confirm",
+      "studentConfirm": "Sessions to confirm attendance"
     }
   },
   "notFound": {
@@ -672,6 +690,7 @@
     "pendingCount_one": "{{count}} pending request",
     "pendingCount_other": "{{count}} pending requests",
     "withTeacher": "with {{name}}",
+    "forDependent": "for {{name}}",
     "scheduledByStaff": "By staff",
     "noActions": "—",
     "accept": "Accept",
@@ -747,8 +766,19 @@
     "variantSheetDesc": "Set the condition, size, and color of this variant."
   },
   "myCoachingRequests": {
-    "title": "My Requests",
-    "empty": "You have no coaching requests yet."
+    "title": "My Coachings",
+    "subtitle": "Coachings you teach, requested, or are part of as a participant.",
+    "empty": "No coachings yet."
+  },
+  "myCoachingsCalendar": {
+    "empty": "No coachings this week.",
+    "dayFree": "Free",
+    "signInPrompt": "Sign in to see your coachings.",
+    "legend": {
+      "scheduled": "Scheduled",
+      "pending": "Pending",
+      "cancelled": "Cancelled"
+    }
   },
   "requestCoaching": {
     "title": "Request a Coaching",
@@ -761,7 +791,14 @@
     "submit": "Send Request",
     "submitting": "Sending…",
     "success": "Coaching request sent! You'll be notified when the teacher responds.",
-    "summaryTitle": "Request Summary"
+    "summaryTitle": "Request Summary",
+    "participantsDesc": "Invite a whole class or pick specific students. You're always added as a participant.",
+    "summaryClasse": "Class",
+    "onBehalfTitle": "Requesting for",
+    "onBehalfDesc": "Pick which dependent this coaching is for. They'll be rostered automatically.",
+    "onBehalfLabel": "Dependent",
+    "selectDependent": "Pick a dependent",
+    "summaryFor": "For"
   },
   "myListings": {
     "title": "My Listings",
@@ -1145,6 +1182,8 @@
     "priceFree": "Free",
     "priceNegotiable": "Negotiable",
     "sizeShort": "Size",
+    "availableCount_one": "{{count}} available",
+    "availableCount_other": "{{count}} available",
     "viewGrid": "Grid view",
     "viewList": "List view",
     "sortBy": "Sort by",
@@ -1179,10 +1218,17 @@
       "favorite": "Favorite",
       "unfavorite": "Remove favorite",
       "editListing": "Edit listing",
+      "chooseVariant": "Choose an option",
+      "chooseVariantDesc": "Pick a size or condition — price and availability update to match.",
+      "variantUnavailable": "Unavailable",
+      "variantUnavailableHint": "This option isn't available right now. Pick another or check back later.",
       "favoritesCount_one": "{{count}} favorite",
       "favoritesCount_other": "{{count}} favorites",
       "notFound": "Listing not found.",
-      "notFoundDesc": "It may have been removed or is no longer available."
+      "notFoundDesc": "It may have been removed or is no longer available.",
+      "otherVariants": "Other options for this product",
+      "otherVariantsDesc": "Different sizes or conditions available for the same product.",
+      "viewVariant": "View"
     },
     "requestBooking": {
       "titleRent": "Request booking",
@@ -1587,7 +1633,42 @@
       "share": "Share",
       "manage": "Manage",
       "stateActions": "State actions",
-      "audit": "History"
+      "audit": "History",
+      "audience": "Audience"
+    },
+    "audience": {
+      "title": "Audience",
+      "everyone": "Everyone",
+      "specificClasses": "Specific classes",
+      "specificClassesDesc": "Only members of the selected classes will see this event and receive notifications.",
+      "everyoneDesc": "Visible to the whole community.",
+      "selectClasses": "Manage classes",
+      "selectedCount_one": "{{count}} class selected",
+      "selectedCount_other": "{{count}} classes selected",
+      "noneSelected": "No classes selected yet",
+      "locked": "Audience can't change after the event is published, completed, or cancelled.",
+      "sheetTitle": "Choose classes",
+      "sheetDescription": "Members of the selected classes will see this event and be notified.",
+      "searchPlaceholder": "Search classes…",
+      "emptyClasses": "No classes yet.",
+      "noResults": "No classes match \"{{query}}\".",
+      "selectedHeader": "{{count}} selected",
+      "clearAll": "Clear",
+      "done": "Done"
+    },
+    "publishDialog": {
+      "title": "Publish event",
+      "description": "Choose what to do with notifications.",
+      "postTitle": "Publish update",
+      "postDescription": "Choose how to notify the audience.",
+      "optionNone": "Publish without notifying",
+      "optionNoneDesc": "The event becomes visible but no emails go out.",
+      "optionTest": "Send a test to me",
+      "optionTestDesc": "Only you receive the notification email — useful for previewing.",
+      "optionAll": "Notify the audience",
+      "optionAllDesc": "Send notification emails to everyone in the audience.",
+      "publish": "Publish",
+      "cancel": "Cancel"
     },
     "details": {
       "date": "Date",
@@ -1757,6 +1838,7 @@
       "publishNow": "Publish now",
       "scheduleForLater": "Schedule for later…",
       "saveAndSchedule": "Save & schedule",
+      "scheduleDateRequired": "Pick a publication date and time before scheduling.",
       "currentStatus": "Current status",
       "scheduledFor": "Scheduled for {{date}}"
     },
@@ -2263,9 +2345,7 @@
       "update": "updated the conversation"
     },
     "typing": {
-      "one": "{{name}} is typing…",
-      "two": "{{a}} and {{b}} are typing…",
-      "many": "{{count}} people are typing…"
+      "aria": "{{name}} is typing"
     },
     "reactions": {
       "thumbsUp": "Thumbs up",
@@ -2729,6 +2809,7 @@
     "ParentCommentNotFound": "The comment you replied to no longer exists.",
     "CommentEditNotAllowed": "You can't edit this comment.",
     "CommentDeleteNotAllowed": "You can't delete this comment.",
-    "ProfileRequiredToComment": "Create a profile before posting comments."
+    "ProfileRequiredToComment": "Create a profile before posting comments.",
+    "EventAudienceLocked": "The audience can't be changed after the event is published, completed, or cancelled."
   }
 }

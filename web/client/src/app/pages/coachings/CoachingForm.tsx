@@ -6,12 +6,9 @@ import { pt } from 'date-fns/locale'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  AlertTriangle,
   CalendarCheck,
   CalendarClock,
-  CheckCircle2,
   Info,
-  Loader2,
   Repeat,
   Trash2,
   UserCheck,
@@ -24,7 +21,6 @@ import { usePermissions } from '@/auth/permissions'
 import {
   CoachingClassStatusEnum,
   RecurrenceTypeEnum,
-  type CoachingAvailability,
   type CoachingClass,
   type Modality as ApiModality,
   type Studio as ApiStudio,
@@ -36,7 +32,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
@@ -48,14 +43,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { TeacherStudioAvailabilityDialog } from './TeacherStudioAvailabilityDialog'
 import {
   AlertDialog,
@@ -74,6 +61,14 @@ import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { TimePicker } from '@/components/shared/TimePicker'
+import {
+  AddParticipantDialog,
+  type ParticipantOption,
+} from '@/components/shared/AddParticipantDialog'
+import {
+  AvailabilityHint,
+  buildCurrentSlot,
+} from '@/components/shared/AvailabilityHint'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
 import {
@@ -90,11 +85,7 @@ export interface CoachingFormProps {
   coaching?: CoachingClass
 }
 
-interface StudentOption {
-  id: number
-  name: string
-  email: string
-}
+type StudentOption = ParticipantOption
 
 interface ClasseOption {
   id: number
@@ -132,30 +123,6 @@ function userToStudent(u: UserResponse): StudentOption {
 
 function pad(n: number) {
   return n.toString().padStart(2, '0')
-}
-
-function buildCurrentSlot(
-  date: Date | undefined,
-  startTime: string,
-  endTime: string
-) {
-  if (!date || !startTime || !endTime) return null
-  const [sh, sm] = startTime.split(':').map(Number)
-  const [eh, em] = endTime.split(':').map(Number)
-  if (
-    Number.isNaN(sh) ||
-    Number.isNaN(sm) ||
-    Number.isNaN(eh) ||
-    Number.isNaN(em)
-  ) {
-    return null
-  }
-  const start = new Date(date)
-  start.setHours(sh, sm, 0, 0)
-  const end = new Date(date)
-  end.setHours(eh, em, 0, 0)
-  if (end <= start) return null
-  return { start, end }
 }
 
 function buildEditDefaults(coaching: CoachingClass): CoachingFormValues {
@@ -1389,232 +1356,5 @@ function StatusBadge({ status }: { status: CoachingClassStatusEnum }) {
     <Badge className={cn('font-normal cursor-default', STATUS_STYLES[status])}>
       {t(`coachingRequests.status.${status}`)}
     </Badge>
-  )
-}
-
-function AddParticipantDialog({
-  open,
-  onClose,
-  onAdd,
-  availableStudents,
-}: {
-  open: boolean
-  onClose: () => void
-  onAdd: (students: StudentOption[]) => void
-  availableStudents: StudentOption[]
-}) {
-  const { t } = useTranslation()
-  const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [search, setSearch] = useState('')
-
-  const filtered = useMemo(() => {
-    if (!search) return availableStudents
-    const q = search.toLowerCase()
-    return availableStudents.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
-    )
-  }, [availableStudents, search])
-
-  const toggleStudent = (id: number) => {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const handleAdd = () => {
-    const students = availableStudents.filter((s) => selected.has(s.id))
-    onAdd(students)
-    setSelected(new Set())
-    setSearch('')
-  }
-
-  const handleClose = () => {
-    setSelected(new Set())
-    setSearch('')
-    onClose()
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{t('coachings.addParticipant')}</DialogTitle>
-          <DialogDescription>
-            {t('coachings.addParticipantDesc')}
-          </DialogDescription>
-        </DialogHeader>
-
-        <Input
-          placeholder={t('coachings.searchStudents')}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <div className="max-h-64 overflow-y-auto space-y-1">
-          {filtered.length > 0 ? (
-            filtered.map((student) => (
-              <label
-                key={student.id}
-                className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent cursor-pointer"
-              >
-                <Checkbox
-                  checked={selected.has(student.id)}
-                  onCheckedChange={() => toggleStudent(student.id)}
-                />
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    {getInitials(student.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{student.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {student.email}
-                  </p>
-                </div>
-              </label>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              {t('coachings.noStudentsFound')}
-            </p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
-            {t('coachings.cancel')}
-          </Button>
-          <Button onClick={handleAdd} disabled={selected.size === 0}>
-            {t('coachings.addSelected', { count: selected.size })}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-interface AvailabilityHintProps {
-  teacherId: number | null
-  studioId: number | null
-  startDatetime: string | null
-  endDatetime: string | null
-  excludeCoachingId: number | null
-  onOpenDrawer: () => void
-}
-
-function AvailabilityHint({
-  teacherId,
-  studioId,
-  startDatetime,
-  endDatetime,
-  excludeCoachingId,
-  onOpenDrawer,
-}: AvailabilityHintProps) {
-  const { t } = useTranslation()
-  const [result, setResult] = useState<CoachingAvailability | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const inputsReady =
-    teacherId !== null && startDatetime !== null && endDatetime !== null
-
-  useEffect(() => {
-    if (!inputsReady) {
-      setResult(null)
-      return
-    }
-    let cancelled = false
-    setLoading(true)
-    const handle = window.setTimeout(() => {
-      apiClient.api
-        .checkCoachingAvailability({
-          teacher_id: teacherId!,
-          studio_id: studioId ?? undefined,
-          date_from: startDatetime!,
-          date_to: endDatetime!,
-          exclude_coaching_id: excludeCoachingId ?? undefined,
-        })
-        .then((res) => {
-          if (!cancelled) setResult(res.data)
-        })
-        .catch(() => {
-          if (!cancelled) setResult(null)
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
-    }, 400)
-    return () => {
-      cancelled = true
-      window.clearTimeout(handle)
-    }
-  }, [
-    inputsReady,
-    teacherId,
-    studioId,
-    startDatetime,
-    endDatetime,
-    excludeCoachingId,
-  ])
-
-  if (!inputsReady) return null
-
-  if (loading && !result) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        {t('coachings.availability.hint.checking')}
-      </div>
-    )
-  }
-
-  if (!result) return null
-
-  const teacherCount = result.teacher_busy.length
-  const studioCount = result.studio_busy.length
-  const total = teacherCount + studioCount
-
-  if (total === 0) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400">
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        {t('coachings.availability.hint.free')}
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
-      <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
-        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-        <span>
-          {teacherCount > 0 && studioCount > 0
-            ? t('coachings.availability.hint.bothConflicts', {
-                teacher: teacherCount,
-                studio: studioCount,
-              })
-            : teacherCount > 0
-              ? t('coachings.availability.hint.teacherConflicts', {
-                  count: teacherCount,
-                })
-              : t('coachings.availability.hint.studioConflicts', {
-                  count: studioCount,
-                })}
-        </span>
-      </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-7 text-amber-800 hover:text-amber-900 dark:text-amber-300"
-        onClick={onOpenDrawer}
-      >
-        {t('coachings.availability.hint.view')}
-      </Button>
-    </div>
   )
 }

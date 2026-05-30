@@ -32,7 +32,11 @@ import { cn } from '@/lib/utils'
  * Visual variants. Add new ones here when the design system expands; keep the
  * palette small so consumers can map their data confidently.
  */
-export type WeekStripBandVariant = 'positive' | 'negative' | 'highlight'
+export type WeekStripBandVariant =
+  | 'positive'
+  | 'negative'
+  | 'warning'
+  | 'highlight'
 
 const VARIANT_STYLES: Record<
   WeekStripBandVariant,
@@ -48,6 +52,11 @@ const VARIANT_STYLES: Record<
     container: 'bg-rose-500/10 border-rose-500/40 hover:bg-rose-500/15',
     icon: 'text-rose-700 dark:text-rose-400',
     text: 'text-rose-900 dark:text-rose-200',
+  },
+  warning: {
+    container: 'bg-amber-500/10 border-amber-500/40 hover:bg-amber-500/15',
+    icon: 'text-amber-700 dark:text-amber-400',
+    text: 'text-amber-900 dark:text-amber-200',
   },
   highlight: {
     container: 'bg-primary/15 border-primary border-2',
@@ -139,6 +148,12 @@ export function WeekStripCalendar({
     for (const band of bands) {
       const key = format(band.start, 'yyyy-MM-dd')
       map.get(key)?.push(band)
+    }
+    // Sort each day chronologically so sessions stack top-to-bottom in time
+    // order. Without this, bands are rendered in insertion order — the user
+    // sees them appear in whatever order the API returned them.
+    for (const dayBands of map.values()) {
+      dayBands.sort((a, b) => a.start.getTime() - b.start.getTime())
     }
     return map
   }, [bands, weekDays])

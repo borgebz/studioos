@@ -286,7 +286,28 @@ export function MyInventoryPage() {
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             onLoadMore={fetchNextPage}
-            renderItem={(item) => <ProductCard item={item} />}
+            renderItem={(item) => (
+              <div
+                role="link"
+                tabIndex={0}
+                className="cursor-pointer outline-none"
+                onClick={() =>
+                  navigate(
+                    paths.myInventoryDetail.replace(':id', String(item.id))
+                  )
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(
+                      paths.myInventoryDetail.replace(':id', String(item.id))
+                    )
+                  }
+                }}
+              >
+                <ProductCard item={item} />
+              </div>
+            )}
             empty={emptyState}
           />
         ) : (

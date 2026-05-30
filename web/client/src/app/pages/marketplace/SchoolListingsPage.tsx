@@ -161,14 +161,25 @@ export function SchoolListingsPage() {
           },
         },
       }),
-      columnHelper.accessor('variant_condition', {
+      columnHelper.display({
         id: 'condition',
         header: () => t('marketplace.col.condition'),
-        cell: (info) => (
-          <span className="text-xs text-muted-foreground">
-            {info.getValue() || '—'}
-          </span>
-        ),
+        cell: (info) => {
+          const conditions = info.row.original.condition_summary ?? []
+          return (
+            <span className="text-xs text-muted-foreground">
+              {conditions.length > 0
+                ? conditions
+                    .map((c) =>
+                      t(`marketplace.condition${capitalize(String(c))}`, {
+                        defaultValue: String(c),
+                      })
+                    )
+                    .join(', ')
+                : '—'}
+            </span>
+          )
+        },
         meta: {
           className: 'hidden lg:table-cell',
           filter: {

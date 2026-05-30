@@ -10,7 +10,6 @@ import {
   Home,
   Inbox,
   MessageCircle,
-  MessageSquarePlus,
   Package,
   Receipt,
   Settings,
@@ -98,18 +97,13 @@ export const navConfig: NavEntryConfig[] = [
       },
       {
         to: paths.coachingsMyRequests,
-        labelKey: 'nav.myRequests',
+        labelKey: 'nav.myCoachings',
         icon: Inbox,
         permission: [
           'accounts.can_participate_in_coaching',
           'accounts.can_teach',
+          'coachings.can_confirm_dependent_coaching_attendance',
         ],
-      },
-      {
-        to: paths.coachingsRequest,
-        labelKey: 'nav.requestCoaching',
-        icon: MessageSquarePlus,
-        permission: 'accounts.can_participate_in_coaching',
       },
       {
         to: paths.coachingsRequests,
@@ -202,6 +196,12 @@ export const navConfig: NavEntryConfig[] = [
         permission: 'enrollments.can_review_enrollment',
       },
       {
+        to: paths.classes,
+        labelKey: 'nav.classes',
+        icon: GraduationCap,
+        permission: 'classes.can_manage_classes',
+      },
+      {
         to: paths.roles,
         labelKey: 'nav.roles',
         icon: ShieldCheck,
@@ -267,12 +267,6 @@ export const navConfig: NavEntryConfig[] = [
         labelKey: 'nav.studios',
         icon: Building2,
         permission: 'studios.change_studio',
-      },
-      {
-        to: paths.classes,
-        labelKey: 'nav.classes',
-        icon: GraduationCap,
-        permission: 'classes.can_manage_classes',
       },
       {
         to: paths.enrollmentPeriods,

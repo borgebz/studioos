@@ -1,13 +1,11 @@
 /**
  * ListingDetailPage — read-only browse view for a marketplace listing.
  *
- * Non-owners see the product gallery, description, variant specs and
- * existing booking windows, with a primary CTA to send a booking/buy
- * request. Owners get an "Edit listing" affordance instead — they reach
- * the existing edit page through this surface.
- *
- * Phase 2 will replace the disabled "Message seller" affordance with a
- * real listing-scoped conversation.
+ * A listing now represents a whole product, so the page surfaces the product
+ * gallery + description and a picker over every variant. The buyer selects a
+ * variant (size/condition) and the specs, availability and price update to
+ * match; the booking/buy request carries the chosen variant. Owners get an
+ * "Edit listing" affordance instead.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -35,6 +33,7 @@ import { apiClient } from '@/api/api-client'
 import type {
   ListingDetail,
   ListingTypeEnum,
+  ListingVariant,
   ProductMedia,
 } from '@/api/studioos-api'
 import { useAuth } from '@/auth/useAuth'
@@ -51,6 +50,7 @@ import {
 } from '@/components/ui/tooltip'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
 import { paths } from '@/app/paths'
 import { parseApiError } from '@/lib/api-errors'
@@ -140,7 +140,7 @@ export function ListingDetailPage() {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title="" backTo={paths.marketplace} />
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
             <div className="space-y-6">
@@ -157,7 +157,7 @@ export function ListingDetailPage() {
   if (!listing) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader
             title={t('marketplace.browseTitle')}
             backTo={paths.marketplace}
@@ -205,6 +205,10 @@ interface LoadedProps {
   dateLocale: typeof pt | typeof enUS
 }
 
+function isAvailable(v: ListingVariant | undefined): boolean {
+  return !!v && v.status === 'available'
+}
+
 function LoadedListingDetail({
   listing,
   onListingChange,
@@ -239,7 +243,14 @@ function LoadedListingDetail({
   const [activeMediaIdx, setActiveMediaIdx] = useState(0)
   const activeMedia: ProductMedia | undefined = sortedMedia[activeMediaIdx]
 
-  const variant = listing.variant
+  // ── Variant selection ──────────────────────────────────────────────────
+  const variants = useMemo(() => listing.variants ?? [], [listing.variants])
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
+    () => (variants.find(isAvailable) ?? variants[0])?.id ?? null
+  )
+  const variant =
+    variants.find((v) => v.id === selectedVariantId) ?? variants[0]
+
   const colors = (variant?.colors ?? []) as ColorSummary[]
   const conditionLabel = variant?.condition
     ? t(CONDITION_LABEL_KEYS[variant.condition] ?? '', {
@@ -250,29 +261,29 @@ function LoadedListingDetail({
     defaultValue: listing.listing_type,
   })
 
+  // Effective price: variant override falls back to the listing's asking price.
+  const effectivePrice = variant?.effective_price ?? listing.asking_price
   const priceDisplay = (() => {
-    if (listing.asking_price && listing.asking_price !== '') {
-      const n = Number(listing.asking_price)
+    if (effectivePrice && effectivePrice !== '') {
+      const n = Number(effectivePrice)
       if (!Number.isNaN(n)) {
         return `${t('common.currencySymbol')} ${n.toFixed(2)}`
       }
-      return listing.asking_price
+      return effectivePrice
     }
     return isFreeListing
       ? t('marketplace.priceFree')
       : t('marketplace.priceNegotiable')
   })()
   const priceIsNumber =
-    listing.asking_price !== null &&
-    listing.asking_price !== undefined &&
-    listing.asking_price !== '' &&
-    !Number.isNaN(Number(listing.asking_price))
+    !!effectivePrice &&
+    effectivePrice !== '' &&
+    !Number.isNaN(Number(effectivePrice))
 
   const ownerName =
     owner.type === 'school'
       ? t('marketplace.detail.ownedBySchool')
-      : owner.display_name ||
-        t('marketplace.detail.memberPlaceholder')
+      : owner.display_name || t('marketplace.detail.memberPlaceholder')
 
   const ownerLine = isOwnedByMe
     ? t('marketplace.detail.ownedByYou')
@@ -280,10 +291,11 @@ function LoadedListingDetail({
       ? t('marketplace.detail.ownedBySchool')
       : t('marketplace.detail.ownedByMember', { name: ownerName })
 
+  const canRequest = isAvailable(variant)
+
   const handleToggleFavorite = async () => {
     setFavBusy(true)
     const wasFavorited = listing.is_favorited
-    // Optimistic flip.
     onListingChange({
       ...listing,
       is_favorited: !wasFavorited,
@@ -299,7 +311,6 @@ function LoadedListingDetail({
         await apiClient.api.marketplaceListingsFavoriteCreate(listing.id)
       }
     } catch (err) {
-      // Roll back.
       onListingChange({
         ...listing,
         is_favorited: wasFavorited,
@@ -320,7 +331,7 @@ function LoadedListingDetail({
 
   return (
     <PageLayout>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={listing.title} backTo={paths.marketplace} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
@@ -354,9 +365,7 @@ function LoadedListingDetail({
                     <GalleryNav
                       side="right"
                       onClick={() =>
-                        setActiveMediaIdx(
-                          (i) => (i + 1) % sortedMedia.length
-                        )
+                        setActiveMediaIdx((i) => (i + 1) % sortedMedia.length)
                       }
                     />
                   </>
@@ -406,7 +415,49 @@ function LoadedListingDetail({
               )}
             </CardSection>
 
-            {/* Specs */}
+            {/* Variant picker — only when there's a real choice */}
+            {variants.length > 1 && (
+              <CardSection
+                title={t('marketplace.detail.chooseVariant')}
+                description={t('marketplace.detail.chooseVariantDesc')}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {variants.map((v) => {
+                    const selected = v.id === variant?.id
+                    const available = isAvailable(v)
+                    const label =
+                      v.size?.name ||
+                      t(CONDITION_LABEL_KEYS[v.condition] ?? '', {
+                        defaultValue: v.condition,
+                      })
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setSelectedVariantId(v.id)}
+                        aria-pressed={selected}
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors',
+                          selected
+                            ? 'border-primary bg-primary/5 text-foreground ring-1 ring-primary'
+                            : 'border-border bg-card text-foreground hover:border-primary/40',
+                          !available && 'opacity-60'
+                        )}
+                      >
+                        <span className="font-medium">{label}</span>
+                        {!available && (
+                          <span className="text-xs text-muted-foreground">
+                            {t('marketplace.detail.variantUnavailable')}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </CardSection>
+            )}
+
+            {/* Specs (selected variant) */}
             <CardSection title={t('marketplace.detail.specs')}>
               <dl className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
                 <Spec
@@ -451,14 +502,15 @@ function LoadedListingDetail({
               )}
             </CardSection>
 
-            {/* Booking windows (rent only) */}
-            {listing.listing_type === 'rent' && (
+            {/* Booking windows for the selected variant (rent / lend) */}
+            {(listing.listing_type === 'rent' ||
+              listing.listing_type === 'lend') && (
               <CardSection
                 title={t('marketplace.detail.bookingWindows')}
                 description={t('marketplace.detail.bookingWindowsDesc')}
               >
                 <BookingWindowsList
-                  windows={listing.active_booking_windows ?? []}
+                  windows={variant?.booking_windows ?? []}
                   emptyMessage={t('marketplace.detail.noBookingWindows')}
                   locale={dateLocale}
                 />
@@ -520,10 +572,7 @@ function LoadedListingDetail({
               <div className="mt-5 flex items-center gap-3 border-t border-border pt-5">
                 <Avatar size="default">
                   {owner.photo_url && (
-                    <AvatarImage
-                      src={owner.photo_url}
-                      alt={ownerName}
-                    />
+                    <AvatarImage src={owner.photo_url} alt={ownerName} />
                   )}
                   <AvatarFallback>
                     {getInitials(
@@ -580,10 +629,16 @@ function LoadedListingDetail({
                   <>
                     <Button
                       className="w-full"
+                      disabled={!canRequest}
                       onClick={() => setRequestOpen(true)}
                     >
                       {t(requestCtaKey(listing.listing_type))}
                     </Button>
+                    {!canRequest && (
+                      <p className="text-center text-xs text-muted-foreground">
+                        {t('marketplace.detail.variantUnavailableHint')}
+                      </p>
+                    )}
                     <TooltipProvider delayDuration={250}>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -611,9 +666,10 @@ function LoadedListingDetail({
         </div>
       </div>
 
-      {!isOwnedByMe && (
+      {!isOwnedByMe && variant && (
         <RequestBookingDialog
           listing={listing}
+          variant={variant}
           open={requestOpen}
           onOpenChange={setRequestOpen}
           onSubmitted={handleRefetch}

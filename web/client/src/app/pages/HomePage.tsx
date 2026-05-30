@@ -4,10 +4,13 @@ import { useTranslation } from 'react-i18next'
 import { enUS, pt } from 'date-fns/locale'
 import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts'
 import {
+  AlertCircle,
+  CalendarCheck2,
   CalendarClock,
   CalendarPlus,
   ChevronRight,
   ClipboardCheck,
+  GraduationCap,
   MessageSquarePlus,
   Plus,
   Ticket,
@@ -22,6 +25,7 @@ import {
   WeekStripCalendar,
   type WeekStripBand,
 } from '@/components/shared/WeekStripCalendar'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   ChartContainer,
@@ -33,7 +37,9 @@ import { useAuth } from '@/auth/useAuth'
 import { usePermissions } from '@/auth/permissions'
 import { paths } from '@/app/paths'
 import { apiClient } from '@/api/api-client'
-import type { CoachingClass, Studio } from '@/api/studioos-api'
+import type { CoachingClass, MeDependent, Studio } from '@/api/studioos-api'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { getInitials } from '@/lib/user-utils'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -87,6 +93,231 @@ const STUDIO_COLORS = [
   'oklch(0.55 0.10 25)',
   'oklch(0.55 0.08 240)',
 ]
+
+// ---------------------------------------------------------------------------
+// Pending activities — role-aware shortlist of things waiting on the user.
+// Each row links to the page where the action lives. Hidden when nothing's
+// pending so the surface stays calm. Amber badges (per UI guidelines) are
+// the only colour cue; everything else stays neutral.
+// ---------------------------------------------------------------------------
+
+interface PendingRow {
+  key: string
+  labelKey: string
+  count: number
+  to: string
+  icon: LucideIcon
+}
+
+function arrayOfCoachings(payload: unknown): CoachingClass[] {
+  if (Array.isArray(payload)) return payload as CoachingClass[]
+  const r = (payload as { results?: CoachingClass[] } | undefined)?.results
+  return r ?? []
+}
+
+function usePendingActivities() {
+  const { can } = usePermissions()
+  const isStaffReviewer = can('coachings.change_coachingclass')
+  const canReviewEnrollments = can('enrollments.can_review_enrollment')
+  const canTeach = can('accounts.can_teach')
+  const canParticipate = can('accounts.can_participate_in_coaching')
+  const canGuardian = can('coachings.can_confirm_dependent_coaching_attendance')
+  const isLearner = canParticipate || canGuardian
+
+  const [loading, setLoading] = useState(true)
+  const [counts, setCounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    let cancelled = false
+
+    type Pending = { key: string; promise: Promise<number> }
+    const pending: Pending[] = []
+
+    if (isStaffReviewer) {
+      pending.push({
+        key: 'staffCoachings',
+        promise: apiClient.api
+          .getAllCoachings({ status: ['requested', 'pending_approval'] })
+          .then((r) => arrayOfCoachings(r.data).length)
+          .catch(() => 0),
+      })
+      pending.push({
+        key: 'staffCompletion',
+        promise: apiClient.api
+          .getAllCoachings({ status: ['pending_completion_approval'] })
+          .then((r) => arrayOfCoachings(r.data).length)
+          .catch(() => 0),
+      })
+    }
+
+    if (canReviewEnrollments) {
+      pending.push({
+        key: 'staffEnrollments',
+        promise: apiClient.api
+          .enrollmentsListList({ status: ['submitted', 'under_review'] })
+          .then((r) => r.data?.length ?? 0)
+          .catch(() => 0),
+      })
+    }
+
+    if (canTeach) {
+      pending.push({
+        key: 'teacherConfirm',
+        promise: apiClient.api
+          .getAllCoachings({
+            for_me_roles: ['teacher'],
+            status: ['waiting_confirmation'],
+          })
+          .then((r) => arrayOfCoachings(r.data).length)
+          .catch(() => 0),
+      })
+    }
+
+    if (isLearner) {
+      const roles: Array<'participant' | 'dependent'> = []
+      if (canParticipate) roles.push('participant')
+      if (canGuardian) roles.push('dependent')
+      pending.push({
+        key: 'studentConfirm',
+        promise: apiClient.api
+          .getAllCoachings({
+            for_me_roles: roles,
+            status: ['waiting_confirmation'],
+          })
+          .then((r) => arrayOfCoachings(r.data).length)
+          .catch(() => 0),
+      })
+    }
+
+    if (pending.length === 0) {
+      setCounts({})
+      setLoading(false)
+      return
+    }
+
+    Promise.all(pending.map((p) => p.promise))
+      .then((values) => {
+        if (cancelled) return
+        const next: Record<string, number> = {}
+        pending.forEach((p, i) => {
+          next[p.key] = values[i]
+        })
+        setCounts(next)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    isStaffReviewer,
+    canReviewEnrollments,
+    canTeach,
+    canParticipate,
+    canGuardian,
+    isLearner,
+  ])
+
+  const rows: PendingRow[] = useMemo(() => {
+    const out: PendingRow[] = []
+    if (counts.staffCoachings) {
+      out.push({
+        key: 'staffCoachings',
+        labelKey: 'home.pending.staffCoachings',
+        count: counts.staffCoachings,
+        to: paths.coachingsRequests,
+        icon: CalendarClock,
+      })
+    }
+    if (counts.staffCompletion) {
+      out.push({
+        key: 'staffCompletion',
+        labelKey: 'home.pending.staffCompletion',
+        count: counts.staffCompletion,
+        to: paths.coachingsRequests,
+        icon: CalendarCheck2,
+      })
+    }
+    if (counts.staffEnrollments) {
+      out.push({
+        key: 'staffEnrollments',
+        labelKey: 'home.pending.staffEnrollments',
+        count: counts.staffEnrollments,
+        to: paths.enrollmentRequests,
+        icon: GraduationCap,
+      })
+    }
+    if (counts.teacherConfirm) {
+      out.push({
+        key: 'teacherConfirm',
+        labelKey: 'home.pending.teacherConfirm',
+        count: counts.teacherConfirm,
+        to: paths.coachingsMyRequests,
+        icon: CalendarCheck2,
+      })
+    }
+    if (counts.studentConfirm) {
+      out.push({
+        key: 'studentConfirm',
+        labelKey: 'home.pending.studentConfirm',
+        count: counts.studentConfirm,
+        to: paths.coachingsMyRequests,
+        icon: CalendarCheck2,
+      })
+    }
+    return out
+  }, [counts])
+
+  return { rows, loading }
+}
+
+function PendingActivities() {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { rows, loading } = usePendingActivities()
+
+  if (loading) return null
+  if (rows.length === 0) return null
+
+  return (
+    <div className="rounded-lg border border-amber-500/30 bg-card overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-border px-6 py-4">
+        <AlertCircle className="size-4 text-amber-600 dark:text-amber-400" />
+        <h2 className="text-lg font-semibold">{t('home.pending.title')}</h2>
+      </div>
+      <ul className="divide-y divide-border">
+        {rows.map((row) => {
+          const Icon = row.icon
+          return (
+            <li key={row.key}>
+              <button
+                type="button"
+                onClick={() => navigate(row.to)}
+                className="group flex w-full items-center gap-3 bg-card px-6 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+              >
+                <Icon className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                <span className="flex-1 truncate text-sm font-medium text-foreground">
+                  {t(row.labelKey)}
+                </span>
+                <Badge
+                  className={cn(
+                    'font-medium tabular-nums',
+                    'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                  )}
+                >
+                  {row.count}
+                </Badge>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-all group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Greeting
@@ -238,9 +469,11 @@ function QuickActions() {
 function MyWeek({
   userId,
   canTeach,
+  canGuardian,
 }: {
   userId: number
   canTeach: boolean
+  canGuardian: boolean
 }) {
   const { t, i18n } = useTranslation()
   const dateLocale = i18n.language.startsWith('pt') ? pt : enUS
@@ -269,8 +502,9 @@ function MyWeek({
       date_to: weekEnd.toISOString(),
     }
 
-    // A user may participate as a student and (if a teacher) lead sessions —
-    // run both queries and merge by id so they see everything that's theirs.
+    // A user may participate as a student, lead sessions as a teacher, and/or
+    // watch over a dependent's sessions as a guardian — run each query and
+    // merge by id so they see every coaching that matters to them.
     const requests = [
       apiClient.api.getAllCoachings({
         ...baseQuery,
@@ -282,6 +516,14 @@ function MyWeek({
         apiClient.api.getAllCoachings({
           ...baseQuery,
           teacher_id: [userId],
+        })
+      )
+    }
+    if (canGuardian) {
+      requests.push(
+        apiClient.api.getAllCoachings({
+          ...baseQuery,
+          for_me_roles: ['dependent'],
         })
       )
     }
@@ -309,16 +551,29 @@ function MyWeek({
     return () => {
       cancelled = true
     }
-  }, [userId, canTeach, weekStart, weekEnd])
+  }, [userId, canTeach, canGuardian, weekStart, weekEnd])
 
   const bands: WeekStripBand[] = useMemo(
     () =>
       coachings.map((c) => {
         const start = new Date(c.start_datetime)
         const end = new Date(c.end_datetime)
+        // For guardians the band is for a dependent — surface their first
+        // name so a parent with multiple children can tell whose session
+        // this is without opening the row.
+        let forName: string | null = null
+        if (canGuardian) {
+          const dep = (c.participants ?? []).find(
+            (p) =>
+              typeof p.student?.parent_id === 'number' &&
+              p.student.parent_id === userId
+          )
+          if (dep?.student?.first_name) forName = dep.student.first_name
+        }
         const subtitle = [
+          forName,
           c.studio?.name,
-          c.teacher && teacherName(c.teacher),
+          !canGuardian && c.teacher ? teacherName(c.teacher) : null,
         ]
           .filter(Boolean)
           .join(' · ')
@@ -332,7 +587,7 @@ function MyWeek({
           subtitle: subtitle || null,
         }
       }),
-    [coachings]
+    [coachings, canGuardian, userId]
   )
 
   return (
@@ -488,6 +743,157 @@ function StaffKpis() {
           )
         })}
       </dl>
+    </CardSection>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Dependents card — guardian-only surface listing each child the user is
+// responsible for, with a quick read on their next session. Clicking a row
+// jumps to the personal coaching list where the guardian can take action.
+// ---------------------------------------------------------------------------
+
+interface DependentNext {
+  dependentId: number
+  start: Date
+  modality: string
+  studio: string
+}
+
+function DependentsCard({ dependents }: { dependents: MeDependent[] }) {
+  const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(true)
+  const [nextByDep, setNextByDep] = useState<Map<number, DependentNext>>(
+    new Map()
+  )
+
+  useEffect(() => {
+    if (dependents.length === 0) {
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setDate(start.getDate() + 30)
+
+    apiClient.api
+      .getAllCoachings({
+        date_from: start.toISOString(),
+        date_to: end.toISOString(),
+        for_me_roles: ['dependent'],
+      })
+      .then((res) => {
+        if (cancelled) return
+        const data = res?.data as unknown
+        const items =
+          (Array.isArray(data)
+            ? data
+            : ((data as { results?: CoachingClass[] })?.results ?? [])) ?? []
+        // For each dependent, keep the earliest coaching they participate in.
+        const map = new Map<number, DependentNext>()
+        const sorted = items.slice().sort(
+          (a, b) =>
+            new Date(a.start_datetime).getTime() -
+            new Date(b.start_datetime).getTime()
+        )
+        const depIds = new Set(dependents.map((d) => d.id))
+        for (const c of sorted) {
+          for (const p of c.participants ?? []) {
+            const sid = p.student?.id
+            if (typeof sid !== 'number') continue
+            if (!depIds.has(sid)) continue
+            if (map.has(sid)) continue
+            map.set(sid, {
+              dependentId: sid,
+              start: new Date(c.start_datetime),
+              modality: c.modality?.name ?? '—',
+              studio: c.studio?.name ?? '—',
+            })
+          }
+        }
+        setNextByDep(map)
+      })
+      .catch(() => null)
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [dependents])
+
+  if (dependents.length === 0) return null
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today)
+  tomorrow.setDate(today.getDate() + 1)
+
+  function formatNext(next: DependentNext | undefined): string {
+    if (!next) return t('home.dependents.noSessions')
+    const startDay = new Date(next.start)
+    startDay.setHours(0, 0, 0, 0)
+    const time = new Intl.DateTimeFormat(i18n.language, {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(next.start)
+    if (startDay.getTime() === today.getTime()) {
+      return t('home.dependents.nextSessionToday', { time })
+    }
+    if (startDay.getTime() === tomorrow.getTime()) {
+      return t('home.dependents.nextSessionTomorrow', { time })
+    }
+    return `${new Intl.DateTimeFormat(i18n.language, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    }).format(next.start)} · ${time}`
+  }
+
+  return (
+    <CardSection
+      title={t('home.dependents.title')}
+      description={t('home.dependents.description')}
+    >
+      <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+        {dependents.map((d) => {
+          const next = nextByDep.get(d.id)
+          const fullName = `${d.first_name ?? ''} ${d.last_name ?? ''}`.trim()
+          return (
+            <li key={d.id}>
+              <button
+                type="button"
+                onClick={() => navigate(paths.coachingsMyRequests)}
+                className="group flex w-full items-center gap-3 bg-card px-4 py-3 text-left transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+              >
+                <Avatar size="default">
+                  <AvatarImage src={undefined} alt={fullName} />
+                  <AvatarFallback>{getInitials(fullName)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {fullName}
+                  </p>
+                  {loading ? (
+                    <Skeleton className="mt-1 h-3 w-32" />
+                  ) : (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {next
+                        ? `${formatNext(next)} · ${next.modality}`
+                        : t('home.dependents.noSessions')}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="size-4 shrink-0 text-muted-foreground/50 transition-all group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
+              </button>
+            </li>
+          )
+        })}
+      </ul>
     </CardSection>
   )
 }
@@ -689,16 +1095,23 @@ export function HomePage() {
   // The personal week strip is only meaningful for people who actually
   // participate in or lead sessions. Staff see the org-wide calendar at
   // /calendar; the home surface is theirs for high-level state instead.
+  const canTeach = can('accounts.can_teach')
+  const canGuardian = can(
+    'coachings.can_confirm_dependent_coaching_attendance'
+  )
   const showMyWeek =
     !isStaff &&
-    (can('accounts.can_participate_in_coaching') || can('accounts.can_teach'))
-  const canTeach = can('accounts.can_teach')
+    (can('accounts.can_participate_in_coaching') || canTeach || canGuardian)
+  const dependents = user?.dependents ?? []
+  const showDependents = !isStaff && canGuardian && dependents.length > 0
   const showChart = isStaff
 
   return (
     <PageLayout>
       <div className={cn(PAGE_CONTENT, 'space-y-8')}>
         <Greeting firstName={firstName} />
+
+        <PendingActivities />
 
         {isStaff ? (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
@@ -715,8 +1128,13 @@ export function HomePage() {
         ) : (
           <div className="space-y-6">
             <QuickActions />
+            {showDependents && <DependentsCard dependents={dependents} />}
             {showMyWeek && user && (
-              <MyWeek userId={user.id} canTeach={canTeach} />
+              <MyWeek
+                userId={user.id}
+                canTeach={canTeach}
+                canGuardian={canGuardian}
+              />
             )}
           </div>
         )}

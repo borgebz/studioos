@@ -60,6 +60,21 @@ function userName(
   return full || user.email
 }
 
+/**
+ * Resolve the "actual student" a coaching is for when a guardian filed the
+ * request. The backend records the parent as `requested_by` and adds the
+ * dependent to the participant roster — we identify the dependent by matching
+ * `participant.student.parent_id === requested_by.id`.
+ */
+function dependentForRequest(coaching: CoachingClass) {
+  const requester = coaching.requested_by
+  if (!requester) return null
+  const dep = coaching.participants?.find(
+    (p) => p.student?.parent_id === requester.id
+  )
+  return dep?.student ?? null
+}
+
 function StatusPill({ status }: { status?: CoachingClassStatusEnum }) {
   const { t } = useTranslation()
   if (!status) return null
@@ -168,6 +183,19 @@ export function CoachingRequestsPage() {
               <span className="text-muted-foreground">
                 {t('coachingRequests.scheduledByStaff')}
               </span>
+            )
+          }
+          // When a guardian requested the coaching, surface which dependent
+          // it's for — the actual session targets the child, not the parent.
+          const dep = dependentForRequest(info.row.original)
+          if (dep) {
+            return (
+              <div className="flex flex-col">
+                <span className="font-medium">{info.getValue()}</span>
+                <span className="text-xs text-muted-foreground">
+                  {t('coachingRequests.forDependent', { name: userName(dep) })}
+                </span>
+              </div>
             )
           }
           return <span>{info.getValue()}</span>

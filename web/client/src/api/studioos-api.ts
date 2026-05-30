@@ -751,6 +751,8 @@ export interface CoachingRequest {
   end_datetime: string;
   notes?: string;
   classe_id?: number | null;
+  /** Explicit student user IDs to invite as participants. Merged with classe members when classe_id is also provided; duplicates removed. */
+  participant_ids?: number[];
   /** Student user ID when a parent requests on behalf of their child. */
   on_behalf_of?: number | null;
 }
@@ -1519,6 +1521,24 @@ export interface InventoryVariantBookingList {
   results: VariantBooking[];
 }
 
+/**
+ * Minimal user row for invite pickers (users with
+ * ``accounts.can_participate_in_coaching``). Used by anyone creating a
+ * coaching request to populate the participant search.
+ */
+export interface InvitableUserSummary {
+  id: number;
+  /** @maxLength 150 */
+  first_name?: string;
+  /** @maxLength 150 */
+  last_name?: string;
+  /**
+   * @format email
+   * @maxLength 254
+   */
+  email: string;
+}
+
 /** Single invite: email + role code (see ``accounts.Role`` / seed_roles). */
 export interface InviteSingle {
   /** @format email */
@@ -1559,7 +1579,7 @@ export interface ListingCommentUpdate {
 }
 
 export interface ListingCreate {
-  variant_id?: number | null;
+  product_id?: number | null;
   /**
    * * `rent` - Rent
    * * `sell` - Sell
@@ -1606,8 +1626,7 @@ export interface ListingDetail {
   asking_price?: string | null;
   is_public?: boolean;
   product: ProductDetail;
-  variant: ProductVariantRead;
-  active_booking_windows: Record<string, any>[];
+  variants: ListingVariant[];
   owner_display: Record<string, any>;
   is_favorited: boolean;
   favorites_count: number;
@@ -1639,17 +1658,60 @@ export interface ListingList {
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
   asking_price?: string | null;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  price_from: string | null;
   /** @format uri */
   primary_media_url: string | null;
   product_name: string;
   product_category: string;
-  variant_condition: string;
-  variant_size: string;
-  variant_status: string;
-  /** @format date-time */
-  available_from: string | null;
+  variant_count: number;
+  available_count: number;
+  size_summary: string | null;
+  condition_summary: string[];
   /** @format date-time */
   created_at: string;
+}
+
+/**
+ * Variant payload nested inside a listing detail.
+ *
+ * Adds the effective marketplace price (per-variant override falling back to
+ * the listing's asking_price) and the variant's active booking windows so the
+ * buyer can pick a variant and see its availability.
+ */
+export interface ListingVariant {
+  id: number;
+  /** @maxLength 100 */
+  sku?: string | null;
+  condition: ConditionEnum;
+  status: ProductVariantStatusEnum;
+  acquisition_type: AcquisitionTypeEnum;
+  /** @format date-time */
+  acquired_at?: string | null;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
+  internal_notes?: string | null;
+  public_notes?: string | null;
+  size: VariantSize;
+  colors: Record<string, any>[];
+  media: Record<string, any>[];
+  availability: Record<string, any>;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  effective_price: string | null;
+  booking_windows: Record<string, any>[];
 }
 
 /** Input serializer for login. */
@@ -1682,6 +1744,16 @@ export interface Me {
   language: string;
   profile: MeEndpointProfileOutput | null;
   has_profile: boolean;
+  dependents: MeDependent[];
+}
+
+/** A child/dependent the requesting user is the guardian of. */
+export interface MeDependent {
+  id: number;
+  first_name: string;
+  last_name: string;
+  /** @format email */
+  email: string;
 }
 
 export interface MeEndpointProfileOutput {
@@ -1949,7 +2021,7 @@ export interface PatchedListingUpdate {
   asking_price?: string | null;
   is_public?: boolean;
   product?: Record<string, any>;
-  variant?: Record<string, any>;
+  variants?: Record<string, any>[];
 }
 
 export interface PatchedModalityUpdate {
@@ -2009,6 +2081,11 @@ export interface PatchedProductVariantWrite {
    * * `other` - Other
    */
   acquisition_type?: AcquisitionTypeEnum;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
   internal_notes?: string | null;
   public_notes?: string | null;
   size_id?: number | null;
@@ -2173,6 +2250,7 @@ export interface ProductDetail {
   status: ProductStatusEnum;
   media: ProductMedia[];
   school_details: SchoolProductDetails;
+  listing: Record<string, any>;
   /** @format date-time */
   created_at: string;
   /** @format date-time */
@@ -2210,6 +2288,11 @@ export interface ProductVariantRead {
   acquisition_type: AcquisitionTypeEnum;
   /** @format date-time */
   acquired_at?: string | null;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
   internal_notes?: string | null;
   public_notes?: string | null;
   size: VariantSize;
@@ -2250,6 +2333,11 @@ export interface ProductVariantWrite {
    * * `other` - Other
    */
   acquisition_type?: AcquisitionTypeEnum;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price?: string | null;
   internal_notes?: string | null;
   public_notes?: string | null;
   size_id?: number | null;
@@ -2664,6 +2752,7 @@ export interface TransactionDetail {
 
 export interface TransactionRequest {
   listing_id: number;
+  variant_id: number;
   /** @format date-time */
   start_at?: string | null;
   /** @format date-time */
@@ -3238,6 +3327,21 @@ export class Api<
         path: `/api/accounts/emails/export/`,
         method: "GET",
         query: query,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description GET /api/accounts/invitable/ — users who can be invited as coaching participants (``accounts.can_participate_in_coaching``). The requester is intentionally excluded so they don't see themselves in the picker. Open to anyone with ``coachings.add_coachingclass`` so students, teachers and guardians can populate the invite list on the coaching-request form.
+     *
+     * @tags accounts
+     * @name AccountsInvitableList
+     * @request GET:/api/accounts/invitable/
+     */
+    accountsInvitableList: (params: RequestParams = {}) =>
+      this.request<InvitableUserSummary[], ErrorResponse>({
+        path: `/api/accounts/invitable/`,
+        method: "GET",
         format: "json",
         ...params,
       }),
@@ -3934,6 +4038,13 @@ export class Api<
         date_from?: string;
         /** @format date-time */
         date_to?: string;
+        /** OR-combined relationship filters against the requesting user. Accepts: requester, teacher, participant, dependent. */
+        for_me_roles?: (
+          | "requester"
+          | "teacher"
+          | "participant"
+          | "dependent"
+        )[];
         modality_id?: number[];
         /** Filter coachings where this user is a participant. */
         participant_id?: number;

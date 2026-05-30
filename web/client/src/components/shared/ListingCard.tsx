@@ -28,14 +28,6 @@ const TYPE_ICONS = {
   donate: Gift,
 } as const
 
-const CONDITION_LABEL_KEYS: Record<string, string> = {
-  new: 'marketplace.conditionNew',
-  excellent: 'marketplace.conditionExcellent',
-  good: 'marketplace.conditionGood',
-  fair: 'marketplace.conditionFair',
-  damaged: 'marketplace.conditionDamaged',
-}
-
 const TYPE_LABEL_KEYS: Record<string, string> = {
   sell: 'marketplace.typeSell',
   rent: 'marketplace.typeRent',
@@ -79,12 +71,6 @@ export function ListingCard({
       ? { mode: 'free' as const, text: t('marketplace.priceFree') }
       : { mode: 'neg' as const, text: t('marketplace.priceNegotiable') }
   })()
-
-  const conditionLabel = item.variant_condition
-    ? t(CONDITION_LABEL_KEYS[item.variant_condition] ?? '', {
-        defaultValue: item.variant_condition,
-      })
-    : ''
 
   return (
     <div
@@ -204,19 +190,22 @@ export function ListingCard({
           >
             {priceDisplay.text}
           </span>
-          {item.variant_size && (
+          {item.size_summary && (
             <span className="text-xs text-muted-foreground">
-              {t('marketplace.sizeShort')} {item.variant_size}
+              {t('marketplace.sizeShort')} {item.size_summary}
             </span>
           )}
-          {conditionLabel && (
-            <>
-              <span className="text-xs text-muted-foreground/40">·</span>
-              <span className="text-xs text-muted-foreground">
-                {conditionLabel}
-              </span>
-            </>
-          )}
+          {typeof item.available_count === 'number' &&
+            item.available_count > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground/40">·</span>
+                <span className="text-xs text-muted-foreground">
+                  {t('marketplace.availableCount', {
+                    count: item.available_count,
+                  })}
+                </span>
+              </>
+            )}
         </div>
 
         {item.product_category && (

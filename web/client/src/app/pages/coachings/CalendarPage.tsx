@@ -8,12 +8,15 @@ import {
 } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, X } from 'lucide-react'
+import { MessageSquarePlus, Plus, X } from 'lucide-react'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { PageHeader } from '@/components/shared/PageHeader'
-import { Authorized } from '@/auth/permissions'
+import { Authorized, usePermissions } from '@/auth/permissions'
+import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { MyCoachingsCalendar } from '@/components/shared/MyCoachingsCalendar'
 import {
   Combobox,
   ComboboxChip,
@@ -279,6 +282,82 @@ function toDateKey(d: Date): string {
 }
 
 export function CalendarPage() {
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { can, canAny } = usePermissions()
+
+  // Direction/coordination sees the full studio grid (multi-resource calendar);
+  // everyone else (teachers, students, guardians) sees a compact week strip
+  // showing only their own coachings.
+  const isCoordinator = can('coachings.change_coachingclass')
+  const isTeacher = can('accounts.can_teach')
+  // Anyone with permission to file a coaching request gets the entry-point
+  // button — students, guardians and teachers all have add_coachingclass.
+  const canRequestCoaching = canAny(
+    'coachings.add_coachingclass',
+    'accounts.can_participate_in_coaching',
+    'accounts.can_choose_for_dependents'
+  )
+
+  const userId = user?.id ?? null
+
+  if (!isCoordinator) {
+    return (
+      <PersonalCalendarView
+        canRequest={canRequestCoaching}
+        scope={
+          isTeacher && userId !== null
+            ? { kind: 'teacher', teacherId: userId }
+            : userId !== null
+              ? { kind: 'participant', userId }
+              : null
+        }
+        onRequestCoaching={() => navigate(paths.coachingsRequest)}
+      />
+    )
+  }
+
+  return <CoordinatorCalendarView />
+}
+
+function PersonalCalendarView({
+  scope,
+  canRequest,
+  onRequestCoaching,
+}: {
+  scope:
+    | { kind: 'teacher'; teacherId: number }
+    | { kind: 'participant'; userId: number }
+    | null
+  canRequest: boolean
+  onRequestCoaching: () => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <PageLayout>
+      <div className={PAGE_CONTENT}>
+        <PageHeader title={t('calendar.title')} backTo={paths.home}>
+          {canRequest && (
+            <Button size="sm" onClick={onRequestCoaching}>
+              <MessageSquarePlus className="h-4 w-4 mr-2" />
+              {t('nav.requestCoaching')}
+            </Button>
+          )}
+        </PageHeader>
+        {scope ? (
+          <MyCoachingsCalendar scope={scope} />
+        ) : (
+          <div className="rounded-lg border border-border bg-card p-12 text-center text-sm text-muted-foreground">
+            {t('myCoachingsCalendar.signInPrompt')}
+          </div>
+        )}
+      </div>
+    </PageLayout>
+  )
+}
+
+function CoordinatorCalendarView() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const staticLoaded = useRef(false)
@@ -523,7 +602,7 @@ export function CalendarPage() {
 
   return (
     <PageLayout>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={t('calendar.title')} backTo={paths.home}>
           <Authorized permission="coachings.can_schedule_coaching">
             <Button size="sm" onClick={() => navigate(paths.coachingsCreate)}>

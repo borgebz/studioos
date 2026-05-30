@@ -182,12 +182,27 @@ Same as Detail page but:
 
 ```
 Header:       Welcome message + user info
+Pending:      Warning card for pending actions (mandatory — see below)
 Onboarding:   Checklist card (collapsible steps)
 Stats:        Summary cards (e.g., sales, out of stock)
 Activity:     Recent activity feed
 ```
 
 **Components used:** `Card`, `Badge`, `Separator`, `Skeleton`, `Button`.
+
+#### Mandatory: pending-actions warning
+
+Every home surface **must** surface a "waiting on you" card listing actions that depend on the current user. This is the part of the page that earns the user's attention — staff need to know what's blocking, students/guardians need to know what they have to confirm.
+
+- **Visibility**: render only when there is at least one pending row. Never render an empty "all caught up" placeholder — silence is the desired state.
+- **Roles covered** (extend as new pending kinds appear): direction, coordination, teacher, student, guardian. Each role's rows are derived from the role's permissions, not the role name (`usePermissions().can(...)`).
+- **Style**:
+  - Bordered card with a thin amber outline (`border-amber-500/30`) — the only colour cue on the card itself.
+  - Title prefixed with a single muted `AlertCircle` glyph in `text-amber-600 dark:text-amber-400`.
+  - Each row: monochrome Lucide icon → label → amber count badge (`bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400`) → chevron. No primary tint, no colour on icons, no shadows.
+- **Behaviour**: every row navigates to the page where the user can take the action (review queue, my-requests table, etc.). The home card is never the place to act — it points to where action happens.
+
+The canonical implementation lives in `HomePage.tsx` (`usePendingActivities` + `PendingActivities`). New pending categories — chase payments, expired enrollments, abandoned listings, anything else — are added by appending one row in that hook and wiring the count.
 
 ### 4.5 Settings / Configuration Page
 

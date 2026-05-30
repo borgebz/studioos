@@ -12,7 +12,12 @@ import type {
   EventCreate,
   EventUpdate,
 } from '@/api/studioos-api'
-import { EventStateEnum, VisibilityStateEnum } from '@/api/studioos-api'
+import {
+  EventStateEnum,
+  NotificationEnum,
+  NotificationTargetEnum,
+  VisibilityStateEnum,
+} from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,17 +33,21 @@ import {
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { TimePicker } from '@/components/shared/TimePicker'
 import { RichTextEditor } from '@/components/shared/RichTextEditor'
 import { ImageUpload } from '@/components/shared/ImageUpload'
 import { paths } from '@/app/paths'
 import { parseApiError } from '@/lib/api-errors'
+import { cn } from '@/lib/utils'
 import {
   eventFormSchema,
   type EventFormValues,
 } from './event-schema'
 import { EventStateBadge, EventVisibilityBadge } from './events-helpers'
+import { ManageClassesSheet } from './ManageClassesSheet'
+import { PublishNotificationDialog } from './PublishNotificationDialog'
 import { usePermissions } from '@/auth/permissions'
 
 interface EventFormPageProps {
@@ -77,6 +86,8 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   const [submitting, setSubmitting] = useState(false)
   const [coverPreview, setCoverPreview] = useState<string | null>(null)
   const [scheduleMode, setScheduleMode] = useState(false)
+  const [classesSheetOpen, setClassesSheetOpen] = useState(false)
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false)
   const [currentVisibility, setCurrentVisibility] = useState<
     VisibilityStateEnum | undefined
   >(undefined)
@@ -97,6 +108,8 @@ export function EventFormPage({ mode }: EventFormPageProps) {
       event_state: EventStateEnum.Planned,
       publication_scheduled_at: null,
       publication_scheduled_time: '09:00',
+      notification_target: NotificationTargetEnum.All,
+      class_target_classe_ids: [],
       cover_file: null,
     },
   })
@@ -136,14 +149,27 @@ export function EventFormPage({ mode }: EventFormPageProps) {
           event_state: e.event_state ?? EventStateEnum.Planned,
           publication_scheduled_at: sched.date,
           publication_scheduled_time: sched.time || '09:00',
+          // Derive the toggle from the class list: if the event has any
+          // targeted classes we must show "Specific classes", regardless of
+          // what notification_target the API returned. Keeps the UI honest
+          // even if the two ever drift (and saves a category of bugs where
+          // an inconsistent record landed in the DB).
+          notification_target:
+            Array.isArray(e.class_target_classe_ids) &&
+            e.class_target_classe_ids.length > 0
+              ? NotificationTargetEnum.Classes
+              : (e.notification_target ?? NotificationTargetEnum.All),
+          class_target_classe_ids: Array.isArray(e.class_target_classe_ids)
+            ? [...e.class_target_classe_ids]
+            : [],
           cover_file: null,
         })
         setCoverPreview(e.cover_photo_url ?? null)
         setCurrentVisibility(e.visibility_state)
-        // If we're editing a Scheduled event, surface the schedule card by default.
-        if (e.visibility_state === VisibilityStateEnum.Scheduled) {
-          setScheduleMode(true)
-        }
+        // Don't auto-enter scheduleMode for already-Scheduled events: a plain
+        // edit should just save content without re-firing the schedule
+        // endpoint. The user can still re-schedule explicitly from the
+        // footer dropdown.
       }
       setLoading(false)
     }
@@ -171,7 +197,24 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   //   'schedule'  → save content; then call schedule-publication endpoint
   //                 with publication_scheduled_at + time from the form.
   //
-  const submit = async (vals: EventFormValues, action: SubmitAction) => {
+  const audienceLocked =
+    mode === 'edit' &&
+    (currentVisibility === VisibilityStateEnum.Published ||
+      eventState === EventStateEnum.Completed ||
+      eventState === EventStateEnum.Cancelled)
+
+  const submit = async (
+    vals: EventFormValues,
+    action: SubmitAction,
+    notification: NotificationEnum = NotificationEnum.Notification
+  ) => {
+    // Schedule requires a publication date. Fail fast with a clear message
+    // instead of silently degrading to a plain save (which is what the
+    // earlier code did when publication_scheduled_at was null).
+    if (action === 'schedule' && !vals.publication_scheduled_at) {
+      toast.error(t('events.form.scheduleDateRequired'))
+      return
+    }
     setSubmitting(true)
     try {
       const event_date_iso =
@@ -189,6 +232,26 @@ export function EventFormPage({ mode }: EventFormPageProps) {
       else fd.append('event_date', '')
       if (vals.cover_file) fd.append('cover_photo', vals.cover_file)
 
+      // Audience: only send these fields when the user is allowed to change
+      // them. On locked events (published/completed/cancelled) we omit them so
+      // the API never sees a transitional value that would trip the lock.
+      if (!audienceLocked) {
+        fd.append('notification_target', vals.notification_target)
+        // Only append IDs when we have at least one. DRF's ListField parses a
+        // single empty-string value as ['']' and chokes with
+        // "0: A valid integer is required" — so we omit the field entirely
+        // and rely on the backend invariant in update_event to clear any
+        // existing class targets when notification_target=ALL.
+        if (
+          vals.notification_target === NotificationTargetEnum.Classes &&
+          vals.class_target_classe_ids.length > 0
+        ) {
+          for (const id of vals.class_target_classe_ids) {
+            fd.append('class_target_classe_ids', String(id))
+          }
+        }
+      }
+
       let result: EventDetail | undefined
       if (mode === 'create') {
         const r = await apiClient.api.eventsCreate(fd as unknown as EventCreate)
@@ -203,7 +266,9 @@ export function EventFormPage({ mode }: EventFormPageProps) {
       if (!result) throw new Error('no result')
 
       if (action === 'publish' && can('events.can_publish_event')) {
-        const r = await apiClient.api.eventsPublishCreate(result.id, {})
+        const r = await apiClient.api.eventsPublishCreate(result.id, {
+          notification,
+        })
         result = r.data
       } else if (
         action === 'schedule' &&
@@ -216,7 +281,7 @@ export function EventFormPage({ mode }: EventFormPageProps) {
         )
         const r = await apiClient.api.eventsSchedulePublicationCreate(
           result.id,
-          { publication_scheduled_at: iso }
+          { publication_scheduled_at: iso, notification }
         )
         result = r.data
       }
@@ -242,7 +307,7 @@ export function EventFormPage({ mode }: EventFormPageProps) {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader
             title={t('events.form.editTitle')}
             backTo={paths.events}
@@ -276,11 +341,12 @@ export function EventFormPage({ mode }: EventFormPageProps) {
         mode={mode}
         visibility={currentVisibility}
         scheduleMode={scheduleMode}
+        scheduleReady={Boolean(watch('publication_scheduled_at'))}
         submitting={submitting}
         canPublish={can('events.can_publish_event')}
         canSchedule={can('events.can_schedule_event_publication')}
         onSave={() => handleSubmit((v) => submit(v, 'save'))()}
-        onPublish={() => handleSubmit((v) => submit(v, 'publish'))()}
+        onPublish={() => setPublishDialogOpen(true)}
         onSchedule={() => handleSubmit((v) => submit(v, 'schedule'))()}
         onChooseSchedule={() => setScheduleMode(true)}
         onChoosePublishNow={() => setScheduleMode(false)}
@@ -290,7 +356,7 @@ export function EventFormPage({ mode }: EventFormPageProps) {
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={title} backTo={backTo} />
 
         <form
@@ -399,6 +465,31 @@ export function EventFormPage({ mode }: EventFormPageProps) {
               </CardSection>
             )}
 
+            {/* Audience */}
+            <CardSection title={t('events.audience.title')}>
+              <Controller
+                control={control}
+                name="notification_target"
+                render={({ field }) => (
+                  <AudienceCardBody
+                    target={field.value}
+                    onTargetChange={(v) => {
+                      if (audienceLocked) return
+                      field.onChange(v)
+                      if (v === NotificationTargetEnum.All) {
+                        setValue('class_target_classe_ids', [], {
+                          shouldDirty: true,
+                        })
+                      }
+                    }}
+                    selectedIds={watch('class_target_classe_ids') ?? []}
+                    locked={audienceLocked}
+                    onManage={() => setClassesSheetOpen(true)}
+                  />
+                )}
+              />
+            </CardSection>
+
             {/* Date & time */}
             <CardSection title={t('events.form.dateSection')}>
               <div className="space-y-3">
@@ -503,7 +594,139 @@ export function EventFormPage({ mode }: EventFormPageProps) {
           </div>
         </form>
       </div>
+
+      <ManageClassesSheet
+        open={classesSheetOpen}
+        onOpenChange={setClassesSheetOpen}
+        initialSelected={watch('class_target_classe_ids') ?? []}
+        onApply={(ids) =>
+          setValue('class_target_classe_ids', ids, { shouldDirty: true })
+        }
+      />
+
+      <PublishNotificationDialog
+        open={publishDialogOpen}
+        onOpenChange={setPublishDialogOpen}
+        kind="event"
+        submitting={submitting}
+        onConfirm={(notification) => {
+          setPublishDialogOpen(false)
+          void handleSubmit((v) => submit(v, 'publish', notification))()
+        }}
+      />
     </PageLayout>
+  )
+}
+
+// ─── Audience card body ───────────────────────────────────────────────────
+
+function AudienceCardBody({
+  target,
+  onTargetChange,
+  selectedIds,
+  locked,
+  onManage,
+}: {
+  target: NotificationTargetEnum
+  onTargetChange: (v: NotificationTargetEnum) => void
+  selectedIds: number[]
+  locked: boolean
+  onManage: () => void
+}) {
+  const { t } = useTranslation()
+  const isEveryone = target === NotificationTargetEnum.All
+  return (
+    <div className="space-y-3">
+      <div className="space-y-2">
+        <AudienceOption
+          label={t('events.audience.everyone')}
+          description={t('events.audience.everyoneDesc')}
+          checked={isEveryone}
+          disabled={locked}
+          onSelect={() => onTargetChange(NotificationTargetEnum.All)}
+        />
+        <AudienceOption
+          label={t('events.audience.specificClasses')}
+          description={t('events.audience.specificClassesDesc')}
+          checked={!isEveryone}
+          disabled={locked}
+          onSelect={() => onTargetChange(NotificationTargetEnum.Classes)}
+        />
+      </div>
+
+      {!isEveryone && (
+        <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm">
+              {selectedIds.length > 0
+                ? t('events.audience.selectedCount', {
+                    count: selectedIds.length,
+                  })
+                : t('events.audience.noneSelected')}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onManage}
+              disabled={locked}
+            >
+              {t('events.audience.selectClasses')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {locked && (
+        <p className="text-xs text-muted-foreground">
+          {t('events.audience.locked')}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function AudienceOption({
+  label,
+  description,
+  checked,
+  disabled,
+  onSelect,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  disabled?: boolean
+  onSelect: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={disabled}
+      aria-checked={checked}
+      role="radio"
+      className={cn(
+        'group flex w-full items-start gap-3 rounded-md border px-3 py-2.5 text-left transition-colors',
+        checked
+          ? 'border-primary bg-primary/5'
+          : 'border-border hover:bg-accent/40',
+        disabled && 'cursor-not-allowed opacity-60'
+      )}
+    >
+      <span
+        className={cn(
+          'mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border-[1.5px]',
+          checked ? 'border-primary' : 'border-muted-foreground/50'
+        )}
+      >
+        {checked && <span className="size-2 rounded-full bg-primary" />}
+      </span>
+      <div className="min-w-0">
+        <div className="text-sm font-semibold">{label}</div>
+        <div className="text-xs text-muted-foreground">{description}</div>
+      </div>
+    </button>
   )
 }
 
@@ -513,6 +736,7 @@ function FooterActions({
   mode,
   visibility,
   scheduleMode,
+  scheduleReady,
   submitting,
   canPublish,
   canSchedule,
@@ -525,6 +749,8 @@ function FooterActions({
   mode: 'create' | 'edit'
   visibility?: VisibilityStateEnum
   scheduleMode: boolean
+  /** True when publication_scheduled_at is filled — gates the schedule CTA. */
+  scheduleReady: boolean
   submitting: boolean
   canPublish: boolean
   canSchedule: boolean
@@ -535,6 +761,58 @@ function FooterActions({
   onChoosePublishNow: () => void
 }) {
   const { t } = useTranslation()
+
+  // Editing a Scheduled event: a plain save just edits content. The schedule
+  // endpoint is reserved for an explicit "Reschedule…" action so we don't
+  // re-fire it (and re-register the Beat task) for unrelated content edits.
+  if (
+    mode === 'edit' &&
+    visibility === VisibilityStateEnum.Scheduled &&
+    !scheduleMode
+  ) {
+    return (
+      <div className="flex gap-2">
+        <div className="inline-flex">
+          <Button
+            type="button"
+            className="rounded-r-none"
+            onClick={onSave}
+            disabled={submitting}
+          >
+            {t('events.form.saveChanges')}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                className="rounded-l-none border-l border-primary-foreground/20 px-2"
+                disabled={submitting || (!canPublish && !canSchedule)}
+                aria-label={t('events.actions.moreActions')}
+              >
+                <ChevronDown className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                disabled={!canPublish}
+                onClick={onPublish}
+              >
+                <Megaphone className="size-4" />
+                {t('events.form.publishNow')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!canSchedule}
+                onClick={onChooseSchedule}
+              >
+                <CalendarClock className="size-4" />
+                {t('events.form.scheduleForLater')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    )
+  }
 
   // Editing a Published or Archived event: only content-save is allowed.
   // Visibility transitions belong to the detail page (Manage panel).
@@ -574,7 +852,7 @@ function FooterActions({
             type="button"
             className="rounded-r-none"
             onClick={onSchedule}
-            disabled={submitting || !canSchedule}
+            disabled={submitting || !canSchedule || !scheduleReady}
           >
             <CalendarClock className="size-4" />
             {t('events.form.saveAndSchedule')}

@@ -7,7 +7,7 @@
     "home": "Início",
     "calendar": "Calendário",
     "coachings": "Coachings",
-    "myRequests": "Os Meus Pedidos",
+    "myCoachings": "Os Meus Coachings",
     "requestCoaching": "Pedir Coaching",
     "reviewRequests": "Rever Pedidos",
     "myAvailability": "A Minha Disponibilidade",
@@ -527,6 +527,24 @@
     "nextCoaching": {
       "title": "Próxima sessão",
       "empty": "Não tens sessões agendadas."
+    },
+    "dependents": {
+      "title": "Os teus educandos",
+      "description": "Vê o estado das sessões de cada criança ao teu cuidado.",
+      "nextSession": "Próxima sessão",
+      "nextSessionToday": "Hoje, {{time}}",
+      "nextSessionTomorrow": "Amanhã, {{time}}",
+      "noSessions": "Sem sessões agendadas.",
+      "viewCalendar": "Ver agenda"
+    },
+    "pending": {
+      "title": "A aguardar a tua atenção",
+      "description": "Ações pendentes que dependem de ti.",
+      "staffCoachings": "Coachings por aprovar",
+      "staffCompletion": "Conclusões por validar",
+      "staffEnrollments": "Matrículas por rever",
+      "teacherConfirm": "Sessões para confirmares",
+      "studentConfirm": "Sessões para confirmares presença"
     }
   },
   "notFound": {
@@ -672,6 +690,7 @@
     "pendingCount_one": "{{count}} pedido pendente",
     "pendingCount_other": "{{count}} pedidos pendentes",
     "withTeacher": "com {{name}}",
+    "forDependent": "para {{name}}",
     "scheduledByStaff": "Agendado pela coordenação",
     "noActions": "—",
     "accept": "Aceitar",
@@ -747,8 +766,19 @@
     "variantSheetDesc": "Define a condição, o tamanho e a cor desta variante."
   },
   "myCoachingRequests": {
-    "title": "Os Meus Pedidos",
-    "empty": "Ainda não tem pedidos de coaching."
+    "title": "Os Meus Coachings",
+    "subtitle": "Coachings que dá, pediu, ou em que participa.",
+    "empty": "Ainda não tem coachings."
+  },
+  "myCoachingsCalendar": {
+    "empty": "Sem coachings esta semana.",
+    "dayFree": "Livre",
+    "signInPrompt": "Inicie sessão para ver os seus coachings.",
+    "legend": {
+      "scheduled": "Agendado",
+      "pending": "Pendente",
+      "cancelled": "Cancelado"
+    }
   },
   "requestCoaching": {
     "title": "Pedir um Coaching",
@@ -761,7 +791,14 @@
     "submit": "Enviar Pedido",
     "submitting": "A enviar…",
     "success": "Pedido de coaching enviado! Será notificado quando o professor responder.",
-    "summaryTitle": "Resumo do Pedido"
+    "summaryTitle": "Resumo do Pedido",
+    "participantsDesc": "Convide uma turma inteira ou escolha alunos específicos. Você é sempre adicionado como participante.",
+    "summaryClasse": "Turma",
+    "onBehalfTitle": "Pedido para",
+    "onBehalfDesc": "Escolha o dependente para quem é este coaching. Será adicionado automaticamente.",
+    "onBehalfLabel": "Dependente",
+    "selectDependent": "Escolher dependente",
+    "summaryFor": "Para"
   },
   "myListings": {
     "title": "Os Meus Anúncios",
@@ -1145,6 +1182,8 @@
     "priceFree": "Grátis",
     "priceNegotiable": "Negociável",
     "sizeShort": "Tam.",
+    "availableCount_one": "{{count}} disponível",
+    "availableCount_other": "{{count}} disponíveis",
     "viewGrid": "Vista em grelha",
     "viewList": "Vista em lista",
     "sortBy": "Ordenar por",
@@ -1179,10 +1218,17 @@
       "favorite": "Favorito",
       "unfavorite": "Remover favorito",
       "editListing": "Editar anúncio",
+      "chooseVariant": "Escolher opção",
+      "chooseVariantDesc": "Escolha um tamanho ou condição — o preço e a disponibilidade atualizam.",
+      "variantUnavailable": "Indisponível",
+      "variantUnavailableHint": "Esta opção não está disponível neste momento. Escolha outra ou volte mais tarde.",
       "favoritesCount_one": "{{count}} favorito",
       "favoritesCount_other": "{{count}} favoritos",
       "notFound": "Anúncio não encontrado.",
-      "notFoundDesc": "O anúncio pode ter sido removido ou já não estar disponível."
+      "notFoundDesc": "O anúncio pode ter sido removido ou já não estar disponível.",
+      "otherVariants": "Outras opções deste produto",
+      "otherVariantsDesc": "Outros tamanhos ou condições disponíveis para este mesmo produto.",
+      "viewVariant": "Ver"
     },
     "requestBooking": {
       "titleRent": "Pedir reserva",
@@ -1587,7 +1633,42 @@
       "share": "Partilhar",
       "manage": "Gerir",
       "stateActions": "Ações de estado",
-      "audit": "Histórico"
+      "audit": "Histórico",
+      "audience": "Público-alvo"
+    },
+    "audience": {
+      "title": "Público-alvo",
+      "everyone": "Todos",
+      "specificClasses": "Turmas específicas",
+      "specificClassesDesc": "Apenas os membros das turmas selecionadas verão este evento e serão notificados.",
+      "everyoneDesc": "Visível para toda a comunidade.",
+      "selectClasses": "Gerir turmas",
+      "selectedCount_one": "{{count}} turma selecionada",
+      "selectedCount_other": "{{count}} turmas selecionadas",
+      "noneSelected": "Ainda não há turmas selecionadas",
+      "locked": "O público-alvo não pode mudar depois do evento ser publicado, concluído ou cancelado.",
+      "sheetTitle": "Escolher turmas",
+      "sheetDescription": "Os membros das turmas selecionadas verão este evento e serão notificados.",
+      "searchPlaceholder": "Pesquisar turmas…",
+      "emptyClasses": "Ainda não há turmas.",
+      "noResults": "Nenhuma turma corresponde a \"{{query}}\".",
+      "selectedHeader": "{{count}} selecionadas",
+      "clearAll": "Limpar",
+      "done": "Concluído"
+    },
+    "publishDialog": {
+      "title": "Publicar evento",
+      "description": "Escolha o que fazer com as notificações.",
+      "postTitle": "Publicar actualização",
+      "postDescription": "Escolha como notificar o público-alvo.",
+      "optionNone": "Publicar sem notificar",
+      "optionNoneDesc": "O evento fica visível mas não envia emails.",
+      "optionTest": "Enviar um teste só para mim",
+      "optionTestDesc": "Só recebes o email de notificação — útil para pré-visualizar.",
+      "optionAll": "Notificar o público-alvo",
+      "optionAllDesc": "Envia emails de notificação a todos os destinatários.",
+      "publish": "Publicar",
+      "cancel": "Cancelar"
     },
     "details": {
       "date": "Data",
@@ -1757,6 +1838,7 @@
       "publishNow": "Publicar agora",
       "scheduleForLater": "Agendar para mais tarde…",
       "saveAndSchedule": "Guardar & agendar",
+      "scheduleDateRequired": "Escolha uma data e hora de publicação antes de agendar.",
       "currentStatus": "Estado actual",
       "scheduledFor": "Agendado para {{date}}"
     },
@@ -2263,9 +2345,7 @@
       "update": "atualizou a conversa"
     },
     "typing": {
-      "one": "{{name}} está a escrever…",
-      "two": "{{a}} e {{b}} estão a escrever…",
-      "many": "{{count}} pessoas estão a escrever…"
+      "aria": "{{name}} está a escrever"
     },
     "reactions": {
       "thumbsUp": "Gosto",
@@ -2729,6 +2809,7 @@
     "ParentCommentNotFound": "O comentário a que respondeu já não existe.",
     "CommentEditNotAllowed": "Não pode editar este comentário.",
     "CommentDeleteNotAllowed": "Não pode eliminar este comentário.",
-    "ProfileRequiredToComment": "Cria o teu perfil antes de publicar comentários."
+    "ProfileRequiredToComment": "Cria o teu perfil antes de publicar comentários.",
+    "EventAudienceLocked": "O público-alvo não pode ser alterado depois do evento ser publicado, concluído ou cancelado."
   }
 }
