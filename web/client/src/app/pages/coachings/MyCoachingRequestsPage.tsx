@@ -86,6 +86,20 @@ function dependentForRequest(coaching: CoachingClass) {
   return dep?.student ?? null
 }
 
+/**
+ * All participants in this coaching whose guardian is the current user. A
+ * guardian can have several children in the same session (siblings in the
+ * same class) — return every match so the row can list them all.
+ */
+function dependentsForGuardian(coaching: CoachingClass, guardianId: number) {
+  return (coaching.participants ?? [])
+    .map((p) => p.student)
+    .filter(
+      (s): s is NonNullable<typeof s> =>
+        !!s && typeof s.parent_id === 'number' && s.parent_id === guardianId
+    )
+}
+
 const STATUS_STYLES: Record<string, string> = {
   requested:
     'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
@@ -600,6 +614,42 @@ export function MyCoachingRequestsPage() {
           }
         />
       </div>
+
+      <AcceptCoachingDialog
+        coaching={acceptTarget}
+        onClose={() => setAcceptTarget(null)}
+        onAccepted={handleAccepted}
+      />
+      <RejectCoachingDialog
+        coaching={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        onRejected={handleRejected}
+      />
+      <TeacherConfirmSessionDialog
+        coaching={teacherConfirmTarget}
+        onClose={() => setTeacherConfirmTarget(null)}
+        onConfirmed={handleTeacherConfirmed}
+      />
+      <AcceptInvitationDialog
+        coaching={acceptInviteTarget?.coaching ?? null}
+        participant={acceptInviteTarget?.participant ?? null}
+        onBehalfOf={acceptInviteTarget?.onBehalfOf ?? null}
+        onClose={() => setAcceptInviteTarget(null)}
+        onAccepted={handleInviteAccepted}
+      />
+      <ConfirmAttendanceDialog
+        coaching={attendanceTarget?.coaching ?? null}
+        participant={attendanceTarget?.participant ?? null}
+        attended={attendanceTarget?.attended ?? true}
+        onClose={() => setAttendanceTarget(null)}
+        onConfirmed={handleAttendanceConfirmed}
+      />
+      <CancelParticipationDialog
+        coaching={cancelParticipationTarget?.coaching ?? null}
+        participant={cancelParticipationTarget?.participant ?? null}
+        onClose={() => setCancelParticipationTarget(null)}
+        onCancelled={handleParticipationCancelled}
+      />
     </PageLayout>
   )
 }

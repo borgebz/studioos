@@ -722,6 +722,7 @@
       "studio": "Studio",
       "requestedBy": "Requested by",
       "participants": "Participants",
+      "dependent": "Dependent",
       "status": "Status",
       "actions": "Actions"
     },
@@ -769,6 +770,52 @@
     "title": "My Coachings",
     "subtitle": "Coachings you teach, requested, or are part of as a participant.",
     "empty": "No coachings yet."
+  },
+  "myCoachings": {
+    "actions": {
+      "teacherConfirm": "Confirm session happened",
+      "acceptInvite": "Accept invitation",
+      "markAttended": "I attended",
+      "markAbsent": "I didn't attend",
+      "cancelParticipation": "Cancel my participation"
+    },
+    "teacherConfirm": {
+      "title": "Confirm session happened",
+      "desc": "Tell coordination this session took place. Coordination will complete the coaching after every participant confirms attendance.",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Anything coordination should know about the session",
+      "submit": "Confirm",
+      "submitting": "Confirming…",
+      "success": "Session confirmed."
+    },
+    "acceptInvite": {
+      "title": "Accept invitation",
+      "descStaff": "You'll be marked as a participant for this session.",
+      "descPeer": "You'll be added as pending — coordination will approve.",
+      "accept": "Accept",
+      "accepting": "Accepting…",
+      "success": "Invitation accepted."
+    },
+    "confirmAttendance": {
+      "attendedTitle": "I attended this session",
+      "absentTitle": "I didn't attend this session",
+      "attendedDesc": "Confirm you attended. Billing will be generated when coordination completes the coaching.",
+      "absentDesc": "Report you did not attend. A fine may apply based on the school's policy.",
+      "attendedSubmit": "Confirm attended",
+      "absentSubmit": "Report absent",
+      "submitting": "Submitting…",
+      "success": "Attendance recorded."
+    },
+    "cancelParticipation": {
+      "title": "Cancel my participation",
+      "desc": "You'll be removed from this coaching's roster.",
+      "lateWarning": "Cancelling less than {{hours}}h before the session may result in a fine.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Why are you cancelling?",
+      "submit": "Cancel participation",
+      "submitting": "Cancelling…",
+      "success": "Participation cancelled."
+    }
   },
   "myCoachingsCalendar": {
     "empty": "No coachings this week.",

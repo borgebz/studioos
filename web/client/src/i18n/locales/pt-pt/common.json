@@ -722,6 +722,7 @@
       "studio": "Estúdio",
       "requestedBy": "Pedido por",
       "participants": "Participantes",
+      "dependent": "Educando",
       "status": "Estado",
       "actions": "Ações"
     },
@@ -769,6 +770,52 @@
     "title": "Os Meus Coachings",
     "subtitle": "Coachings que dá, pediu, ou em que participa.",
     "empty": "Ainda não tem coachings."
+  },
+  "myCoachings": {
+    "actions": {
+      "teacherConfirm": "Confirmar que a sessão aconteceu",
+      "acceptInvite": "Aceitar convite",
+      "markAttended": "Compareci",
+      "markAbsent": "Não compareci",
+      "cancelParticipation": "Cancelar a minha participação"
+    },
+    "teacherConfirm": {
+      "title": "Confirmar que a sessão aconteceu",
+      "desc": "Informe a coordenação que esta sessão decorreu. A coordenação irá concluir o coaching depois de cada participante confirmar a presença.",
+      "notesLabel": "Notas (opcional)",
+      "notesPlaceholder": "Algo que a coordenação deva saber sobre a sessão",
+      "submit": "Confirmar",
+      "submitting": "A confirmar…",
+      "success": "Sessão confirmada."
+    },
+    "acceptInvite": {
+      "title": "Aceitar convite",
+      "descStaff": "Será marcado como participante nesta sessão.",
+      "descPeer": "Ficará pendente — a coordenação irá aprovar.",
+      "accept": "Aceitar",
+      "accepting": "A aceitar…",
+      "success": "Convite aceite."
+    },
+    "confirmAttendance": {
+      "attendedTitle": "Compareci a esta sessão",
+      "absentTitle": "Não compareci a esta sessão",
+      "attendedDesc": "Confirme que compareceu. A faturação é gerada quando a coordenação concluir o coaching.",
+      "absentDesc": "Comunique que não compareceu. Pode ser aplicada uma multa de acordo com a política da escola.",
+      "attendedSubmit": "Confirmar presença",
+      "absentSubmit": "Comunicar ausência",
+      "submitting": "A submeter…",
+      "success": "Presença registada."
+    },
+    "cancelParticipation": {
+      "title": "Cancelar a minha participação",
+      "desc": "Será removido da lista de participantes deste coaching.",
+      "lateWarning": "Cancelar a menos de {{hours}}h da sessão pode gerar uma multa.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Porque está a cancelar?",
+      "submit": "Cancelar participação",
+      "submitting": "A cancelar…",
+      "success": "Participação cancelada."
+    }
   },
   "myCoachingsCalendar": {
     "empty": "Sem coachings esta semana.",
