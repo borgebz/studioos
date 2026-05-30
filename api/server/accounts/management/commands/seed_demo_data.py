@@ -1975,10 +1975,28 @@ class Command(BaseCommand):
         listings: dict[str, Listing],
         users: dict[str, User],
     ) -> None:
+        # Listing reshaping (per-variant → per-product) left some staging DBs
+        # with duplicate ProductTransaction rows for the same (listing, variant,
+        # requester) tuple, so plain get_or_create raises MultipleObjectsReturned.
+        # _idempotent_transaction tolerates pre-existing duplicates by picking
+        # the first match instead of failing the entire seed.
+        def _idempotent_transaction(*, listing, variant, requester, defaults):
+            tx = ProductTransaction.objects.filter(
+                listing=listing, variant=variant, requester=requester
+            ).first()
+            if tx is None:
+                tx = ProductTransaction.objects.create(
+                    listing=listing,
+                    variant=variant,
+                    requester=requester,
+                    **defaults,
+                )
+            return tx
+
         # PENDING transaction on member tutu.
         if "member_sell_tutu" in listings:
             listing = listings["member_sell_tutu"]
-            ProductTransaction.objects.get_or_create(
+            _idempotent_transaction(
                 listing=listing,
                 variant=listing.product.variants.first(),
                 requester=users["parent2"],
@@ -1995,7 +2013,7 @@ class Command(BaseCommand):
         # ACCEPTED transaction on member collant.
         if "member_sell_collant" in listings:
             listing = listings["member_sell_collant"]
-            ProductTransaction.objects.get_or_create(
+            _idempotent_transaction(
                 listing=listing,
                 variant=listing.product.variants.first(),
                 requester=users["student1"],
@@ -2012,7 +2030,7 @@ class Command(BaseCommand):
         # COMPLETED transaction on member hip-hop shoes (also closes listing).
         if "member_closed_hiphop" in listings:
             listing = listings["member_closed_hiphop"]
-            tx, _ = ProductTransaction.objects.get_or_create(
+            tx = _idempotent_transaction(
                 listing=listing,
                 variant=listing.product.variants.first(),
                 requester=users["student3"],
@@ -2041,7 +2059,7 @@ class Command(BaseCommand):
         # REJECTED transaction on member donate.
         if "member_donate_pontas" in listings:
             listing = listings["member_donate_pontas"]
-            ProductTransaction.objects.get_or_create(
+            _idempotent_transaction(
                 listing=listing,
                 variant=listing.product.variants.first(),
                 requester=users["parent2"],
