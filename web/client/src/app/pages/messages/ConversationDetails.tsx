@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
+  ChevronRight,
   Download,
   FileText,
   Image as ImageIcon,
@@ -8,6 +10,7 @@ import {
   Pencil,
   Pin,
   Plus,
+  Store,
   Trash2,
   Users,
 } from 'lucide-react'
@@ -22,6 +25,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 
+import { listingDetailPath } from '@/app/pages/marketplace/marketplace-helpers'
 import { participantName, type ConversationParticipant } from './types'
 
 interface ConversationDetailsProps {
@@ -188,6 +192,44 @@ export function ConversationDetailsContent({
               </div>
             )}
           </div>
+        </Section>
+      )}
+
+      {conversation.listing_id != null && (
+        <Section>
+          <SectionLabel>{t('messages.details.listing')}</SectionLabel>
+          <Link
+            to={listingDetailPath(conversation.listing_id)}
+            className="mt-2.5 flex items-center gap-3 rounded-md border border-border/70 bg-muted/30 px-3 py-2.5 transition-colors hover:bg-accent/50"
+          >
+            {conversation.variant_photo_url ? (
+              <img
+                src={conversation.variant_photo_url}
+                alt=""
+                className="size-10 shrink-0 rounded-md border border-border/60 object-cover"
+              />
+            ) : (
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background">
+                <Store
+                  aria-hidden="true"
+                  className="size-4 text-muted-foreground"
+                />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">
+                {conversation.listing_title ||
+                  t('messages.listingConversation')}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t('messages.details.viewListing')}
+              </p>
+            </div>
+            <ChevronRight
+              aria-hidden="true"
+              className="size-4 shrink-0 text-muted-foreground"
+            />
+          </Link>
         </Section>
       )}
 

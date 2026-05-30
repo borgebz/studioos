@@ -11,6 +11,7 @@ import {
   Inbox as InboxIcon,
   MessageSquarePlus,
   MoreHorizontal,
+  TriangleAlert,
   UserMinus,
   Users,
   X,
@@ -62,7 +63,13 @@ import { AcceptInvitationDialog } from './AcceptInvitationDialog'
 import { TeacherConfirmSessionDialog } from './TeacherConfirmSessionDialog'
 import { ConfirmAttendanceDialog } from './ConfirmAttendanceDialog'
 import { CancelParticipationDialog } from './CancelParticipationDialog'
-import { getCoachingRowActions } from './coaching-row-actions'
+import { CancelCoachingRequestDialog } from './CancelCoachingRequestDialog'
+import {
+  dependentStudentInCoaching,
+  getCoachingRowActions,
+  rowHasPendingAction,
+} from './coaching-row-actions'
+import { triggerPendingCoachingsRefresh } from './usePendingCoachingActions'
 
 function userName(
   user: CoachingClass['teacher'] | CoachingClass['requested_by'] | null
@@ -70,34 +77,6 @@ function userName(
   if (!user) return ''
   const full = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
   return full || user.email
-}
-
-/**
- * Identify the "actual student" for a guardian-filed request — the participant
- * whose `student.parent_id` matches the requester. Returns null when the
- * requester is also the student (regular flow).
- */
-function dependentForRequest(coaching: CoachingClass) {
-  const requester = coaching.requested_by
-  if (!requester) return null
-  const dep = coaching.participants?.find(
-    (p) => p.student?.parent_id === requester.id
-  )
-  return dep?.student ?? null
-}
-
-/**
- * All participants in this coaching whose guardian is the current user. A
- * guardian can have several children in the same session (siblings in the
- * same class) — return every match so the row can list them all.
- */
-function dependentsForGuardian(coaching: CoachingClass, guardianId: number) {
-  return (coaching.participants ?? [])
-    .map((p) => p.student)
-    .filter(
-      (s): s is NonNullable<typeof s> =>
-        !!s && typeof s.parent_id === 'number' && s.parent_id === guardianId
-    )
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -184,6 +163,8 @@ export function MyCoachingRequestsPage() {
     useState<AttendanceTarget | null>(null)
   const [cancelParticipationTarget, setCancelParticipationTarget] =
     useState<ParticipantTarget | null>(null)
+  const [cancelRequestTarget, setCancelRequestTarget] =
+    useState<CoachingClass | null>(null)
 
   const actorCtx = useMemo(
     () => ({
@@ -225,24 +206,16 @@ export function MyCoachingRequestsPage() {
       columnHelper.accessor((row) => row.modality?.name ?? '', {
         id: 'modality',
         header: () => t('coachingRequests.col.modality'),
-        cell: (info) => {
-          const dep = dependentForRequest(info.row.original)
-          return (
-            <div className="flex flex-col">
-              <span className="font-medium">{info.getValue()}</span>
-              <span className="text-xs text-muted-foreground">
-                {t('coachingRequests.withTeacher', {
-                  name: userName(info.row.original.teacher),
-                })}
-              </span>
-              {dep && (
-                <span className="text-xs text-muted-foreground">
-                  {t('coachingRequests.forDependent', { name: userName(dep) })}
-                </span>
-              )}
-            </div>
-          )
-        },
+        cell: (info) => (
+          <div className="flex flex-col">
+            <span className="font-medium">{info.getValue()}</span>
+            <span className="text-xs text-muted-foreground">
+              {t('coachingRequests.withTeacher', {
+                name: userName(info.row.original.teacher),
+              })}
+            </span>
+          </div>
+        ),
       }),
       columnHelper.accessor((row) => row.studio?.name ?? '', {
         id: 'studio',
@@ -253,6 +226,44 @@ export function MyCoachingRequestsPage() {
           return <span>{name}</span>
         },
       }),
+      ...(actorCtx.canGuardian
+        ? [
+            columnHelper.accessor(
+              (row) =>
+                userName(
+                  dependentStudentInCoaching(row, actorCtx) ?? null
+                ),
+              {
+                id: 'dependent',
+                header: () => t('coachingRequests.col.dependent'),
+                cell: (info) => {
+                  const dep = dependentStudentInCoaching(
+                    info.row.original,
+                    actorCtx
+                  )
+                  if (!dep) {
+                    return <span className="text-muted-foreground">—</span>
+                  }
+                  return (
+                    <div className="flex flex-col min-w-0 max-w-[200px]">
+                      <span className="font-medium truncate" title={info.getValue()}>
+                        {info.getValue()}
+                      </span>
+                      {dep.email && (
+                        <span
+                          className="text-xs text-muted-foreground truncate"
+                          title={dep.email}
+                        >
+                          {dep.email}
+                        </span>
+                      )}
+                    </div>
+                  )
+                },
+              }
+            ),
+          ]
+        : []),
       columnHelper.accessor((row) => row.participants?.length ?? 0, {
         id: 'participants',
         header: () => t('coachingRequests.col.participants'),
@@ -307,11 +318,34 @@ export function MyCoachingRequestsPage() {
             ],
           },
         },
-        cell: (info) => (
-          <TooltipProvider delayDuration={200}>
-            <StatusPill status={info.getValue()} />
-          </TooltipProvider>
-        ),
+        cell: (info) => {
+          const row = info.row.original
+          const hasPending =
+            actorCtx.userId !== -1 &&
+            rowHasPendingAction(getCoachingRowActions(row, actorCtx))
+          return (
+            <TooltipProvider delayDuration={200}>
+              <div className="flex items-center gap-2">
+                <StatusPill status={info.getValue()} />
+                {hasPending && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className="inline-flex text-amber-500 dark:text-amber-400"
+                        aria-label={t('nav.pendingActions.tooltip', { count: 1 })}
+                      >
+                        <TriangleAlert className="size-4 shrink-0" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {t('nav.pendingActions.tooltip', { count: 1 })}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </TooltipProvider>
+          )
+        },
       }),
       columnHelper.display({
         id: 'actions',
@@ -339,7 +373,12 @@ export function MyCoachingRequestsPage() {
             a.participantConfirmAttendance ||
             a.participantCancel
 
-          if (!anyTeacherAction && !anyParticipantAction) return null
+          if (
+            !anyTeacherAction &&
+            !anyParticipantAction &&
+            !a.requesterCancel
+          )
+            return null
 
           return (
             <DropdownMenu>
@@ -422,6 +461,15 @@ export function MyCoachingRequestsPage() {
                   >
                     <UserMinus className="h-4 w-4 mr-2" />
                     {t('myCoachings.actions.cancelParticipation')}
+                  </DropdownMenuItem>
+                )}
+                {a.requesterCancel && (
+                  <DropdownMenuItem
+                    onClick={() => setCancelRequestTarget(row)}
+                    className="text-destructive"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    {t('myCoachings.actions.cancelRequest')}
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -508,28 +556,35 @@ export function MyCoachingRequestsPage() {
     [setRows]
   )
 
+  const notifyPendingRefresh = useCallback(() => {
+    triggerPendingCoachingsRefresh()
+  }, [])
+
   const handleAccepted = useCallback(
     (updated: CoachingClass) => {
       patchCoaching(updated)
+      notifyPendingRefresh()
       toast.success(t('coachingRequests.acceptSuccess'))
     },
-    [patchCoaching, t]
+    [patchCoaching, notifyPendingRefresh, t]
   )
 
   const handleRejected = useCallback(
     (updated: CoachingClass) => {
       patchCoaching(updated)
+      notifyPendingRefresh()
       toast.success(t('coachingRequests.rejectSuccess'))
     },
-    [patchCoaching, t]
+    [patchCoaching, notifyPendingRefresh, t]
   )
 
   const handleTeacherConfirmed = useCallback(
     (updated: CoachingClass) => {
       patchCoaching(updated)
+      notifyPendingRefresh()
       toast.success(t('myCoachings.teacherConfirm.success'))
     },
-    [patchCoaching, t]
+    [patchCoaching, notifyPendingRefresh, t]
   )
 
   const handleInviteAccepted = useCallback(
@@ -537,9 +592,10 @@ export function MyCoachingRequestsPage() {
       if (acceptInviteTarget) {
         patchParticipant(acceptInviteTarget.coaching.id, participant)
       }
+      notifyPendingRefresh()
       toast.success(t('myCoachings.acceptInvite.success'))
     },
-    [acceptInviteTarget, patchParticipant, t]
+    [acceptInviteTarget, patchParticipant, notifyPendingRefresh, t]
   )
 
   const handleAttendanceConfirmed = useCallback(
@@ -547,9 +603,10 @@ export function MyCoachingRequestsPage() {
       if (attendanceTarget) {
         patchParticipant(attendanceTarget.coaching.id, participant)
       }
+      notifyPendingRefresh()
       toast.success(t('myCoachings.confirmAttendance.success'))
     },
-    [attendanceTarget, patchParticipant, t]
+    [attendanceTarget, patchParticipant, notifyPendingRefresh, t]
   )
 
   const handleParticipationCancelled = useCallback(
@@ -557,9 +614,19 @@ export function MyCoachingRequestsPage() {
       if (cancelParticipationTarget) {
         patchParticipant(cancelParticipationTarget.coaching.id, participant)
       }
+      notifyPendingRefresh()
       toast.success(t('myCoachings.cancelParticipation.success'))
     },
-    [cancelParticipationTarget, patchParticipant, t]
+    [cancelParticipationTarget, patchParticipant, notifyPendingRefresh, t]
+  )
+
+  const handleRequestCancelled = useCallback(
+    (updated: CoachingClass) => {
+      patchCoaching(updated)
+      notifyPendingRefresh()
+      toast.success(t('myCoachings.cancelRequest.success'))
+    },
+    [patchCoaching, notifyPendingRefresh, t]
   )
 
   const table = useReactTable({
@@ -649,6 +716,11 @@ export function MyCoachingRequestsPage() {
         participant={cancelParticipationTarget?.participant ?? null}
         onClose={() => setCancelParticipationTarget(null)}
         onCancelled={handleParticipationCancelled}
+      />
+      <CancelCoachingRequestDialog
+        coaching={cancelRequestTarget}
+        onClose={() => setCancelRequestTarget(null)}
+        onCancelled={handleRequestCancelled}
       />
     </PageLayout>
   )

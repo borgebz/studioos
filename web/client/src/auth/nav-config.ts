@@ -14,6 +14,7 @@ import {
   Receipt,
   Settings,
   ShieldAlert,
+  Heart,
   ShoppingBag,
   Sparkles,
   Store,
@@ -132,10 +133,16 @@ export const navConfig: NavEntryConfig[] = [
         permission: 'marketplace.view_productlisting',
       },
       {
+        to: paths.marketplaceFavorites,
+        labelKey: 'nav.favorites',
+        icon: Heart,
+        permission: 'marketplace.view_productlisting',
+      },
+      {
         to: paths.myInventory,
         labelKey: 'nav.myInventory',
         icon: Package,
-        permission: 'marketplace.view_own_listings',
+        permission: 'inventory.view_product',
       },
       {
         to: paths.myListings,

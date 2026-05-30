@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, ImageIcon, Package, Plus, Tag } from 'lucide-react'
+import { ExternalLink, Package, Plus, Tag } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
 import {
@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -44,6 +43,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
+import { ProductMediaGallery } from '@/components/shared/ProductMediaGallery'
 import { ProductStatusBadge } from '@/components/shared/ProductStatusBadge'
 import { StatusBadge, listingTypeLabel } from '@/app/pages/marketplace/marketplace-helpers'
 import { paths } from '@/app/paths'
@@ -158,12 +158,6 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
     )
   }
 
-  const sortedMedia = [...(product.media ?? [])].sort((a, b) => {
-    if (a.is_primary && !b.is_primary) return -1
-    if (!a.is_primary && b.is_primary) return 1
-    return (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  })
-
   return (
     <PageLayout>
       <div className={PAGE_CONTENT}>
@@ -172,38 +166,7 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
           {/* ─── Main column ─── */}
           <div className="space-y-6">
-            {/* Media */}
-            <div className="overflow-hidden rounded-lg border border-border bg-card">
-              <div className="relative aspect-[4/3] bg-muted">
-                {sortedMedia[0]?.image ? (
-                  <img
-                    src={sortedMedia[0].image}
-                    alt={product.name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <ImageIcon className="size-10 text-muted-foreground/30" />
-                  </div>
-                )}
-              </div>
-              {sortedMedia.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto p-3">
-                  {sortedMedia.map((m) => (
-                    <div
-                      key={m.id}
-                      className="size-16 shrink-0 overflow-hidden rounded-md border border-border"
-                    >
-                      <img
-                        src={m.image}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ProductMediaGallery media={product.media} alt={product.name} />
 
             {product.description && (
               <CardSection title={t('marketplace.productDescription')}>

@@ -42,7 +42,6 @@ import { EnrollmentRequestsPage } from '@/app/pages/enrollments/EnrollmentReques
 import { EnrollmentReviewPage } from '@/app/pages/enrollments/EnrollmentReviewPage'
 import { MarketplaceListPage } from '@/app/pages/marketplace/MarketplaceListPage'
 import { CreateListingPage } from '@/app/pages/marketplace/CreateListingPage'
-import { EditListingPage } from '@/app/pages/marketplace/EditListingPage'
 import { ListingDetailPage } from '@/app/pages/marketplace/ListingDetailPage'
 import { MyListingsPage } from '@/app/pages/marketplace/MyListingsPage'
 import { SchoolListingsPage } from '@/app/pages/marketplace/SchoolListingsPage'
@@ -168,15 +167,31 @@ export function AppRoutes() {
         path={paths.marketplace}
         element={
           <ProtectedRoute permission="marketplace.view_productlisting">
-            <MarketplaceListPage />
+            <MarketplaceListPage mode="browse" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.marketplaceFavorites}
+        element={
+          <ProtectedRoute permission="marketplace.view_productlisting">
+            <MarketplaceListPage mode="favorites" />
           </ProtectedRoute>
         }
       />
       <Route
         path={paths.marketplaceCreate}
         element={
+          <ProtectedRoute permission="inventory.add_product">
+            <CreateListingPage mode="create" context="personal" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.schoolListingsCreate}
+        element={
           <ProtectedRoute permission="marketplace.manage_school_listings">
-            <CreateListingPage />
+            <CreateListingPage mode="create" context="school" />
           </ProtectedRoute>
         }
       />
@@ -191,8 +206,13 @@ export function AppRoutes() {
       <Route
         path={paths.marketplaceEdit}
         element={
-          <ProtectedRoute permission="marketplace.manage_school_listings">
-            <EditListingPage />
+          <ProtectedRoute
+            permission={[
+              'inventory.add_product',
+              'marketplace.manage_school_listings',
+            ]}
+          >
+            <CreateListingPage mode="edit" />
           </ProtectedRoute>
         }
       />
@@ -207,7 +227,7 @@ export function AppRoutes() {
       <Route
         path={paths.myInventory}
         element={
-          <ProtectedRoute permission="marketplace.view_own_listings">
+          <ProtectedRoute permission="inventory.view_product">
             <MyInventoryPage />
           </ProtectedRoute>
         }
@@ -223,7 +243,7 @@ export function AppRoutes() {
       <Route
         path={paths.myInventoryDetail}
         element={
-          <ProtectedRoute permission="marketplace.view_own_listings">
+          <ProtectedRoute permission="inventory.view_product">
             <ProductDetailPage context="personal" />
           </ProtectedRoute>
         }

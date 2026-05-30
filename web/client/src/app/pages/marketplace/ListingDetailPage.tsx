@@ -1,43 +1,48 @@
 /**
- * ListingDetailPage — read-only browse view for a marketplace listing.
+ * ListingDetailPage — product-first marketplace browse view (Vinted-style).
  *
- * A listing now represents a whole product, so the page surfaces the product
- * gallery + description and a picker over every variant. The buyer selects a
- * variant (size/condition) and the specs, availability and price update to
- * match; the booking/buy request carries the chosen variant. Owners get an
- * "Edit listing" affordance instead.
+ * The listing represents the whole product; variant choice happens in the
+ * offer/buy dialog. The page focuses on photos, story, specs, the available
+ * variants, price, and seller.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { format } from 'date-fns'
-import { enUS, pt } from 'date-fns/locale'
 import { toast } from 'sonner'
 import {
-  CalendarClock,
-  ChevronLeft,
-  ChevronRight,
+  AlertTriangle,
+  Ban,
+  CheckCircle2,
+  CircleDot,
   Gift,
   Heart,
   HeartHandshake,
   ImageIcon,
   MessageSquare,
+  Package,
   Pencil,
   Repeat,
   ShoppingBag,
+  Sparkles,
+  Star,
   Tag,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
-import type {
-  ListingDetail,
-  ListingTypeEnum,
-  ListingVariant,
-  ProductMedia,
+import {
+  AcquisitionTypeEnum,
+  ConditionEnum,
+  OwnerTypeEnum,
+  ProductVariantStatusEnum,
+  TargetGenderEnum,
+  type ListingDetail,
+  type ListingTypeEnum,
+  type ListingVariant,
 } from '@/api/studioos-api'
 import { useAuth } from '@/auth/useAuth'
-import { Authorized } from '@/auth/permissions'
+import { usePermissions } from '@/auth/permissions'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -52,12 +57,18 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
+import { formatMarketplacePrice } from '@/components/shared/CurrencyAmountInput'
+import {
+  ProductMediaGallery,
+  sortProductMedia,
+} from '@/components/shared/ProductMediaGallery'
 import { paths } from '@/app/paths'
 import { parseApiError } from '@/lib/api-errors'
 import { getInitials } from '@/lib/user-utils'
 import { cn } from '@/lib/utils'
 
-import { RequestBookingDialog } from './RequestBookingDialog'
+import { ListingOfferDialog, type ListingOfferDialogMode } from './ListingOfferDialog'
+import { listingEditPath } from './marketplace-helpers'
 
 const TYPE_ICONS: Record<string, LucideIcon> = {
   sell: ShoppingBag,
@@ -74,11 +85,50 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
 }
 
 const CONDITION_LABEL_KEYS: Record<string, string> = {
-  new: 'marketplace.conditionNew',
-  excellent: 'marketplace.conditionExcellent',
-  good: 'marketplace.conditionGood',
-  fair: 'marketplace.conditionFair',
-  damaged: 'marketplace.conditionDamaged',
+  [ConditionEnum.New]: 'marketplace.conditionNew',
+  [ConditionEnum.Excellent]: 'marketplace.conditionExcellent',
+  [ConditionEnum.Good]: 'marketplace.conditionGood',
+  [ConditionEnum.Fair]: 'marketplace.conditionFair',
+  [ConditionEnum.Damaged]: 'marketplace.conditionDamaged',
+}
+
+const CONDITION_ICONS: Record<string, LucideIcon> = {
+  [ConditionEnum.New]: Sparkles,
+  [ConditionEnum.Excellent]: Star,
+  [ConditionEnum.Good]: CheckCircle2,
+  [ConditionEnum.Fair]: CircleDot,
+  [ConditionEnum.Damaged]: AlertTriangle,
+}
+
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  [ProductVariantStatusEnum.Available]: 'marketplace.variantStatusAvailable',
+  [ProductVariantStatusEnum.Maintenance]: 'marketplace.variantStatusMaintenance',
+  [ProductVariantStatusEnum.Inactive]: 'marketplace.variantStatusInactive',
+  [ProductVariantStatusEnum.Sold]: 'marketplace.statusSold',
+  [ProductVariantStatusEnum.Donated]: 'marketplace.typeDonate',
+  [ProductVariantStatusEnum.Archived]: 'marketplace.statusDraft',
+}
+
+const STATUS_ICONS: Record<string, LucideIcon> = {
+  [ProductVariantStatusEnum.Available]: CheckCircle2,
+  [ProductVariantStatusEnum.Maintenance]: Wrench,
+  [ProductVariantStatusEnum.Inactive]: Ban,
+  [ProductVariantStatusEnum.Sold]: ShoppingBag,
+  [ProductVariantStatusEnum.Donated]: Gift,
+  [ProductVariantStatusEnum.Archived]: Ban,
+}
+
+const ACQUISITION_LABEL_KEYS: Record<string, string> = {
+  [AcquisitionTypeEnum.Purchased]: 'marketplace.acquisitionPurchased',
+  [AcquisitionTypeEnum.Donated]: 'marketplace.acquisitionDonated',
+  [AcquisitionTypeEnum.SchoolOwned]: 'marketplace.acquisitionSchoolOwned',
+  [AcquisitionTypeEnum.Other]: 'marketplace.acquisitionOther',
+}
+
+const GENDER_LABEL_KEYS: Record<string, string> = {
+  [TargetGenderEnum.Female]: 'marketplace.genderFemale',
+  [TargetGenderEnum.Male]: 'marketplace.genderMale',
+  [TargetGenderEnum.Unisex]: 'marketplace.genderUnisex',
 }
 
 interface OwnerDisplay {
@@ -87,54 +137,65 @@ interface OwnerDisplay {
   photo_url?: string | null
 }
 
-interface ColorSummary {
-  id?: number
-  name?: string
-  hex_code?: string
+interface VariantColor {
+  id: number
+  name: string
+  hex_code: string
 }
 
-function requestCtaKey(type: ListingTypeEnum): string {
+interface VariantMediaRef {
+  id: number
+  image: string
+  is_primary?: boolean
+  sort_order?: number
+}
+
+function buyCtaKey(type: ListingTypeEnum): string {
   switch (type) {
     case 'rent':
-      return 'marketplace.detail.requestBooking'
+      return 'marketplace.detail.buyRent'
     case 'sell':
-      return 'marketplace.detail.requestPurchase'
+      return 'marketplace.detail.buyNow'
     case 'lend':
       return 'marketplace.detail.requestLoan'
     case 'donate':
       return 'marketplace.detail.requestClaim'
     default:
-      return 'marketplace.detail.requestBooking'
+      return 'marketplace.detail.buyNow'
   }
 }
 
 export function ListingDetailPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const listingId = id ? Number(id) : NaN
   const { user } = useAuth()
-  const dateLocale = i18n.language.startsWith('pt') ? pt : enUS
 
   const [listing, setListing] = useState<ListingDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [requestOpen, setRequestOpen] = useState(false)
+  const [loading, setLoading] = useState(() => Number.isFinite(listingId))
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false)
+  const [offerDialogMode, setOfferDialogMode] =
+    useState<ListingOfferDialogMode>('buy')
   const [favBusy, setFavBusy] = useState(false)
   const dataLoaded = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!Number.isFinite(listingId)) {
-      setLoading(false)
-      return
-    }
+    if (!Number.isFinite(listingId)) return
     if (dataLoaded.current === listingId) return
     dataLoaded.current = listingId
-    setLoading(true)
-    apiClient.api
-      .marketplaceListingsRetrieve2(listingId)
-      .then((res) => setListing(res.data ?? null))
-      .catch(() => setListing(null))
-      .finally(() => setLoading(false))
+    const load = async () => {
+      setLoading(true)
+      try {
+        const res = await apiClient.api.marketplaceListingsRetrieve2(listingId)
+        setListing(res.data ?? null)
+      } catch {
+        setListing(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
   }, [listingId])
 
   if (loading) {
@@ -180,14 +241,15 @@ export function ListingDetailPage() {
     <LoadedListingDetail
       listing={listing}
       onListingChange={setListing}
-      requestOpen={requestOpen}
-      setRequestOpen={setRequestOpen}
+      offerDialogOpen={offerDialogOpen}
+      setOfferDialogOpen={setOfferDialogOpen}
+      offerDialogMode={offerDialogMode}
+      setOfferDialogMode={setOfferDialogMode}
       favBusy={favBusy}
       setFavBusy={setFavBusy}
       currentUserId={user?.id ?? null}
       navigate={navigate}
       t={t}
-      dateLocale={dateLocale}
     />
   )
 }
@@ -195,14 +257,15 @@ export function ListingDetailPage() {
 interface LoadedProps {
   listing: ListingDetail
   onListingChange: (l: ListingDetail) => void
-  requestOpen: boolean
-  setRequestOpen: (v: boolean) => void
+  offerDialogOpen: boolean
+  setOfferDialogOpen: (v: boolean) => void
+  offerDialogMode: ListingOfferDialogMode
+  setOfferDialogMode: (v: ListingOfferDialogMode) => void
   favBusy: boolean
   setFavBusy: (v: boolean) => void
   currentUserId: number | null
   navigate: ReturnType<typeof useNavigate>
   t: (key: string, opts?: Record<string, unknown>) => string
-  dateLocale: typeof pt | typeof enUS
 }
 
 function isAvailable(v: ListingVariant | undefined): boolean {
@@ -212,16 +275,18 @@ function isAvailable(v: ListingVariant | undefined): boolean {
 function LoadedListingDetail({
   listing,
   onListingChange,
-  requestOpen,
-  setRequestOpen,
+  offerDialogOpen,
+  setOfferDialogOpen,
+  offerDialogMode,
+  setOfferDialogMode,
   favBusy,
   setFavBusy,
   currentUserId,
   navigate,
   t,
-  dateLocale,
 }: LoadedProps) {
   const TypeIcon = TYPE_ICONS[listing.listing_type] ?? Tag
+  const { can } = usePermissions()
   const owner = (listing.owner_display ?? {}) as OwnerDisplay
   const productOwnerId =
     typeof listing.product?.owner === 'number' ? listing.product.owner : null
@@ -229,56 +294,63 @@ function LoadedListingDetail({
     productOwnerId !== null &&
     currentUserId !== null &&
     productOwnerId === currentUserId
+  const isSchoolProduct =
+    listing.product?.owner_type === OwnerTypeEnum.School
+  const canManageListing =
+    (isOwnedByMe && can('marketplace.view_own_listings')) ||
+    (isSchoolProduct && can('marketplace.manage_school_listings'))
   const isFreeListing =
     listing.listing_type === 'lend' || listing.listing_type === 'donate'
 
-  const media = listing.product?.media ?? []
-  const sortedMedia = useMemo(() => {
-    return [...media].sort((a, b) => {
-      if (a.is_primary && !b.is_primary) return -1
-      if (!a.is_primary && b.is_primary) return 1
-      return (a.sort_order ?? 0) - (b.sort_order ?? 0)
-    })
-  }, [media])
-  const [activeMediaIdx, setActiveMediaIdx] = useState(0)
-  const activeMedia: ProductMedia | undefined = sortedMedia[activeMediaIdx]
-
-  // ── Variant selection ──────────────────────────────────────────────────
+  const media = useMemo(() => listing.product?.media ?? [], [listing.product?.media])
+  const sortedMedia = useMemo(() => sortProductMedia(media), [media])
+  const fallbackImage = sortedMedia[0]?.image ?? null
   const variants = useMemo(() => listing.variants ?? [], [listing.variants])
-  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
-    () => (variants.find(isAvailable) ?? variants[0])?.id ?? null
+  const availableVariants = useMemo(
+    () => variants.filter(isAvailable),
+    [variants]
   )
-  const variant =
-    variants.find((v) => v.id === selectedVariantId) ?? variants[0]
 
-  const colors = (variant?.colors ?? []) as ColorSummary[]
-  const conditionLabel = variant?.condition
-    ? t(CONDITION_LABEL_KEYS[variant.condition] ?? '', {
-        defaultValue: variant.condition,
-      })
-    : null
   const typeLabel = t(TYPE_LABEL_KEYS[listing.listing_type] ?? '', {
     defaultValue: listing.listing_type,
   })
 
-  // Effective price: variant override falls back to the listing's asking price.
-  const effectivePrice = variant?.effective_price ?? listing.asking_price
-  const priceDisplay = (() => {
-    if (effectivePrice && effectivePrice !== '') {
-      const n = Number(effectivePrice)
-      if (!Number.isNaN(n)) {
-        return `${t('common.currencySymbol')} ${n.toFixed(2)}`
+  const currency = t('common.currencySymbol')
+
+  const priceFrom = useMemo(() => {
+    const nums = availableVariants
+      .map((v) => v.effective_price ?? listing.asking_price)
+      .filter((p) => p != null && p !== '')
+      .map(Number)
+      .filter((n) => !Number.isNaN(n))
+    if (nums.length === 0) {
+      const base = listing.asking_price
+      if (base != null && base !== '' && !Number.isNaN(Number(base))) {
+        return Number(base)
       }
-      return effectivePrice
+      return null
+    }
+    return Math.min(...nums)
+  }, [availableVariants, listing.asking_price])
+
+  const priceDisplay = (() => {
+    if (priceFrom != null) {
+      return (
+        formatMarketplacePrice(priceFrom, currency) ??
+        t('marketplace.priceNegotiable')
+      )
     }
     return isFreeListing
       ? t('marketplace.priceFree')
       : t('marketplace.priceNegotiable')
   })()
-  const priceIsNumber =
-    !!effectivePrice &&
-    effectivePrice !== '' &&
-    !Number.isNaN(Number(effectivePrice))
+
+  const openOfferDialog = (mode: ListingOfferDialogMode) => {
+    setOfferDialogMode(mode)
+    setOfferDialogOpen(true)
+  }
+
+  const hasAvailableVariants = availableVariants.length > 0
 
   const ownerName =
     owner.type === 'school'
@@ -291,7 +363,7 @@ function LoadedListingDetail({
       ? t('marketplace.detail.ownedBySchool')
       : t('marketplace.detail.ownedByMember', { name: ownerName })
 
-  const canRequest = isAvailable(variant)
+  const canRequest = hasAvailableVariants
 
   const handleToggleFavorite = async () => {
     setFavBusy(true)
@@ -322,11 +394,28 @@ function LoadedListingDetail({
     }
   }
 
-  const handleRefetch = async () => {
-    const r = await apiClient.api
-      .marketplaceListingsRetrieve2(listing.id)
-      .catch(() => null)
-    if (r?.data) onListingChange(r.data)
+  // ── Specifications shown in the side info card ──
+  const specs: { label: string; value: string }[] = []
+  if (listing.product?.brand) {
+    specs.push({
+      label: t('marketplace.detail.specBrand'),
+      value: listing.product.brand,
+    })
+  }
+  if (listing.product?.material) {
+    specs.push({
+      label: t('marketplace.detail.specMaterial'),
+      value: listing.product.material,
+    })
+  }
+  if (listing.product?.target_gender) {
+    const key = GENDER_LABEL_KEYS[listing.product.target_gender]
+    if (key) {
+      specs.push({
+        label: t('marketplace.targetGender'),
+        value: t(key),
+      })
+    }
   }
 
   return (
@@ -337,70 +426,16 @@ function LoadedListingDetail({
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
           {/* ─── Main column ─── */}
           <div className="space-y-6">
-            {/* Gallery */}
-            <div className="overflow-hidden rounded-lg border border-border bg-card">
-              <div className="relative aspect-[4/3] bg-muted">
-                {activeMedia ? (
-                  <img
-                    src={activeMedia.image}
-                    alt={listing.title}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <ImageIcon className="size-10 text-muted-foreground/30" />
-                  </div>
-                )}
-                {sortedMedia.length > 1 && (
-                  <>
-                    <GalleryNav
-                      side="left"
-                      onClick={() =>
-                        setActiveMediaIdx(
-                          (i) =>
-                            (i - 1 + sortedMedia.length) % sortedMedia.length
-                        )
-                      }
-                    />
-                    <GalleryNav
-                      side="right"
-                      onClick={() =>
-                        setActiveMediaIdx((i) => (i + 1) % sortedMedia.length)
-                      }
-                    />
-                  </>
-                )}
-                <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-foreground/85 px-2.5 py-1 text-[11px] font-semibold text-background backdrop-blur">
+            <ProductMediaGallery
+              media={media}
+              alt={listing.title}
+              heroOverlay={
+                <div className="pointer-events-none absolute bottom-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-foreground/85 px-2.5 py-1 text-[11px] font-semibold text-background backdrop-blur">
                   <TypeIcon className="size-3" />
                   {typeLabel}
                 </div>
-              </div>
-
-              {sortedMedia.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto p-3">
-                  {sortedMedia.map((m, i) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setActiveMediaIdx(i)}
-                      className={cn(
-                        'size-16 shrink-0 overflow-hidden rounded-md border transition-colors',
-                        i === activeMediaIdx
-                          ? 'border-primary'
-                          : 'border-border hover:border-primary/40'
-                      )}
-                      aria-label={`Photo ${i + 1}`}
-                    >
-                      <img
-                        src={m.image}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+              }
+            />
 
             {/* Description */}
             <CardSection title={t('marketplace.productDescription')}>
@@ -415,105 +450,47 @@ function LoadedListingDetail({
               )}
             </CardSection>
 
-            {/* Variant picker — only when there's a real choice */}
-            {variants.length > 1 && (
-              <CardSection
-                title={t('marketplace.detail.chooseVariant')}
-                description={t('marketplace.detail.chooseVariantDesc')}
-              >
-                <div className="flex flex-wrap gap-2">
-                  {variants.map((v) => {
-                    const selected = v.id === variant?.id
-                    const available = isAvailable(v)
-                    const label =
-                      v.size?.name ||
-                      t(CONDITION_LABEL_KEYS[v.condition] ?? '', {
-                        defaultValue: v.condition,
-                      })
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => setSelectedVariantId(v.id)}
-                        aria-pressed={selected}
-                        className={cn(
-                          'inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors',
-                          selected
-                            ? 'border-primary bg-primary/5 text-foreground ring-1 ring-primary'
-                            : 'border-border bg-card text-foreground hover:border-primary/40',
-                          !available && 'opacity-60'
-                        )}
-                      >
-                        <span className="font-medium">{label}</span>
-                        {!available && (
-                          <span className="text-xs text-muted-foreground">
-                            {t('marketplace.detail.variantUnavailable')}
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
+            {/* Specifications */}
+            {specs.length > 0 && (
+              <CardSection title={t('marketplace.detail.specs')}>
+                <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+                  {specs.map((s) => (
+                    <div
+                      key={s.label}
+                      className="flex items-baseline justify-between gap-3 border-b border-dashed border-border/60 pb-2 last:border-b-0 last:pb-0 sm:[&:nth-last-child(2)]:border-b-0 sm:[&:nth-last-child(2)]:pb-0"
+                    >
+                      <dt className="text-sm text-muted-foreground">
+                        {s.label}
+                      </dt>
+                      <dd className="truncate text-sm font-medium text-foreground">
+                        {s.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </CardSection>
             )}
 
-            {/* Specs (selected variant) */}
-            <CardSection title={t('marketplace.detail.specs')}>
-              <dl className="grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-2">
-                <Spec
-                  label={t('marketplace.detail.specSize')}
-                  value={variant?.size?.name ?? null}
-                />
-                <Spec
-                  label={t('marketplace.detail.specCondition')}
-                  value={conditionLabel ?? null}
-                />
-                <Spec
-                  label={t('marketplace.detail.specBrand')}
-                  value={listing.product?.brand ?? null}
-                />
-                <Spec
-                  label={t('marketplace.detail.specMaterial')}
-                  value={listing.product?.material ?? null}
-                />
-                {variant?.sku && (
-                  <Spec
-                    label={t('marketplace.detail.specSku')}
-                    value={variant.sku}
-                    mono
-                  />
-                )}
-                {colors.length > 0 && (
-                  <ColorSpec
-                    label={t('marketplace.detail.specColors')}
-                    colors={colors}
-                  />
-                )}
-              </dl>
-              {variant?.public_notes && (
-                <div className="mt-5 border-t border-border pt-5">
-                  <dt className="text-xs text-muted-foreground">
-                    {t('marketplace.detail.specNotes')}
-                  </dt>
-                  <dd className="mt-1 whitespace-pre-line text-sm text-foreground">
-                    {variant.public_notes}
-                  </dd>
-                </div>
-              )}
-            </CardSection>
-
-            {/* Booking windows for the selected variant (rent / lend) */}
-            {(listing.listing_type === 'rent' ||
-              listing.listing_type === 'lend') && (
+            {/* Variants — full inventory of options on this product */}
+            {variants.length > 0 && (
               <CardSection
-                title={t('marketplace.detail.bookingWindows')}
-                description={t('marketplace.detail.bookingWindowsDesc')}
+                title={t('marketplace.detail.availableVariants')}
+                description={t('marketplace.detail.availableVariantsDesc')}
               >
-                <BookingWindowsList
-                  windows={variant?.booking_windows ?? []}
-                  emptyMessage={t('marketplace.detail.noBookingWindows')}
-                  locale={dateLocale}
-                />
+                <div className="space-y-3">
+                  {variants.map((variant, idx) => (
+                    <VariantRow
+                      key={variant.id}
+                      variant={variant}
+                      index={idx}
+                      fallbackImage={fallbackImage}
+                      listingAskingPrice={listing.asking_price ?? null}
+                      isFreeListing={isFreeListing}
+                      currency={currency}
+                      t={t}
+                    />
+                  ))}
+                </div>
               </CardSection>
             )}
           </div>
@@ -530,11 +507,27 @@ function LoadedListingDetail({
                   <p
                     className={cn(
                       'mt-1 text-2xl font-semibold tracking-tight tabular-nums',
-                      !priceIsNumber && 'italic font-medium text-foreground'
+                      priceFrom == null && 'font-medium italic text-foreground'
                     )}
                   >
                     {priceDisplay}
                   </p>
+                  {priceFrom != null && availableVariants.length > 1 && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {t('marketplace.detail.priceFromHint')}
+                    </p>
+                  )}
+                  {hasAvailableVariants ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t('marketplace.detail.variantsAvailableCount', {
+                        count: availableVariants.length,
+                      })}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {t('marketplace.detail.noVariantsAvailable')}
+                    </p>
+                  )}
                 </div>
                 <TooltipProvider delayDuration={250}>
                   <Tooltip>
@@ -588,221 +581,231 @@ function LoadedListingDetail({
                 </div>
               </div>
 
-              {/* Status + condition strip */}
               <div className="mt-5 flex flex-wrap gap-1.5 border-t border-border pt-5">
                 <Badge variant="outline" className="font-normal">
                   <TypeIcon className="size-3" />
                   {typeLabel}
                 </Badge>
-                {conditionLabel && (
-                  <Badge variant="outline" className="font-normal">
-                    {conditionLabel}
-                  </Badge>
-                )}
-                {variant?.size?.name && (
-                  <Badge variant="outline" className="font-normal">
-                    {t('marketplace.sizeShort')} {variant.size.name}
-                  </Badge>
-                )}
+                <Badge variant="outline" className="font-normal">
+                  <Package className="size-3" />
+                  {t('marketplace.variantCount', { count: variants.length })}
+                </Badge>
               </div>
 
-              {/* Actions */}
+              {/* Actions — Vinted-style */}
               <div className="mt-6 space-y-2">
-                {isOwnedByMe ? (
-                  <Authorized permission="marketplace.manage_school_listings">
-                    <Button
-                      className="w-full"
-                      onClick={() =>
-                        navigate(
-                          paths.marketplaceEdit.replace(
-                            ':id',
-                            String(listing.id)
-                          )
-                        )
-                      }
-                    >
-                      <Pencil className="size-4" />
-                      {t('marketplace.detail.editListing')}
-                    </Button>
-                  </Authorized>
-                ) : (
+                {canManageListing ? (
+                  <Button
+                    className="w-full"
+                    onClick={() => navigate(listingEditPath(listing.id))}
+                  >
+                    <Pencil className="size-4" />
+                    {t('marketplace.detail.editListing')}
+                  </Button>
+                ) : !isOwnedByMe ? (
                   <>
-                    <Button
-                      className="w-full"
-                      disabled={!canRequest}
-                      onClick={() => setRequestOpen(true)}
-                    >
-                      {t(requestCtaKey(listing.listing_type))}
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        disabled={!canRequest}
+                        onClick={() => openOfferDialog('offer')}
+                      >
+                        {t('marketplace.detail.makeOffer')}
+                      </Button>
+                      <Button
+                        className="w-full"
+                        disabled={!canRequest}
+                        onClick={() => openOfferDialog('buy')}
+                      >
+                        {t(buyCtaKey(listing.listing_type))}
+                      </Button>
+                    </div>
                     {!canRequest && (
                       <p className="text-center text-xs text-muted-foreground">
-                        {t('marketplace.detail.variantUnavailableHint')}
+                        {t('marketplace.detail.unavailableHint')}
                       </p>
                     )}
-                    <TooltipProvider delayDuration={250}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="block">
-                            <Button
-                              variant="outline"
-                              className="w-full"
-                              disabled
-                            >
-                              <MessageSquare className="size-4" />
-                              {t('marketplace.detail.messageOwner')}
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {t('marketplace.detail.messageOwnerSoon')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => openOfferDialog('ask')}
+                    >
+                      <MessageSquare className="size-4" />
+                      {t('marketplace.detail.messageOwner')}
+                    </Button>
                   </>
-                )}
+                ) : null}
               </div>
             </div>
           </aside>
         </div>
       </div>
 
-      {!isOwnedByMe && variant && (
-        <RequestBookingDialog
+      {!isOwnedByMe && (
+        <ListingOfferDialog
           listing={listing}
-          variant={variant}
-          open={requestOpen}
-          onOpenChange={setRequestOpen}
-          onSubmitted={handleRefetch}
+          mode={offerDialogMode}
+          open={offerDialogOpen}
+          onOpenChange={setOfferDialogOpen}
+          onSubmitted={(conversationId) => {
+            navigate(paths.messagesConversation(conversationId))
+          }}
         />
       )}
     </PageLayout>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Small bits
-// ---------------------------------------------------------------------------
-
-function Spec({
-  label,
-  value,
-  mono = false,
+// ─── Variant row ───
+function VariantRow({
+  variant,
+  index,
+  fallbackImage,
+  listingAskingPrice,
+  isFreeListing,
+  currency,
+  t,
 }: {
-  label: string
-  value: string | null
-  mono?: boolean
+  variant: ListingVariant
+  index: number
+  fallbackImage: string | null
+  listingAskingPrice: string | null
+  isFreeListing: boolean
+  currency: string
+  t: (key: string, opts?: Record<string, unknown>) => string
 }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd
-        className={cn(
-          'truncate text-sm text-foreground',
-          mono && 'font-mono tabular-nums'
-        )}
-      >
-        {value || '—'}
-      </dd>
-    </div>
-  )
-}
+  const variantMedia = (variant.media ?? []) as VariantMediaRef[]
+  const sortedVariantMedia = sortProductMedia(variantMedia)
+  const thumbImg = sortedVariantMedia[0]?.image ?? fallbackImage
 
-function ColorSpec({
-  label,
-  colors,
-}: {
-  label: string
-  colors: ColorSummary[]
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="flex flex-wrap items-center gap-2">
-        {colors.map((c, i) => (
-          <span
-            key={c.id ?? i}
-            className="inline-flex items-center gap-1.5 text-sm text-foreground"
-          >
-            {c.hex_code && (
-              <span
-                className="size-3 rounded-sm ring-1 ring-border"
-                style={{ backgroundColor: c.hex_code }}
-                aria-hidden
-              />
-            )}
-            {c.name ?? '—'}
-          </span>
-        ))}
-      </dd>
-    </div>
-  )
-}
+  const sizeLabel = variant.size?.name ?? null
+  const conditionKey = CONDITION_LABEL_KEYS[variant.condition]
+  const conditionLabel = conditionKey ? t(conditionKey) : variant.condition
+  const ConditionIcon = CONDITION_ICONS[variant.condition] ?? CircleDot
 
-function BookingWindowsList({
-  windows,
-  emptyMessage,
-  locale,
-}: {
-  windows: Array<{ start_at?: string; end_at?: string } | Record<string, any>>
-  emptyMessage: string
-  locale: typeof pt | typeof enUS
-}) {
-  const valid = windows
-    .map((w) => ({
-      start: w.start_at ? new Date(w.start_at) : null,
-      end: w.end_at ? new Date(w.end_at) : null,
-    }))
-    .filter(
-      (w): w is { start: Date; end: Date } => w.start !== null && w.end !== null
-    )
-    .sort((a, b) => a.start.getTime() - b.start.getTime())
+  const statusKey = STATUS_LABEL_KEYS[variant.status]
+  const statusLabel = statusKey ? t(statusKey) : variant.status
+  const StatusIcon = STATUS_ICONS[variant.status] ?? CircleDot
 
-  if (valid.length === 0) {
-    return (
-      <p className="text-sm italic text-muted-foreground">{emptyMessage}</p>
-    )
-  }
+  const acquisitionKey = ACQUISITION_LABEL_KEYS[variant.acquisition_type]
+  const acquisitionLabel = acquisitionKey ? t(acquisitionKey) : null
+
+  const colors = (variant.colors ?? []) as VariantColor[]
+
+  const rawPrice =
+    variant.effective_price ?? variant.asking_price ?? listingAskingPrice
+  const priceText =
+    formatMarketplacePrice(rawPrice, currency) ??
+    (isFreeListing
+      ? t('marketplace.priceFree')
+      : t('marketplace.priceNegotiable'))
+
+  const isAvailable = variant.status === ProductVariantStatusEnum.Available
+  const statusTone = (() => {
+    switch (variant.status) {
+      case ProductVariantStatusEnum.Available:
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+      case ProductVariantStatusEnum.Maintenance:
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+      case ProductVariantStatusEnum.Sold:
+      case ProductVariantStatusEnum.Donated:
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      default:
+        return 'bg-muted text-muted-foreground'
+    }
+  })()
 
   return (
-    <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
-      {valid.map((w, i) => (
-        <li
-          key={i}
-          className="flex items-center gap-3 bg-card px-3 py-2.5 text-sm"
-        >
-          <CalendarClock className="size-4 shrink-0 text-muted-foreground" />
-          <span className="tabular-nums text-foreground">
-            {format(w.start, 'PPP', { locale })}
-          </span>
-          <span className="text-muted-foreground">→</span>
-          <span className="tabular-nums text-foreground">
-            {format(w.end, 'PPP', { locale })}
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function GalleryNav({
-  side,
-  onClick,
-}: {
-  side: 'left' | 'right'
-  onClick: () => void
-}) {
-  const Icon = side === 'left' ? ChevronLeft : ChevronRight
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={side === 'left' ? 'Previous photo' : 'Next photo'}
+    <div
       className={cn(
-        'absolute top-1/2 -translate-y-1/2 inline-flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-background',
-        side === 'left' ? 'left-3' : 'right-3'
+        'group relative flex gap-4 rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-sm',
+        !isAvailable && 'opacity-75'
       )}
     >
-      <Icon className="size-4" />
-    </button>
+      {/* Thumbnail */}
+      <div className="size-20 shrink-0 overflow-hidden rounded-md border border-border bg-muted/40 sm:size-24">
+        {thumbImg ? (
+          <img
+            src={thumbImg}
+            alt=""
+            className="size-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center">
+            <ImageIcon className="size-6 text-muted-foreground/40" />
+          </div>
+        )}
+      </div>
+
+      {/* Details */}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <p className="text-sm font-semibold leading-tight text-foreground">
+                {sizeLabel
+                  ? `${t('marketplace.detail.specSize')} ${sizeLabel}`
+                  : t('marketplace.variant', { number: index + 1 })}
+              </p>
+              {variant.sku && (
+                <span className="text-[11px] tabular-nums text-muted-foreground">
+                  · {variant.sku}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <ConditionIcon className="size-3.5" />
+              {conditionLabel}
+            </div>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-sm font-semibold tabular-nums text-foreground">
+              {priceText}
+            </p>
+            <Badge
+              className={cn(
+                'mt-1 inline-flex gap-1 border-0 text-[10px] font-medium',
+                statusTone
+              )}
+            >
+              <StatusIcon className="size-3" />
+              {statusLabel}
+            </Badge>
+          </div>
+        </div>
+
+        {colors.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {colors.map((c) => (
+              <span
+                key={c.id}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-2 py-0.5 text-[11px] text-foreground/80"
+              >
+                <span
+                  className="size-2.5 rounded-full border border-border/40"
+                  style={{ backgroundColor: c.hex_code }}
+                  aria-hidden="true"
+                />
+                {c.name}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {variant.public_notes && (
+          <p className="rounded-md border-l-2 border-primary/40 bg-muted/30 px-3 py-1.5 text-xs italic text-muted-foreground">
+            “{variant.public_notes}”
+          </p>
+        )}
+
+        {acquisitionLabel && (
+          <p className="text-[11px] text-muted-foreground/80">
+            {t('marketplace.acquisitionType')}: {acquisitionLabel}
+          </p>
+        )}
+      </div>
+    </div>
   )
 }

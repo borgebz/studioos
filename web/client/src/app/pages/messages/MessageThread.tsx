@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 
 import type { Conversation, Message } from '@/api/studioos-api'
+import { ConversationKindEnum } from '@/api/studioos-api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,6 +51,7 @@ import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 
 import { participantName, type ConversationParticipant } from './types'
+import { ListingOfferCard } from './ListingOfferCard'
 
 const QUICK_REACTIONS: { emoji: string; key: string }[] = [
   { emoji: '👍', key: 'thumbsUp' },
@@ -82,6 +84,8 @@ interface MessageThreadProps {
   onTypingStopped: () => void
   /** Mobile-only: when defined, header renders a back arrow returning to inbox. */
   onBack?: () => void
+  /** Refreshes conversation metadata after offer actions (status badge, etc.). */
+  onOfferUpdated?: () => void | Promise<void>
 }
 
 export function MessageThread({
@@ -102,6 +106,7 @@ export function MessageThread({
   onTyping,
   onTypingStopped,
   onBack,
+  onOfferUpdated,
 }: MessageThreadProps) {
   const { t, i18n } = useTranslation()
   const lang = i18n.language
@@ -192,11 +197,15 @@ export function MessageThread({
   // name in the header already says everything (the email used to live
   // here, but it's not exposed to non-admin users anymore).
   const headerSub =
-    others.length > 1
-      ? t('messages.groupParticipantCount', {
-          count: conversation.participant_ids.length,
-        })
-      : ''
+    conversation.kind === ConversationKindEnum.Listing
+      ? others.length === 1
+        ? participantName(participants[others[0]], t, others[0])
+        : ''
+      : others.length > 1
+        ? t('messages.groupParticipantCount', {
+            count: conversation.participant_ids.length,
+          })
+        : ''
 
   // ── pinned messages (resolved) ──────────────────────────────────────────
   const pinnedMessages = useMemo(
@@ -265,6 +274,13 @@ export function MessageThread({
             >
               <Users className="size-5" />
             </span>
+          ) : conversation.kind === ConversationKindEnum.Listing &&
+            conversation.variant_photo_url ? (
+            <img
+              src={conversation.variant_photo_url}
+              alt=""
+              className="size-10 shrink-0 rounded-full object-cover bg-muted"
+            />
           ) : (
             <Avatar size="lg">
               {primary?.photoUrl && (
@@ -305,6 +321,17 @@ export function MessageThread({
           </div>
         </div>
       )}
+
+      {conversation.kind === ConversationKindEnum.Listing &&
+        conversation.listing_offer?.id != null && (
+          <div className="mb-2 shrink-0">
+            <ListingOfferCard
+              offerId={conversation.listing_offer.id}
+              meId={meId}
+              onUpdated={() => void onOfferUpdated?.()}
+            />
+          </div>
+        )}
 
       {/* Messages — transparent canvas between the floating cards. The page
        *  grain (SidebarInset) reads through as the paper underneath. No
@@ -1301,6 +1328,21 @@ function SystemMessage({
     case 'admin_auto_promoted':
       text = t('messages.system.adminAutoPromoted', { target: targetName })
       break
+    case 'listing_offer_created':
+      text = t('messages.system.listingOfferCreated', { actor: actorName })
+      break
+    case 'listing_offer_updated':
+      text = t('messages.system.listingOfferUpdated', { actor: actorName })
+      break
+    case 'listing_offer_completed':
+      text = t('messages.system.listingOfferCompleted', { actor: actorName })
+      break
+    case 'listing_offer_rejected':
+      text = t('messages.system.listingOfferRejected', { actor: actorName })
+      break
+    case 'listing_offer_cancelled':
+      text = t('messages.system.listingOfferCancelled', { actor: actorName })
+      break
     default:
       text = parsed.event || ''
   }
@@ -1347,6 +1389,9 @@ function conversationHeaderLabel(
   meId: number,
   t: (k: string) => string
 ): string {
+  if (c.kind === ConversationKindEnum.Listing) {
+    return c.listing_title || c.name || t('messages.listingConversation')
+  }
   // Groups are titled by their user-set name. DMs derive from participants.
   if (c.kind === 'group') {
     return c.name || t('messages.untitledGroup')

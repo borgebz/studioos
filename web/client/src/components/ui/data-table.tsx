@@ -186,6 +186,9 @@ interface DataTableProps<TData> {
   // -- Layout --
   /** Fill remaining parent height; header pins, body scrolls internally. */
   fillHeight?: boolean
+
+  /** Navigate when a data row is clicked (ignored for skeleton/empty rows). */
+  onRowClick?: (row: TData) => void
 }
 
 export function DataTable<TData>({
@@ -200,6 +203,7 @@ export function DataTable<TData>({
   totalCount,
   onRefresh,
   fillHeight,
+  onRowClick,
 }: DataTableProps<TData>) {
   const { t } = useTranslation()
   const columnCount = table.getAllLeafColumns().length
@@ -254,6 +258,12 @@ export function DataTable<TData>({
         <TableRow
           key={row.id}
           data-state={row.getIsSelected() ? 'selected' : undefined}
+          className={onRowClick ? 'cursor-pointer hover:bg-muted/50' : undefined}
+          onClick={
+            onRowClick
+              ? () => onRowClick(row.original)
+              : undefined
+          }
         >
           {row.getVisibleCells().map((cell) => {
             const align = resolveAlign(cell.column)

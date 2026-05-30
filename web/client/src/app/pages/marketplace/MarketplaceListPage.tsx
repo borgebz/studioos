@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Search, ShoppingBag, Tag } from 'lucide-react'
+import { Search, ShoppingBag, Tag, Heart } from 'lucide-react'
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -40,12 +40,85 @@ import { StatusBadge, listingTypeLabel } from './marketplace-helpers'
 
 type ListingType = 'rent' | 'sell' | 'lend' | 'donate'
 type ListingCondition = 'new' | 'excellent' | 'good' | 'fair' | 'damaged'
+type MarketplaceListMode = 'browse' | 'favorites'
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-export function MarketplaceListPage() {
+interface MarketplaceListPageProps {
+  mode?: MarketplaceListMode
+}
+
+function sortKeyToOrdering(key: SortKey) {
+  switch (key) {
+    case 'priceAsc':
+      return 'asking_price' as const
+    case 'priceDesc':
+      return '-asking_price' as const
+    default:
+      return '-created_at' as const
+  }
+}
+
+function applyClientListingFilters(
+  items: ListingList[],
+  {
+    search,
+    typeFilter,
+    conditionFilter,
+    sortBy,
+  }: {
+    search: string
+    typeFilter: ListingType | null
+    conditionFilter: ListingCondition | null
+    sortBy: SortKey
+  }
+) {
+  let result = items
+
+  const q = search.trim().toLowerCase()
+  if (q) {
+    result = result.filter(
+      (item) =>
+        item.title.toLowerCase().includes(q) ||
+        item.product_name.toLowerCase().includes(q)
+    )
+  }
+
+  if (typeFilter) {
+    result = result.filter((item) => item.listing_type === typeFilter)
+  }
+
+  if (conditionFilter) {
+    result = result.filter((item) =>
+      (item.condition_summary ?? []).includes(conditionFilter)
+    )
+  }
+
+  result = [...result].sort((a, b) => {
+    switch (sortBy) {
+      case 'priceAsc': {
+        const pa = Number(a.asking_price ?? Infinity)
+        const pb = Number(b.asking_price ?? Infinity)
+        return pa - pb
+      }
+      case 'priceDesc': {
+        const pa = Number(a.asking_price ?? -Infinity)
+        const pb = Number(b.asking_price ?? -Infinity)
+        return pb - pa
+      }
+      default:
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )
+    }
+  })
+
+  return result
+}
+
+export function MarketplaceListPage({ mode = 'browse' }: MarketplaceListPageProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -53,17 +126,7 @@ export function MarketplaceListPage() {
   const search = useDebouncedValue(searchInput, 300)
   const [sortBy, setSortBy] = useState<SortKey>('recent')
   const [view, setView] = useState<ViewMode>('grid')
-
-  const sortKeyToOrdering = (key: SortKey) => {
-    switch (key) {
-      case 'priceAsc':
-        return 'asking_price' as const
-      case 'priceDesc':
-        return '-asking_price' as const
-      default:
-        return '-created_at' as const
-    }
-  }
+  const isFavorites = mode === 'favorites'
 
   // ── Data-table columns (list view) ────────────────────────────────────────
   const columnHelper = useMemo(() => createColumnHelper<ListingList>(), [])
@@ -225,6 +288,17 @@ export function MarketplaceListPage() {
   )
 
   const fetchPage = useCallback(() => {
+    if (isFavorites) {
+      return apiClient.api
+        .marketplaceListingsFavoritesRetrieve()
+        .then((r) => r.data) as Promise<{
+        count: number
+        next: string | null
+        previous: string | null
+        results: ListingList[]
+      }>
+    }
+
     const query: {
       search?: string
       listing_type?: ListingType
@@ -243,7 +317,11 @@ export function MarketplaceListPage() {
       previous: string | null
       results: ListingList[]
     }>
-  }, [search, typeFilter, conditionFilter, sortBy])
+  }, [isFavorites, search, typeFilter, conditionFilter, sortBy])
+
+  const resetDeps = isFavorites
+    ? [mode]
+    : [search, typeFilter, conditionFilter, sortBy]
 
   const {
     items: listings,
@@ -255,11 +333,23 @@ export function MarketplaceListPage() {
     refresh,
   } = usePaginatedList<ListingList>({
     fetchPage,
-    resetDeps: [search, typeFilter, conditionFilter, sortBy],
+    resetDeps,
   })
 
+  const visibleListings = useMemo(() => {
+    if (!isFavorites) return listings
+    return applyClientListingFilters(listings, {
+      search,
+      typeFilter,
+      conditionFilter,
+      sortBy,
+    })
+  }, [isFavorites, listings, search, typeFilter, conditionFilter, sortBy])
+
+  const visibleCount = isFavorites ? visibleListings.length : count
+
   const table = useReactTable({
-    data: listings,
+    data: visibleListings,
     columns,
     state: { columnFilters },
     onColumnFiltersChange: setColumnFilters,
@@ -301,14 +391,22 @@ export function MarketplaceListPage() {
     t,
   ])
 
-  const emptyBrowse = (
+  const emptyState = (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-      <Tag className="mb-4 h-12 w-12 text-muted-foreground/30" />
+      {isFavorites ? (
+        <Heart className="mb-4 h-12 w-12 text-muted-foreground/30" />
+      ) : (
+        <Tag className="mb-4 h-12 w-12 text-muted-foreground/30" />
+      )}
       <p className="text-sm font-medium text-muted-foreground">
-        {t('marketplace.browseEmpty')}
+        {t(isFavorites ? 'marketplace.favoritesEmpty' : 'marketplace.browseEmpty')}
       </p>
       <p className="mt-1 text-xs text-muted-foreground/60">
-        {t('marketplace.browseEmptyDesc')}
+        {t(
+          isFavorites
+            ? 'marketplace.favoritesEmptyDesc'
+            : 'marketplace.browseEmptyDesc'
+        )}
       </p>
     </div>
   )
@@ -316,7 +414,12 @@ export function MarketplaceListPage() {
   return (
     <PageLayout>
       <div className={PAGE_CONTENT}>
-        <PageHeader title={t('marketplace.browseTitle')} backTo={paths.home}>
+        <PageHeader
+          title={t(
+            isFavorites ? 'marketplace.favoritesTitle' : 'marketplace.browseTitle'
+          )}
+          backTo={paths.home}
+        >
           <ViewToggleButton view={view} onChange={setView} />
         </PageHeader>
 
@@ -414,7 +517,7 @@ export function MarketplaceListPage() {
 
         {view === 'grid' ? (
           <ListingsGridView
-            items={listings}
+            items={visibleListings}
             getKey={(it) => it.id}
             loading={loading}
             hasNextPage={hasNextPage}
@@ -431,18 +534,18 @@ export function MarketplaceListPage() {
                 }
               />
             )}
-            empty={emptyBrowse}
+            empty={emptyState}
           />
         ) : (
           <DataTable
             table={table}
             loading={loading}
-            totalCount={count}
+            totalCount={visibleCount}
             onRefresh={refresh}
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             onLoadMore={fetchNextPage}
-            emptyMessage={emptyBrowse}
+            emptyMessage={emptyState}
           />
         )}
       </div>

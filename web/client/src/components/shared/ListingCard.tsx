@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { ProductMediaFrame } from '@/components/shared/ProductMediaGallery'
 import { StatusBadge } from '@/app/pages/marketplace/marketplace-helpers'
 
 const TYPE_ICONS = {
@@ -92,20 +93,15 @@ export function ListingCard({
         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       )}
     >
-      {/* Image / solid placeholder */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-        {item.primary_media_url ? (
-          <img
-            src={item.primary_media_url}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
+      {/* Image — letterboxed, no crop */}
+      <div className="relative aspect-[3/4] overflow-hidden">
+        <ProductMediaFrame
+          src={item.primary_media_url}
+          alt=""
+          placeholder={
             <Tag className="size-7 text-muted-foreground/50" />
-          </div>
-        )}
+          }
+        />
 
         {/* Top-right: status badge (only when not active) + action menu */}
         <div className="absolute right-2.5 top-2.5 z-[2] flex items-center gap-1.5">

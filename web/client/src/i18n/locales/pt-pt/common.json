@@ -13,6 +13,7 @@
     "myAvailability": "A Minha Disponibilidade",
     "marketplace": "Marketplace",
     "browse": "Explorar",
+    "favorites": "Favoritos",
     "myInventory": "Os Meus Artigos",
     "myListings": "Os Meus Anúncios",
     "schoolCatalog": "Catálogo da Escola",
@@ -44,7 +45,11 @@
     "openMenu": "Abrir menu",
     "logout": "Terminar sessão",
     "toggleLanguage": "Mudar idioma",
-    "toggleTheme": "Mudar tema"
+    "toggleTheme": "Mudar tema",
+    "pendingActions": {
+      "tooltip_one": "{{count}} ação pendente",
+      "tooltip_other": "{{count}} ações pendentes"
+    }
   },
   "imageCrop": {
     "title": "Ajustar imagem",
@@ -777,7 +782,8 @@
       "acceptInvite": "Aceitar convite",
       "markAttended": "Compareci",
       "markAbsent": "Não compareci",
-      "cancelParticipation": "Cancelar a minha participação"
+      "cancelParticipation": "Cancelar a minha participação",
+      "cancelRequest": "Cancelar o meu pedido"
     },
     "teacherConfirm": {
       "title": "Confirmar que a sessão aconteceu",
@@ -815,6 +821,15 @@
       "submit": "Cancelar participação",
       "submitting": "A cancelar…",
       "success": "Participação cancelada."
+    },
+    "cancelRequest": {
+      "title": "Cancelar o meu pedido",
+      "desc": "Este pedido de coaching será retirado. Pode submeter um novo pedido mais tarde.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Porque está a cancelar?",
+      "submit": "Cancelar pedido",
+      "submitting": "A cancelar…",
+      "success": "Pedido cancelado."
     }
   },
   "myCoachingsCalendar": {
@@ -1132,6 +1147,13 @@
     "updateListing": "Atualizar anúncio",
     "updateSuccess": "Anúncio atualizado com sucesso",
     "updateError": "Falha ao atualizar anúncio",
+    "publishListing": "Publicar anúncio",
+    "publishNow": "Publicar agora",
+    "publishOptions": "Opções de publicação",
+    "saveDraft": "Guardar rascunho",
+    "publishSuccess": "Anúncio publicado — já está visível no marketplace.",
+    "publishError": "Falha ao publicar anúncio",
+    "draftPublishHint": "Rascunhos não aparecem na pesquisa. Guarde as alterações e use Publicar anúncio.",
     "missingFields": "Preencha todos os campos obrigatórios",
     "media": "Fotografias",
     "mediaDesc": "Adicione fotos do produto. A primeira imagem será a capa.",
@@ -1208,6 +1230,9 @@
     "browseTitle": "Explorar Marketplace",
     "browseEmpty": "Nenhum anúncio disponível.",
     "browseEmptyDesc": "Volte mais tarde para ver novos artigos.",
+    "favoritesTitle": "Anúncios Favoritos",
+    "favoritesEmpty": "Ainda sem favoritos.",
+    "favoritesEmptyDesc": "Toque no coração de um anúncio ao explorar para o guardar aqui.",
     "clearSelection": "Limpar seleção",
     "noSizeSystems": "Esta categoria não tem sistemas de tamanhos configurados.",
     "noPhotosForVariant": "Sem fotos do produto",
@@ -1260,8 +1285,24 @@
       "requestPurchase": "Pedir compra",
       "requestLoan": "Pedir empréstimo",
       "requestClaim": "Pedir este artigo",
-      "messageOwner": "Mensagem ao anunciante",
-      "messageOwnerSoon": "Em breve",
+      "messageOwner": "Perguntar ao anunciante",
+      "makeOffer": "Fazer proposta",
+      "buyNow": "Comprar",
+      "buyRent": "Pedir aluguer",
+      "productDetails": "Sobre este artigo",
+      "variantsSummary": "Disponibilidade",
+      "variantsAvailableCount_one": "{{count}} opção disponível",
+      "variantsAvailableCount_other": "{{count}} opções disponíveis",
+      "variantsAvailableSizes": "{{count}} disponíveis · {{sizes}}",
+      "noVariantsAvailable": "Sem opções disponíveis",
+      "availableVariants": "Opções disponíveis",
+      "availableVariantsDesc": "Escolhe o tamanho quando fizeres proposta ou compra.",
+      "variantAvailable": "Disponível",
+      "priceFromHint": "Preço desde — pode variar por tamanho",
+      "oneOptionAvailable": "1 opção disponível",
+      "optionsCount_one": "{{count}} opção",
+      "optionsCount_other": "{{count}} opções",
+      "unavailableHint": "Indisponível de momento.",
       "favorite": "Favorito",
       "unfavorite": "Remover favorito",
       "editListing": "Editar anúncio",
@@ -1296,6 +1337,50 @@
       "errorEndBeforeStart": "A data de fim deve ser depois do início.",
       "windowsLegendBooked": "Já reservado",
       "windowsLegendRequest": "O teu pedido"
+    },
+    "offerDialog": {
+      "titleAsk": "Perguntar ao anunciante",
+      "titleOffer": "Fazer proposta",
+      "titleBuy": "Comprar",
+      "titleRent": "Pedir aluguer",
+      "titleLend": "Pedir empréstimo",
+      "titleDonate": "Pedir este artigo",
+      "descriptionAsk": "Faz uma pergunta antes de te comprometeres — abre-se um novo chat com o anunciante.",
+      "descriptionDates": "Escolhe as datas e preço opcional. Negocias no chat antes de reservar.",
+      "descriptionSimple": "Adiciona preço opcional e mensagem. Negocias no chat antes de confirmar.",
+      "pickVariant": "Escolhe uma opção",
+      "pickVariantOptional": "Sobre que opção perguntas?",
+      "anyVariant": "Pergunta geral",
+      "bidPrice": "A tua proposta (opcional)",
+      "priceLabel": "Preço",
+      "pricePlaceholder": "0",
+      "message": "Mensagem",
+      "messagePlaceholder": "Olá! Continua disponível?",
+      "submit": "Abrir chat",
+      "submitting": "A abrir…",
+      "success": "Chat aberto — continua em Mensagens.",
+      "errorVariantRequired": "Escolhe uma opção para continuar."
+    },
+    "offerCard": {
+      "asking": "Preço pedido",
+      "offered": "Proposta",
+      "offeredPrice": "Preço acordado",
+      "saveTerms": "Atualizar proposta",
+      "termsSaved": "Proposta atualizada.",
+      "completeDeal": "Concluir negócio",
+      "reject": "Recusar",
+      "cancel": "Cancelar proposta",
+      "completed": "Negócio concluído — reserva criada.",
+      "rejected": "Proposta recusada.",
+      "cancelled": "Proposta cancelada.",
+      "inquiryHint": "Pergunta geral — faz proposta no anúncio para iniciar negócio.",
+      "status": {
+        "open": "Aberta",
+        "negotiating": "Em negociação",
+        "completed": "Concluída",
+        "rejected": "Recusada",
+        "cancelled": "Cancelada"
+      }
     }
   },
   "mediaUpload": {
@@ -2374,13 +2459,19 @@
       "empty": "Nenhuma pessoa encontrada."
     },
     "untitledGroup": "Grupo sem nome",
+    "listingConversation": "Anúncio",
     "system": {
       "groupCreated": "{{actor}} criou o grupo \"{{name}}\"",
       "renamed": "{{actor}} renomeou o grupo para \"{{name}}\"",
       "participantAdded": "{{actor}} adicionou {{target}}",
       "participantRemoved": "{{actor}} removeu {{target}}",
       "participantLeft": "{{actor}} saiu da conversa",
-      "adminAutoPromoted": "{{target}} é agora administrador"
+      "adminAutoPromoted": "{{target}} é agora administrador",
+      "listingOfferCreated": "{{actor}} enviou uma proposta",
+      "listingOfferUpdated": "{{actor}} atualizou a proposta",
+      "listingOfferCompleted": "{{actor}} concluiu o negócio",
+      "listingOfferRejected": "{{actor}} recusou a proposta",
+      "listingOfferCancelled": "{{actor}} cancelou a proposta"
     },
     "systemPreview": {
       "group_created": "criou o grupo",
@@ -2389,6 +2480,11 @@
       "participant_removed": "removeu um membro",
       "participant_left": "saiu da conversa",
       "admin_auto_promoted": "novo administrador",
+      "listing_offer_created": "enviou proposta",
+      "listing_offer_updated": "atualizou proposta",
+      "listing_offer_completed": "concluiu negócio",
+      "listing_offer_rejected": "recusou proposta",
+      "listing_offer_cancelled": "cancelou proposta",
       "update": "atualizou a conversa"
     },
     "typing": {
@@ -2417,6 +2513,8 @@
       "filesCount_other": "{{count}} ficheiros",
       "photosCount_one": "{{count}} foto",
       "photosCount_other": "{{count}} fotos",
+      "listing": "Anúncio",
+      "viewListing": "Ver anúncio",
       "directSubtitle": "Conversa direta",
       "leave": "Sair da conversa"
     }

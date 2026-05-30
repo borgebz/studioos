@@ -5,13 +5,14 @@ import { format, isToday, isYesterday } from 'date-fns'
 import { enUS } from 'date-fns/locale/en-US'
 import { pt } from 'date-fns/locale/pt'
 import { MessageSquarePlus, Plus, Search, UserCircle2, X } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useSearchParams } from 'react-router-dom'
 
 import { paths } from '@/app/paths'
 import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
 import {
+  ConversationKindEnum,
   MessageKindEnum,
   type Conversation,
   type Message,
@@ -82,6 +83,8 @@ export function MessagesPage() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [newDialogOpen, setNewDialogOpen] = useState(false)
   const { byConversation: unreadByConversation } = useUnreadMessages()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const pendingConversationId = searchParams.get('c')
 
   // ── load conversations ────────────────────────────────────────────────
   // Participant info (name, email, photo) is embedded on each Conversation
@@ -116,6 +119,15 @@ export function MessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t])
 
+  const refreshConversations = useCallback(async () => {
+    try {
+      const res = await apiClient.api.messagingConversationsList()
+      setConversations(res.data)
+    } catch {
+      // non-fatal — WS will eventually catch us up
+    }
+  }, [])
+
   // Keep the participants dict in sync when conversations change (new chat,
   // ws-driven updates, etc.) — cheaper than refetching listUsers.
   useEffect(() => {
@@ -127,6 +139,14 @@ export function MessagesPage() {
       return { ...prev, ...next }
     })
   }, [conversations])
+
+  useEffect(() => {
+    if (!pendingConversationId || loadingList) return
+    const id = Number(pendingConversationId)
+    if (!Number.isFinite(id)) return
+    setActiveId(id)
+    setSearchParams({}, { replace: true })
+  }, [pendingConversationId, loadingList, setSearchParams])
 
   // ── load thread for active conversation ────────────────────────────────
   useEffect(() => {
@@ -785,6 +805,7 @@ export function MessagesPage() {
               typingUserIds={typingUserIds}
               onTyping={emitTyping}
               onTypingStopped={emitTypingStopped}
+              onOfferUpdated={refreshConversations}
             />
           ) : (
             <NoConversationSelected />
@@ -825,15 +846,7 @@ export function MessagesPage() {
                   messages={messages}
                   participants={participants}
                   meId={meId}
-                  onRefreshConversation={async () => {
-                    try {
-                      const res =
-                        await apiClient.api.messagingConversationsList()
-                      setConversations(res.data)
-                    } catch {
-                      // non-fatal — WS will eventually catch us up
-                    }
-                  }}
+                  onRefreshConversation={refreshConversations}
                   onAfterLeave={() => {
                     setConversations((prev) =>
                       prev.filter((c) => c.id !== activeConversation.id)
@@ -867,14 +880,7 @@ export function MessagesPage() {
               messages={messages}
               participants={participants}
               meId={meId}
-              onRefreshConversation={async () => {
-                try {
-                  const res = await apiClient.api.messagingConversationsList()
-                  setConversations(res.data)
-                } catch {
-                  // non-fatal — WS will eventually catch us up
-                }
-              }}
+              onRefreshConversation={refreshConversations}
               onAfterLeave={() => {
                 setConversations((prev) =>
                   prev.filter((c) => c.id !== activeConversation.id)
@@ -1013,6 +1019,9 @@ function conversationLabel(
   meId: number | null,
   t: (k: string) => string
 ): string {
+  if (c.kind === ConversationKindEnum.Listing) {
+    return c.listing_title || c.name || t('messages.listingConversation')
+  }
   const others = c.participant_ids.filter((id) => id !== meId)
   if (others.length === 0) return t('messages.selfConversation')
   if (others.length === 1) return participantName(dict[others[0]], t, others[0])

@@ -19,7 +19,8 @@ import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
-import type { ListingList, ListingStatusEnum } from '@/api/studioos-api'
+import { type ListingList, type ListingStatusEnum } from '@/api/studioos-api'
+import { ProductMediaFrame } from '@/components/shared/ProductMediaGallery'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { usePaginatedList } from '@/hooks/usePaginatedList'
 import { Button } from '@/components/ui/button'
@@ -62,7 +63,12 @@ import {
   type ViewMode,
 } from '@/components/shared/ListingsToolbar'
 import { paths } from '@/app/paths'
-import { StatusBadge, listingTypeLabel } from './marketplace-helpers'
+import {
+  StatusBadge,
+  listingTypeLabel,
+  listingDetailPath,
+  listingEditPath,
+} from './marketplace-helpers'
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
@@ -90,6 +96,20 @@ export function SchoolListingsPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<ListingList | null>(null)
 
+  const openListing = useCallback(
+    (row: ListingList) => {
+      navigate(listingDetailPath(row.id))
+    },
+    [navigate]
+  )
+
+  const openListingEdit = useCallback(
+    (row: ListingList) => {
+      navigate(listingEditPath(row.id))
+    },
+    [navigate]
+  )
+
   // ── Data-table columns (list view) ────────────────────────────────────────
   const columnHelper = useMemo(() => createColumnHelper<ListingList>(), [])
   const columns = useMemo(
@@ -100,18 +120,14 @@ export function SchoolListingsPage() {
           const row = info.row.original
           return (
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted/30">
-                {row.primary_media_url ? (
-                  <img
-                    src={row.primary_media_url}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
+              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border">
+                <ProductMediaFrame
+                  src={row.primary_media_url}
+                  alt=""
+                  placeholder={
                     <Store className="h-4 w-4 text-muted-foreground/40" />
-                  </div>
-                )}
+                  }
+                />
               </div>
               <div className="min-w-0">
                 <p className="max-w-[260px] truncate text-sm font-medium">
@@ -230,19 +246,14 @@ export function SchoolListingsPage() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 min-h-11 min-w-11 md:min-h-0 md:min-w-0"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <MoreHorizontal className="h-4 w-4" />
                   <span className="sr-only">{t('marketplace.actions')}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() =>
-                    navigate(
-                      paths.marketplaceEdit.replace(':id', String(row.id))
-                    )
-                  }
-                >
+                <DropdownMenuItem onClick={() => openListingEdit(row)}>
                   <Pencil className="h-4 w-4" />
                   {t('marketplace.edit')}
                 </DropdownMenuItem>
@@ -259,7 +270,7 @@ export function SchoolListingsPage() {
         },
       }),
     ],
-    [columnHelper, navigate, t]
+    [columnHelper, openListingEdit, t]
   )
 
   const { columnFilters, setColumnFilters } = useColumnFilters<ListingList>({
@@ -437,7 +448,7 @@ export function SchoolListingsPage() {
       </p>
       <Button
         size="sm"
-        onClick={() => navigate(`${paths.schoolListings}/create`)}
+        onClick={() => navigate(paths.schoolListingsCreate)}
       >
         <Plus className="mr-2 h-4 w-4" />
         {t('marketplace.createListing')}
@@ -450,7 +461,7 @@ export function SchoolListingsPage() {
       <div className={PAGE_CONTENT}>
         <PageHeader title={t('schoolListings.title')} backTo={paths.home}>
           <ViewToggleButton view={view} onChange={setView} />
-          <Button onClick={() => navigate(`${paths.schoolListings}/create`)}>
+          <Button onClick={() => navigate(paths.schoolListingsCreate)}>
             <Plus className="mr-2 h-4 w-4" />
             {t('marketplace.createListing')}
           </Button>
@@ -584,16 +595,8 @@ export function SchoolListingsPage() {
               <ListingCard
                 item={item}
                 variant="owner"
-                onOpen={() =>
-                  navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id))
-                  )
-                }
-                onEdit={() =>
-                  navigate(
-                    paths.marketplaceEdit.replace(':id', String(item.id))
-                  )
-                }
+                onOpen={() => openListing(item)}
+                onEdit={() => openListingEdit(item)}
                 onDelete={() => setDeleteTarget(item)}
               />
             )}
@@ -609,6 +612,7 @@ export function SchoolListingsPage() {
             isFetchingNextPage={isFetchingNextPage}
             onLoadMore={fetchNextPage}
             emptyMessage={emptyState}
+            onRowClick={openListing}
           />
         )}
       </div>

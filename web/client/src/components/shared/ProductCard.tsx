@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ProductStatusBadge } from '@/components/shared/ProductStatusBadge'
+import { ProductMediaFrame } from '@/components/shared/ProductMediaGallery'
 import { cn } from '@/lib/utils'
 
 interface ProductCardProps {
@@ -54,19 +55,14 @@ export function ProductCard({
         'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       )}
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-        {primaryMedia?.image ? (
-          <img
-            src={primaryMedia.image}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
+      <div className="relative aspect-[3/4] overflow-hidden">
+        <ProductMediaFrame
+          src={primaryMedia?.image}
+          alt=""
+          placeholder={
             <Package className="size-7 text-muted-foreground/50" />
-          </div>
-        )}
+          }
+        />
 
         <div className="absolute right-2.5 top-2.5 z-[2] flex items-center gap-1.5">
           <ProductStatusBadge status={item.status} hideActive />

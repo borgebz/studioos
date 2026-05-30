@@ -812,6 +812,11 @@ export interface Conversation {
   created_by_id: number | null;
   coaching_id: number | null;
   recurring_coaching_id: number | null;
+  listing_id?: number | null;
+  variant_id?: number | null;
+  listing_title?: string | null;
+  variant_photo_url?: string | null;
+  listing_offer?: ListingOfferSummary | null;
   last_message: Message | null;
   pinned_message_ids: number[];
   /** @format date-time */
@@ -1638,6 +1643,7 @@ export interface ListingDetail {
 
 export interface ListingList {
   id: number;
+  product_id: number;
   /**
    * * `rent` - Rent
    * * `sell` - Sell
@@ -2744,6 +2750,73 @@ export interface TransactionDetail {
   listing_title: string;
   variant_sku: string;
   product_name: string;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+export interface ListingOfferSummary {
+  id: number;
+  variant_id: number | null;
+  variant_label?: string | null;
+  variant_photo_url?: string | null;
+  offered_price?: string | null;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  status: string;
+  is_inquiry: boolean;
+  transaction_id?: number | null;
+}
+
+export interface ListingOfferCreate {
+  variant_id?: number | null;
+  offered_price?: string | null;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  /** @default "" */
+  message?: string;
+  /** @default false */
+  is_inquiry?: boolean;
+}
+
+export interface ListingOfferUpdate {
+  offered_price?: string | null;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  message?: string;
+}
+
+export interface ListingOffer {
+  id: number;
+  listing_id: number;
+  listing_title: string;
+  listing_type: ListingTypeEnum;
+  asking_price?: string | null;
+  variant_id: number | null;
+  variant_label?: string | null;
+  variant_photo_url?: string | null;
+  conversation_id: number;
+  buyer_id: number;
+  buyer_display?: {
+    id: number;
+    display_name?: string | null;
+  };
+  offered_price?: string | null;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  message?: string;
+  status: string;
+  is_inquiry: boolean;
+  transaction_id?: number | null;
   /** @format date-time */
   created_at: string;
   /** @format date-time */
@@ -6432,6 +6505,75 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    marketplaceListingsOffersCreate: (
+      listingId: number,
+      data: ListingOfferCreate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/listings/${listingId}/offers/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    marketplaceOffersRetrieve: (offerId: number, params: RequestParams = {}) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    marketplaceOffersPartialUpdate: (
+      offerId: number,
+      data: ListingOfferUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    marketplaceOffersCompleteCreate: (
+      offerId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/complete/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    marketplaceOffersRejectCreate: (
+      offerId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/reject/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    marketplaceOffersCancelCreate: (
+      offerId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/cancel/`,
+        method: "POST",
         format: "json",
         ...params,
       }),

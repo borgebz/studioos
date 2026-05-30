@@ -87,15 +87,39 @@ function statusBandStyle(
   }
 }
 
-export type MyCoachingsScope =
-  | { kind: 'teacher'; teacherId: number }
-  | { kind: 'participant'; userId: number }
+export type MyCoachingsScope = {
+  userId: number
+  canTeach: boolean
+  canParticipate: boolean
+  canGuardian: boolean
+  canRequest: boolean
+}
 
 export interface MyCoachingsCalendarProps {
   scope: MyCoachingsScope
   /** Optional initial date to anchor the visible week. */
   initialDate?: Date
   emptyMessage?: string
+}
+
+function buildForMeRoles(scope: MyCoachingsScope) {
+  const roles: Array<'requester' | 'teacher' | 'participant' | 'dependent'> =
+    []
+  if (scope.canRequest) roles.push('requester')
+  if (scope.canTeach) roles.push('teacher')
+  if (scope.canParticipate) roles.push('participant')
+  if (scope.canGuardian) roles.push('dependent')
+  return roles
+}
+
+function dependentFirstName(
+  coaching: CoachingClass,
+  guardianUserId: number
+): string | null {
+  const dep = coaching.participants?.find(
+    (p) => p.student?.parent_id === guardianUserId
+  )
+  return dep?.student?.first_name ?? null
 }
 
 export function MyCoachingsCalendar({
@@ -114,19 +138,25 @@ export function MyCoachingsCalendar({
   const hasLoaded = useRef(false)
 
   const weekEnd = useMemo(() => endOfWeek(weekStart), [weekStart])
+  const forMeRoles = useMemo(() => buildForMeRoles(scope), [scope])
+  const forMeRolesKey = forMeRoles.slice().sort().join(',')
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    const query: Parameters<typeof apiClient.api.getAllCoachings>[0] = {
-      date_from: weekStart.toISOString(),
-      date_to: weekEnd.toISOString(),
+
+    if (forMeRoles.length === 0) {
+      setCoachings([])
+      setLoading(false)
+      return
     }
-    if (scope.kind === 'teacher') query.teacher_id = [scope.teacherId]
-    else query.participant_id = scope.userId
 
     apiClient.api
-      .getAllCoachings(query)
+      .getAllCoachings({
+        date_from: weekStart.toISOString(),
+        date_to: weekEnd.toISOString(),
+        for_me_roles: forMeRoles,
+      })
       .then((res) => {
         if (cancelled) return
         const data = res?.data as unknown
@@ -146,7 +176,7 @@ export function MyCoachingsCalendar({
     return () => {
       cancelled = true
     }
-  }, [weekStart, weekEnd, scope.kind, 'teacherId' in scope ? scope.teacherId : null, 'userId' in scope ? scope.userId : null])
+  }, [weekStart, weekEnd, forMeRolesKey, scope.userId])
 
   const bands: WeekStripBand[] = useMemo(() => {
     return coachings
@@ -157,8 +187,12 @@ export function MyCoachingsCalendar({
         const { variant, icon } = statusBandStyle(c.status)
         const studio = c.studio?.name
         const teacher = c.teacher ? userName(c.teacher) : null
+        const forName = scope.canGuardian
+          ? dependentFirstName(c, scope.userId)
+          : null
         const subtitleParts: string[] = []
-        if (teacher && scope.kind !== 'teacher') subtitleParts.push(teacher)
+        if (forName) subtitleParts.push(forName)
+        if (teacher && !scope.canTeach) subtitleParts.push(teacher)
         if (studio) subtitleParts.push(studio)
         return {
           id: c.id,
@@ -184,6 +218,12 @@ export function MyCoachingsCalendar({
                     {teacher}
                   </p>
                 )}
+                {forName && (
+                  <p className="flex items-center gap-1.5">
+                    <UserIcon className="h-3.5 w-3.5" />
+                    {t('coachingRequests.forDependent', { name: forName })}
+                  </p>
+                )}
                 {studio && (
                   <p className="flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5" />
@@ -200,7 +240,7 @@ export function MyCoachingsCalendar({
           ),
         }
       })
-  }, [coachings, dateLocale, scope.kind, t])
+  }, [coachings, dateLocale, scope.canGuardian, scope.canTeach, scope.userId, t])
 
   const legend: WeekStripLegendEntry[] = useMemo(
     () => [

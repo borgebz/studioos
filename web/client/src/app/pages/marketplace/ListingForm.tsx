@@ -12,6 +12,7 @@ import {
   Check,
   Info,
   CalendarClock,
+  Megaphone,
 } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
@@ -26,6 +27,7 @@ import {
 import type {
   Category,
   Color,
+  ListingCreate,
   ListingDetail,
   ProductDetail,
   ListingVariant,
@@ -83,6 +85,7 @@ import { DatePicker } from '@/components/shared/DatePicker'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
 import { cn } from '@/lib/utils'
+import { StatusBadge } from './marketplace-helpers'
 import {
   createListingSchema,
   defaultListingValues,
@@ -97,6 +100,8 @@ type ListingFormMode = 'create' | 'edit'
 
 export interface ListingFormProps {
   mode: ListingFormMode
+  /** Personal member listings vs school catalog listings. */
+  context?: 'personal' | 'school'
   /** Existing listing data when editing. Required in edit mode. */
   listing?: ListingDetail
 }
@@ -222,19 +227,29 @@ function buildEditMedia(product: ProductDetail): MediaFile[] {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ListingForm({ mode, listing }: ListingFormProps) {
+export function ListingForm({
+  mode,
+  listing,
+  context = 'school',
+}: ListingFormProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const isEdit = mode === 'edit'
+  const isSchool =
+    context === 'school' ||
+    (isEdit && listing?.product?.owner_type === 'school')
 
   // Mode-dependent labels/paths
-  const backTarget = isEdit ? paths.schoolListings : paths.marketplace
+  const backTarget = isEdit
+    ? isSchool
+      ? paths.schoolListings
+      : paths.myListings
+    : isSchool
+      ? paths.schoolListings
+      : paths.myListings
   const headerTitle = isEdit
     ? t('marketplace.editTitle')
     : t('marketplace.createTitle')
-  const submitLabel = isEdit
-    ? t('marketplace.updateListing')
-    : t('marketplace.createListing')
 
   // Reference data
   const [categories, setCategories] = useState<Category[]>([])
@@ -247,7 +262,6 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
   const [variants, setVariants] = useState<VariantData[]>(() =>
     isEdit && listing?.variants ? listing.variants.map(buildEditVariant) : []
   )
-  const [discardOpen, setDiscardOpen] = useState(false)
   const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -428,60 +442,73 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
     [t, categorySizeSystems]
   )
 
+  const isDraft = isEdit && listing?.status === 'draft'
+
+  const buildEditPayload = (
+    data: CreateListingFormValues
+  ): PatchedListingUpdate => ({
+    listing_type: data.listing_type as ListingTypeEnum,
+    title: data.title,
+    description: data.description,
+    asking_price: data.asking_price || null,
+    is_public: data.is_public,
+    product: {
+      name: data.product_name,
+      description: data.product_description,
+      category_id: data.category_id ? Number(data.category_id) : null,
+      target_gender: data.target_gender || null,
+      brand: data.brand || null,
+      material: data.material || null,
+      ...(data.inventory_code ||
+      data.storage_location ||
+      data.school_notes
+        ? {
+            school_details: {
+              inventory_code: data.inventory_code || undefined,
+              storage_location: data.storage_location || undefined,
+              notes: data.school_notes || undefined,
+            },
+          }
+        : {}),
+    },
+    variants: variants.map((v) => {
+      const isExisting = !v.id.startsWith('variant-')
+      return {
+        ...(isExisting ? { id: Number(v.id) } : {}),
+        condition: v.condition,
+        acquisition_type: v.acquisitionType || null,
+        status: v.status || 'available',
+        acquired_at: v.acquiredAt || null,
+        sku: v.sku || null,
+        size_id: v.sizeId ? Number(v.sizeId) : null,
+        color_ids: v.selectedColorIds,
+        public_notes: v.publicNotes || '',
+        internal_notes: v.internalNotes || '',
+      }
+    }),
+  })
+
+  const saveEditListing = async (data: CreateListingFormValues) => {
+    if (!listing) return
+    const payload = buildEditPayload(data)
+    if (isSchool) {
+      await apiClient.api.marketplaceSchoolListingsPartialUpdate(
+        listing.id,
+        payload
+      )
+    } else {
+      await apiClient.api.marketplaceListingsPartialUpdate(listing.id, payload)
+    }
+  }
+
   const onSubmit = async (data: CreateListingFormValues) => {
     setIsSaving(true)
 
     try {
       if (isEdit && listing) {
-        // ── PATCH (edit) ──
-        const payload: PatchedListingUpdate = {
-          listing_type: data.listing_type as ListingTypeEnum,
-          title: data.title,
-          description: data.description,
-          asking_price: data.asking_price || null,
-          is_public: data.is_public,
-          product: {
-            name: data.product_name,
-            description: data.product_description,
-            category_id: data.category_id ? Number(data.category_id) : null,
-            target_gender: data.target_gender || null,
-            brand: data.brand || null,
-            material: data.material || null,
-            ...(data.inventory_code ||
-            data.storage_location ||
-            data.school_notes
-              ? {
-                  school_details: {
-                    inventory_code: data.inventory_code || undefined,
-                    storage_location: data.storage_location || undefined,
-                    notes: data.school_notes || undefined,
-                  },
-                }
-              : {}),
-          },
-          variants: variants.map((v) => {
-            const isExisting = !v.id.startsWith('variant-')
-            return {
-              ...(isExisting ? { id: Number(v.id) } : {}),
-              condition: v.condition,
-              acquisition_type: v.acquisitionType || null,
-              status: v.status || 'available',
-              acquired_at: v.acquiredAt || null,
-              sku: v.sku || null,
-              size_id: v.sizeId ? Number(v.sizeId) : null,
-              color_ids: v.selectedColorIds,
-              public_notes: v.publicNotes || '',
-              internal_notes: v.internalNotes || '',
-            }
-          }),
-        }
-
-        await apiClient.api.marketplaceSchoolListingsPartialUpdate(
-          listing.id,
-          payload
-        )
+        await saveEditListing(data)
         toast.success(t('marketplace.updateSuccess'))
-        navigate(paths.schoolListings)
+        navigate(isSchool ? paths.schoolListings : paths.myListings)
         return
       }
 
@@ -503,10 +530,14 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
           target_gender: data.target_gender || null,
           brand: data.brand || null,
           material: data.material || null,
-          media: filesToUpload.map((f, i) => ({
-            is_primary: f.isPrimary,
-            sort_order: i,
-          })),
+          ...(isSchool
+            ? {
+                media: filesToUpload.map((f, i) => ({
+                  is_primary: f.isPrimary,
+                  sort_order: i,
+                })),
+              }
+            : {}),
           variants: variants.map((v) => ({
             condition: v.condition,
             acquisition_type: v.acquisitionType || null,
@@ -518,7 +549,8 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
             public_notes: v.publicNotes || '',
             internal_notes: v.internalNotes || '',
           })),
-          ...(data.inventory_code || data.storage_location || data.school_notes
+          ...(isSchool &&
+          (data.inventory_code || data.storage_location || data.school_notes)
             ? {
                 school_details: {
                   inventory_code: data.inventory_code || undefined,
@@ -530,18 +562,22 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
         },
       }
 
-      const fd = new FormData()
-      fd.append('payload', JSON.stringify(payload))
-      filesToUpload.forEach((f, i) => {
-        fd.append(`media_${i}`, f.file)
-      })
+      if (isSchool) {
+        const fd = new FormData()
+        fd.append('payload', JSON.stringify(payload))
+        filesToUpload.forEach((f, i) => {
+          fd.append(`media_${i}`, f.file)
+        })
 
-      await apiClient.api.marketplaceSchoolListingsCreate(
-        fd as unknown as SchoolListingCreateMultipart
-      )
+        await apiClient.api.marketplaceSchoolListingsCreate(
+          fd as unknown as SchoolListingCreateMultipart
+        )
+      } else {
+        await apiClient.api.marketplaceListingsCreate(payload as ListingCreate)
+      }
 
       toast.success(t('marketplace.createSuccess'))
-      navigate(paths.marketplace)
+      navigate(isSchool ? paths.schoolListings : paths.myListings)
     } catch (err) {
       const errorKey = isEdit
         ? 'marketplace.updateError'
@@ -552,28 +588,49 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
     }
   }
 
-  const handleDiscard = () => {
-    navigate(backTarget)
+  const handlePublish = () => {
+    void handleSubmit(async (data) => {
+      if (!listing) return
+      setIsSaving(true)
+      try {
+        await saveEditListing(data)
+        if (isSchool) {
+          await apiClient.api.marketplaceSchoolListingsPublishCreate(listing.id)
+        } else {
+          await apiClient.api.marketplaceListingsPublishCreate(listing.id)
+        }
+        toast.success(t('marketplace.publishSuccess'))
+        navigate(isSchool ? paths.schoolListings : paths.myListings)
+      } catch (err) {
+        toast.error(parseApiError(err, t) ?? t('marketplace.publishError'))
+      } finally {
+        setIsSaving(false)
+      }
+    })()
   }
+
+  const status = listing?.status
+  const isActive = status === 'active'
+  const isClosed = status === 'closed'
 
   const footerContent = (
     <>
       <Button
-        variant="destructive"
-        size="sm"
-        onClick={() => setDiscardOpen(true)}
+        variant="ghost"
+        type="button"
+        onClick={() => navigate(backTarget)}
+        disabled={isSaving}
       >
-        <Trash2 className="h-4 w-4 mr-2" />
-        {t('marketplace.discard')}
+        {t('common.cancel')}
       </Button>
-      <div className="flex gap-2">
-        <Button variant="outline" onClick={() => navigate(backTarget)}>
-          {t('marketplace.back')}
-        </Button>
-        <Button onClick={handleSubmit(onSubmit)} disabled={isSaving}>
-          {submitLabel}
-        </Button>
-      </div>
+      <ListingFooterActions
+        isActive={isActive}
+        isClosed={isClosed}
+        isSaving={isSaving}
+        onSave={handleSubmit(onSubmit)}
+        onPublish={handlePublish}
+        t={t}
+      />
     </>
   )
 
@@ -705,13 +762,15 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
               </div>
             </CardSection>
 
-            {/* Media */}
-            <CardSection
-              title={t('marketplace.media')}
-              description={t('marketplace.mediaDesc')}
-            >
-              <MediaUpload value={mediaFiles} onChange={setMediaFiles} />
-            </CardSection>
+            {/* Media — school listings use multipart upload on create */}
+            {isSchool && (
+              <CardSection
+                title={t('marketplace.media')}
+                description={t('marketplace.mediaDesc')}
+              >
+                <MediaUpload value={mediaFiles} onChange={setMediaFiles} />
+              </CardSection>
+            )}
 
             {/* Variants */}
             <CardSection
@@ -852,6 +911,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
             </CardSection>
 
             {/* School Details */}
+            {isSchool && (
             <CardSection
               title={t('marketplace.schoolDetails')}
               description={t('marketplace.schoolDetailsDesc')}
@@ -896,6 +956,7 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
                 </div>
               </div>
             </CardSection>
+            )}
           </div>
 
           {/* Side Column */}
@@ -1002,6 +1063,22 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
             {/* Summary */}
             <CardSection title={t('marketplace.summary')}>
               <div className="space-y-3">
+                {isEdit && listing?.status && (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {t('marketplace.col.status')}
+                      </span>
+                      <StatusBadge status={listing.status} t={t} />
+                    </div>
+                    {isDraft && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('marketplace.draftPublishHint')}
+                      </p>
+                    )}
+                    <Separator />
+                  </>
+                )}
                 <SummaryRow
                   label={t('marketplace.listingType')}
                   value={
@@ -1426,26 +1503,6 @@ export function ListingForm({ mode, listing }: ListingFormProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Discard Confirmation */}
-      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('marketplace.discardTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('marketplace.discardDesc')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('marketplace.cancel')}</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button variant="destructive" onClick={handleDiscard}>
-                {t('marketplace.discardConfirm')}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Delete Variant Confirmation */}
       <AlertDialog
         open={!!deleteVariantId}
@@ -1481,6 +1538,59 @@ function SummaryRow({ label, value }: { label: string; value?: string }) {
       <span className="text-sm font-medium">
         {value || <span className="text-muted-foreground/50">—</span>}
       </span>
+    </div>
+  )
+}
+
+/**
+ * Sticky-footer actions that mirror the events form pattern: the primary
+ * action depends on the listing's current status (draft → publish; active /
+ * closed → save changes).
+ */
+function ListingFooterActions({
+  isActive,
+  isClosed,
+  isSaving,
+  onSave,
+  onPublish,
+  t,
+}: {
+  isActive: boolean
+  isClosed: boolean
+  isSaving: boolean
+  onSave: () => void
+  onPublish: () => void
+  t: (key: string) => string
+}) {
+  // Active / closed listings can only be edited in place — there's no second
+  // axis to expose, so render a single primary save button.
+  if (isActive || isClosed) {
+    return (
+      <Button type="button" onClick={onSave} disabled={isSaving}>
+        {t('marketplace.updateListing')}
+      </Button>
+    )
+  }
+
+  // Draft / new listing: save draft + publish now.
+  return (
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        type="button"
+        onClick={onSave}
+        disabled={isSaving}
+      >
+        {t('marketplace.saveDraft')}
+      </Button>
+      <Button
+        type="button"
+        onClick={onPublish}
+        disabled={isSaving}
+      >
+        <Megaphone className="size-4" />
+        {t('marketplace.publishNow')}
+      </Button>
     </div>
   )
 }

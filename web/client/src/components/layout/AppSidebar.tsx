@@ -31,7 +31,6 @@ import { usePendingCoachingActions } from '@/app/pages/coachings/usePendingCoach
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -63,6 +62,15 @@ import {
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
+
+function pendingActionsTooltip(
+  count: number,
+  t: (key: string, options?: { count: number }) => string
+) {
+  return count === 1
+    ? t('nav.pendingActions.tooltip_one', { count })
+    : t('nav.pendingActions.tooltip_other', { count })
+}
 
 const themes: { value: Theme; labelKey: string; icon: typeof Sun }[] = [
   { value: 'light', labelKey: 'theme.light', icon: Sun },
@@ -158,9 +166,7 @@ function NavGroupItem({
     (acc, c) => acc + (pendingCountsByPath[c.to] ?? 0),
     0
   )
-  const groupPendingTooltip = t('nav.pendingActions.tooltip', {
-    count: groupPendingTotal,
-  })
+  const groupPendingTooltip = pendingActionsTooltip(groupPendingTotal, t)
 
   return (
     <SidebarMenuItem>
@@ -209,9 +215,7 @@ function NavGroupItem({
                     <span className="flex-1">{t(child.labelKey)}</span>
                     <PendingActionIndicator
                       count={childPending}
-                      tooltip={t('nav.pendingActions.tooltip', {
-                        count: childPending,
-                      })}
+                      tooltip={pendingActionsTooltip(childPending, t)}
                     />
                   </NavLink>
                 </SidebarMenuSubButton>

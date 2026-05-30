@@ -38,6 +38,7 @@ export function ConversationList({
         const unread = unreadByConversation?.[String(c.id)] ?? 0
         const hasUnread = unread > 0 && !isActive
         const isGroup = c.kind === ConversationKindEnum.Group
+        const isListing = c.kind === ConversationKindEnum.Listing
         // For groups we stack the two highest-recency participants instead
         // of the bland generic icon — it makes each conversation feel like
         // a place with people in it.
@@ -79,6 +80,12 @@ export function ConversationList({
                   secondary={secondary}
                   primaryName={primaryName}
                   secondaryName={secondaryName}
+                />
+              ) : isListing && c.variant_photo_url ? (
+                <img
+                  src={c.variant_photo_url}
+                  alt=""
+                  className="size-11 shrink-0 rounded-full object-cover bg-muted"
                 />
               ) : (
                 <Avatar size="lg" className="size-11 shrink-0">
@@ -192,6 +199,9 @@ function formatLabel(
   // when somehow blank.
   if (c.kind === ConversationKindEnum.Group) {
     return c.name || t('messages.untitledGroup')
+  }
+  if (c.kind === ConversationKindEnum.Listing) {
+    return c.listing_title || c.name || t('messages.listingConversation')
   }
   const others = c.participant_ids.filter((id) => id !== meId)
   if (others.length === 0) return t('messages.selfConversation')

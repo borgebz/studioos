@@ -1,4 +1,24 @@
 import { Badge } from '@/components/ui/badge'
+import { OwnerTypeEnum } from '@/api/studioos-api'
+import { paths } from '@/app/paths'
+
+export function listingDetailPath(listingId: number): string {
+  return paths.marketplaceDetail.replace(':id', String(listingId))
+}
+
+export function listingEditPath(listingId: number): string {
+  return paths.marketplaceEdit.replace(':id', String(listingId))
+}
+
+export function productManagePath(
+  productId: number,
+  ownerType?: OwnerTypeEnum | string | null
+): string {
+  if (ownerType === OwnerTypeEnum.School || ownerType === 'school') {
+    return paths.schoolInventoryDetail.replace(':id', String(productId))
+  }
+  return paths.myInventoryDetail.replace(':id', String(productId))
+}
 
 export function StatusBadge({
   status,

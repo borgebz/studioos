@@ -28,6 +28,8 @@ export interface CoachingRowActions {
   teacherAccept: boolean
   teacherReject: boolean
   teacherConfirmSession: boolean
+  /** Requester can withdraw before coordination schedules */
+  requesterCancel: boolean
   /** Participant row of the current user (or their dependent) */
   participant: CoachingParticipant | null
   /** Dependent student id, when the participant belongs to a dependent */
@@ -43,6 +45,17 @@ export interface CoachingRowActions {
  * own row over a dependent's — a teacher who also has dependents enrolled in
  * the same coaching (unlikely but possible) acts on themselves first.
  */
+/** Student the guardian is acting for in this coaching, if any. */
+export function dependentStudentInCoaching(
+  coaching: CoachingClass,
+  ctx: CoachingActorContext
+): NonNullable<CoachingParticipant['student']> | null {
+  if (!ctx.canGuardian) return null
+  const { participant, onBehalfOf } = findActingParticipant(coaching, ctx)
+  if (onBehalfOf && participant?.student) return participant.student
+  return null
+}
+
 export function findActingParticipant(
   coaching: CoachingClass,
   ctx: CoachingActorContext
@@ -66,6 +79,7 @@ export function getCoachingRowActions(
 ): CoachingRowActions {
   const status = coaching.status
   const isTeacher = coaching.teacher?.id === ctx.userId && ctx.canTeach
+  const isRequester = coaching.requested_by?.id === ctx.userId
   const { participant, onBehalfOf } = findActingParticipant(coaching, ctx)
   const pStatus = participant?.status
 
@@ -76,6 +90,10 @@ export function getCoachingRowActions(
       isTeacher && status === CoachingClassStatusEnum.Requested,
     teacherConfirmSession:
       isTeacher && status === CoachingClassStatusEnum.WaitingConfirmation,
+    requesterCancel:
+      isRequester &&
+      (status === CoachingClassStatusEnum.Requested ||
+        status === CoachingClassStatusEnum.PendingApproval),
     participant,
     onBehalfOf,
     participantAcceptInvite:

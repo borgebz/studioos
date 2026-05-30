@@ -320,6 +320,11 @@ export function MyInventoryPage() {
             isFetchingNextPage={isFetchingNextPage}
             onLoadMore={fetchNextPage}
             emptyMessage={emptyState}
+            onRowClick={(item) =>
+              navigate(
+                paths.myInventoryDetail.replace(':id', String(item.id))
+              )
+            }
           />
         )}
       </div>

@@ -16,7 +16,7 @@ import { Authorized, usePermissions } from '@/auth/permissions'
 import { useAuth } from '@/auth/useAuth'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { MyCoachingsCalendar } from '@/components/shared/MyCoachingsCalendar'
+import { MyCoachingsCalendar, type MyCoachingsScope } from '@/components/shared/MyCoachingsCalendar'
 import {
   Combobox,
   ComboboxChip,
@@ -291,8 +291,8 @@ export function CalendarPage() {
   // showing only their own coachings.
   const isCoordinator = can('coachings.change_coachingclass')
   const isTeacher = can('accounts.can_teach')
-  // Anyone with permission to file a coaching request gets the entry-point
-  // button — students, guardians and teachers all have add_coachingclass.
+  const canParticipate = can('accounts.can_participate_in_coaching')
+  const canGuardian = can('coachings.can_confirm_dependent_coaching_attendance')
   const canRequestCoaching = canAny(
     'coachings.add_coachingclass',
     'accounts.can_participate_in_coaching',
@@ -306,11 +306,15 @@ export function CalendarPage() {
       <PersonalCalendarView
         canRequest={canRequestCoaching}
         scope={
-          isTeacher && userId !== null
-            ? { kind: 'teacher', teacherId: userId }
-            : userId !== null
-              ? { kind: 'participant', userId }
-              : null
+          userId !== null
+            ? {
+                userId,
+                canTeach: isTeacher,
+                canParticipate,
+                canGuardian,
+                canRequest: can('coachings.add_coachingclass'),
+              }
+            : null
         }
         onRequestCoaching={() => navigate(paths.coachingsRequest)}
       />
@@ -325,10 +329,7 @@ function PersonalCalendarView({
   canRequest,
   onRequestCoaching,
 }: {
-  scope:
-    | { kind: 'teacher'; teacherId: number }
-    | { kind: 'participant'; userId: number }
-    | null
+  scope: MyCoachingsScope | null
   canRequest: boolean
   onRequestCoaching: () => void
 }) {

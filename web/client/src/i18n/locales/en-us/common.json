@@ -13,6 +13,7 @@
     "myAvailability": "My Availability",
     "marketplace": "Marketplace",
     "browse": "Browse",
+    "favorites": "Favorites",
     "myInventory": "My Items",
     "myListings": "My Listings",
     "schoolCatalog": "School Catalog",
@@ -44,7 +45,11 @@
     "openMenu": "Open menu",
     "logout": "Log out",
     "toggleLanguage": "Switch language",
-    "toggleTheme": "Switch theme"
+    "toggleTheme": "Switch theme",
+    "pendingActions": {
+      "tooltip_one": "{{count}} pending action",
+      "tooltip_other": "{{count}} pending actions"
+    }
   },
   "imageCrop": {
     "title": "Adjust image",
@@ -777,7 +782,8 @@
       "acceptInvite": "Accept invitation",
       "markAttended": "I attended",
       "markAbsent": "I didn't attend",
-      "cancelParticipation": "Cancel my participation"
+      "cancelParticipation": "Cancel my participation",
+      "cancelRequest": "Cancel my request"
     },
     "teacherConfirm": {
       "title": "Confirm session happened",
@@ -815,6 +821,15 @@
       "submit": "Cancel participation",
       "submitting": "Cancelling…",
       "success": "Participation cancelled."
+    },
+    "cancelRequest": {
+      "title": "Cancel my request",
+      "desc": "This coaching request will be withdrawn. You can submit a new request later.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Why are you cancelling?",
+      "submit": "Cancel request",
+      "submitting": "Cancelling…",
+      "success": "Request cancelled."
     }
   },
   "myCoachingsCalendar": {
@@ -1132,6 +1147,13 @@
     "updateListing": "Update listing",
     "updateSuccess": "Listing updated successfully",
     "updateError": "Failed to update listing",
+    "publishListing": "Publish listing",
+    "publishNow": "Publish now",
+    "publishOptions": "Publish options",
+    "saveDraft": "Save draft",
+    "publishSuccess": "Listing published — it's now live in the marketplace.",
+    "publishError": "Failed to publish listing",
+    "draftPublishHint": "Draft listings aren't visible in browse. Save your changes, then use Publish listing.",
     "missingFields": "Please fill in all required fields",
     "media": "Photos",
     "mediaDesc": "Add photos of the product. The first image will be the cover.",
@@ -1208,6 +1230,9 @@
     "browseTitle": "Browse Marketplace",
     "browseEmpty": "No listings available.",
     "browseEmptyDesc": "Check back later for new items.",
+    "favoritesTitle": "Favorite Listings",
+    "favoritesEmpty": "No favorites yet.",
+    "favoritesEmptyDesc": "Tap the heart on a listing while browsing to save it here.",
     "clearSelection": "Clear selection",
     "noSizeSystems": "This category has no size systems configured.",
     "noPhotosForVariant": "No product photos yet",
@@ -1260,8 +1285,24 @@
       "requestPurchase": "Request to buy",
       "requestLoan": "Request a loan",
       "requestClaim": "Claim this item",
-      "messageOwner": "Message seller",
-      "messageOwnerSoon": "Coming soon",
+      "messageOwner": "Ask seller",
+      "makeOffer": "Make an offer",
+      "buyNow": "Buy now",
+      "buyRent": "Request rental",
+      "productDetails": "About this item",
+      "variantsSummary": "Availability",
+      "variantsAvailableCount_one": "{{count}} option available",
+      "variantsAvailableCount_other": "{{count}} options available",
+      "variantsAvailableSizes": "{{count}} available · {{sizes}}",
+      "noVariantsAvailable": "No options available",
+      "availableVariants": "Available options",
+      "availableVariantsDesc": "You'll pick a size when you make an offer or buy.",
+      "variantAvailable": "Available",
+      "priceFromHint": "From price — may vary by size",
+      "oneOptionAvailable": "1 option available",
+      "optionsCount_one": "{{count}} option",
+      "optionsCount_other": "{{count}} options",
+      "unavailableHint": "Not available right now.",
       "favorite": "Favorite",
       "unfavorite": "Remove favorite",
       "editListing": "Edit listing",
@@ -1296,6 +1337,50 @@
       "errorEndBeforeStart": "End date must be after start.",
       "windowsLegendBooked": "Already booked",
       "windowsLegendRequest": "Your request"
+    },
+    "offerDialog": {
+      "titleAsk": "Ask the seller",
+      "titleOffer": "Make an offer",
+      "titleBuy": "Buy now",
+      "titleRent": "Request rental",
+      "titleLend": "Request a loan",
+      "titleDonate": "Claim this item",
+      "descriptionAsk": "Ask a question before committing — a new chat will open with the seller.",
+      "descriptionDates": "Pick your dates and optional price. You'll negotiate in chat before anything is booked.",
+      "descriptionSimple": "Add an optional price and message. You'll negotiate in chat before the deal is confirmed.",
+      "pickVariant": "Choose an option",
+      "pickVariantOptional": "Which option are you asking about?",
+      "anyVariant": "General question",
+      "bidPrice": "Your offer (optional)",
+      "priceLabel": "Price",
+      "pricePlaceholder": "0",
+      "message": "Message",
+      "messagePlaceholder": "Hi! Is this still available?",
+      "submit": "Open chat",
+      "submitting": "Opening…",
+      "success": "Chat opened — continue in Messages.",
+      "errorVariantRequired": "Choose an option to continue."
+    },
+    "offerCard": {
+      "asking": "Asking",
+      "offered": "Offer",
+      "offeredPrice": "Agreed price",
+      "saveTerms": "Update offer",
+      "termsSaved": "Offer updated.",
+      "completeDeal": "Complete deal",
+      "reject": "Decline",
+      "cancel": "Cancel offer",
+      "completed": "Deal completed — booking created.",
+      "rejected": "Offer declined.",
+      "cancelled": "Offer cancelled.",
+      "inquiryHint": "General question — make an offer from the listing to start a deal.",
+      "status": {
+        "open": "Open",
+        "negotiating": "Negotiating",
+        "completed": "Completed",
+        "rejected": "Declined",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "mediaUpload": {
@@ -2374,13 +2459,19 @@
       "empty": "No people found."
     },
     "untitledGroup": "Untitled group",
+    "listingConversation": "Listing",
     "system": {
       "groupCreated": "{{actor}} created the group \"{{name}}\"",
       "renamed": "{{actor}} renamed the group to \"{{name}}\"",
       "participantAdded": "{{actor}} added {{target}}",
       "participantRemoved": "{{actor}} removed {{target}}",
       "participantLeft": "{{actor}} left the conversation",
-      "adminAutoPromoted": "{{target}} is now an admin"
+      "adminAutoPromoted": "{{target}} is now an admin",
+      "listingOfferCreated": "{{actor}} sent an offer",
+      "listingOfferUpdated": "{{actor}} updated the offer",
+      "listingOfferCompleted": "{{actor}} completed the deal",
+      "listingOfferRejected": "{{actor}} declined the offer",
+      "listingOfferCancelled": "{{actor}} cancelled the offer"
     },
     "systemPreview": {
       "group_created": "created the group",
@@ -2389,6 +2480,11 @@
       "participant_removed": "removed a member",
       "participant_left": "left the conversation",
       "admin_auto_promoted": "new admin",
+      "listing_offer_created": "sent an offer",
+      "listing_offer_updated": "updated the offer",
+      "listing_offer_completed": "completed the deal",
+      "listing_offer_rejected": "declined the offer",
+      "listing_offer_cancelled": "cancelled the offer",
       "update": "updated the conversation"
     },
     "typing": {
@@ -2417,6 +2513,8 @@
       "filesCount_other": "{{count}} files",
       "photosCount_one": "{{count}} photo",
       "photosCount_other": "{{count}} photos",
+      "listing": "Listing",
+      "viewListing": "View listing",
       "directSubtitle": "Direct conversation",
       "leave": "Leave conversation"
     }
