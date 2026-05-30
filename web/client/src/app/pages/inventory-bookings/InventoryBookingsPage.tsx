@@ -37,6 +37,7 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
 import { paths } from '@/app/paths'
@@ -298,7 +299,7 @@ export function InventoryBookingsPage() {
 
   return (
     <PageLayout fullHeight>
-      <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
+      <div className={cn(PAGE_CONTENT, 'flex flex-col flex-1 min-h-0')}>
         <PageHeader title={t('inventoryBookings.title')} backTo={paths.home}>
           <Authorized permission="inventory.can_manage_variant_bookings">
             <Button

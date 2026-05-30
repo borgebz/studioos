@@ -32,6 +32,7 @@ import {
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 import { parseApiError, parseApiFieldErrors } from '@/lib/api-errors'
@@ -172,7 +173,7 @@ export function UserEditPage() {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={t('users.edit.title')} backTo={paths.users} />
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
             <div className="flex flex-col gap-6">
@@ -193,7 +194,7 @@ export function UserEditPage() {
   if (!user) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={t('users.edit.title')} backTo={paths.users} />
           <p className="text-sm text-muted-foreground">
             {t('users.edit.userNotFound')}
@@ -219,7 +220,7 @@ export function UserEditPage() {
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-6xl flex flex-col gap-6">
+      <div className={cn(PAGE_CONTENT, 'flex flex-col gap-6')}>
         <PageHeader title={displayName} backTo={paths.users} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">

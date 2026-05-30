@@ -70,6 +70,7 @@ import {
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { TimePicker } from '@/components/shared/TimePicker'
@@ -508,7 +509,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
 
   return (
     <PageLayout footer={footerContent}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={headerTitle} backTo={backTarget} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">

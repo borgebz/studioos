@@ -23,6 +23,8 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
+import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
 import { paths } from '@/app/paths'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
@@ -203,7 +205,7 @@ export function ModalitiesListPage() {
 
   return (
     <PageLayout fullHeight>
-      <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
+      <div className={cn(PAGE_CONTENT, 'flex flex-col flex-1 min-h-0')}>
         <PageHeader title={t('modalities.title')} backTo={paths.home}>
           <Authorized permission="modality.add_modality">
             <Button onClick={() => navigate(paths.modalityCreate)}>

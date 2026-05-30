@@ -40,6 +40,7 @@ import {
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/user-utils'
 import { parseApiError } from '@/lib/api-errors'
@@ -96,7 +97,7 @@ export function UserDetailPage() {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={t('users.detail.title')} backTo={paths.users} />
           <Skeleton className="h-32 rounded-lg mb-6" />
           <Skeleton className="h-96 rounded-lg" />
@@ -108,7 +109,7 @@ export function UserDetailPage() {
   if (!user) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={t('users.detail.title')} backTo={paths.users} />
           <p className="text-sm text-muted-foreground">
             {t('users.edit.userNotFound')}
@@ -161,7 +162,7 @@ function LoadedUserDetail({
 
   return (
     <PageLayout>
-      <div className="mx-auto w-full max-w-6xl flex flex-col gap-6">
+      <div className={cn(PAGE_CONTENT, 'flex flex-col gap-6')}>
         <PageHeader title={displayName} backTo={paths.users}>
           {canEdit && (
             <Button

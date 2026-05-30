@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
+import { cn } from '@/lib/utils'
 import { CardSection } from '@/components/shared/CardSection'
 import {
   WeekStripCalendar,
@@ -695,7 +697,7 @@ export function HomePage() {
 
   return (
     <PageLayout>
-      <div className="mx-auto w-full max-w-6xl space-y-8">
+      <div className={cn(PAGE_CONTENT, 'space-y-8')}>
         <Greeting firstName={firstName} />
 
         {isStaff ? (

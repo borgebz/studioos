@@ -23,6 +23,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { usePermissions } from '@/auth/permissions'
 import { parseApiError } from '@/lib/api-errors'
 import { paths } from '@/app/paths'
@@ -163,7 +164,7 @@ export function ModalityFormPage({ mode }: ModalityFormPageProps) {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={title} backTo={paths.modalities} />
           <Skeleton className="h-[500px] w-full" />
         </div>
@@ -205,7 +206,7 @@ export function ModalityFormPage({ mode }: ModalityFormPageProps) {
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={title} backTo={paths.modalities} />
 
         <form

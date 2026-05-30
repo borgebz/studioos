@@ -97,11 +97,18 @@ The app shell is **sidebar + content**. On **desktop** there is no global top ba
 
 ### Content Area
 
-- Scrollable, with consistent padding: `p-6` on desktop, `p-4` on mobile.
-- Max content width depends on page complexity:
-  - **Two-column pages** (create/edit with sidebar, calendar, etc.): use **`max-w-6xl`** — the sidebar column needs room.
-  - **Single-column pages** (simple forms, utility pages like Invite Users): use **`max-w-4xl`**.
-  - **Narrower widths (`max-w-2xl`, `max-w-3xl`) are allowed only for small focused forms** (single-column, ≤ ~6 fields) such as account settings panels or short dialogs embedded in a page. Anything larger goes back to `max-w-4xl`/`max-w-6xl`.
+- Scrollable, with responsive padding handled by `PageLayout`: `p-4` on mobile, `p-6` from `md`, and extra horizontal breathing room (`px-12`) from `2xl`. Pages do **not** set their own outer padding.
+- **Content width — use the shared `PAGE_CONTENT` token, never a hardcoded `max-w-*`.** The main content column lives in [`src/lib/layout.ts`](src/lib/layout.ts):
+
+  ```ts
+  export const PAGE_CONTENT = 'mx-auto w-full max-w-[1600px]'
+  ```
+
+  - **Why a fluid cap, not a fixed `max-w-6xl`.** A fixed `max-w-6xl` (1152px) froze the content in a narrow column on large/ultra-wide monitors, stranding it in a sea of empty margin. `PAGE_CONTENT` lets the content **grow with the viewport** — it fills the space on 1920px screens and keeps generous, balanced margins on 2560px+, while the 1600px cap stops tables and text lines from getting absurdly wide on ultrawide displays. Combined with the responsive `PageLayout` padding, horizontal whitespace scales proportionally with the screen at every size.
+  - **Standard page (almost everything):** wrap content in `<div className={PAGE_CONTENT}>`.
+  - **Full-height (table) pages:** keep the flex chain — `<div className={cn(PAGE_CONTENT, 'flex flex-col flex-1 min-h-0')}>`.
+  - **Sticky footers and any other width-constrained inner container must use the same token** so the footer lines up with the body.
+  - **Small focused forms** (single-column, ≤ ~6 fields — account settings, short embedded forms) and **public/auth pages** may still use a narrower fixed `max-w-3xl`/`max-w-4xl`; these are intentionally narrow for readability and are exempt from `PAGE_CONTENT`. Dialog widths (`sm:max-w-*` on `DialogContent`) are also unaffected.
 - Background: `bg-background` (the slightly off-white page background).
 - Grain texture is applied to `SidebarInset` (the content wrapper), not to the sidebar itself (see §8 "Grain Texture").
 
@@ -117,7 +124,7 @@ Some pages need a sticky bottom bar for primary actions (Save / Cancel / Delete 
 
 - It is **page-owned**, not global — only forms and action-heavy pages render one. Browsing pages (list views, dashboards) have no bottom bar.
 - Sticky-bottom inside the scrolling content area: `sticky bottom-0 z-10 border-t border-border bg-background`.
-- Contains a constrained inner container matching the page width (`mx-auto max-w-6xl flex items-center justify-between`).
+- Contains a constrained inner container matching the page width — reuse `PAGE_CONTENT`: `cn(PAGE_CONTENT, 'flex items-center justify-between')`.
 - When the submit button sits outside the `<form>` element, wire them with `id="page-form"` + `form="page-form"` — see §4.6 for the full pattern.
 - Destructive actions (Delete, Cancel enrollment) sit on the **left**, separated from the primary Save/Back pair on the right.
 
@@ -196,7 +203,7 @@ Content:      Stacked card sections, each with a heading + description + control
 All large create/edit pages (Coaching, Listing, Product, Enrollment review, User edit) share one concrete layout:
 
 1. **Page header** at the top — back arrow + title + secondary actions.
-2. **Two-column body** scrolls naturally — `grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6` inside `mx-auto w-full max-w-6xl`. Main form on the left, metadata/status sidebar on the right.
+2. **Two-column body** scrolls naturally — `grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6` inside the shared `PAGE_CONTENT` container (`<div className={PAGE_CONTENT}>`, see §3). Main form on the left, metadata/status sidebar on the right.
 3. **Sticky footer** sits *outside* the scrolling body. Submit/Cancel buttons live here.
 
 When the submit button is outside the `<form>` element (because the footer is a sibling of the form, not a child), wire them together with the `form` attribute:

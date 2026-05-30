@@ -19,7 +19,7 @@ export function PageLayout({
     <div className="flex h-full flex-col">
       <div
         className={cn(
-          'flex-1 p-6',
+          'flex-1 p-4 md:p-6 2xl:px-12',
           fullHeight
             ? 'overflow-hidden flex flex-col min-h-0'
             : 'overflow-auto',

@@ -31,6 +31,8 @@ import {
 import { DataTable } from '@/components/ui/data-table'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
+import { cn } from '@/lib/utils'
 import { parseApiError } from '@/lib/api-errors'
 import { translateApiValue } from '@/lib/translate-api-value'
 import { paths } from '@/app/paths'
@@ -207,7 +209,7 @@ export function RolesListPage() {
 
   return (
     <PageLayout fullHeight>
-      <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
+      <div className={cn(PAGE_CONTENT, 'flex flex-col flex-1 min-h-0')}>
         <PageHeader title={t('rolesAdmin.title')} backTo={paths.home}>
           <Authorized permission="accounts.add_role">
             <Button onClick={() => navigate(paths.roleCreate)} size="sm">

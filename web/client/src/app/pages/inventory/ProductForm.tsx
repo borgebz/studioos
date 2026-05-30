@@ -54,6 +54,7 @@ import {
 } from '@/components/ui/sheet'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
 import { ColorSwatchPicker } from '@/components/shared/ColorSwatchPicker'
 import { toast } from 'sonner'
@@ -375,7 +376,7 @@ export function ProductForm({ context }: ProductFormProps) {
 
   return (
     <PageLayout footer={footerContent}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={headerTitle} backTo={backTarget} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">

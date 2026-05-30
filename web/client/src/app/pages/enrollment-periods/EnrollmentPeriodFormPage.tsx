@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { usePermissions } from '@/auth/permissions'
 import { parseApiError } from '@/lib/api-errors'
@@ -201,7 +202,7 @@ export function EnrollmentPeriodFormPage({
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={title} backTo={paths.enrollmentPeriods} />
           <Skeleton className="h-[500px] w-full" />
         </div>
@@ -232,7 +233,7 @@ export function EnrollmentPeriodFormPage({
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={title} backTo={paths.enrollmentPeriods} />
 
           <form

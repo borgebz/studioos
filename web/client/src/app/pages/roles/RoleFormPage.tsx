@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { usePermissions } from '@/auth/permissions'
 import { parseApiError } from '@/lib/api-errors'
 import { translateApiValue } from '@/lib/translate-api-value'
@@ -212,7 +213,7 @@ export function RoleFormPage({ mode }: RoleFormPageProps) {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={title} backTo={paths.roles} />
           <Skeleton className="h-[500px] w-full" />
         </div>
@@ -261,7 +262,7 @@ export function RoleFormPage({ mode }: RoleFormPageProps) {
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={title} backTo={paths.roles} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">

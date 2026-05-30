@@ -55,6 +55,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
 import { cn } from '@/lib/utils'
 import { paths } from '@/app/paths'
@@ -247,7 +248,7 @@ export function EnrollmentReviewPage() {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader
             title={t('enrollmentReview.title')}
             backTo={paths.enrollmentRequests}
@@ -271,7 +272,7 @@ export function EnrollmentReviewPage() {
   if (!enrollment) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader
             title={t('enrollmentReview.title')}
             backTo={paths.enrollmentRequests}
@@ -337,7 +338,7 @@ export function EnrollmentReviewPage() {
         </>
       }
     >
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader
           title={enrollment.student_name}
           backTo={paths.enrollmentRequests}

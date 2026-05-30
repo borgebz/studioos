@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Authorized, usePermissions } from '@/auth/permissions'
 import { paths } from '@/app/paths'
@@ -185,7 +186,7 @@ export function EventsListPage() {
 
   return (
     <PageLayout>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={t('events.title')} backTo={paths.home}>
           <Authorized permission="events.add_event">
             <Button onClick={() => navigate(paths.eventsCreate)}>

@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { usePermissions } from '@/auth/permissions'
 import { parseApiError } from '@/lib/api-errors'
 import { paths } from '@/app/paths'
@@ -165,7 +166,7 @@ export function ClassFormPage({ mode }: ClassFormPageProps) {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={title} backTo={paths.classes} />
           <Skeleton className="h-[500px] w-full" />
         </div>
@@ -217,7 +218,7 @@ export function ClassFormPage({ mode }: ClassFormPageProps) {
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={title} backTo={paths.classes} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">

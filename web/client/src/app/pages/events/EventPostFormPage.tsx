@@ -22,6 +22,7 @@ import {
 import { CardSection } from '@/components/shared/CardSection'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { DatePicker } from '@/components/shared/DatePicker'
 import { TimePicker } from '@/components/shared/TimePicker'
 import { RichTextEditor } from '@/components/shared/RichTextEditor'
@@ -203,7 +204,7 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
   if (loading) {
     return (
       <PageLayout>
-        <div className="mx-auto w-full max-w-6xl">
+        <div className={PAGE_CONTENT}>
           <PageHeader title={pageTitle} backTo={backTo} />
           <Skeleton className="h-[420px] w-full" />
         </div>
@@ -241,7 +242,7 @@ export function EventPostFormPage({ mode }: EventPostFormPageProps) {
 
   return (
     <PageLayout footer={footer}>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={pageTitle} backTo={backTo} />
 
         {/* Parent banner */}

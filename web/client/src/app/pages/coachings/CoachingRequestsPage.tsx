@@ -44,6 +44,7 @@ import { DataTable } from '@/components/ui/data-table'
 import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { cn } from '@/lib/utils'
 
 import { AcceptCoachingDialog } from './AcceptCoachingDialog'
@@ -412,7 +413,7 @@ export function CoachingRequestsPage() {
 
   return (
     <PageLayout fullHeight>
-      <div className="mx-auto w-full max-w-6xl flex flex-col flex-1 min-h-0">
+      <div className={cn(PAGE_CONTENT, 'flex flex-col flex-1 min-h-0')}>
         <PageHeader title={t('coachingRequests.title')} backTo={paths.home} />
 
         <p className="-mt-4 mb-6 text-sm text-muted-foreground shrink-0">

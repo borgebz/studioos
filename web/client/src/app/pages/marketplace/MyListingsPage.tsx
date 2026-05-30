@@ -44,6 +44,7 @@ import { DataTable } from '@/components/ui/data-table'
 import { useColumnFilters } from '@/components/ui/data-table-filters'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
 import { ListingCard } from '@/components/shared/ListingCard'
 import { ListingsGridView } from '@/components/shared/ListingsGridView'
 import {
@@ -431,7 +432,7 @@ export function MyListingsPage() {
 
   return (
     <PageLayout>
-      <div className="mx-auto w-full max-w-6xl">
+      <div className={PAGE_CONTENT}>
         <PageHeader title={t('myListings.title')} backTo={paths.home}>
           <ViewToggleButton view={view} onChange={setView} />
           <Button onClick={() => navigate(paths.marketplaceCreate)}>
