@@ -1931,10 +1931,14 @@ class Command(BaseCommand):
 
         for spec in plan:
             owner_user = spec["owner_user"]
+            # Listing was reshaped from per-variant to per-product (migration
+            # 0004_listing_product), so the unique key is the product, not the
+            # variant. The variant in the spec is used purely to resolve the
+            # product to attach the listing to.
             listing, created = Listing.objects.get_or_create(
-                variant=spec["variant"],
-                title=spec["title"],
+                product=spec["variant"].product,
                 defaults={
+                    "title": spec["title"],
                     "listing_type": spec["listing_type"],
                     "status": spec["status"],
                     "description": spec["description"],
