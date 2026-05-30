@@ -74,17 +74,54 @@ def get_or_create_direct_conversation(*, user_a, user_b, created_by=None):
         return conversation, True
 
 
+def create_listing_conversation(*, listing, variant, buyer, seller, created_by=None):
+    """Create a fresh listing-scoped thread — never reuses an existing one."""
+    with transaction.atomic():
+        conversation = Conversation(
+            kind=ConversationKind.LISTING,
+            listing=listing,
+            variant=variant,
+            name=(listing.title or "")[:120],
+            created_by=created_by,
+        )
+        conversation.full_clean()
+        conversation.save()
+
+        for user in (buyer, seller):
+            if user is None:
+                continue
+            participant = ConversationParticipant(
+                conversation=conversation,
+                user=user,
+                created_by=created_by,
+            )
+            participant.full_clean()
+            participant.save()
+
+        logger.info(
+            "create_listing_conversation: conversation %s for listing %s",
+            conversation.pk,
+            listing.pk,
+        )
+        return conversation
+
+
 def list_conversations(*, user):
     from django.db.models import Prefetch
     from django.contrib.auth import get_user_model
 
     User = get_user_model()
-    # Pull the profile alongside each participant so the serializer's
-    # photo_url lookup doesn't N+1.
     participants_qs = User.objects.select_related("profile")
-    return Conversation.objects.filter(participants=user).prefetch_related(
-        Prefetch("participants", queryset=participants_qs),
-        "messages",
+    return (
+        Conversation.objects.filter(participants=user)
+        .select_related("listing__product", "variant", "listing_offer__variant__size")
+        .prefetch_related(
+            Prefetch("participants", queryset=participants_qs),
+            "messages",
+            "listing__product__media",
+            "variant__media_links__product_media",
+            "variant__product__media",
+        )
     )
 
 

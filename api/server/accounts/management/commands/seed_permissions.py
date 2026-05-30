@@ -100,6 +100,67 @@ CLASSES_PERMISSIONS = [
     "classes.delete_classemember",
 ]
 
+# Personal inventory — every authenticated user manages their own items.
+# Includes read-only taxonomy for category/size/color selectors in forms.
+INVENTORY_PERMISSIONS_PERSONAL = [
+    "inventory.view_category",
+    "inventory.view_color",
+    "inventory.view_size",
+    "inventory.view_sizesystem",
+    "inventory.view_product",
+    "inventory.add_product",
+    "inventory.change_product",
+    "inventory.delete_product",
+    "inventory.view_productvariant",
+    "inventory.add_productvariant",
+    "inventory.change_productvariant",
+    "inventory.delete_productvariant",
+    "inventory.view_productmedia",
+    "inventory.add_productmedia",
+    "inventory.change_productmedia",
+    "inventory.delete_productmedia",
+]
+
+# School catalog — product/variant/media/bookings for school-owned inventory.
+# Taxonomy admin (categories, colors, sizes) stays in INVENTORY_PERMISSIONS for
+# direction/coordination via School Setup.
+INVENTORY_PERMISSIONS_SCHOOL_CATALOG = [
+    "inventory.view_category",
+    "inventory.view_color",
+    "inventory.view_size",
+    "inventory.view_sizesystem",
+    "inventory.view_school_product",
+    "inventory.add_school_product",
+    "inventory.change_school_product",
+    "inventory.delete_school_product",
+    "inventory.manage_school_inventory",
+    "inventory.can_manage_variant_bookings",
+    "inventory.view_schoolproductdetails",
+    "inventory.add_schoolproductdetails",
+    "inventory.change_schoolproductdetails",
+    "inventory.delete_schoolproductdetails",
+    "inventory.view_productvariant",
+    "inventory.add_productvariant",
+    "inventory.change_productvariant",
+    "inventory.delete_productvariant",
+    "inventory.view_productmedia",
+    "inventory.add_productmedia",
+    "inventory.change_productmedia",
+    "inventory.delete_productmedia",
+    "inventory.view_variantbooking",
+    "inventory.add_variantbooking",
+    "inventory.change_variantbooking",
+    "inventory.delete_variantbooking",
+    "inventory.view_variantcolor",
+    "inventory.add_variantcolor",
+    "inventory.change_variantcolor",
+    "inventory.delete_variantcolor",
+    "inventory.view_variantmedia",
+    "inventory.add_variantmedia",
+    "inventory.change_variantmedia",
+    "inventory.delete_variantmedia",
+]
+
 INVENTORY_PERMISSIONS = [
     "inventory.view_category",
     "inventory.add_category",
@@ -179,8 +240,8 @@ MARKETPLACE_PERMISSIONS_USER = [
 # - coordination: full school operations — scheduling, reviews, class mgmt,
 #     enrollment periods, inventory setup, role mgmt (no delete), school +
 #     personal marketplace. Cannot delete users or create billing entries.
-# - collaborator: read-only view of operational data + messaging + full
-#     marketplace (school + personal).
+# - collaborator: read-only view of operational data + messaging + school
+#     catalog (inventory + listings) + personal marketplace.
 # - teacher / teacher_external: own availability, accept/reject coaching,
 #     view classes, messaging, profile, personal marketplace.
 # - parent: request coaching for dependents, confirm dependent attendance,
@@ -319,6 +380,9 @@ ROLE_PERMISSIONS = {
         "classes.view_classemember",
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
+        # inventory (personal + school catalog; no taxonomy admin)
+        *INVENTORY_PERMISSIONS_PERSONAL,
+        *INVENTORY_PERMISSIONS_SCHOOL_CATALOG,
         # marketplace (school + personal)
         *MARKETPLACE_PERMISSIONS_MANAGEMENT,
         *MARKETPLACE_PERMISSIONS_USER,
@@ -345,6 +409,7 @@ ROLE_PERMISSIONS = {
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace (personal)
+        *INVENTORY_PERMISSIONS_PERSONAL,
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
@@ -369,6 +434,7 @@ ROLE_PERMISSIONS = {
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace (personal)
+        *INVENTORY_PERMISSIONS_PERSONAL,
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
@@ -393,6 +459,7 @@ ROLE_PERMISSIONS = {
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace
+        *INVENTORY_PERMISSIONS_PERSONAL,
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],
@@ -417,6 +484,7 @@ ROLE_PERMISSIONS = {
         # events (community view + interaction)
         *EVENTS_PERMISSIONS_COMMUNITY,
         # marketplace
+        *INVENTORY_PERMISSIONS_PERSONAL,
         *MARKETPLACE_PERMISSIONS_USER,
         *MESSAGING_PERMISSIONS,
     ],

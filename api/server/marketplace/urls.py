@@ -18,6 +18,13 @@ from marketplace.views.listing_views import (
     SchoolListingPublishView,
     SchoolListingUnpublishView,
 )
+from marketplace.views.offer_views import (
+    ListingOfferCancelView,
+    ListingOfferCompleteView,
+    ListingOfferCreateView,
+    ListingOfferDetailView,
+    ListingOfferRejectView,
+)
 from marketplace.views.transaction_views import (
     MyTransactionsView,
     SchoolTransactionAcceptView,
@@ -53,6 +60,11 @@ urlpatterns = [
         ListingCommentDetailView.as_view(),
     ),
     path("listings/<int:listing_id>/request/", TransactionRequestView.as_view()),
+    path("listings/<int:listing_id>/offers/", ListingOfferCreateView.as_view()),
+    path("offers/<int:offer_id>/", ListingOfferDetailView.as_view()),
+    path("offers/<int:offer_id>/complete/", ListingOfferCompleteView.as_view()),
+    path("offers/<int:offer_id>/reject/", ListingOfferRejectView.as_view()),
+    path("offers/<int:offer_id>/cancel/", ListingOfferCancelView.as_view()),
     # ------------------------------------------------------------------
     # Member-facing transactions
     # ------------------------------------------------------------------

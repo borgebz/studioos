@@ -15,6 +15,7 @@ def _listing_variants(obj):
 
 
 class ListingListSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(source="product.id", read_only=True)
     primary_media_url = serializers.SerializerMethodField()
     product_name = serializers.CharField(source="product.name", read_only=True)
     product_category = serializers.CharField(
@@ -30,6 +31,7 @@ class ListingListSerializer(serializers.ModelSerializer):
         model = Listing
         fields = [
             "id",
+            "product_id",
             "listing_type",
             "status",
             "title",

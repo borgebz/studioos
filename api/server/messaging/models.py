@@ -35,6 +35,15 @@ class Conversation(BaseModel):
         blank=True,
         related_name="conversations",
     )
+    # Variant the buyer picked when opening a listing thread — drives the
+    # conversation thumbnail (variant media, falling back to product primary).
+    variant = models.ForeignKey(
+        "inventory.ProductVariant",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="listing_conversations",
+    )
     coaching = models.ForeignKey(
         "coachings.CoachingClass",
         on_delete=models.SET_NULL,

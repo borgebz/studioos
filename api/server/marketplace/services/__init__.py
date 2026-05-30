@@ -25,6 +25,15 @@ from marketplace.services.listing_services import (
     unpublish_listing,
     update_listing,
 )
+from marketplace.services.offer_services import (
+    cancel_listing_offer,
+    complete_listing_offer,
+    create_listing_offer,
+    get_listing_offer,
+    get_variant_photo_url,
+    reject_listing_offer,
+    update_listing_offer,
+)
 from marketplace.services.transaction_services import (
     accept_transaction,
     block_transaction,
@@ -61,6 +70,13 @@ __all__ = [
     "remove_favorite",
     "unpublish_listing",
     "update_listing",
+    "cancel_listing_offer",
+    "complete_listing_offer",
+    "create_listing_offer",
+    "get_listing_offer",
+    "get_variant_photo_url",
+    "reject_listing_offer",
+    "update_listing_offer",
     "accept_transaction",
     "block_transaction",
     "cancel_transaction",

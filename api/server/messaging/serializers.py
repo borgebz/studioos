@@ -113,6 +113,11 @@ class ConversationSerializer(serializers.ModelSerializer):
     pinned_message_ids = serializers.SerializerMethodField()
     is_admin = serializers.SerializerMethodField()
     created_by_id = serializers.IntegerField(read_only=True, allow_null=True)
+    listing_id = serializers.IntegerField(read_only=True, allow_null=True)
+    variant_id = serializers.IntegerField(read_only=True, allow_null=True)
+    listing_title = serializers.SerializerMethodField()
+    variant_photo_url = serializers.SerializerMethodField()
+    listing_offer = serializers.SerializerMethodField()
 
     class Meta:
         model = Conversation
@@ -126,6 +131,11 @@ class ConversationSerializer(serializers.ModelSerializer):
             "created_by_id",
             "coaching_id",
             "recurring_coaching_id",
+            "listing_id",
+            "variant_id",
+            "listing_title",
+            "variant_photo_url",
+            "listing_offer",
             "last_message",
             "pinned_message_ids",
             "updated_at",
@@ -214,6 +224,37 @@ class ConversationSerializer(serializers.ModelSerializer):
         if msgs:
             return MessageSerializer(msgs[-1], context=self.context).data
         return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_listing_title(self, obj):
+        if obj.name:
+            return obj.name
+        if obj.listing_id and hasattr(obj, "listing") and obj.listing:
+            return obj.listing.title
+        return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_variant_photo_url(self, obj):
+        from marketplace.services.offer_services import get_listing_conversation_photo_url
+
+        request = self.context.get("request")
+        return get_listing_conversation_photo_url(conversation=obj, request=request)
+
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_listing_offer(self, obj):
+        from marketplace.models import ListingOffer
+
+        try:
+            offer = obj.listing_offer
+        except ListingOffer.DoesNotExist:
+            return None
+        from marketplace.serializers.offer_serializers import (
+            ListingOfferSummarySerializer,
+        )
+
+        return ListingOfferSummarySerializer(
+            offer, context=self.context
+        ).data
 
 
 class CreateConversationSerializer(serializers.Serializer):

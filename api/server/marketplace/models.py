@@ -166,3 +166,67 @@ class ProductTransaction(BaseModel):
 
     def __str__(self):
         return f"Transaction {self.pk} ({self.transaction_type}) — {self.status}"
+
+
+class ListingOffer(BaseModel):
+    """Pre-transaction negotiation tied to a listing-scoped conversation."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        NEGOTIATING = "negotiating", "Negotiating"
+        COMPLETED = "completed", "Completed"
+        REJECTED = "rejected", "Rejected"
+        CANCELLED = "cancelled", "Cancelled"
+
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="offers",
+    )
+    variant = models.ForeignKey(
+        "inventory.ProductVariant",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="listing_offers",
+    )
+    buyer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="listing_offers_made",
+    )
+    conversation = models.OneToOneField(
+        "messaging.Conversation",
+        on_delete=models.CASCADE,
+        related_name="listing_offer",
+    )
+    transaction = models.ForeignKey(
+        ProductTransaction,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_offers",
+    )
+    offered_price = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    start_at = models.DateTimeField(null=True, blank=True)
+    end_at = models.DateTimeField(null=True, blank=True)
+    message = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.OPEN,
+    )
+    is_inquiry = models.BooleanField(
+        default=False,
+        help_text="True for 'Ask seller' threads without a formal offer.",
+    )
+
+    class Meta:
+        permissions = [
+            ("view_own_listingoffers", "Can view own listing offers"),
+        ]
+
+    def __str__(self):
+        return f"Offer #{self.pk} on listing {self.listing_id} ({self.status})"
