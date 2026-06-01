@@ -14,7 +14,7 @@ import { format, differenceInCalendarDays } from 'date-fns'
 import { pt } from 'date-fns/locale'
 import { Upload, X, CheckCircle2, Sun, Moon, Phone, Mail } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
-import { parseApiError } from '@/lib/api-errors'
+import { parseApiError, parseApiFieldErrors } from '@/lib/api-errors'
 import type {
   EnrollmentPeriod,
   Modality as ApiModality,
@@ -113,6 +113,7 @@ export function EnrollmentPage() {
     register,
     handleSubmit,
     control,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<EnrollmentFormValues>({
     resolver: zodResolver(
@@ -215,15 +216,52 @@ export function EnrollmentPage() {
       return
     }
     try {
-      const res = await apiClient.api.enrollmentsCreate({
+      // The endpoint is multipart-only. Send the whole payload as one JSON string
+      // in the `data` field so arrays stay arrays — the generated FormData
+      // serializer would otherwise `JSON.stringify` `modality_ids` into a single
+      // value, which the server's `ListField(IntegerField())` rejects with
+      // "A valid integer is required". Attach each file under a distinct key
+      // (the view iterates `request.FILES.items()`, one entry per key).
+      const payload: Record<string, unknown> = {
         ...data,
         period_id: matchingPeriod.id,
         consent_rgpd: true,
         consent_internal_regulation: true,
-      } as Parameters<typeof apiClient.api.enrollmentsCreate>[0])
+      }
+      // Drop empty optional fields. The serializer treats them as omitted
+      // (applying defaults), but rejects explicit blanks — empty strings raise
+      // "This field may not be blank." and an empty date fails format parsing.
+      for (const key of Object.keys(payload)) {
+        if (payload[key] === '' || payload[key] == null) delete payload[key]
+      }
+
+      const formData = new FormData()
+      formData.append('data', JSON.stringify(payload))
+      files.forEach((file, i) => formData.append(`file_${i}`, file))
+
+      const res = await apiClient.api.enrollmentsCreate(
+        formData as unknown as Parameters<
+          typeof apiClient.api.enrollmentsCreate
+        >[0]
+      )
       setSubmitted(res.data)
       toast.success(t('enrollments.successTitle'))
     } catch (err) {
+      // Surface server-side validation per field — same pattern as the login
+      // and user-edit forms: each field error renders inline under its input.
+      const fieldErrors = parseApiFieldErrors(err, t)
+      if (fieldErrors) {
+        for (const [field, message] of Object.entries(fieldErrors)) {
+          setError(field as keyof EnrollmentFormValues, { message })
+        }
+        const firstField = Object.keys(fieldErrors)[0]
+        const el =
+          document.querySelector<HTMLElement>(`[name="${firstField}"]`) ??
+          document.getElementById(firstField)
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el?.focus?.({ preventScroll: true })
+        return
+      }
       toast.error(
         parseApiError(err, t, 'enrollments.submissionFailed') ??
           t('enrollments.submissionFailed')
