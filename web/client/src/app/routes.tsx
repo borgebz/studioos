@@ -141,11 +141,7 @@ export function AppRoutes() {
       />
       <Route
         path={paths.enrollment}
-        element={
-          <ProtectedRoute permission="enrollments.can_review_enrollment">
-            <EnrollmentPage />
-          </ProtectedRoute>
-        }
+        element={<EnrollmentPage />}
       />
       <Route
         path={paths.enrollmentRequests}

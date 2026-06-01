@@ -1703,6 +1703,7 @@
     "consentRegulationHelper": "Class etiquette, attendance, payment terms, and end-of-year performance policy.",
     "submit": "Submit enrollment",
     "submitting": "Submitting…",
+    "validationToast": "Please review the highlighted fields before submitting.",
     "cancel": "Cancel",
     "successTitle": "Enrollment submitted",
     "successBody": "You will receive a confirmation email at {{email}}. Our team will review your enrollment and get back to you.",

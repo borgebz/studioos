@@ -1703,6 +1703,7 @@
     "consentRegulationHelper": "Etiqueta nas aulas, assiduidade, condições de pagamento e política de espetáculos.",
     "submit": "Submeter inscrição",
     "submitting": "A submeter…",
+    "validationToast": "Reveja os campos assinalados antes de submeter.",
     "cancel": "Cancelar",
     "successTitle": "Inscrição submetida",
     "successBody": "Receberá um email de confirmação em {{email}}. A nossa equipa irá analisar a sua inscrição e entrar em contacto.",

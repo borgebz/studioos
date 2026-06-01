@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { useForm, Controller, useWatch, type Resolver } from 'react-hook-form'
+import {
+  useForm,
+  Controller,
+  useWatch,
+  type Resolver,
+  type FieldErrors,
+} from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -225,6 +231,22 @@ export function EnrollmentPage() {
     }
   }
 
+  // Without this, a failed zod validation makes the submit button look dead:
+  // `handleSubmit` swallows the click, `onSubmit` never runs, and on this long
+  // multi-section form the offending error renders off-screen. Give the parent
+  // explicit feedback and jump them to the first field that needs fixing.
+  const onInvalid = (formErrors: FieldErrors<EnrollmentFormValues>) => {
+    const firstKey = Object.keys(formErrors)[0]
+    if (firstKey) {
+      const el =
+        document.querySelector<HTMLElement>(`[name="${firstKey}"]`) ??
+        document.getElementById(firstKey)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el?.focus?.({ preventScroll: true })
+    }
+    toast.error(t('enrollments.validationToast'))
+  }
+
   const daysLeft = matchingPeriod
     ? differenceInCalendarDays(new Date(matchingPeriod.end_date), new Date())
     : 0
@@ -352,7 +374,7 @@ export function EnrollmentPage() {
         {/* Form */}
         <form
           id="enrollment-form"
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={handleSubmit(onSubmit, onInvalid)}
           className="flex flex-col gap-6"
         >
           {/* 1. Enrollment Type */}
