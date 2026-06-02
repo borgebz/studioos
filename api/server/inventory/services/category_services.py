@@ -43,7 +43,10 @@ def get_category(*, pk):
 def list_categories(*, parent_category_id=None, is_active=None, size_system_id=None):
     qs = (
         Category.objects.all()
-        .prefetch_related("children", "size_systems__size_system")
+        .prefetch_related(
+            "size_systems__size_system__sizes",
+            "children__size_systems__size_system__sizes",
+        )
         .select_related("parent")
     )
     if parent_category_id:

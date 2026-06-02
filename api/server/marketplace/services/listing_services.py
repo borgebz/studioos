@@ -292,32 +292,23 @@ def update_listing(*, listing_id, user, **data):
     product = listing.product
     is_school = product.owner_type == Product.OwnerType.SCHOOL
 
-    # Inline product field updates
-    if data.get("product"):
+    # Inline product field updates + media + variants. Variants ride inside the
+    # product payload so the inventory layer resolves variant ``media_keys``
+    # against the same media map it builds while syncing product media.
+    product_data = data.get("product")
+    variants = data.get("variants")
+    if product_data is not None or variants is not None:
+        product_payload = dict(product_data or {})
+        if variants is not None:
+            product_payload["variants"] = variants
         if is_school:
             inventory_services.update_school_product(
-                pk=product.id, user=user, **data["product"]
+                pk=product.id, user=user, **product_payload
             )
         else:
             inventory_services.update_product(
-                pk=product.id, user=user, **data["product"]
+                pk=product.id, user=user, **product_payload
             )
-
-    # Add / update variants. Removal is expressed as status=inactive (the
-    # variant stays in inventory but drops out of the listing).
-    variants = data.get("variants")
-    if variants is not None:
-        for v in variants:
-            variant_id = v.get("id")
-            payload = {k: val for k, val in v.items() if k != "id"}
-            if variant_id:
-                inventory_services.update_variant(
-                    variant_id=variant_id, user=user, **payload
-                )
-            else:
-                inventory_services.create_variant(
-                    product_id=product.id, user=user, **payload
-                )
 
     listing.save()
     return listing

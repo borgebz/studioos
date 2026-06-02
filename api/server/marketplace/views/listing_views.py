@@ -1,8 +1,5 @@
-import json
-
-from drf_spectacular.utils import extend_schema, inline_serializer
-from rest_framework import serializers, status
-from rest_framework.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema
+from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -10,7 +7,12 @@ from rest_framework.views import APIView
 
 from core.pagination import paginated_response
 from core.permissions import require_perm
-from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
+from core.schemas import (
+    DEFAULT_ERROR_RESPONSES,
+    media_multipart_request,
+    paginated_list_schema,
+)
+from core.utils import attach_media_files, parse_multipart_payload
 from marketplace import services
 from marketplace.serializers import (
     ListingCreateSerializer,
@@ -33,6 +35,7 @@ class ListingListCreateView(APIView):
     """Public listings — only ACTIVE + is_public."""
 
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         parameters=[ListingListQuerySerializer],
@@ -55,11 +58,16 @@ class ListingListCreateView(APIView):
         )
 
     @extend_schema(
-        request=ListingCreateSerializer,
+        request=media_multipart_request("ListingCreateMultipart"),
         responses={201: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     def post(self, request):
-        serializer = ListingCreateSerializer(data=request.data)
+        payload = parse_multipart_payload(request)
+        product = payload.get("product")
+        if isinstance(product, dict):
+            attach_media_files(product.get("media"), request.FILES)
+
+        serializer = ListingCreateSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
         listing = services.create_listing(
             user=request.user, **serializer.validated_data
@@ -75,6 +83,7 @@ class ListingDetailView(APIView):
     otherwise only owner or user with view_productlisting permission."""
 
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     def get(self, request, listing_id):
@@ -84,11 +93,15 @@ class ListingDetailView(APIView):
         )
 
     @extend_schema(
-        request=ListingUpdateSerializer,
+        request=media_multipart_request("ListingUpdateMultipart"),
         responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     def patch(self, request, listing_id):
-        serializer = ListingUpdateSerializer(data=request.data, partial=True)
+        payload = parse_multipart_payload(request)
+        product = payload.get("product")
+        if isinstance(product, dict):
+            attach_media_files(product.get("media"), request.FILES)
+        serializer = ListingUpdateSerializer(data=payload, partial=True)
         serializer.is_valid(raise_exception=True)
         listing = services.update_listing(
             listing_id=listing_id, user=request.user, **serializer.validated_data
@@ -227,53 +240,15 @@ class SchoolListingListCreateView(APIView):
         )
 
     @extend_schema(
-        request={
-            "multipart/form-data": inline_serializer(
-                name="SchoolListingCreateMultipart",
-                fields={
-                    "payload": serializers.CharField(
-                        help_text=(
-                            "JSON-encoded ListingCreate payload. "
-                            "Files for product.media[i].image are sent as "
-                            "separate form fields named media_0, media_1, ..., "
-                            "matching the index of each media entry."
-                        ),
-                    ),
-                    "media_0": serializers.ImageField(required=False),
-                    "media_1": serializers.ImageField(required=False),
-                    "media_2": serializers.ImageField(required=False),
-                    "media_3": serializers.ImageField(required=False),
-                    "media_4": serializers.ImageField(required=False),
-                    "media_5": serializers.ImageField(required=False),
-                    "media_6": serializers.ImageField(required=False),
-                    "media_7": serializers.ImageField(required=False),
-                    "media_8": serializers.ImageField(required=False),
-                    "media_9": serializers.ImageField(required=False),
-                },
-            ),
-        },
+        request=media_multipart_request("SchoolListingCreateMultipart"),
         responses={201: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("marketplace.manage_school_listings")
     def post(self, request):
-        payload_raw = request.data.get("payload")
-        if not payload_raw:
-            raise ValidationError({"payload": ["This field is required."]})
-        try:
-            payload = json.loads(payload_raw)
-        except (TypeError, json.JSONDecodeError):
-            raise ValidationError({"payload": ["Invalid JSON."]})
-
+        payload = parse_multipart_payload(request)
         product = payload.get("product")
-        if isinstance(product, dict) and isinstance(product.get("media"), list):
-            for i, media_item in enumerate(product["media"]):
-                if not isinstance(media_item, dict):
-                    continue
-                uploaded = request.FILES.get(f"media_{i}")
-                if uploaded is not None:
-                    media_item["image"] = uploaded
-                else:
-                    media_item.pop("image", None)
+        if isinstance(product, dict):
+            attach_media_files(product.get("media"), request.FILES)
 
         serializer = ListingCreateSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
@@ -288,6 +263,7 @@ class SchoolListingListCreateView(APIView):
 
 class SchoolListingDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES})
     @require_perm("marketplace.manage_school_listings")
@@ -298,12 +274,16 @@ class SchoolListingDetailView(APIView):
         )
 
     @extend_schema(
-        request=ListingUpdateSerializer,
+        request=media_multipart_request("SchoolListingUpdateMultipart"),
         responses={200: ListingDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("marketplace.manage_school_listings")
     def patch(self, request, listing_id):
-        serializer = ListingUpdateSerializer(data=request.data, partial=True)
+        payload = parse_multipart_payload(request)
+        product = payload.get("product")
+        if isinstance(product, dict):
+            attach_media_files(product.get("media"), request.FILES)
+        serializer = ListingUpdateSerializer(data=payload, partial=True)
         serializer.is_valid(raise_exception=True)
         listing = services.update_listing(
             listing_id=listing_id, user=request.user, **serializer.validated_data

@@ -12,6 +12,12 @@ class SchoolProductDetailsSerializer(serializers.Serializer):
 
 
 class ProductMediaInputSerializer(serializers.Serializer):
+    # On update, an existing media item is kept by sending its ``id`` (no image).
+    # New media omit ``id`` and carry an uploaded ``image``.
+    id = serializers.IntegerField(required=False)
+    # Client-stable key used to associate variants with media in the same
+    # request (variant.media_keys references these). Not persisted.
+    key = serializers.CharField(required=False, allow_blank=True)
     image = serializers.ImageField(required=False)
     is_primary = serializers.BooleanField(required=False, default=False)
     sort_order = serializers.IntegerField(required=False, default=0)
@@ -33,11 +39,26 @@ class InlineVariantSerializer(serializers.Serializer):
     size_id = serializers.IntegerField(required=False, allow_null=True)
     sku = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     condition = serializers.CharField(required=False)
+    status = serializers.CharField(required=False)
     acquisition_type = serializers.CharField(required=False)
+    acquired_at = serializers.DateField(required=False, allow_null=True)
+    asking_price = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
+    )
     color_ids = serializers.ListField(
         child=serializers.IntegerField(), required=False, default=list
     )
-    notes = serializers.CharField(required=False, allow_blank=True, default="")
+    # Client keys of the product media this variant is associated with. Resolved
+    # against ProductMediaInputSerializer.key (new uploads) or str(id) (existing).
+    media_keys = serializers.ListField(
+        child=serializers.CharField(), required=False, default=list
+    )
+    public_notes = serializers.CharField(
+        required=False, allow_blank=True, default=""
+    )
+    internal_notes = serializers.CharField(
+        required=False, allow_blank=True, default=""
+    )
 
 
 _PRODUCT_ORDERING_CHOICES = [
@@ -75,6 +96,12 @@ class SchoolProductCreateSerializer(ProductCreateSerializer):
     school_details = SchoolProductDetailsSerializer(required=False)
 
 
+class VariantUpsertSerializer(InlineVariantSerializer):
+    # Existing variants carry their ``id`` (updated in place); new variants omit
+    # it (created). Existing variants absent from the submitted list are removed.
+    id = serializers.IntegerField(required=False)
+
+
 class ProductUpdateSerializer(serializers.Serializer):
     name = serializers.CharField(required=False)
     description = serializers.CharField(required=False)
@@ -84,6 +111,7 @@ class ProductUpdateSerializer(serializers.Serializer):
     material = serializers.CharField(required=False, allow_null=True)
     status = serializers.ChoiceField(choices=Product.Status.choices, required=False)
     media = ProductMediaInputSerializer(many=True, required=False)
+    variants = VariantUpsertSerializer(many=True, required=False)
 
 
 class SchoolProductUpdateSerializer(ProductUpdateSerializer):

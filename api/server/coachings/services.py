@@ -554,6 +554,24 @@ def _validate_status_transition(coaching, target_status):
         raise ValidationError({"messages": ["InvalidStatusTransition"]})
 
 
+def _initial_coaching_status(*, requesting_user, teacher_id, schedule=False):
+    """Status a freshly-created coaching should start at — single source of truth
+    for both the request and direct-coordination creation paths.
+
+    - Coordination scheduling directly (``schedule=True``) → ``SCHEDULED``.
+    - The assigned teacher creating their own coaching → ``PENDING_APPROVAL``;
+      their accept step is implicit, so it skips ``REQUESTED`` and only awaits
+      coordination approval.
+    - Everyone else (student/guardian request, or coordination creating a
+      non-scheduled coaching) → ``REQUESTED``.
+    """
+    if schedule:
+        return CoachingStatus.SCHEDULED
+    if requesting_user is not None and requesting_user.id == teacher_id:
+        return CoachingStatus.PENDING_APPROVAL
+    return CoachingStatus.REQUESTED
+
+
 def _assert_studio_modality_compatible(*, studio, modality):
     if not StudioModality.objects.filter(
         studio=studio,
@@ -1083,6 +1101,13 @@ def create_coaching_request(
         except Classe.DoesNotExist:
             raise AppNotFound("ClasseNotFound")
 
+    # A teacher creating their own coaching has implicitly accepted it, so it
+    # starts at PENDING_APPROVAL rather than REQUESTED (see _initial_coaching_status).
+    initial_status = _initial_coaching_status(
+        requesting_user=requesting_user, teacher_id=teacher_id
+    )
+    requester_is_teacher = initial_status == CoachingStatus.PENDING_APPROVAL
+
     coaching = CoachingClass(
         teacher_id=teacher_id,
         modality=modality,
@@ -1090,7 +1115,7 @@ def create_coaching_request(
         start_datetime=start_datetime,
         end_datetime=end_datetime,
         notes=notes,
-        status=CoachingStatus.REQUESTED,
+        status=initial_status,
         requested_by=requesting_user,
         created_by=requesting_user,
         classe=classe_row,
@@ -1105,8 +1130,12 @@ def create_coaching_request(
         classe_id,
     )
 
-    # Add the actual student (child or self) as PENDING participant.
-    if actual_student.has_perm("accounts.can_participate_in_coaching"):
+    # Add the actual student (child or self) as PENDING participant — but never
+    # the assigned teacher (a teacher isn't a student of their own lesson).
+    if (
+        actual_student.id != teacher_id
+        and actual_student.has_perm("accounts.can_participate_in_coaching")
+    ):
         add_participant(
             coaching_class_id=coaching.pk,
             student_id=actual_student.pk,
@@ -1132,11 +1161,14 @@ def create_coaching_request(
 
     get_or_create_coaching_conversation(coaching=coaching, created_by=requesting_user)
 
-    from coachings.tasks import notify_new_coaching_request
+    # Notify the assigned teacher to accept — but not when the teacher is the
+    # requester (they created it already at PENDING_APPROVAL, nothing to accept).
+    if not requester_is_teacher:
+        from coachings.tasks import notify_new_coaching_request
 
-    transaction.on_commit(
-        lambda cid=coaching.pk: notify_new_coaching_request.delay(cid)
-    )
+        transaction.on_commit(
+            lambda cid=coaching.pk: notify_new_coaching_request.delay(cid)
+        )
 
     return coaching
 
@@ -1217,7 +1249,9 @@ def create_direct_coordination_coaching(
             raise ValidationError({"messages": messages}) from exc
         recurring_row.save()
 
-    coaching_status = CoachingStatus.SCHEDULED if schedule else CoachingStatus.REQUESTED
+    coaching_status = _initial_coaching_status(
+        requesting_user=requesting_user, teacher_id=teacher_id, schedule=schedule
+    )
 
     coaching = CoachingClass(
         teacher_id=teacher_id,

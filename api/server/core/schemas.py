@@ -34,6 +34,31 @@ DEFAULT_ERROR_RESPONSES = {
 }
 
 
+MEDIA_MULTIPART_MAX_FILES = 10
+
+
+def media_multipart_request(name, *, max_files=MEDIA_MULTIPART_MAX_FILES):
+    """OpenAPI request body for multipart create endpoints that accept media.
+
+    The client sends a JSON-encoded ``payload`` field plus one image field per
+    media entry (``media_0``, ``media_1``, ...) matching the index of each media
+    item inside the payload. Use with ``parser_classes = [MultiPartParser]`` and
+    the ``core.utils.parse_multipart_payload`` / ``attach_media_files`` helpers.
+    """
+    fields = {
+        "payload": serializers.CharField(
+            help_text=(
+                "JSON-encoded payload. Files for media[i].image are sent as "
+                "separate form fields named media_0, media_1, ..., matching the "
+                "index of each media entry."
+            ),
+        ),
+    }
+    for i in range(max_files):
+        fields[f"media_{i}"] = serializers.ImageField(required=False)
+    return {"multipart/form-data": inline_serializer(name=name, fields=fields)}
+
+
 def paginated_list_schema(*, name, results_serializer):
     """OpenAPI shape for ``PageNumberPagination`` list responses."""
     return inline_serializer(

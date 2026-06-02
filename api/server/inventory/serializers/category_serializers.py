@@ -29,7 +29,17 @@ class CategorySerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_size_systems(self, obj):
         css = obj.size_systems.all()  # uses prefetch cache
-        return [{"id": cs.size_system_id, "name": cs.size_system.name} for cs in css]
+        result = []
+        for cs in css:
+            ss = cs.size_system
+            sizes = [
+                {"id": s.id, "name": s.name, "sort_order": s.sort_order}
+                for s in ss.sizes.all()
+                if s.deleted_at is None and s.is_active
+            ]
+            sizes.sort(key=lambda s: (s["sort_order"], s["id"]))
+            result.append({"id": ss.id, "name": ss.name, "sizes": sizes})
+        return result
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_subcategories(self, obj):

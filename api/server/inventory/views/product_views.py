@@ -1,12 +1,18 @@
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.pagination import paginated_response
 from core.permissions import require_perm
-from core.schemas import DEFAULT_ERROR_RESPONSES, paginated_list_schema
+from core.schemas import (
+    DEFAULT_ERROR_RESPONSES,
+    media_multipart_request,
+    paginated_list_schema,
+)
+from core.utils import attach_media_files, parse_multipart_payload
 
 from inventory import services
 from inventory.serializers.product_serializers import (
@@ -29,6 +35,7 @@ def _validated_product_filters(request):
 
 class ProductListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         parameters=[ProductListQuerySerializer],
@@ -51,12 +58,15 @@ class ProductListCreateView(APIView):
         )
 
     @extend_schema(
-        request=ProductCreateSerializer,
+        request=media_multipart_request("ProductCreateMultipart"),
         responses={201: ProductDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.add_product")
     def post(self, request):
-        serializer = ProductCreateSerializer(data=request.data)
+        payload = parse_multipart_payload(request)
+        attach_media_files(payload.get("media"), request.FILES)
+
+        serializer = ProductCreateSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
 
         product = services.create_product(
@@ -69,6 +79,7 @@ class ProductListCreateView(APIView):
 
 class ProductDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         responses={200: ProductDetailSerializer, **DEFAULT_ERROR_RESPONSES},
@@ -79,12 +90,15 @@ class ProductDetailView(APIView):
         return Response(ProductDetailSerializer(product).data)
 
     @extend_schema(
-        request=ProductUpdateSerializer,
+        request=media_multipart_request("ProductUpdateMultipart"),
         responses={200: ProductDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_product")
     def patch(self, request, pk):
-        serializer = ProductUpdateSerializer(data=request.data, partial=True)
+        payload = parse_multipart_payload(request)
+        attach_media_files(payload.get("media"), request.FILES)
+
+        serializer = ProductUpdateSerializer(data=payload, partial=True)
         serializer.is_valid(raise_exception=True)
 
         product = services.update_product(
@@ -101,6 +115,7 @@ class ProductDetailView(APIView):
 
 class SchoolProductListCreateView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         parameters=[ProductListQuerySerializer],
@@ -123,12 +138,15 @@ class SchoolProductListCreateView(APIView):
         )
 
     @extend_schema(
-        request=SchoolProductCreateSerializer,
+        request=media_multipart_request("SchoolProductCreateMultipart"),
         responses={201: ProductDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.add_school_product")
     def post(self, request):
-        serializer = SchoolProductCreateSerializer(data=request.data)
+        payload = parse_multipart_payload(request)
+        attach_media_files(payload.get("media"), request.FILES)
+
+        serializer = SchoolProductCreateSerializer(data=payload)
         serializer.is_valid(raise_exception=True)
 
         product = services.create_school_product(
@@ -141,6 +159,7 @@ class SchoolProductListCreateView(APIView):
 
 class SchoolProductDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
 
     @extend_schema(
         responses={200: ProductDetailSerializer, **DEFAULT_ERROR_RESPONSES},
@@ -151,12 +170,15 @@ class SchoolProductDetailView(APIView):
         return Response(ProductDetailSerializer(product).data)
 
     @extend_schema(
-        request=SchoolProductUpdateSerializer,
+        request=media_multipart_request("SchoolProductUpdateMultipart"),
         responses={200: ProductDetailSerializer, **DEFAULT_ERROR_RESPONSES},
     )
     @require_perm("inventory.change_school_product")
     def patch(self, request, pk):
-        serializer = SchoolProductUpdateSerializer(data=request.data, partial=True)
+        payload = parse_multipart_payload(request)
+        attach_media_files(payload.get("media"), request.FILES)
+
+        serializer = SchoolProductUpdateSerializer(data=payload, partial=True)
         serializer.is_valid(raise_exception=True)
 
         product = services.update_school_product(

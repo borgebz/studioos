@@ -70,6 +70,26 @@ class TestCoachingRequest:
         p = coaching.participants.get(student_id=student_user.pk)
         assert p.status == CoachingParticipantStatus.PENDING
 
+    def test_create_request_by_assigned_teacher_starts_pending_approval(
+        self, teacher_user, modality
+    ):
+        """A teacher creating their own coaching skips REQUESTED and is not
+        auto-enrolled as a participant of their own lesson."""
+        from coachings import services
+        from coachings.models import CoachingParticipant, CoachingStatus
+
+        coaching = services.create_coaching_request(
+            teacher_id=teacher_user.pk,
+            modality_id=modality.pk,
+            start_datetime=_dt(1),
+            end_datetime=_dt(2),
+            requesting_user=teacher_user,
+        )
+        assert coaching.status == CoachingStatus.PENDING_APPROVAL
+        assert not CoachingParticipant.objects.filter(
+            coaching_class_id=coaching.pk, student_id=teacher_user.pk
+        ).exists()
+
     def test_create_request_invalid_date_range(
         self, direction_user, teacher_user, modality
     ):
