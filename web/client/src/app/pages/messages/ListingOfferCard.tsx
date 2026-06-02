@@ -25,6 +25,7 @@ import {
 import { DatePicker } from '@/components/shared/DatePicker'
 import { parseApiError } from '@/lib/api-errors'
 import { cn } from '@/lib/utils'
+import { listingTypeLabel } from '../marketplace/marketplace-helpers'
 
 interface ListingOfferCardProps {
   offerId: number
@@ -48,7 +49,6 @@ function startOfDay(date: Date | undefined): Date | undefined {
 
 interface StatusVisual {
   tone: string
-  ring: string
   icon: LucideIcon
 }
 
@@ -57,31 +57,26 @@ function statusVisuals(status: string): StatusVisual {
     case 'completed':
       return {
         tone: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-        ring: 'before:bg-emerald-500/60',
         icon: Check,
       }
     case 'rejected':
       return {
         tone: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-        ring: 'before:bg-red-500/60',
         icon: X,
       }
     case 'cancelled':
       return {
         tone: 'bg-muted text-muted-foreground',
-        ring: 'before:bg-muted-foreground/40',
         icon: Ban,
       }
     case 'negotiating':
       return {
         tone: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-        ring: 'before:bg-amber-500/60',
         icon: MessageSquare,
       }
     default:
       return {
         tone: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-        ring: 'before:bg-amber-500/60',
         icon: Clock,
       }
   }
@@ -195,9 +190,7 @@ export function ListingOfferCard({
     <div className="shrink-0 px-3 md:px-5">
       <div
         className={cn(
-          'relative overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-shadow',
-          'before:absolute before:left-0 before:top-0 before:h-full before:w-[3px] before:content-[""]',
-          visuals.ring,
+          'overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-shadow',
           expanded && 'shadow-md'
         )}
       >
@@ -230,6 +223,10 @@ export function ListingOfferCard({
               {offer.listing_title}
             </p>
             <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className="font-medium text-foreground/70">
+                {listingTypeLabel(offer.listing_type, t)}
+              </span>
+              <span aria-hidden="true">·</span>
               {offer.variant_label && (
                 <>
                   <span className="truncate">{offer.variant_label}</span>
@@ -271,25 +268,27 @@ export function ListingOfferCard({
             ) : (
               <>
                 {/* Price + dates summary row */}
-                <div className="space-y-1.5">
-                  <div className="flex items-baseline justify-between gap-3 text-xs">
-                    <span className="text-muted-foreground">
-                      {t('marketplace.offerCard.asking')}
-                    </span>
-                    <span className="tabular-nums text-foreground/80">
-                      {askingText}
-                    </span>
-                  </div>
-                  {(offeredText || editable) && (
-                    <div className="flex items-baseline justify-between gap-3 text-xs">
-                      <span className="text-muted-foreground">
-                        {t('marketplace.offerCard.offered')}
-                      </span>
-                      <span className="text-sm font-semibold tabular-nums text-foreground">
-                        {offeredText ?? '—'}
-                      </span>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-medium text-muted-foreground">
+                        {t('marketplace.offerCard.asking')}
+                      </p>
+                      <p className="text-sm tabular-nums text-foreground/80">
+                        {askingText}
+                      </p>
                     </div>
-                  )}
+                    {(offeredText || editable) && (
+                      <div className="space-y-0.5">
+                        <p className="text-[11px] font-medium text-muted-foreground">
+                          {t('marketplace.offerCard.offered')}
+                        </p>
+                        <p className="text-base font-semibold tabular-nums text-foreground">
+                          {offeredText ?? '—'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                   {needsDates && offer.start_at && offer.end_at && (
                     <div className="flex items-center gap-2 rounded-md bg-muted/30 px-2 py-1.5 text-[11px] tabular-nums text-muted-foreground">
                       <CalendarRange className="size-3.5 shrink-0" />
@@ -306,7 +305,7 @@ export function ListingOfferCard({
 
                 {/* Editable block */}
                 {editable && (
-                  <div className="mt-3 space-y-2 rounded-md border border-border/60 bg-muted/20 p-2.5">
+                  <div className="mt-3 space-y-2 border-t border-border/60 pt-3">
                     <div className="flex items-end gap-1.5">
                       <div className="min-w-0 flex-1 space-y-1">
                         <p className="text-[11px] font-medium text-muted-foreground">

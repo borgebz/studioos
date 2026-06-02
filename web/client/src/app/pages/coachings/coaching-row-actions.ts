@@ -80,7 +80,19 @@ export function getCoachingRowActions(
   const status = coaching.status
   const isTeacher = coaching.teacher?.id === ctx.userId && ctx.canTeach
   const isRequester = coaching.requested_by?.id === ctx.userId
-  const { participant, onBehalfOf } = findActingParticipant(coaching, ctx)
+  const found = findActingParticipant(coaching, ctx)
+  const onBehalfOf = found.onBehalfOf
+
+  // The current user genuinely participates only if they hold a participant row,
+  // have the participate permission, and that row isn't their own seat on a
+  // coaching they teach (a teacher is never a participant of their own lesson —
+  // guards against stale self-enrolment rows surfacing participant actions).
+  const selfIsAssignedTeacher =
+    onBehalfOf === null && coaching.teacher?.id === ctx.userId
+  const participant =
+    found.participant && ctx.canParticipate && !selfIsAssignedTeacher
+      ? found.participant
+      : null
   const pStatus = participant?.status
 
   return {
@@ -95,7 +107,7 @@ export function getCoachingRowActions(
       (status === CoachingClassStatusEnum.Requested ||
         status === CoachingClassStatusEnum.PendingApproval),
     participant,
-    onBehalfOf,
+    onBehalfOf: participant ? onBehalfOf : null,
     participantAcceptInvite:
       pStatus === CoachingParticipantStatusEnum.Invited,
     participantConfirmAttendance:

@@ -8,12 +8,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, Package, Plus, Tag } from 'lucide-react'
+import { ExternalLink, Package, Pencil, Plus, Tag } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
 import {
   ListingTypeEnum,
-  type ListingCreate,
+  type ListingCreateMultipart,
   type ProductDetail,
   type ProductVariantRead,
   type SchoolListingCreateMultipart,
@@ -48,6 +48,7 @@ import { ProductStatusBadge } from '@/components/shared/ProductStatusBadge'
 import { StatusBadge, listingTypeLabel } from '@/app/pages/marketplace/marketplace-helpers'
 import { paths } from '@/app/paths'
 import { parseApiError } from '@/lib/api-errors'
+import { usePermissions } from '@/auth/permissions'
 import { toast } from 'sonner'
 
 const LISTING_TYPES = enumOptions(ListingTypeEnum, 'marketplace.type')
@@ -78,10 +79,18 @@ function capitalize(s: string) {
 export function ProductDetailPage({ context }: ProductDetailPageProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { can } = usePermissions()
   const { id } = useParams<{ id: string }>()
   const productId = id ? Number(id) : NaN
   const isSchool = context === 'school'
   const backTo = isSchool ? paths.schoolInventory : paths.myInventory
+  const canEdit = can(
+    isSchool ? 'inventory.change_school_product' : 'inventory.change_product'
+  )
+  const editTo = (isSchool
+    ? paths.schoolInventoryEdit
+    : paths.myInventoryEdit
+  ).replace(':id', String(productId))
 
   const [product, setProduct] = useState<ProductDetail | null>(null)
   const [variants, setVariants] = useState<ProductVariantRead[]>([])
@@ -161,7 +170,14 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
   return (
     <PageLayout>
       <div className={PAGE_CONTENT}>
-        <PageHeader title={product.name} backTo={backTo} />
+        <PageHeader title={product.name} backTo={backTo}>
+          {canEdit && (
+            <Button variant="outline" onClick={() => navigate(editTo)}>
+              <Pencil className="size-4" />
+              {t('inventory.editProduct', { defaultValue: 'Edit' })}
+            </Button>
+          )}
+        </PageHeader>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_350px]">
           {/* ─── Main column ─── */}
@@ -413,14 +429,16 @@ function ListOnMarketplaceDialog({
         asking_price: price || null,
         is_public: isPublic,
       }
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
       if (isSchool) {
-        const fd = new FormData()
-        fd.append('payload', JSON.stringify(payload))
         await apiClient.api.marketplaceSchoolListingsCreate(
           fd as unknown as SchoolListingCreateMultipart
         )
       } else {
-        await apiClient.api.marketplaceListingsCreate(payload as ListingCreate)
+        await apiClient.api.marketplaceListingsCreate(
+          fd as unknown as ListingCreateMultipart
+        )
       }
       toast.success(
         t('productDetail.listed', { defaultValue: 'Listed on the marketplace.' })

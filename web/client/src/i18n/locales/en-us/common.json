@@ -609,6 +609,7 @@
     "startTime": "Start time",
     "endTime": "End time",
     "time": "Time",
+    "invalidTimeRange": "End time must be after start time.",
     "recurringSession": "Recurring session",
     "recurringDesc": "Create multiple sessions from a pattern",
     "recurring": "Recurring",
@@ -685,7 +686,21 @@
     "dayFri": "Fri",
     "daySat": "Sat",
     "daySun": "Sun",
-    "removeParticipant": "Remove participant"
+    "removeParticipant": "Remove participant",
+    "currentParticipants": "Current participants",
+    "currentParticipantsDesc": "Students on this session and their status.",
+    "participantStatus": {
+      "invited": "Invited",
+      "pending": "Pending",
+      "active": "Active",
+      "pending_completion": "Pending completion",
+      "attended": "Attended",
+      "absent": "Absent",
+      "cancelled": "Cancelled",
+      "late_cancelled": "Late cancelled"
+    },
+    "participantAdded": "Participant added.",
+    "participantRemoved": "Participant removed."
   },
   "coachingRequests": {
     "title": "Coaching requests",
@@ -769,7 +784,12 @@
     "createSuccess": "Product created successfully",
     "createError": "Failed to create product",
     "productDetails": "Product Details",
-    "variantSheetDesc": "Set the condition, size, and color of this variant."
+    "variantSheetDesc": "Set the condition, size, and color of this variant.",
+    "editTitle": "Edit Product",
+    "saveProduct": "Save changes",
+    "editProduct": "Edit",
+    "updateSuccess": "Product updated successfully",
+    "updateError": "Failed to update product"
   },
   "myCoachingRequests": {
     "title": "My Coachings",
@@ -1028,6 +1048,7 @@
     "selected": "selected",
     "today": "Today",
     "eventDetails": "Event details",
+    "status": "Status",
     "time": "Time",
     "studio": "Studio",
     "teacher": "Teacher",

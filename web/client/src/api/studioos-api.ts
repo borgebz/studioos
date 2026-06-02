@@ -225,6 +225,21 @@ export enum ListingStatusEnum {
 }
 
 /**
+ * * `open` - Open
+ * * `negotiating` - Negotiating
+ * * `completed` - Completed
+ * * `rejected` - Rejected
+ * * `cancelled` - Cancelled
+ */
+export enum ListingOfferStatusEnum {
+  Open = "open",
+  Negotiating = "negotiating",
+  Completed = "completed",
+  Rejected = "rejected",
+  Cancelled = "cancelled",
+}
+
+/**
  * * `pt` - Português
  * * `en` - English
  */
@@ -812,11 +827,11 @@ export interface Conversation {
   created_by_id: number | null;
   coaching_id: number | null;
   recurring_coaching_id: number | null;
-  listing_id?: number | null;
-  variant_id?: number | null;
-  listing_title?: string | null;
-  variant_photo_url?: string | null;
-  listing_offer?: ListingOfferSummary | null;
+  listing_id: number | null;
+  variant_id: number | null;
+  listing_title: string | null;
+  variant_photo_url: string | null;
+  listing_offer: Record<string, any>;
   last_message: Message | null;
   pinned_message_ids: number[];
   /** @format date-time */
@@ -1471,16 +1486,6 @@ export interface FineWaive {
   notes: string;
 }
 
-export interface InlineVariant {
-  size_id?: number | null;
-  sku?: string | null;
-  condition?: string;
-  acquisition_type?: string;
-  color_ids?: number[];
-  /** @default "" */
-  notes?: string;
-}
-
 export interface InventoryMemberProductList {
   count: number;
   /** @format uri */
@@ -1583,27 +1588,29 @@ export interface ListingCommentUpdate {
   body: string;
 }
 
-export interface ListingCreate {
-  product_id?: number | null;
-  /**
-   * * `rent` - Rent
-   * * `sell` - Sell
-   * * `lend` - Lend
-   * * `donate` - Donate
-   */
-  listing_type: ListingTypeEnum;
-  /** @maxLength 255 */
-  title: string;
-  /** @default "" */
-  description?: string;
-  /**
-   * @format decimal
-   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
-   */
-  asking_price?: string | null;
-  /** @default false */
-  is_public?: boolean;
-  product?: Record<string, any>;
+export interface ListingCreateMultipart {
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  payload: string;
+  /** @format uri */
+  media_0?: string;
+  /** @format uri */
+  media_1?: string;
+  /** @format uri */
+  media_2?: string;
+  /** @format uri */
+  media_3?: string;
+  /** @format uri */
+  media_4?: string;
+  /** @format uri */
+  media_5?: string;
+  /** @format uri */
+  media_6?: string;
+  /** @format uri */
+  media_7?: string;
+  /** @format uri */
+  media_8?: string;
+  /** @format uri */
+  media_9?: string;
 }
 
 export interface ListingDetail {
@@ -1679,6 +1686,59 @@ export interface ListingList {
   condition_summary: string[];
   /** @format date-time */
   created_at: string;
+}
+
+export interface ListingOffer {
+  id: number;
+  listing_id: number;
+  listing_title: string;
+  listing_type: string;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  asking_price: string | null;
+  variant_id: number | null;
+  variant_label: string | null;
+  variant_photo_url: string | null;
+  conversation_id: number;
+  buyer_id: number;
+  buyer_display: Record<string, any>;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  offered_price: string | null;
+  /** @format date-time */
+  start_at: string | null;
+  /** @format date-time */
+  end_at: string | null;
+  message: string;
+  status: ListingOfferStatusEnum;
+  /** True for 'Ask seller' threads without a formal offer. */
+  is_inquiry: boolean;
+  transaction_id: number | null;
+  /** @format date-time */
+  created_at: string;
+  /** @format date-time */
+  updated_at: string;
+}
+
+export interface ListingOfferCreate {
+  variant_id?: number | null;
+  /**
+   * @format decimal
+   * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
+   */
+  offered_price?: string | null;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  /** @default "" */
+  message?: string;
+  /** @default false */
+  is_inquiry?: boolean;
 }
 
 /**
@@ -2009,25 +2069,42 @@ export interface PatchedEnrollmentUpdate {
   historical_notes?: string;
 }
 
-export interface PatchedListingUpdate {
-  /**
-   * * `rent` - Rent
-   * * `sell` - Sell
-   * * `lend` - Lend
-   * * `donate` - Donate
-   */
-  listing_type?: ListingTypeEnum;
-  /** @maxLength 255 */
-  title?: string;
-  description?: string;
+export interface PatchedListingOfferUpdate {
   /**
    * @format decimal
    * @pattern ^-?\d{0,8}(?:\.\d{0,2})?$
    */
-  asking_price?: string | null;
-  is_public?: boolean;
-  product?: Record<string, any>;
-  variants?: Record<string, any>[];
+  offered_price?: string | null;
+  /** @format date-time */
+  start_at?: string | null;
+  /** @format date-time */
+  end_at?: string | null;
+  message?: string;
+}
+
+export interface PatchedListingUpdateMultipart {
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  payload?: string;
+  /** @format uri */
+  media_0?: string;
+  /** @format uri */
+  media_1?: string;
+  /** @format uri */
+  media_2?: string;
+  /** @format uri */
+  media_3?: string;
+  /** @format uri */
+  media_4?: string;
+  /** @format uri */
+  media_5?: string;
+  /** @format uri */
+  media_6?: string;
+  /** @format uri */
+  media_7?: string;
+  /** @format uri */
+  media_8?: string;
+  /** @format uri */
+  media_9?: string;
 }
 
 export interface PatchedModalityUpdate {
@@ -2043,20 +2120,29 @@ export interface PatchedModalityUpdate {
   allowed_studio_ids?: number[];
 }
 
-export interface PatchedProductUpdate {
-  name?: string;
-  description?: string;
-  category_id?: number | null;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
-  /**
-   * * `active` - Active
-   * * `inactive` - Inactive
-   * * `archived` - Archived
-   */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
+export interface PatchedProductUpdateMultipart {
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  payload?: string;
+  /** @format uri */
+  media_0?: string;
+  /** @format uri */
+  media_1?: string;
+  /** @format uri */
+  media_2?: string;
+  /** @format uri */
+  media_3?: string;
+  /** @format uri */
+  media_4?: string;
+  /** @format uri */
+  media_5?: string;
+  /** @format uri */
+  media_6?: string;
+  /** @format uri */
+  media_7?: string;
+  /** @format uri */
+  media_8?: string;
+  /** @format uri */
+  media_9?: string;
 }
 
 /** Write serializer used for POST/PATCH. */
@@ -2114,21 +2200,54 @@ export interface PatchedRenameConversation {
   name?: string;
 }
 
-export interface PatchedSchoolProductUpdate {
-  name?: string;
-  description?: string;
-  category_id?: number | null;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
-  /**
-   * * `active` - Active
-   * * `inactive` - Inactive
-   * * `archived` - Archived
-   */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
-  school_details?: SchoolProductDetails;
+export interface PatchedSchoolListingUpdateMultipart {
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  payload?: string;
+  /** @format uri */
+  media_0?: string;
+  /** @format uri */
+  media_1?: string;
+  /** @format uri */
+  media_2?: string;
+  /** @format uri */
+  media_3?: string;
+  /** @format uri */
+  media_4?: string;
+  /** @format uri */
+  media_5?: string;
+  /** @format uri */
+  media_6?: string;
+  /** @format uri */
+  media_7?: string;
+  /** @format uri */
+  media_8?: string;
+  /** @format uri */
+  media_9?: string;
+}
+
+export interface PatchedSchoolProductUpdateMultipart {
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  payload?: string;
+  /** @format uri */
+  media_0?: string;
+  /** @format uri */
+  media_1?: string;
+  /** @format uri */
+  media_2?: string;
+  /** @format uri */
+  media_3?: string;
+  /** @format uri */
+  media_4?: string;
+  /** @format uri */
+  media_5?: string;
+  /** @format uri */
+  media_6?: string;
+  /** @format uri */
+  media_7?: string;
+  /** @format uri */
+  media_8?: string;
+  /** @format uri */
+  media_9?: string;
 }
 
 export interface PatchedStudioUpdate {
@@ -2226,18 +2345,29 @@ export interface Permission {
   name: string;
 }
 
-export interface ProductCreate {
-  name: string;
-  /** @default "" */
-  description?: string;
-  category_id?: number;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
-  /** @default "active" */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
-  variants?: InlineVariant[];
+export interface ProductCreateMultipart {
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  payload: string;
+  /** @format uri */
+  media_0?: string;
+  /** @format uri */
+  media_1?: string;
+  /** @format uri */
+  media_2?: string;
+  /** @format uri */
+  media_3?: string;
+  /** @format uri */
+  media_4?: string;
+  /** @format uri */
+  media_5?: string;
+  /** @format uri */
+  media_6?: string;
+  /** @format uri */
+  media_7?: string;
+  /** @format uri */
+  media_8?: string;
+  /** @format uri */
+  media_9?: string;
 }
 
 export interface ProductDetail {
@@ -2272,15 +2402,6 @@ export interface ProductMedia {
    * @min -2147483648
    * @max 2147483647
    */
-  sort_order?: number;
-}
-
-export interface ProductMediaInput {
-  /** @format uri */
-  image?: string;
-  /** @default false */
-  is_primary?: boolean;
-  /** @default 0 */
   sort_order?: number;
 }
 
@@ -2555,7 +2676,7 @@ export interface SchoolBookingVariantSummary {
 }
 
 export interface SchoolListingCreateMultipart {
-  /** JSON-encoded ListingCreate payload. Files for product.media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
   payload: string;
   /** @format uri */
   media_0?: string;
@@ -2588,19 +2709,29 @@ export interface SchoolListingList {
   results: ListingList[];
 }
 
-export interface SchoolProductCreate {
-  name: string;
-  /** @default "" */
-  description?: string;
-  category_id?: number;
-  target_gender?: string | null;
-  brand?: string | null;
-  material?: string | null;
-  /** @default "active" */
-  status?: ProductStatusEnum;
-  media?: ProductMediaInput[];
-  variants?: InlineVariant[];
-  school_details?: SchoolProductDetails;
+export interface SchoolProductCreateMultipart {
+  /** JSON-encoded payload. Files for media[i].image are sent as separate form fields named media_0, media_1, ..., matching the index of each media entry. */
+  payload: string;
+  /** @format uri */
+  media_0?: string;
+  /** @format uri */
+  media_1?: string;
+  /** @format uri */
+  media_2?: string;
+  /** @format uri */
+  media_3?: string;
+  /** @format uri */
+  media_4?: string;
+  /** @format uri */
+  media_5?: string;
+  /** @format uri */
+  media_6?: string;
+  /** @format uri */
+  media_7?: string;
+  /** @format uri */
+  media_8?: string;
+  /** @format uri */
+  media_9?: string;
 }
 
 export interface SchoolProductDetails {
@@ -2750,73 +2881,6 @@ export interface TransactionDetail {
   listing_title: string;
   variant_sku: string;
   product_name: string;
-  /** @format date-time */
-  created_at: string;
-  /** @format date-time */
-  updated_at: string;
-}
-
-export interface ListingOfferSummary {
-  id: number;
-  variant_id: number | null;
-  variant_label?: string | null;
-  variant_photo_url?: string | null;
-  offered_price?: string | null;
-  /** @format date-time */
-  start_at?: string | null;
-  /** @format date-time */
-  end_at?: string | null;
-  status: string;
-  is_inquiry: boolean;
-  transaction_id?: number | null;
-}
-
-export interface ListingOfferCreate {
-  variant_id?: number | null;
-  offered_price?: string | null;
-  /** @format date-time */
-  start_at?: string | null;
-  /** @format date-time */
-  end_at?: string | null;
-  /** @default "" */
-  message?: string;
-  /** @default false */
-  is_inquiry?: boolean;
-}
-
-export interface ListingOfferUpdate {
-  offered_price?: string | null;
-  /** @format date-time */
-  start_at?: string | null;
-  /** @format date-time */
-  end_at?: string | null;
-  message?: string;
-}
-
-export interface ListingOffer {
-  id: number;
-  listing_id: number;
-  listing_title: string;
-  listing_type: ListingTypeEnum;
-  asking_price?: string | null;
-  variant_id: number | null;
-  variant_label?: string | null;
-  variant_photo_url?: string | null;
-  conversation_id: number;
-  buyer_id: number;
-  buyer_display?: {
-    id: number;
-    display_name?: string | null;
-  };
-  offered_price?: string | null;
-  /** @format date-time */
-  start_at?: string | null;
-  /** @format date-time */
-  end_at?: string | null;
-  message?: string;
-  status: string;
-  is_inquiry: boolean;
-  transaction_id?: number | null;
   /** @format date-time */
   created_at: string;
   /** @format date-time */
@@ -5641,14 +5705,14 @@ export class Api<
      * @request POST:/api/inventory/products/
      */
     inventoryProductsCreate: (
-      data: ProductCreate,
+      data: ProductCreateMultipart,
       params: RequestParams = {},
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/products/`,
         method: "POST",
         body: data,
-        type: ContentType.Json,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
@@ -5677,14 +5741,14 @@ export class Api<
      */
     inventoryProductsPartialUpdate: (
       id: number,
-      data: PatchedProductUpdate,
+      data: PatchedProductUpdateMultipart,
       params: RequestParams = {},
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/products/${id}/`,
         method: "PATCH",
         body: data,
-        type: ContentType.Json,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
@@ -5847,14 +5911,14 @@ export class Api<
      * @request POST:/api/inventory/school/products/
      */
     inventorySchoolProductsCreate: (
-      data: SchoolProductCreate,
+      data: SchoolProductCreateMultipart,
       params: RequestParams = {},
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/school/products/`,
         method: "POST",
         body: data,
-        type: ContentType.Json,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
@@ -5886,14 +5950,14 @@ export class Api<
      */
     inventorySchoolProductsPartialUpdate: (
       id: number,
-      data: PatchedSchoolProductUpdate,
+      data: PatchedSchoolProductUpdateMultipart,
       params: RequestParams = {},
     ) =>
       this.request<ProductDetail, ErrorResponse>({
         path: `/api/inventory/school/products/${id}/`,
         method: "PATCH",
         body: data,
-        type: ContentType.Json,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
@@ -6272,14 +6336,14 @@ export class Api<
      * @request POST:/api/marketplace/listings/
      */
     marketplaceListingsCreate: (
-      data: ListingCreate,
+      data: ListingCreateMultipart,
       params: RequestParams = {},
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/listings/`,
         method: "POST",
         body: data,
-        type: ContentType.Json,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
@@ -6311,14 +6375,14 @@ export class Api<
      */
     marketplaceListingsPartialUpdate: (
       listingId: number,
-      data: PatchedListingUpdate,
+      data: PatchedListingUpdateMultipart,
       params: RequestParams = {},
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/listings/${listingId}/`,
         method: "PATCH",
         body: data,
-        type: ContentType.Json,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
@@ -6474,6 +6538,27 @@ export class Api<
      * No description
      *
      * @tags marketplace
+     * @name MarketplaceListingsOffersCreate
+     * @request POST:/api/marketplace/listings/{listing_id}/offers/
+     */
+    marketplaceListingsOffersCreate: (
+      listingId: number,
+      data: ListingOfferCreate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/listings/${listingId}/offers/`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
      * @name MarketplaceListingsPublishCreate
      * @request POST:/api/marketplace/listings/{listing_id}/publish/
      */
@@ -6505,75 +6590,6 @@ export class Api<
         method: "POST",
         body: data,
         type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    marketplaceListingsOffersCreate: (
-      listingId: number,
-      data: ListingOfferCreate,
-      params: RequestParams = {},
-    ) =>
-      this.request<ListingOffer, ErrorResponse>({
-        path: `/api/marketplace/listings/${listingId}/offers/`,
-        method: "POST",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    marketplaceOffersRetrieve: (offerId: number, params: RequestParams = {}) =>
-      this.request<ListingOffer, ErrorResponse>({
-        path: `/api/marketplace/offers/${offerId}/`,
-        method: "GET",
-        format: "json",
-        ...params,
-      }),
-
-    marketplaceOffersPartialUpdate: (
-      offerId: number,
-      data: ListingOfferUpdate,
-      params: RequestParams = {},
-    ) =>
-      this.request<ListingOffer, ErrorResponse>({
-        path: `/api/marketplace/offers/${offerId}/`,
-        method: "PATCH",
-        body: data,
-        type: ContentType.Json,
-        format: "json",
-        ...params,
-      }),
-
-    marketplaceOffersCompleteCreate: (
-      offerId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<ListingOffer, ErrorResponse>({
-        path: `/api/marketplace/offers/${offerId}/complete/`,
-        method: "POST",
-        format: "json",
-        ...params,
-      }),
-
-    marketplaceOffersRejectCreate: (
-      offerId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<ListingOffer, ErrorResponse>({
-        path: `/api/marketplace/offers/${offerId}/reject/`,
-        method: "POST",
-        format: "json",
-        ...params,
-      }),
-
-    marketplaceOffersCancelCreate: (
-      offerId: number,
-      params: RequestParams = {},
-    ) =>
-      this.request<ListingOffer, ErrorResponse>({
-        path: `/api/marketplace/offers/${offerId}/cancel/`,
-        method: "POST",
         format: "json",
         ...params,
       }),
@@ -6661,6 +6677,96 @@ export class Api<
         path: `/api/marketplace/listings/mine/`,
         method: "GET",
         query: query,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceOffersRetrieve
+     * @request GET:/api/marketplace/offers/{offer_id}/
+     */
+    marketplaceOffersRetrieve: (offerId: number, params: RequestParams = {}) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceOffersPartialUpdate
+     * @request PATCH:/api/marketplace/offers/{offer_id}/
+     */
+    marketplaceOffersPartialUpdate: (
+      offerId: number,
+      data: PatchedListingOfferUpdate,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceOffersCancelCreate
+     * @request POST:/api/marketplace/offers/{offer_id}/cancel/
+     */
+    marketplaceOffersCancelCreate: (
+      offerId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/cancel/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceOffersCompleteCreate
+     * @request POST:/api/marketplace/offers/{offer_id}/complete/
+     */
+    marketplaceOffersCompleteCreate: (
+      offerId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/complete/`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags marketplace
+     * @name MarketplaceOffersRejectCreate
+     * @request POST:/api/marketplace/offers/{offer_id}/reject/
+     */
+    marketplaceOffersRejectCreate: (
+      offerId: number,
+      params: RequestParams = {},
+    ) =>
+      this.request<ListingOffer, ErrorResponse>({
+        path: `/api/marketplace/offers/${offerId}/reject/`,
+        method: "POST",
         format: "json",
         ...params,
       }),
@@ -6766,14 +6872,14 @@ export class Api<
      */
     marketplaceSchoolListingsPartialUpdate: (
       listingId: number,
-      data: PatchedListingUpdate,
+      data: PatchedSchoolListingUpdateMultipart,
       params: RequestParams = {},
     ) =>
       this.request<ListingDetail, ErrorResponse>({
         path: `/api/marketplace/school/listings/${listingId}/`,
         method: "PATCH",
         body: data,
-        type: ContentType.Json,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),

@@ -22,6 +22,8 @@ import {
   CoachingClassStatusEnum,
   RecurrenceTypeEnum,
   type CoachingClass,
+  type CoachingParticipant,
+  type InvitableUserSummary,
   type Modality as ApiModality,
   type Studio as ApiStudio,
   type TeacherSummary,
@@ -44,6 +46,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { TeacherStudioAvailabilityDialog } from './TeacherStudioAvailabilityDialog'
+import {
+  PARTICIPANT_STATUS_STYLES,
+  isCancellableParticipantStatus,
+  isActiveParticipant,
+} from './coaching-status'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,7 +123,7 @@ function teacherName(t: TeacherSummary) {
   return [t.first_name, t.last_name].filter(Boolean).join(' ') || t.email
 }
 
-function userToStudent(u: UserResponse): StudentOption {
+function userToStudent(u: InvitableUserSummary): StudentOption {
   const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email
   return { id: u.id, name, email: u.email }
 }
@@ -171,6 +178,12 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
   // UI state
   const [classeId, setClasseId] = useState<string>('')
   const [participants, setParticipants] = useState<StudentOption[]>([])
+  // Edit mode manages real participant rows (with status) via dedicated
+  // endpoints, since the coaching update payload doesn't carry participants.
+  const [editParticipants, setEditParticipants] = useState<
+    CoachingParticipant[]
+  >(() => (isEdit && coaching ? (coaching.participants ?? []) : []))
+  const [participantBusy, setParticipantBusy] = useState(false)
   const [addParticipantOpen, setAddParticipantOpen] = useState(false)
   const [availabilityOpen, setAvailabilityOpen] = useState(false)
   const [discardOpen, setDiscardOpen] = useState(false)
@@ -208,19 +221,22 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
     if (dataLoaded.current) return
     dataLoaded.current = true
     const load = async () => {
-      // In edit mode we don't need classes or all-students.
+      // Edit mode skips the classe roster, but still needs the student list so
+      // staff can add participants from the edit form.
       const promises = isEdit
         ? [
             apiClient.api.modalitiesList().catch(() => null),
             apiClient.api.studiosList().catch(() => null),
             apiClient.api.accountsTeachersList().catch(() => null),
+            Promise.resolve(null),
+            apiClient.api.accountsInvitableList().catch(() => null),
           ]
         : [
             apiClient.api.modalitiesList().catch(() => null),
             apiClient.api.studiosList().catch(() => null),
             apiClient.api.accountsTeachersList().catch(() => null),
             apiClient.api.classesList().catch(() => null),
-            apiClient.api.listUsers().catch(() => null),
+            apiClient.api.accountsInvitableList().catch(() => null),
           ]
 
       const [modalitiesRes, studiosRes, teachersRes, classesRes, usersRes] =
@@ -281,8 +297,10 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
         }
       }
       if (usersRes && typeof usersRes === 'object' && 'data' in usersRes) {
-        const d = (usersRes as { data: { results: UserResponse[] } }).data
-        if (d) setAllStudents(d.results.map(userToStudent))
+        // `accountsInvitableList` returns only users with
+        // `accounts.can_participate_in_coaching`, as a plain array.
+        const d = (usersRes as { data: InvitableUserSummary[] }).data
+        if (d) setAllStudents(d.map(userToStudent))
       }
     }
     void load()
@@ -302,9 +320,68 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
   }, [modalityId, studios])
 
   const availableStudents = useMemo(() => {
-    const participantIds = new Set(participants.map((p) => p.id))
-    return allStudents.filter((s) => !participantIds.has(s.id))
-  }, [participants, allStudents])
+    const takenIds = isEdit
+      ? new Set(editParticipants.map((p) => p.student.id))
+      : new Set(participants.map((p) => p.id))
+    return allStudents.filter((s) => !takenIds.has(s.id))
+  }, [isEdit, participants, editParticipants, allStudents])
+
+  // Current roster excludes cancelled participants — drives both the list and
+  // the live "Participantes" count in the summary.
+  const currentParticipants = useMemo(
+    () => editParticipants.filter((p) => isActiveParticipant(p.status)),
+    [editParticipants]
+  )
+
+  const studentName = (s: UserResponse) =>
+    [s.first_name, s.last_name].filter(Boolean).join(' ') || s.email
+
+  const reloadParticipants = async () => {
+    if (!coaching) return
+    const res = await apiClient.api
+      .coachingsParticipantsList(coaching.id)
+      .catch(() => null)
+    if (res?.data) setEditParticipants(res.data)
+  }
+
+  const handleAddParticipantsEdit = async (students: StudentOption[]) => {
+    setAddParticipantOpen(false)
+    if (!coaching || students.length === 0) return
+    setParticipantBusy(true)
+    try {
+      for (const s of students) {
+        await apiClient.api.coachingsParticipantsCreate(coaching.id, {
+          student_id: s.id,
+        })
+      }
+      await reloadParticipants()
+      toast.success(t('coachings.participantAdded'))
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+    } finally {
+      setParticipantBusy(false)
+    }
+  }
+
+  const handleRemoveParticipantEdit = async (
+    participant: CoachingParticipant
+  ) => {
+    if (!coaching) return
+    setParticipantBusy(true)
+    try {
+      await apiClient.api.coachingsParticipantsCancelCreate(
+        coaching.id,
+        participant.id,
+        {}
+      )
+      await reloadParticipants()
+      toast.success(t('coachings.participantRemoved'))
+    } catch (err) {
+      toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
+    } finally {
+      setParticipantBusy(false)
+    }
+  }
 
   const toggleDay = (day: string) => {
     const current = selectedDays
@@ -338,9 +415,17 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
   const onSubmit = async (data: CoachingFormValues) => {
     setIsSaving(true)
     try {
-      const dateStr = format(data.date, 'yyyy-MM-dd')
-      const startDatetime = `${dateStr}T${data.start_time}:00`
-      const endDatetime = `${dateStr}T${data.end_time}:00`
+      // Build a real local instant and send it as an ISO string with offset.
+      // Sending a naive "YYYY-MM-DDTHH:mm" makes the UTC backend store the
+      // wall-clock as UTC, which then renders an hour off in local time.
+      const slot = buildCurrentSlot(data.date, data.start_time, data.end_time)
+      if (!slot) {
+        toast.error(t('coachings.invalidTimeRange'))
+        setIsSaving(false)
+        return
+      }
+      const startDatetime = slot.start.toISOString()
+      const endDatetime = slot.end.toISOString()
 
       if (isEdit && coaching) {
         const payload: Record<string, unknown> = {
@@ -1087,6 +1172,79 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
               </CardSection>
             )}
 
+            {/* Participants — edit mode (managed via dedicated endpoints) */}
+            {isEdit && (
+              <CardSection
+                title={t('coachings.currentParticipants')}
+                description={t('coachings.currentParticipantsDesc')}
+              >
+                <div className="space-y-4">
+                  {currentParticipants.length > 0 ? (
+                    <div className="space-y-2">
+                      {currentParticipants.map((p) => (
+                        <div
+                          key={p.id}
+                          className="flex items-center gap-3 rounded-lg border border-border p-3"
+                        >
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                              {getInitials(studentName(p.student))}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {studentName(p.student)}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {p.student.email}
+                            </p>
+                          </div>
+                          {p.status && (
+                            <Badge
+                              className={cn(
+                                'font-normal shrink-0',
+                                PARTICIPANT_STATUS_STYLES[p.status]
+                              )}
+                            >
+                              {t(`coachings.participantStatus.${p.status}`)}
+                            </Badge>
+                          )}
+                          {isCancellableParticipantStatus(p.status) && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={t('coachings.removeParticipant')}
+                              disabled={participantBusy}
+                              onClick={() => handleRemoveParticipantEdit(p)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <UserPlus className="h-8 w-8 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        {t('coachings.noParticipants')}
+                      </p>
+                    </div>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={participantBusy}
+                    onClick={() => setAddParticipantOpen(true)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    {t('coachings.addParticipant')}
+                  </Button>
+                </div>
+              </CardSection>
+            )}
+
             {/* Notes */}
             <CardSection title={t('coachings.notes')}>
               <Controller
@@ -1251,9 +1409,7 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
                 <SummaryRow
                   label={t('coachings.participants')}
                   value={String(
-                    isEdit
-                      ? (coaching?.participants.length ?? 0)
-                      : participants.length
+                    isEdit ? currentParticipants.length : participants.length
                   )}
                 />
                 <SummaryRow
@@ -1266,15 +1422,13 @@ export function CoachingForm({ mode, coaching }: CoachingFormProps) {
         </div>
       </div>
 
-      {/* Add Participant Dialog — create only */}
-      {!isEdit && (
-        <AddParticipantDialog
-          open={addParticipantOpen}
-          onClose={() => setAddParticipantOpen(false)}
-          onAdd={addParticipants}
-          availableStudents={availableStudents}
-        />
-      )}
+      {/* Add Participant Dialog — create adds to local state, edit persists via API */}
+      <AddParticipantDialog
+        open={addParticipantOpen}
+        onClose={() => setAddParticipantOpen(false)}
+        onAdd={isEdit ? handleAddParticipantsEdit : addParticipants}
+        availableStudents={availableStudents}
+      />
 
       {/* Teacher + Studio Availability */}
       {teacherId && (

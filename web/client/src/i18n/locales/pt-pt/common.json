@@ -609,6 +609,7 @@
     "startTime": "Hora de início",
     "endTime": "Hora de fim",
     "time": "Horário",
+    "invalidTimeRange": "A hora de fim deve ser posterior à de início.",
     "recurringSession": "Sessão recorrente",
     "recurringDesc": "Cria várias sessões a partir de um padrão",
     "recurring": "Recorrente",
@@ -685,7 +686,21 @@
     "dayFri": "Sex",
     "daySat": "Sáb",
     "daySun": "Dom",
-    "removeParticipant": "Remover participante"
+    "removeParticipant": "Remover participante",
+    "currentParticipants": "Participantes atuais",
+    "currentParticipantsDesc": "Alunos nesta sessão e o respetivo estado.",
+    "participantStatus": {
+      "invited": "Convidado",
+      "pending": "Pendente",
+      "active": "Ativo",
+      "pending_completion": "Conclusão pendente",
+      "attended": "Compareceu",
+      "absent": "Faltou",
+      "cancelled": "Cancelado",
+      "late_cancelled": "Cancelado tardiamente"
+    },
+    "participantAdded": "Participante adicionado.",
+    "participantRemoved": "Participante removido."
   },
   "coachingRequests": {
     "title": "Pedidos de coaching",
@@ -769,7 +784,12 @@
     "createSuccess": "Produto criado com sucesso",
     "createError": "Falha ao criar produto",
     "productDetails": "Detalhes do Produto",
-    "variantSheetDesc": "Define a condição, o tamanho e a cor desta variante."
+    "variantSheetDesc": "Define a condição, o tamanho e a cor desta variante.",
+    "editTitle": "Editar Produto",
+    "saveProduct": "Guardar alterações",
+    "editProduct": "Editar",
+    "updateSuccess": "Produto atualizado com sucesso",
+    "updateError": "Falha ao atualizar produto"
   },
   "myCoachingRequests": {
     "title": "Os Meus Coachings",
@@ -1028,6 +1048,7 @@
     "selected": "selecionado",
     "today": "Hoje",
     "eventDetails": "Detalhes do evento",
+    "status": "Estado",
     "time": "Horário",
     "studio": "Estúdio",
     "teacher": "Professor",

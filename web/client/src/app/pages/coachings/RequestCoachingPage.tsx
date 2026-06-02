@@ -311,9 +311,17 @@ export function RequestCoachingPage() {
     setIsSaving(true)
 
     try {
-      const dateStr = format(date, 'yyyy-MM-dd')
-      const startDatetime = `${dateStr}T${startTime}:00`
-      const endDatetime = `${dateStr}T${endTime}:00`
+      // Send real local instants (ISO with offset), not naive wall-clock — the
+      // UTC backend would otherwise store the typed time as UTC and render it an
+      // hour off in local time.
+      const slot = buildCurrentSlot(date, startTime, endTime)
+      if (!slot) {
+        toast.error(t('coachings.invalidTimeRange'))
+        setIsSaving(false)
+        return
+      }
+      const startDatetime = slot.start.toISOString()
+      const endDatetime = slot.end.toISOString()
 
       await apiClient.api.coachingsRequestCreate({
         teacher_id: Number(teacherId),

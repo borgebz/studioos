@@ -70,6 +70,7 @@ import {
   rowHasPendingAction,
 } from './coaching-row-actions'
 import { triggerPendingCoachingsRefresh } from './usePendingCoachingActions'
+import { COACHING_STATUS_STYLES } from './coaching-status'
 
 function userName(
   user: CoachingClass['teacher'] | CoachingClass['requested_by'] | null
@@ -79,22 +80,6 @@ function userName(
   return full || user.email
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  requested:
-    'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  pending_approval:
-    'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
-  scheduled:
-    'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-  waiting_confirmation:
-    'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  pending_completion_approval:
-    'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-  completed: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-muted text-muted-foreground',
-  rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-}
-
 function StatusPill({ status }: { status?: CoachingClassStatusEnum }) {
   const { t } = useTranslation()
   if (!status) return null
@@ -102,7 +87,10 @@ function StatusPill({ status }: { status?: CoachingClassStatusEnum }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <Badge
-          className={cn('font-normal cursor-default', STATUS_STYLES[status])}
+          className={cn(
+            'font-normal cursor-default',
+            COACHING_STATUS_STYLES[status]
+          )}
         >
           {t(`coachingRequests.status.${status}`)}
         </Badge>

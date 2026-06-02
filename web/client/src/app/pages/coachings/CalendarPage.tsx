@@ -137,6 +137,11 @@ import {
   type TeacherSummary,
 } from '@/api/studioos-api'
 import { paths } from '@/app/paths'
+import type { TFunction } from 'i18next'
+import {
+  COACHING_STATUS_STYLES,
+  isEditableCoachingStatus,
+} from './coaching-status'
 import {
   ScheduleCalendar,
   type CalendarResource,
@@ -186,7 +191,8 @@ function toCalendarEvents(
   coachings: CoachingClass[],
   selectedDate: Date,
   modalityColorMap: Map<number, string>,
-  dayStartHour: number
+  dayStartHour: number,
+  t: TFunction
 ): CalendarEvent[] {
   return coachings
     .filter((c) => {
@@ -226,6 +232,13 @@ function toCalendarEvents(
         teacher: c.teacher ? getTeacherName(c.teacher) : undefined,
         enrolled: activeParticipants?.length,
         status: c.status,
+        statusLabel: c.status
+          ? t(`coachingRequests.status.${c.status}`)
+          : undefined,
+        statusClassName: c.status
+          ? COACHING_STATUS_STYLES[c.status]
+          : undefined,
+        editable: isEditableCoachingStatus(c.status),
       }
     })
 }
@@ -480,8 +493,14 @@ function CoordinatorCalendarView() {
 
   const calendarEvents = useMemo(
     () =>
-      toCalendarEvents(coachings, selectedDate, modalityColorMap, dayStartHour),
-    [coachings, selectedDate, modalityColorMap, dayStartHour]
+      toCalendarEvents(
+        coachings,
+        selectedDate,
+        modalityColorMap,
+        dayStartHour,
+        t
+      ),
+    [coachings, selectedDate, modalityColorMap, dayStartHour, t]
   )
   const calendarResources = useMemo(
     () => toCalendarResources(visibleStudios),
@@ -626,6 +645,12 @@ function CoordinatorCalendarView() {
             nowMinutes={nowMinutes}
             onDateChange={handleDateChange}
             filtersSlot={filtersCard}
+            // This view only renders for users with `change_coachingclass`
+            // (gated in CalendarPage), so the Edit action is always available
+            // here; per-event visibility is handled by `event.editable`.
+            onEventEdit={(ev) =>
+              navigate(paths.coachingsEdit.replace(':id', String(ev.id)))
+            }
           />
         )}
       </div>

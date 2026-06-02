@@ -36,6 +36,16 @@ export interface CalendarEvent {
   teacher?: string
   enrolled?: number
   status?: string
+  /** Human-readable, translated status label shown in the detail drawer. */
+  statusLabel?: string
+  /** Badge color classes for the status (domain-provided, e.g. amber/emerald). */
+  statusClassName?: string
+  /**
+   * Whether this event can be edited. Defaults to `true` when unset; set to
+   * `false` to hide the drawer's Edit button for this event (e.g. terminal
+   * statuses). The Edit button also requires `onEventEdit` to be provided.
+   */
+  editable?: boolean
 }
 
 export interface CalendarCategory {
@@ -58,6 +68,12 @@ export interface ScheduleCalendarProps {
   filtersSlot?: React.ReactNode
   onDateChange?: (date: Date) => void
   onEventClick?: (event: CalendarEvent) => void
+  /**
+   * When provided, the detail drawer shows an Edit button (for events whose
+   * `editable` is not `false`) that calls this with the clicked event. The
+   * shared calendar stays route-agnostic — the parent decides where to go.
+   */
+  onEventEdit?: (event: CalendarEvent) => void
 }
 
 const GUTTER_WIDTH = 72
@@ -560,20 +576,22 @@ function EventDrawer({
   onClose,
   dayStartHour,
   resource,
+  onEventEdit,
 }: {
   event: CalendarEvent | null
   open: boolean
   onClose: () => void
   dayStartHour: number
   resource?: CalendarResource
+  onEventEdit?: (event: CalendarEvent) => void
 }) {
   const { t } = useTranslation()
   if (!event) return null
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent className="flex flex-col sm:max-w-[400px]">
-        <SheetHeader>
+      <SheetContent className="flex flex-col gap-0 sm:max-w-[400px]">
+        <SheetHeader className="gap-1 px-6 pt-6 pb-2">
           <div
             className="text-[10px] font-medium tracking-wide"
             style={{ color: event.categoryColor }}
@@ -586,7 +604,23 @@ function EventDrawer({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-4 py-4">
+        <div className="flex flex-col gap-3.5 px-6 py-3">
+          {event.statusLabel && (
+            <>
+              <div className="grid grid-cols-[90px_1fr] gap-3 items-center">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t('scheduleCalendar.status')}
+                </span>
+                <Badge
+                  className={cn('w-fit font-normal', event.statusClassName)}
+                >
+                  {event.statusLabel}
+                </Badge>
+              </div>
+              <Separator />
+            </>
+          )}
+
           <div className="grid grid-cols-[90px_1fr] gap-3 items-baseline">
             <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
               <Clock className="h-3 w-3" /> {t('scheduleCalendar.time')}
@@ -669,11 +703,21 @@ function EventDrawer({
           </div>
         </div>
 
-        <div className="mt-auto flex gap-2 border-t border-border pt-4">
+        <div className="mt-auto flex gap-2 border-t border-border px-6 py-4">
           <Button variant="outline" className="flex-1" onClick={onClose}>
             {t('scheduleCalendar.close')}
           </Button>
-          <Button className="flex-1">{t('scheduleCalendar.edit')}</Button>
+          {onEventEdit && event.editable !== false && (
+            <Button
+              className="flex-1"
+              onClick={() => {
+                onClose()
+                onEventEdit(event)
+              }}
+            >
+              {t('scheduleCalendar.edit')}
+            </Button>
+          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -693,6 +737,7 @@ export function ScheduleCalendar({
   filtersSlot,
   onDateChange,
   onEventClick,
+  onEventEdit,
 }: ScheduleCalendarProps) {
   const { t } = useTranslation()
   const [drawerEvent, setDrawerEvent] = useState<CalendarEvent | null>(null)
@@ -859,6 +904,7 @@ export function ScheduleCalendar({
         onClose={() => setDrawerEvent(null)}
         dayStartHour={dayStartHour}
         resource={drawerEvent ? resourceMap[drawerEvent.resourceId] : undefined}
+        onEventEdit={onEventEdit}
       />
     </div>
   )

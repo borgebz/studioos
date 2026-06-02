@@ -795,7 +795,7 @@ function VariantRow({
         )}
 
         {variant.public_notes && (
-          <p className="rounded-md border-l-2 border-primary/40 bg-muted/30 px-3 py-1.5 text-xs italic text-muted-foreground">
+          <p className="rounded-md bg-muted/30 px-3 py-1.5 text-xs italic text-muted-foreground">
             “{variant.public_notes}”
           </p>
         )}

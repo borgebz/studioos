@@ -245,6 +245,14 @@ export function AppRoutes() {
         }
       />
       <Route
+        path={paths.myInventoryEdit}
+        element={
+          <ProtectedRoute permission="inventory.change_product">
+            <CreateProductPage mode="edit" context="personal" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path={paths.schoolInventory}
         element={
           <ProtectedRoute permission="inventory.view_school_product">
@@ -265,6 +273,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute permission="inventory.view_school_product">
             <ProductDetailPage context="school" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path={paths.schoolInventoryEdit}
+        element={
+          <ProtectedRoute permission="inventory.change_school_product">
+            <CreateProductPage mode="edit" context="school" />
           </ProtectedRoute>
         }
       />

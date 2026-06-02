@@ -220,7 +220,10 @@ export function MessageThread({
   const groupedMessages = useMemo(() => {
     const groups: { day: string; key: string; items: Message[] }[] = []
     for (const m of messages) {
-      const key = m.created_at.slice(0, 10)
+      // Key off the local calendar day (matching dayLabel, which is local) —
+      // slicing the UTC ISO string would split/mislabel messages near midnight.
+      const d = new Date(m.created_at)
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
       const day = dayLabel(m.created_at)
       const last = groups[groups.length - 1]
       if (last && last.key === key) {

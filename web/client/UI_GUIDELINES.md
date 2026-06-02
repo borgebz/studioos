@@ -272,6 +272,15 @@ This pattern is identical for public pages (§16) — only the surrounding shell
 - For times: use the custom `TimePicker` component (`@/components/shared/TimePicker`).
 - Both components are styled to match the design system, support dark mode, and meet accessibility requirements.
 
+#### Timezone & conversion (important)
+
+The API stores every datetime as an absolute UTC instant (`USE_TZ=True`, `TIME_ZONE="UTC"`); the **frontend owns display in local time** (Europe/Lisbon). Get the conversion right at both ends:
+
+- **Sending to the API** — build a real local `Date` from the picked date + `HH:mm`, then serialize with `.toISOString()`. **Never** hand-concatenate a naive string like `` `${dateStr}T${time}:00` ``. A naive string has no offset, so the UTC backend stores the wall-clock as UTC and it renders an hour (the local offset) off.
+  - Use the shared helpers instead of re-rolling this: `buildCurrentSlot(date, startTime, endTime)` (`@/components/shared/AvailabilityHint`) returns `{ start, end }` Dates; call `.toISOString()` on them. Equivalent local helpers exist for events/bookings (`combineDateTime` / `isoFromDateAndTime`).
+- **Displaying from the API** — parse with `new Date(iso)` and format with date-fns (`format(d, 'HH:mm')`, `getHours()`, etc.), which render in the browser's local zone. This round-trips correctly **only** when the value was stored as a real instant (see above).
+- **Grouping / keys / "today" defaults** — derive these from the **local** calendar day (`format(new Date(), 'yyyy-MM-dd')` or `d.getFullYear()/getMonth()/getDate()`). Slicing a UTC ISO string (`iso.slice(0, 10)`) yields the wrong day near midnight.
+
 ### Inputs & Forms
 
 - Always use floating labels or top-aligned labels (label above input, like Saleor).

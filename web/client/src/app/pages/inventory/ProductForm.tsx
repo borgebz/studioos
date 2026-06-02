@@ -1,25 +1,23 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Trash2, Plus, Pencil, Info } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
 import { enumOptions } from '@/lib/enum-options'
-import {
-  AcquisitionTypeEnum,
-  ConditionEnum,
-  ProductStatusEnum,
-  TargetGenderEnum,
-} from '@/api/studioos-api'
+import { ProductStatusEnum, TargetGenderEnum } from '@/api/studioos-api'
 import type {
   Category,
   Color,
   SizeSystem,
-  ProductCreate,
-  SchoolProductCreate,
-  InlineVariant,
+  ProductCreateMultipart,
+  SchoolProductCreateMultipart,
+  PatchedProductUpdateMultipart,
+  PatchedSchoolProductUpdateMultipart,
+  ProductDetail,
+  ProductVariantRead,
 } from '@/api/studioos-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,19 +42,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
-import { ColorSwatchPicker } from '@/components/shared/ColorSwatchPicker'
+import { MediaUpload, type MediaFile } from '@/components/shared/MediaUpload'
+import { VariantsSection } from '@/components/shared/VariantsSection'
+import {
+  type VariantData,
+  isExistingVariant,
+  mapReadVariantToData,
+  resolveVariantSizeSystems,
+} from '@/components/shared/variant-data'
 import { toast } from 'sonner'
 import { paths } from '@/app/paths'
 import {
@@ -72,85 +69,105 @@ import {
 type ProductFormContext = 'personal' | 'school'
 
 export interface ProductFormProps {
+  mode?: 'create' | 'edit'
   context: ProductFormContext
+  /** Required when mode is 'edit' — the product being edited. */
+  product?: ProductDetail
 }
 
-// ---------------------------------------------------------------------------
-// Constants — sourced from the generated API client.
-// Never hand-roll these arrays; if a value is missing, fix @extend_schema on
-// the API side and regenerate. See §10 of UI_GUIDELINES.md.
-// ---------------------------------------------------------------------------
-
-const CONDITIONS = enumOptions(ConditionEnum, 'marketplace.condition')
-const ACQUISITION_TYPES = enumOptions(
-  AcquisitionTypeEnum,
-  'marketplace.acquisition'
-)
-const PRODUCT_STATUSES = enumOptions(
-  ProductStatusEnum,
-  'schoolInventory.status'
-)
-
+const PRODUCT_STATUSES = enumOptions(ProductStatusEnum, 'schoolInventory.status')
 const GENDERS = enumOptions(TargetGenderEnum, 'marketplace.gender')
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Edit-mode prefill helpers
 // ---------------------------------------------------------------------------
 
-interface VariantData {
-  id: string
-  condition: string
-  acquisitionType: string
-  sku: string
-  sizeSystemId: string
-  sizeId: string
-  selectedColorIds: number[]
-  notes: string
+function buildEditDefaults(product: ProductDetail): CreateProductFormValues {
+  return {
+    name: product.name ?? '',
+    description: product.description ?? '',
+    category_id: product.category ? String(product.category) : '',
+    target_gender: product.target_gender ?? '',
+    brand: product.brand ?? '',
+    material: product.material ?? '',
+    status: product.status ?? 'active',
+    inventory_code: product.school_details?.inventory_code ?? '',
+    storage_location: product.school_details?.storage_location ?? '',
+    school_notes: product.school_details?.notes ?? '',
+  }
 }
 
-function createVariant(): VariantData {
-  return {
-    id: `variant-${crypto.randomUUID()}`,
-    condition: 'good',
-    acquisitionType: '',
-    sku: '',
-    sizeSystemId: '',
-    sizeId: '',
-    selectedColorIds: [],
-    notes: '',
+function buildEditMedia(media: ProductDetail['media']): MediaFile[] {
+  return (media ?? [])
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((m) => ({
+      id: String(m.id),
+      url: m.image,
+      isPrimary: m.is_primary ?? false,
+    }))
+}
+
+/** Size systems attached to a given category (within freshly-loaded data). */
+function sizeSystemsForCategory(
+  categories: Category[],
+  categoryId: number | null | undefined
+): SizeSystem[] {
+  if (!categoryId) return []
+  for (const c of categories) {
+    if (c.id === categoryId) return (c.size_systems as SizeSystem[]) ?? []
+    const sub = (c.subcategories as Category[]).find((s) => s.id === categoryId)
+    if (sub) return (sub.size_systems as SizeSystem[]) ?? []
   }
+  return []
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ProductForm({ context }: ProductFormProps) {
+export function ProductForm({
+  mode = 'create',
+  context,
+  product,
+}: ProductFormProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
+  const isEdit = mode === 'edit'
   const isSchool = context === 'school'
   const backTarget = isSchool ? paths.schoolInventory : paths.myInventory
-  const headerTitle = t('inventory.createTitle')
-  const submitLabel = t('inventory.createProduct')
+  const detailTarget =
+    isEdit && product
+      ? (isSchool
+          ? paths.schoolInventoryDetail
+          : paths.myInventoryDetail
+        ).replace(':id', String(product.id))
+      : backTarget
+  const headerTitle = isEdit
+    ? t('inventory.editTitle')
+    : t('inventory.createTitle')
+  const submitLabel = isEdit
+    ? t('inventory.saveProduct')
+    : t('inventory.createProduct')
 
   // Reference data
   const [categories, setCategories] = useState<Category[]>([])
   const [colors, setColors] = useState<Color[]>([])
 
   // Non-form state
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(() =>
+    isEdit && product ? buildEditMedia(product.media) : []
+  )
   const [variants, setVariants] = useState<VariantData[]>([])
   const [discardOpen, setDiscardOpen] = useState(false)
-  const [deleteVariantId, setDeleteVariantId] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [sheetOpen, setSheetOpen] = useState(false)
-  const [editingVariant, setEditingVariant] = useState<VariantData | null>(null)
-  const [draft, setDraft] = useState<VariantData>(createVariant())
 
   const { register, handleSubmit, control, watch } =
     useForm<CreateProductFormValues>({
       resolver: zodResolver(createProductSchema),
-      defaultValues: defaultProductValues,
+      defaultValues:
+        isEdit && product ? buildEditDefaults(product) : defaultProductValues,
     })
 
   const productName = watch('name')
@@ -169,18 +186,10 @@ export function ProductForm({ context }: ProductFormProps) {
     }))
   }, [categories])
 
-  const categorySizeSystems: SizeSystem[] = useMemo(() => {
-    if (!categoryId) return []
-    for (const c of categories) {
-      if (c.id === Number(categoryId))
-        return (c.size_systems as SizeSystem[]) ?? []
-      const sub = (c.subcategories as Category[]).find(
-        (s) => s.id === Number(categoryId)
-      )
-      if (sub) return (sub.size_systems as SizeSystem[]) ?? []
-    }
-    return []
-  }, [categoryId, categories])
+  const categorySizeSystems: SizeSystem[] = useMemo(
+    () => sizeSystemsForCategory(categories, categoryId ? Number(categoryId) : null),
+    [categoryId, categories]
+  )
 
   const findCategoryName = useCallback(
     (id: string): string | undefined => {
@@ -196,144 +205,145 @@ export function ProductForm({ context }: ProductFormProps) {
     [categories]
   )
 
-  // Load reference data
+  // Load reference data (+ existing variants in edit mode)
   const dataLoaded = useRef(false)
   useEffect(() => {
     if (dataLoaded.current) return
     dataLoaded.current = true
     const load = async () => {
-      const [categoriesRes, colorsRes] = await Promise.all([
+      const [categoriesRes, colorsRes, variantsRes] = await Promise.all([
         apiClient.api.inventoryCategoriesList().catch(() => null),
         apiClient.api.inventoryColorsList().catch(() => null),
+        isEdit && product
+          ? apiClient.api
+              .inventoryProductsVariantsRetrieve(product.id)
+              .catch(() => null)
+          : Promise.resolve(null),
       ])
-      if (categoriesRes?.data) setCategories(categoriesRes.data)
+      const loadedCategories = categoriesRes?.data ?? []
+      if (categoriesRes?.data) setCategories(loadedCategories)
       if (colorsRes?.data) setColors(colorsRes.data)
+
+      if (isEdit && product && variantsRes?.data) {
+        const raw = variantsRes.data as
+          | ProductVariantRead[]
+          | { results?: ProductVariantRead[] }
+        const list = Array.isArray(raw) ? raw : (raw.results ?? [])
+        const sizeSystems = sizeSystemsForCategory(
+          loadedCategories,
+          product.category
+        )
+        setVariants(list.map((v) => mapReadVariantToData(v, sizeSystems)))
+      }
     }
     void load()
-  }, [])
+  }, [isEdit, product])
 
-  const openAddVariant = useCallback(() => {
-    setEditingVariant(null)
-    setDraft(createVariant())
-    setSheetOpen(true)
-  }, [])
-
-  const openEditVariant = useCallback((v: VariantData) => {
-    setEditingVariant(v)
-    setDraft({ ...v })
-    setSheetOpen(true)
-  }, [])
-
-  const saveVariant = useCallback(() => {
-    if (editingVariant) {
-      setVariants((prev) =>
-        prev.map((v) => (v.id === editingVariant.id ? { ...draft } : v))
-      )
-    } else {
-      setVariants((prev) => [...prev, { ...draft }])
-    }
-    setSheetOpen(false)
-  }, [editingVariant, draft])
-
-  const confirmDeleteVariant = useCallback(() => {
-    if (deleteVariantId) {
-      setVariants((prev) => prev.filter((v) => v.id !== deleteVariantId))
-      setDeleteVariantId(null)
-    }
-  }, [deleteVariantId])
-
-  const updateDraft = useCallback((updates: Partial<VariantData>) => {
-    setDraft((prev) => ({ ...prev, ...updates }))
-  }, [])
-
-  const toggleDraftColor = useCallback((colorId: number) => {
-    setDraft((prev) => ({
-      ...prev,
-      selectedColorIds: prev.selectedColorIds.includes(colorId)
-        ? prev.selectedColorIds.filter((c) => c !== colorId)
-        : [...prev.selectedColorIds, colorId],
-    }))
-  }, [])
-
-  const getVariantSummaryParts = useCallback(
-    (v: VariantData): string[] => {
-      const parts: string[] = []
-      const cond = CONDITIONS.find((c) => c.value === v.condition)
-      if (cond) parts.push(t(cond.labelKey))
-      if (v.sizeId) {
-        const ss = categorySizeSystems.find(
-          (s) => s.id === Number(v.sizeSystemId)
-        )
-        const size = ss?.sizes?.find((s) => s.id === Number(v.sizeId))
-        if (size) parts.push(size.name)
-      }
-      if (v.selectedColorIds.length > 0) {
-        parts.push(
-          t('marketplace.colorCount', { count: v.selectedColorIds.length })
-        )
-      }
-      return parts
-    },
-    [t, categorySizeSystems]
-  )
+  // Once the category's size systems are known, fill in any variant that has a
+  // size but no resolved size system yet.
+  useEffect(() => {
+    if (!isEdit) return
+    setVariants((prev) => resolveVariantSizeSystems(prev, categorySizeSystems))
+  }, [categorySizeSystems, isEdit])
 
   const onSubmit = async (data: CreateProductFormValues) => {
     setIsSaving(true)
 
     try {
-      const inlineVariants: InlineVariant[] = variants.map((v) => ({
+      // Media travels via multipart: each entry's metadata goes in the JSON
+      // `payload`, new binaries are appended as `media_<i>` at the SAME index as
+      // the entry. Existing media (no file) are kept via their `id`. The `key`
+      // lets variants reference media (new or existing) for association.
+      const mediaPayload = mediaFiles.map((m, i) => ({
+        key: m.id,
+        is_primary: m.isPrimary,
+        sort_order: i,
+        ...(m.file ? {} : { id: Number(m.id) }),
+      }))
+
+      const variantsPayload = variants.map((v) => ({
+        ...(isEdit && isExistingVariant(v) ? { id: Number(v.id) } : {}),
         condition: v.condition,
+        status: v.status || undefined,
         acquisition_type: v.acquisitionType || undefined,
+        acquired_at: v.acquiredAt || null,
+        asking_price: v.askingPrice || null,
         sku: v.sku || null,
         size_id: v.sizeId ? Number(v.sizeId) : null,
         color_ids: v.selectedColorIds,
-        notes: v.notes || '',
+        media_keys: v.selectedMediaIds,
+        public_notes: v.publicNotes || '',
+        internal_notes: v.internalNotes || '',
       }))
 
-      const basePayload = {
+      const schoolDetails =
+        isSchool &&
+        (data.inventory_code || data.storage_location || data.school_notes)
+          ? {
+              school_details: {
+                inventory_code: data.inventory_code || undefined,
+                storage_location: data.storage_location || undefined,
+                notes: data.school_notes || undefined,
+              },
+            }
+          : {}
+
+      const payload = {
         name: data.name,
         description: data.description,
         category_id: data.category_id ? Number(data.category_id) : undefined,
         target_gender: data.target_gender || null,
         brand: data.brand || null,
         material: data.material || null,
-        status: (data.status || 'active') as ProductCreate['status'],
-        variants: inlineVariants,
+        status: data.status || 'active',
+        media: mediaPayload,
+        variants: variantsPayload,
+        ...schoolDetails,
       }
 
-      if (isSchool) {
-        const payload: SchoolProductCreate = {
-          ...basePayload,
-          ...(data.inventory_code || data.storage_location || data.school_notes
-            ? {
-                school_details: {
-                  inventory_code: data.inventory_code || undefined,
-                  storage_location: data.storage_location || undefined,
-                  notes: data.school_notes || undefined,
-                },
-              }
-            : {}),
+      const fd = new FormData()
+      fd.append('payload', JSON.stringify(payload))
+      mediaFiles.forEach((m, i) => {
+        if (m.file) fd.append(`media_${i}`, m.file)
+      })
+
+      if (isEdit && product) {
+        if (isSchool) {
+          await apiClient.api.inventorySchoolProductsPartialUpdate(
+            product.id,
+            fd as unknown as PatchedSchoolProductUpdateMultipart
+          )
+        } else {
+          await apiClient.api.inventoryProductsPartialUpdate(
+            product.id,
+            fd as unknown as PatchedProductUpdateMultipart
+          )
         }
-        await apiClient.api.inventorySchoolProductsCreate(payload)
+        toast.success(t('inventory.updateSuccess'))
+        navigate(detailTarget)
       } else {
-        const payload: ProductCreate = basePayload
-        await apiClient.api.inventoryProductsCreate(payload)
+        if (isSchool) {
+          await apiClient.api.inventorySchoolProductsCreate(
+            fd as unknown as SchoolProductCreateMultipart
+          )
+        } else {
+          await apiClient.api.inventoryProductsCreate(
+            fd as unknown as ProductCreateMultipart
+          )
+        }
+        toast.success(t('inventory.createSuccess'))
+        navigate(backTarget)
       }
-
-      toast.success(t('inventory.createSuccess'))
-      navigate(backTarget)
     } catch (err) {
-      toast.error(
-        parseApiError(err, t, 'inventory.createError') ??
-          t('inventory.createError')
-      )
+      const errorKey = isEdit ? 'inventory.updateError' : 'inventory.createError'
+      toast.error(parseApiError(err, t, errorKey) ?? t(errorKey))
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleDiscard = () => {
-    navigate(backTarget)
+    navigate(isEdit ? detailTarget : backTarget)
   }
 
   const footerContent = (
@@ -347,7 +357,10 @@ export function ProductForm({ context }: ProductFormProps) {
         {t('marketplace.discard')}
       </Button>
       <div className="flex gap-2">
-        <Button variant="outline" onClick={() => navigate(backTarget)}>
+        <Button
+          variant="outline"
+          onClick={() => navigate(isEdit ? detailTarget : backTarget)}
+        >
           {t('marketplace.back')}
         </Button>
         <Button onClick={handleSubmit(onSubmit)} disabled={isSaving}>
@@ -357,27 +370,10 @@ export function ProductForm({ context }: ProductFormProps) {
     </>
   )
 
-  const hasSingleSizeSystem = categorySizeSystems.length === 1
-
-  // Auto-select when only one size system exists
-  useEffect(() => {
-    if (hasSingleSizeSystem && !draft.sizeSystemId && sheetOpen) {
-      setDraft((prev) => ({
-        ...prev,
-        sizeSystemId: String(categorySizeSystems[0].id),
-      }))
-    }
-  }, [hasSingleSizeSystem, draft.sizeSystemId, sheetOpen, categorySizeSystems])
-
-  const draftSizeSystem = categorySizeSystems.find(
-    (ss) => ss.id === Number(draft.sizeSystemId)
-  )
-  const draftAvailableSizes = draftSizeSystem?.sizes ?? []
-
   return (
     <PageLayout footer={footerContent}>
       <div className={PAGE_CONTENT}>
-        <PageHeader title={headerTitle} backTo={backTarget} />
+        <PageHeader title={headerTitle} backTo={detailTarget} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
           {/* Main Column */}
@@ -410,9 +406,7 @@ export function ProductForm({ context }: ProductFormProps) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="category">
-                      {t('marketplace.category')}
-                    </Label>
+                    <Label htmlFor="category">{t('marketplace.category')}</Label>
                     <Controller
                       name="category_id"
                       control={control}
@@ -483,93 +477,23 @@ export function ProductForm({ context }: ProductFormProps) {
               </div>
             </CardSection>
 
-            {/* Variants */}
+            {/* Media */}
             <CardSection
-              title={t('marketplace.variants')}
-              description={t('marketplace.variantsDesc')}
+              title={t('marketplace.media')}
+              description={t('marketplace.mediaDesc')}
             >
-              <div className="space-y-3">
-                {variants.length === 0 ? (
-                  <div className="flex flex-col items-center py-6 text-center">
-                    <p className="text-sm text-muted-foreground">
-                      {t('marketplace.noVariants')}
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
-                      {t('marketplace.noVariantsHint')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border rounded-lg border border-border">
-                    {variants.map((variant, index) => {
-                      const parts = getVariantSummaryParts(variant)
-
-                      return (
-                        <div
-                          key={variant.id}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors"
-                        >
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {t('marketplace.variant', {
-                                number: index + 1,
-                              })}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-1 mt-0.5">
-                              {parts.map((part, i) => (
-                                <React.Fragment key={i}>
-                                  {i > 0 && (
-                                    <span className="text-xs text-muted-foreground/40">
-                                      ·
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-muted-foreground">
-                                    {part}
-                                  </span>
-                                </React.Fragment>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 min-h-11 min-w-11 md:min-h-0 md:min-w-0"
-                              aria-label={t('marketplace.editVariant')}
-                              onClick={() => openEditVariant(variant)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 min-h-11 min-w-11 md:min-h-0 md:min-w-0 text-muted-foreground hover:text-destructive"
-                              aria-label={t('marketplace.deleteVariant')}
-                              onClick={() => setDeleteVariantId(variant.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={openAddVariant}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('marketplace.addVariant')}
-                </Button>
-              </div>
+              <MediaUpload value={mediaFiles} onChange={setMediaFiles} />
             </CardSection>
+
+            {/* Variants (shared editor) */}
+            <VariantsSection
+              variants={variants}
+              onChange={setVariants}
+              colors={colors}
+              categorySizeSystems={categorySizeSystems}
+              categoryId={categoryId}
+              mediaFiles={mediaFiles}
+            />
 
             {/* School Details — only for school context */}
             {isSchool && (
@@ -596,9 +520,7 @@ export function ProductForm({ context }: ProductFormProps) {
                       </Label>
                       <Input
                         id="storage_location"
-                        placeholder={t(
-                          'marketplace.storageLocationPlaceholder'
-                        )}
+                        placeholder={t('marketplace.storageLocationPlaceholder')}
                         className="mt-1.5"
                         {...register('storage_location')}
                       />
@@ -633,10 +555,7 @@ export function ProductForm({ context }: ProductFormProps) {
                     name="status"
                     control={control}
                     render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
+                      <Select value={field.value} onValueChange={field.onChange}>
                         <SelectTrigger id="status" className="mt-1.5">
                           <SelectValue />
                         </SelectTrigger>
@@ -689,237 +608,6 @@ export function ProductForm({ context }: ProductFormProps) {
         </div>
       </div>
 
-      {/* Variant Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent
-          className="sm:max-w-lg p-0 flex flex-col gap-0"
-          showCloseButton={false}
-        >
-          <SheetHeader className="px-6 py-5 border-b border-border shrink-0">
-            <SheetTitle>
-              {editingVariant
-                ? t('marketplace.editVariant')
-                : t('marketplace.addVariant')}
-            </SheetTitle>
-            <SheetDescription>
-              {t('inventory.variantSheetDesc')}
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="px-6 py-6 space-y-6">
-              {/* ── Condition & Details ── */}
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-3">
-                  {t('marketplace.condition')} &amp;{' '}
-                  {t('marketplace.variantDetails')}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="variant-condition">
-                      {t('marketplace.condition')}
-                    </Label>
-                    <Select
-                      value={draft.condition}
-                      onValueChange={(v) => updateDraft({ condition: v })}
-                    >
-                      <SelectTrigger id="variant-condition" className="mt-1.5">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CONDITIONS.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            {t(c.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="variant-acquisition-type">
-                      {t('marketplace.acquisitionType')}
-                    </Label>
-                    <Select
-                      value={draft.acquisitionType}
-                      onValueChange={(v) => updateDraft({ acquisitionType: v })}
-                    >
-                      <SelectTrigger
-                        id="variant-acquisition-type"
-                        className="mt-1.5"
-                      >
-                        <SelectValue
-                          placeholder={t('marketplace.selectAcquisition')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ACQUISITION_TYPES.map((a) => (
-                          <SelectItem key={a.value} value={a.value}>
-                            {t(a.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <Label htmlFor="variant-sku">{t('marketplace.sku')}</Label>
-                  <Input
-                    id="variant-sku"
-                    value={draft.sku}
-                    onChange={(e) => updateDraft({ sku: e.target.value })}
-                    placeholder={t('marketplace.skuPlaceholder')}
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
-
-              {/* ── Size ── */}
-              {(!categoryId || categorySizeSystems.length > 0) && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-3">
-                      {t('marketplace.size')}
-                    </p>
-                    {!categoryId ? (
-                      <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-border p-4">
-                        <Info className="h-5 w-5 text-muted-foreground/50 shrink-0" />
-                        <p className="text-sm text-muted-foreground">
-                          {t('marketplace.selectCategoryForSize')}
-                        </p>
-                      </div>
-                    ) : hasSingleSizeSystem ? (
-                      <div>
-                        <Label htmlFor="variant-size">
-                          {t('marketplace.size')}
-                        </Label>
-                        <Select
-                          value={draft.sizeId}
-                          onValueChange={(v) => updateDraft({ sizeId: v })}
-                        >
-                          <SelectTrigger id="variant-size" className="mt-1.5">
-                            <SelectValue
-                              placeholder={t('marketplace.selectSize')}
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {draftAvailableSizes.map((s) => (
-                              <SelectItem key={s.id} value={String(s.id)}>
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="variant-size-system">
-                            {t('marketplace.sizeSystem')}
-                          </Label>
-                          <Select
-                            value={draft.sizeSystemId}
-                            onValueChange={(v) =>
-                              updateDraft({ sizeSystemId: v, sizeId: '' })
-                            }
-                          >
-                            <SelectTrigger
-                              id="variant-size-system"
-                              className="mt-1.5"
-                            >
-                              <SelectValue
-                                placeholder={t('marketplace.selectSizeSystem')}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {categorySizeSystems.map((ss) => (
-                                <SelectItem key={ss.id} value={String(ss.id)}>
-                                  {ss.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="variant-size">
-                            {t('marketplace.size')}
-                          </Label>
-                          <Select
-                            value={draft.sizeId}
-                            onValueChange={(v) => updateDraft({ sizeId: v })}
-                            disabled={!draft.sizeSystemId}
-                          >
-                            <SelectTrigger id="variant-size" className="mt-1.5">
-                              <SelectValue
-                                placeholder={t('marketplace.selectSize')}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {draftAvailableSizes.map((s) => (
-                                <SelectItem key={s.id} value={String(s.id)}>
-                                  {s.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* ── Colors ── */}
-              {colors.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-3">
-                      {t('marketplace.colors')}
-                    </p>
-                    <ColorSwatchPicker
-                      colors={colors}
-                      selectedIds={draft.selectedColorIds}
-                      onToggle={toggleDraftColor}
-                    />
-                  </div>
-                </>
-              )}
-
-              <Separator />
-
-              {/* ── Notes ── */}
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-3">
-                  {t('marketplace.variantNotes')}
-                </p>
-                <Textarea
-                  id="variant-notes"
-                  value={draft.notes}
-                  onChange={(e) => updateDraft({ notes: e.target.value })}
-                  placeholder={t('marketplace.variantNotesPlaceholder')}
-                  rows={2}
-                />
-              </div>
-            </div>
-          </div>
-
-          <SheetFooter className="shrink-0 border-t border-border bg-background px-6 py-4 flex flex-row items-center justify-end gap-2">
-            <Button variant="outline" onClick={() => setSheetOpen(false)}>
-              {t('marketplace.cancel')}
-            </Button>
-            <Button onClick={saveVariant}>
-              {editingVariant
-                ? t('marketplace.saveVariant')
-                : t('marketplace.addVariant')}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-
       {/* Discard Confirmation */}
       <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
         <AlertDialogContent>
@@ -934,31 +622,6 @@ export function ProductForm({ context }: ProductFormProps) {
             <AlertDialogAction asChild>
               <Button variant="destructive" onClick={handleDiscard}>
                 {t('marketplace.discardConfirm')}
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Variant Confirmation */}
-      <AlertDialog
-        open={!!deleteVariantId}
-        onOpenChange={() => setDeleteVariantId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('marketplace.removeVariant')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('marketplace.removeVariantDesc')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('marketplace.cancel')}</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button variant="destructive" onClick={confirmDeleteVariant}>
-                {t('marketplace.removeVariant')}
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
