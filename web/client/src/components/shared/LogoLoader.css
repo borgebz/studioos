@@ -1,0 +1,54 @@
+.logo-loader {
+  position: relative;
+  aspect-ratio: 1742 / 2146;
+}
+
+.logo-loader__outline,
+.logo-loader__fill {
+  position: absolute;
+  inset: 0;
+  mask-image: url('/logo-dancer.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url('/logo-dancer.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.logo-loader__outline {
+  background: color-mix(in oklch, var(--primary) 15%, transparent);
+}
+
+.logo-loader__fill {
+  background: linear-gradient(to top, var(--primary) 50%, transparent 50%);
+  background-size: 100% 200%;
+  background-position: 100% 100%;
+  animation: logo-fill 2s ease-in-out infinite;
+}
+
+@keyframes logo-fill {
+  0% {
+    background-position: 100% 100%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+@keyframes logo-loader-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.logo-loader-overlay {
+  animation: logo-loader-fade-in 0.3s ease-out;
+}

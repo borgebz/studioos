@@ -1,0 +1,849 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { CalendarClock, Megaphone } from 'lucide-react'
+import { apiClient } from '@/api/api-client'
+import { parseApiError } from '@/lib/api-errors'
+import { enumOptions } from '@/lib/enum-options'
+import { ListingTypeEnum, TargetGenderEnum } from '@/api/studioos-api'
+import type {
+  Category,
+  Color,
+  ListingCreateMultipart,
+  ListingDetail,
+  ProductDetail,
+  SizeSystem,
+  SchoolListingCreateMultipart,
+  PatchedListingUpdateMultipart,
+  PatchedSchoolListingUpdateMultipart,
+} from '@/api/studioos-api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { TreeSelect, type TreeSelectNode } from '@/components/shared/TreeSelect'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { PageLayout } from '@/components/shared/PageLayout'
+import { PAGE_CONTENT } from '@/lib/layout'
+import { VariantBookingsCalendar } from '@/components/shared/VariantBookingsCalendar'
+import { CardSection } from '@/components/shared/CardSection'
+import { MediaUpload, type MediaFile } from '@/components/shared/MediaUpload'
+import { VariantsSection } from '@/components/shared/VariantsSection'
+import {
+  type VariantData,
+  isExistingVariant,
+  mapReadVariantToData,
+  resolveVariantSizeSystems,
+} from '@/components/shared/variant-data'
+import { toast } from 'sonner'
+import { paths } from '@/app/paths'
+import { StatusBadge } from './marketplace-helpers'
+import {
+  createListingSchema,
+  defaultListingValues,
+  type CreateListingFormValues,
+} from './create-listing-schema'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type ListingFormMode = 'create' | 'edit'
+
+export interface ListingFormProps {
+  mode: ListingFormMode
+  /** Personal member listings vs school catalog listings. */
+  context?: 'personal' | 'school'
+  /** Existing listing data when editing. Required in edit mode. */
+  listing?: ListingDetail
+}
+
+// ---------------------------------------------------------------------------
+// Constants — sourced from the generated API client.
+// Never hand-roll these arrays; if a value is missing, fix @extend_schema on
+// the API side and regenerate. See §10 of UI_GUIDELINES.md.
+// ---------------------------------------------------------------------------
+
+const LISTING_TYPES = enumOptions(ListingTypeEnum, 'marketplace.type')
+const GENDERS = enumOptions(TargetGenderEnum, 'marketplace.gender')
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function buildEditDefaults(listing: ListingDetail): CreateListingFormValues {
+  const product = listing.product
+  const sd = product.school_details
+  return {
+    listing_type: listing.listing_type,
+    title: listing.title,
+    description: listing.description ?? '',
+    asking_price: listing.asking_price ?? '',
+    is_public: listing.is_public ?? false,
+    product_name: product.name,
+    product_description: product.description ?? '',
+    category_id: product.category ? String(product.category) : '',
+    target_gender: product.target_gender ?? '',
+    brand: product.brand ?? '',
+    material: product.material ?? '',
+    inventory_code: sd?.inventory_code ?? '',
+    storage_location: sd?.storage_location ?? '',
+    school_notes: sd?.notes ?? '',
+  }
+}
+
+function buildEditMedia(product: ProductDetail): MediaFile[] {
+  return (product.media ?? [])
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((m) => ({
+      id: String(m.id),
+      url: m.image,
+      isPrimary: m.is_primary ?? false,
+    }))
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function ListingForm({
+  mode,
+  listing,
+  context = 'school',
+}: ListingFormProps) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const isEdit = mode === 'edit'
+  const isSchool =
+    context === 'school' ||
+    (isEdit && listing?.product?.owner_type === 'school')
+
+  // Mode-dependent labels/paths
+  const backTarget = isEdit
+    ? isSchool
+      ? paths.schoolListings
+      : paths.myListings
+    : isSchool
+      ? paths.schoolListings
+      : paths.myListings
+  const headerTitle = isEdit
+    ? t('marketplace.editTitle')
+    : t('marketplace.createTitle')
+
+  // Reference data
+  const [categories, setCategories] = useState<Category[]>([])
+  const [colors, setColors] = useState<Color[]>([])
+
+  // Non-form state (media, variants, UI)
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(() =>
+    isEdit && listing ? buildEditMedia(listing.product) : []
+  )
+  const [variants, setVariants] = useState<VariantData[]>(() =>
+    isEdit && listing?.variants
+      ? listing.variants.map((v) => mapReadVariantToData(v, []))
+      : []
+  )
+  const [isSaving, setIsSaving] = useState(false)
+  // The bookings calendar opens against a saved variant — newly drafted
+  // variants don't have a server id yet, so the button is disabled for them.
+  const [bookingsVariantId, setBookingsVariantId] = useState<number | null>(
+    null
+  )
+
+  // Form — defaults depend on mode
+  const formDefaults = useMemo(() => {
+    if (isEdit && listing) return buildEditDefaults(listing)
+    return defaultListingValues
+  }, [isEdit, listing])
+
+  const { register, handleSubmit, control, watch } =
+    useForm<CreateListingFormValues>({
+      resolver: zodResolver(createListingSchema),
+      defaultValues: formDefaults,
+    })
+
+  const listingType = watch('listing_type')
+  const askingPrice = watch('asking_price')
+  const productName = watch('product_name')
+  const categoryId = watch('category_id')
+
+  const categoryTreeNodes: TreeSelectNode[] = React.useMemo(() => {
+    const roots = categories.filter((c) => !c.parent)
+    return roots.map((root) => ({
+      value: String(root.id),
+      label: root.name,
+      children: (root.subcategories as Category[]).map((sub) => ({
+        value: String(sub.id),
+        label: sub.name,
+      })),
+    }))
+  }, [categories])
+
+  const categorySizeSystems: SizeSystem[] = React.useMemo(() => {
+    if (!categoryId) return []
+    for (const c of categories) {
+      if (c.id === Number(categoryId))
+        return (c.size_systems as SizeSystem[]) ?? []
+      const sub = (c.subcategories as Category[]).find(
+        (s) => s.id === Number(categoryId)
+      )
+      if (sub) return (sub.size_systems as SizeSystem[]) ?? []
+    }
+    return []
+  }, [categoryId, categories])
+
+  const findCategoryName = useCallback(
+    (id: string): string | undefined => {
+      for (const c of categories) {
+        if (c.id === Number(id)) return c.name
+        const sub = (c.subcategories as Category[]).find(
+          (s) => s.id === Number(id)
+        )
+        if (sub) return sub.name
+      }
+      return undefined
+    },
+    [categories]
+  )
+
+  // Load reference data
+  const dataLoaded = useRef(false)
+  useEffect(() => {
+    if (dataLoaded.current) return
+    dataLoaded.current = true
+    const load = async () => {
+      const [categoriesRes, colorsRes] = await Promise.all([
+        apiClient.api.inventoryCategoriesList().catch(() => null),
+        apiClient.api.inventoryColorsList().catch(() => null),
+      ])
+      if (categoriesRes?.data) setCategories(categoriesRes.data)
+      if (colorsRes?.data) setColors(colorsRes.data)
+    }
+    void load()
+  }, [])
+
+  // In edit mode, resolve each variant's sizeSystemId once categories load.
+  useEffect(() => {
+    if (!isEdit) return
+    setVariants((prev) => resolveVariantSizeSystems(prev, categorySizeSystems))
+  }, [isEdit, categorySizeSystems])
+
+  const isDraft = isEdit && listing?.status === 'draft'
+
+  const buildListingFormData = (data: CreateListingFormValues): FormData => {
+    const product = {
+      name: data.product_name,
+      description: data.product_description,
+      category_id: data.category_id ? Number(data.category_id) : null,
+      target_gender: data.target_gender || null,
+      brand: data.brand || null,
+      material: data.material || null,
+      media: mediaFiles.map((m, i) => ({
+        key: m.id,
+        is_primary: m.isPrimary,
+        sort_order: i,
+        ...(m.file ? {} : { id: Number(m.id) }),
+      })),
+      variants: variants.map((v) => ({
+        ...(isExistingVariant(v) ? { id: Number(v.id) } : {}),
+        condition: v.condition,
+        acquisition_type: v.acquisitionType || null,
+        status: v.status || 'available',
+        acquired_at: v.acquiredAt || null,
+        asking_price: v.askingPrice || null,
+        sku: v.sku || null,
+        size_id: v.sizeId ? Number(v.sizeId) : null,
+        color_ids: v.selectedColorIds,
+        media_keys: v.selectedMediaIds,
+        public_notes: v.publicNotes || '',
+        internal_notes: v.internalNotes || '',
+      })),
+      ...(isSchool &&
+      (data.inventory_code || data.storage_location || data.school_notes)
+        ? {
+            school_details: {
+              inventory_code: data.inventory_code || undefined,
+              storage_location: data.storage_location || undefined,
+              notes: data.school_notes || undefined,
+            },
+          }
+        : {}),
+    }
+    const payload = {
+      listing_type: data.listing_type as ListingTypeEnum,
+      title: data.title,
+      description: data.description,
+      asking_price: data.asking_price || null,
+      is_public: data.is_public,
+      product,
+    }
+    const fd = new FormData()
+    fd.append('payload', JSON.stringify(payload))
+    mediaFiles.forEach((m, i) => {
+      if (m.file) fd.append(`media_${i}`, m.file)
+    })
+    return fd
+  }
+
+  // Unified create/edit submit. `publishAfter` publishes the listing once it
+  // exists — this is what makes "Publish now" work in create mode (it used to
+  // no-op because the publish handler bailed when there was no listing yet).
+  const submitListing = async (
+    data: CreateListingFormValues,
+    publishAfter: boolean
+  ) => {
+    // Publishing requires at least one variant. Guard before any API call so we
+    // never create the product/listing and then fail on publish — that left an
+    // orphan draft behind. Saving a draft with no variants is still allowed.
+    if (publishAfter && variants.length === 0) {
+      toast.error(t('marketplace.publishNeedsVariant'))
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const fd = buildListingFormData(data)
+      let listingId: number
+      if (isEdit && listing) {
+        if (isSchool) {
+          await apiClient.api.marketplaceSchoolListingsPartialUpdate(
+            listing.id,
+            fd as unknown as PatchedSchoolListingUpdateMultipart
+          )
+        } else {
+          await apiClient.api.marketplaceListingsPartialUpdate(
+            listing.id,
+            fd as unknown as PatchedListingUpdateMultipart
+          )
+        }
+        listingId = listing.id
+      } else if (isSchool) {
+        const res = await apiClient.api.marketplaceSchoolListingsCreate(
+          fd as unknown as SchoolListingCreateMultipart
+        )
+        listingId = res.data.id
+      } else {
+        const res = await apiClient.api.marketplaceListingsCreate(
+          fd as unknown as ListingCreateMultipart
+        )
+        listingId = res.data.id
+      }
+
+      if (publishAfter && listingId) {
+        if (isSchool) {
+          await apiClient.api.marketplaceSchoolListingsPublishCreate(listingId)
+        } else {
+          await apiClient.api.marketplaceListingsPublishCreate(listingId)
+        }
+        toast.success(t('marketplace.publishSuccess'))
+      } else {
+        toast.success(
+          isEdit
+            ? t('marketplace.updateSuccess')
+            : t('marketplace.createSuccess')
+        )
+      }
+      navigate(isSchool ? paths.schoolListings : paths.myListings)
+    } catch (err) {
+      const errorKey = publishAfter
+        ? 'marketplace.publishError'
+        : isEdit
+          ? 'marketplace.updateError'
+          : 'marketplace.createError'
+      toast.error(parseApiError(err, t, errorKey) ?? t(errorKey))
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const onSubmit = (data: CreateListingFormValues) => submitListing(data, false)
+
+  const handlePublish = () => {
+    void handleSubmit((data) => submitListing(data, true))()
+  }
+
+  const status = listing?.status
+  const isActive = status === 'active'
+  const isClosed = status === 'closed'
+
+  const footerContent = (
+    <>
+      <Button
+        variant="ghost"
+        type="button"
+        onClick={() => navigate(backTarget)}
+        disabled={isSaving}
+      >
+        {t('common.cancel')}
+      </Button>
+      <ListingFooterActions
+        isActive={isActive}
+        isClosed={isClosed}
+        isSaving={isSaving}
+        onSave={handleSubmit(onSubmit)}
+        onPublish={handlePublish}
+        t={t}
+      />
+    </>
+  )
+
+  return (
+    <PageLayout footer={footerContent}>
+      <div className={PAGE_CONTENT}>
+        <PageHeader title={headerTitle} backTo={backTarget} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+          {/* Main Column */}
+          <div className="flex flex-col gap-6">
+            {/* Product Information */}
+            <CardSection title={t('marketplace.productInfo')}>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="product_name">
+                    {t('marketplace.productName')}
+                  </Label>
+                  <Input
+                    id="product_name"
+                    placeholder={t('marketplace.productNamePlaceholder')}
+                    className="mt-1.5"
+                    {...register('product_name')}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="product_description">
+                    {t('marketplace.productDescription')}
+                  </Label>
+                  <Textarea
+                    id="product_description"
+                    placeholder={t('marketplace.productDescriptionPlaceholder')}
+                    rows={3}
+                    className="mt-1.5"
+                    {...register('product_description')}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="category">
+                      {t('marketplace.category')}
+                    </Label>
+                    <Controller
+                      name="category_id"
+                      control={control}
+                      render={({ field }) => (
+                        <TreeSelect
+                          nodes={categoryTreeNodes}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder={t('marketplace.selectCategory')}
+                          triggerClassName="mt-1.5 w-full"
+                        />
+                      )}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="gender">
+                      {t('marketplace.targetGender')}
+                    </Label>
+                    <Controller
+                      name="target_gender"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger id="gender" className="mt-1.5">
+                            <SelectValue
+                              placeholder={t('marketplace.selectGender')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {GENDERS.map((g) => (
+                              <SelectItem key={g.value} value={g.value}>
+                                {t(g.labelKey)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="brand">{t('marketplace.brand')}</Label>
+                    <Input
+                      id="brand"
+                      placeholder={t('marketplace.brandPlaceholder')}
+                      className="mt-1.5"
+                      {...register('brand')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="material">
+                      {t('marketplace.material')}
+                    </Label>
+                    <Input
+                      id="material"
+                      placeholder={t('marketplace.materialPlaceholder')}
+                      className="mt-1.5"
+                      {...register('material')}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardSection>
+
+            {/* Media */}
+            <CardSection
+              title={t('marketplace.media')}
+              description={t('marketplace.mediaDesc')}
+            >
+              <MediaUpload value={mediaFiles} onChange={setMediaFiles} />
+            </CardSection>
+
+            {/* Variants (shared editor) */}
+            <VariantsSection
+              variants={variants}
+              onChange={setVariants}
+              colors={colors}
+              categorySizeSystems={categorySizeSystems}
+              categoryId={categoryId}
+              mediaFiles={mediaFiles}
+              onViewBookings={setBookingsVariantId}
+            />
+
+            {/* School Details */}
+            {isSchool && (
+            <CardSection
+              title={t('marketplace.schoolDetails')}
+              description={t('marketplace.schoolDetailsDesc')}
+            >
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="inventory_code">
+                      {t('marketplace.inventoryCode')}
+                    </Label>
+                    <Input
+                      id="inventory_code"
+                      placeholder={t('marketplace.inventoryCodePlaceholder')}
+                      className="mt-1.5"
+                      {...register('inventory_code')}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="storage_location">
+                      {t('marketplace.storageLocation')}
+                    </Label>
+                    <Input
+                      id="storage_location"
+                      placeholder={t('marketplace.storageLocationPlaceholder')}
+                      className="mt-1.5"
+                      {...register('storage_location')}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="school_notes">
+                    {t('marketplace.schoolNotes')}
+                  </Label>
+                  <Textarea
+                    id="school_notes"
+                    placeholder={t('marketplace.schoolNotesPlaceholder')}
+                    rows={2}
+                    className="mt-1.5"
+                    {...register('school_notes')}
+                  />
+                </div>
+              </div>
+            </CardSection>
+            )}
+          </div>
+
+          {/* Side Column */}
+          <div className="flex flex-col gap-6">
+            {/* Listing Details */}
+            <CardSection title={t('marketplace.listingDetails')}>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="listing_type">
+                    {t('marketplace.listingType')}
+                  </Label>
+                  <Controller
+                    name="listing_type"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id="listing_type" className="mt-1.5">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LISTING_TYPES.map((lt) => (
+                            <SelectItem key={lt.value} value={lt.value}>
+                              {t(lt.labelKey)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="title">{t('marketplace.listingTitle')}</Label>
+                  <Input
+                    id="title"
+                    placeholder={t('marketplace.listingTitlePlaceholder')}
+                    className="mt-1.5"
+                    {...register('title')}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="description">
+                    {t('marketplace.listingDescription')}
+                  </Label>
+                  <Textarea
+                    id="description"
+                    placeholder={t('marketplace.listingDescriptionPlaceholder')}
+                    rows={3}
+                    className="mt-1.5"
+                    {...register('description')}
+                  />
+                </div>
+
+                <Separator />
+
+                <div>
+                  <Label htmlFor="asking_price">
+                    {t('marketplace.askingPrice')}
+                  </Label>
+                  <div className="relative mt-1.5">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                      {t('common.currencySymbol')}
+                    </span>
+                    <Input
+                      id="asking_price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      inputMode="decimal"
+                      className="pl-7 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      {...register('asking_price')}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {t('marketplace.public')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('marketplace.publicDesc')}
+                    </p>
+                  </div>
+                  <Controller
+                    name="is_public"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
+                  />
+                </div>
+              </div>
+            </CardSection>
+
+            {/* Summary */}
+            <CardSection title={t('marketplace.summary')}>
+              <div className="space-y-3">
+                {isEdit && listing?.status && (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {t('marketplace.col.status')}
+                      </span>
+                      <StatusBadge status={listing.status} t={t} />
+                    </div>
+                    {isDraft && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('marketplace.draftPublishHint')}
+                      </p>
+                    )}
+                    <Separator />
+                  </>
+                )}
+                <SummaryRow
+                  label={t('marketplace.listingType')}
+                  value={
+                    listingType
+                      ? t(
+                          LISTING_TYPES.find((lt) => lt.value === listingType)
+                            ?.labelKey ?? ''
+                        )
+                      : undefined
+                  }
+                />
+                <SummaryRow
+                  label={t('marketplace.productName')}
+                  value={productName || undefined}
+                />
+                <SummaryRow
+                  label={t('marketplace.category')}
+                  value={categoryId ? findCategoryName(categoryId) : undefined}
+                />
+                <SummaryRow
+                  label={t('marketplace.media')}
+                  value={
+                    mediaFiles.length > 0
+                      ? t('marketplace.photoCount', {
+                          count: mediaFiles.length,
+                        })
+                      : undefined
+                  }
+                />
+                <Separator />
+                <SummaryRow
+                  label={t('marketplace.variants')}
+                  value={
+                    variants.length > 0 ? String(variants.length) : undefined
+                  }
+                />
+                <Separator />
+                <SummaryRow
+                  label={t('marketplace.askingPrice')}
+                  value={
+                    askingPrice
+                      ? `${t('common.currencySymbol')}${askingPrice}`
+                      : undefined
+                  }
+                />
+              </div>
+            </CardSection>
+          </div>
+        </div>
+      </div>
+
+
+      {/* Variant bookings calendar */}
+      <Dialog
+        open={bookingsVariantId != null}
+        onOpenChange={(o) => {
+          if (!o) setBookingsVariantId(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5" />
+              {t('marketplace.variantBookingsTitle')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('marketplace.variantBookingsDesc')}
+            </DialogDescription>
+          </DialogHeader>
+          {bookingsVariantId != null && (
+            <VariantBookingsCalendar variantId={bookingsVariantId} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+    </PageLayout>
+  )
+}
+
+function SummaryRow({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium">
+        {value || <span className="text-muted-foreground/50">—</span>}
+      </span>
+    </div>
+  )
+}
+
+/**
+ * Sticky-footer actions that mirror the events form pattern: the primary
+ * action depends on the listing's current status (draft → publish; active /
+ * closed → save changes).
+ */
+function ListingFooterActions({
+  isActive,
+  isClosed,
+  isSaving,
+  onSave,
+  onPublish,
+  t,
+}: {
+  isActive: boolean
+  isClosed: boolean
+  isSaving: boolean
+  onSave: () => void
+  onPublish: () => void
+  t: (key: string) => string
+}) {
+  // Active / closed listings can only be edited in place — there's no second
+  // axis to expose, so render a single primary save button.
+  if (isActive || isClosed) {
+    return (
+      <Button type="button" onClick={onSave} disabled={isSaving}>
+        {t('marketplace.updateListing')}
+      </Button>
+    )
+  }
+
+  // Draft / new listing: save draft + publish now.
+  return (
+    <div className="flex gap-2">
+      <Button
+        variant="outline"
+        type="button"
+        onClick={onSave}
+        disabled={isSaving}
+      >
+        {t('marketplace.saveDraft')}
+      </Button>
+      <Button
+        type="button"
+        onClick={onPublish}
+        disabled={isSaving}
+      >
+        <Megaphone className="size-4" />
+        {t('marketplace.publishNow')}
+      </Button>
+    </div>
+  )
+}
