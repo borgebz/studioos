@@ -14,16 +14,22 @@ VALID_BOOKING_TYPES = {choice.value for choice in VariantBooking.BookingType}
 VALID_STATUS = {choice.value for choice in VariantBooking.Status}
 
 
-def _get_variant(*, variant_id, user):
-    try:
-        variant = ProductVariant.objects.exclude(
+def _get_variant(*, variant_id, user, include_terminal=False):
+    # Terminal variants (sold/donated/archived/inactive) can't be *managed* —
+    # but their bookings remain visible read-only for audit, so callers that
+    # only read pass ``include_terminal=True``.
+    qs = ProductVariant.objects.all()
+    if not include_terminal:
+        qs = qs.exclude(
             status__in=[
                 ProductVariant.Status.INACTIVE,
                 ProductVariant.Status.SOLD,
                 ProductVariant.Status.DONATED,
                 ProductVariant.Status.ARCHIVED,
             ]
-        ).get(id=variant_id)
+        )
+    try:
+        variant = qs.get(id=variant_id)
     except ProductVariant.DoesNotExist:
         raise AppNotFound("VariantNotFound")
 
@@ -118,7 +124,9 @@ def create_booking(*, variant_id, user, **data):
 
 
 def list_bookings(*, variant_id, user, filters=None, include_cancelled=False):
-    variant = _get_variant(variant_id=variant_id, user=user)
+    # Read-only: include terminal variants so a sold/donated unit still shows
+    # its past booking timeline for audit.
+    variant = _get_variant(variant_id=variant_id, user=user, include_terminal=True)
 
     queryset = variant.bookings.all()
 

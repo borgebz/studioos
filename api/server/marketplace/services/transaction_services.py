@@ -152,6 +152,11 @@ def request_transaction(*, user, **data):
     if variant.status in _NON_LISTABLE_STATUSES:
         raise ValidationError({"messages": ["VariantNotAvailable"]})
 
+    # An owner cannot request/buy their own item. School items have owner=None
+    # (staff act via permissions), so this only guards member-owned products.
+    if variant.product.owner_id is not None and variant.product.owner_id == user.id:
+        raise ValidationError({"messages": ["CannotRequestOwnListing"]})
+
     transaction_type = listing.listing_type  # mirrors listing type
 
     start_at = data.get("start_at")
@@ -278,10 +283,22 @@ def complete_transaction(*, transaction_id, user):
 
         if txn.listing_id:
             listing = Listing.objects.select_for_update().get(id=txn.listing_id)
-            listing.status = Listing.ListingStatus.CLOSED
-            listing.is_public = False
-            listing.updated_by = user
-            listing.save()
+            # Close the listing only when no listable variant remains. A product
+            # listing represents ALL of the product's variants, so selling or
+            # donating one unit must not strand the others (they'd become
+            # un-buyable behind a closed listing).
+            remaining_listable = (
+                ProductVariant.objects.filter(
+                    product_id=variant.product_id, deleted_at__isnull=True
+                )
+                .exclude(status__in=_NON_LISTABLE_STATUSES)
+                .exists()
+            )
+            if not remaining_listable:
+                listing.status = Listing.ListingStatus.CLOSED
+                listing.is_public = False
+                listing.updated_by = user
+                listing.save()
 
     # Create billing entry for any priced transaction
     from billing.services import create_billing_entry_for_transaction

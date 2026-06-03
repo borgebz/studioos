@@ -217,6 +217,10 @@ INVENTORY_PERMISSIONS = [
 MARKETPLACE_PERMISSIONS_MANAGEMENT = [
     "marketplace.manage_school_listings",
     "marketplace.view_all_transactions",
+    # Moderate (edit/delete) other members' listing comments — mirrors
+    # events.can_moderate_eventcomment. Without this the permission is seeded to
+    # no role, leaving comment moderation superuser-only.
+    "marketplace.can_moderate_listingcomment",
 ]
 
 # Personal marketplace — every authenticated role gets this (browse + own
