@@ -1098,6 +1098,54 @@
     "long": "Longo (10s)"
   },
   "marketplace": {
+    "variantCalendar": {
+      "titleOwner": "Reservas",
+      "titleViewer": "Disponibilidade",
+      "busy": "Ocupado",
+      "free": "Livre",
+      "bookingType": "Tipo",
+      "bookingStatus": "Estado",
+      "dates": "Datas",
+      "legendBooked": "Reservado",
+      "legendPending": "Pendente",
+      "bookingCount_one": "{{count}} reserva",
+      "bookingCount_other": "{{count}} reservas",
+      "busyCount_one": "{{count}} período ocupado",
+      "busyCount_other": "{{count}} períodos ocupados",
+      "emptyOwner": "Sem reservas para esta unidade.",
+      "emptyViewer": "Disponível — sem datas reservadas."
+    },
+    "transactions": {
+      "title": "Transações e receita",
+      "description": "Histórico de transações das unidades deste produto. A receita conta apenas transações concluídas.",
+      "revenue": "Receita",
+      "countsSummary": "{{completed}} concluídas · {{pending}} pendentes",
+      "empty": "Ainda não há transações.",
+      "variantRevenue": "Receita",
+      "variantHistory": "Transações",
+      "salesCount_one": "{{count}} concluída",
+      "salesCount_other": "{{count}} concluídas",
+      "colVariant": "Unidade",
+      "colType": "Tipo",
+      "colStatus": "Estado",
+      "colCounterparty": "Contraparte",
+      "colDate": "Data",
+      "colPrice": "Preço",
+      "type": {
+        "rent": "Aluguer",
+        "sell": "Venda",
+        "lend": "Empréstimo",
+        "donate": "Doação"
+      },
+      "status": {
+        "pending": "Pendente",
+        "accepted": "Aceite",
+        "completed": "Concluída",
+        "rejected": "Rejeitada",
+        "cancelled": "Cancelada",
+        "blocked": "Bloqueada"
+      }
+    },
     "createTitle": "Novo Anúncio",
     "productInfo": "Informação do produto",
     "productName": "Nome do produto",
@@ -1185,6 +1233,7 @@
     "variant": "Variante {{number}}",
     "noVariants": "Nenhuma variante adicionada.",
     "noVariantsHint": "Adicione pelo menos uma variante com detalhes de tamanho e cor.",
+    "publishNeedsVariant": "Adicione pelo menos uma variante antes de publicar este anúncio.",
     "bulkEdit": "Edição em massa",
     "bulkEditTitle": "Editar Anúncios em Massa",
     "bulkEditDesc": "Edite vários anúncios de uma só vez.",

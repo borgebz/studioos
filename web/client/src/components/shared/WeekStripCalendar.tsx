@@ -12,7 +12,7 @@
  * and the meaning of each band (just supply variant + icon + label).
  */
 import { useMemo, type ReactNode } from 'react'
-import { format, type Locale } from 'date-fns'
+import { format, startOfDay, type Locale } from 'date-fns'
 import { enUS } from 'date-fns/locale'
 import {
   CalendarClock,
@@ -110,6 +110,13 @@ export interface WeekStripCalendarProps {
   dayFreeMessage?: string
   /** Locale used to format weekday names (Seg/Mon/...). */
   locale?: Locale
+  /**
+   * Date-range mode. When true, the time of day is ignored and each band fills
+   * every day in its `[start, end]` date range (so a multi-day booking appears
+   * on every day it covers, not just its start day). Leave off for intraday
+   * sessions that should appear once at their start time.
+   */
+  fillRange?: boolean
   /** Optional class on the outer wrapper. */
   className?: string
 }
@@ -123,6 +130,7 @@ export function WeekStripCalendar({
   emptyMessage,
   dayFreeMessage,
   locale = enUS,
+  fillRange = false,
   className,
 }: WeekStripCalendarProps) {
   const weekEnd = useMemo(() => {
@@ -146,8 +154,21 @@ export function WeekStripCalendar({
     const map = new Map<string, WeekStripBand[]>()
     for (const day of weekDays) map.set(format(day, 'yyyy-MM-dd'), [])
     for (const band of bands) {
-      const key = format(band.start, 'yyyy-MM-dd')
-      map.get(key)?.push(band)
+      if (fillRange) {
+        // Date-range mode: drop the band on every visible day it spans
+        // (inclusive of the start and end dates), ignoring the time of day.
+        const startDay = startOfDay(band.start).getTime()
+        const endDay = startOfDay(band.end).getTime()
+        for (const day of weekDays) {
+          const t = startOfDay(day).getTime()
+          if (t >= startDay && t <= endDay) {
+            map.get(format(day, 'yyyy-MM-dd'))!.push(band)
+          }
+        }
+      } else {
+        const key = format(band.start, 'yyyy-MM-dd')
+        map.get(key)?.push(band)
+      }
     }
     // Sort each day chronologically so sessions stack top-to-bottom in time
     // order. Without this, bands are rendered in insertion order — the user
@@ -156,7 +177,7 @@ export function WeekStripCalendar({
       dayBands.sort((a, b) => a.start.getTime() - b.start.getTime())
     }
     return map
-  }, [bands, weekDays])
+  }, [bands, weekDays, fillRange])
 
   const prevWeek = () => {
     const d = new Date(weekStart)
@@ -253,7 +274,12 @@ export function WeekStripCalendar({
                   </div>
                   <div className="flex-1 min-w-0 space-y-1 p-1">
                     {dayBands.map((band) => (
-                      <Band key={band.id} band={band} />
+                      <Band
+                        key={band.id}
+                        band={band}
+                        locale={locale}
+                        hideTime={fillRange}
+                      />
                     ))}
                     {dayBands.length === 0 && dayFreeMessage && (
                       <div className="flex items-center text-xs text-muted-foreground/70 italic sm:hidden h-12">
@@ -286,8 +312,25 @@ function LegendChip({ entry }: { entry: WeekStripLegendEntry }) {
   )
 }
 
-function Band({ band }: { band: WeekStripBand }) {
+function Band({
+  band,
+  locale,
+  hideTime = false,
+}: {
+  band: WeekStripBand
+  locale: Locale
+  hideTime?: boolean
+}) {
   const styles = VARIANT_STYLES[band.variant]
+  // Intraday bands show a time range; multi-day bands (e.g. an inventory
+  // booking spanning several days) show the date span instead, since
+  // "11:00–11:00" reads as a zero-length slot. In date-range (`hideTime`)
+  // mode the band already fills each covered day, so no time line is shown.
+  const sameDay =
+    format(band.start, 'yyyy-MM-dd') === format(band.end, 'yyyy-MM-dd')
+  const rangeLabel = sameDay
+    ? `${format(band.start, 'HH:mm')}–${format(band.end, 'HH:mm')}`
+    : `${format(band.start, 'd MMM', { locale })} – ${format(band.end, 'd MMM', { locale })}`
   const body = (
     <div className={cn('rounded-md border px-2 py-1.5', styles.container)}>
       <div className="flex items-center gap-1.5 min-w-0">
@@ -304,9 +347,11 @@ function Band({ band }: { band: WeekStripBand }) {
         </span>
         {band.badge && <span className="shrink-0">{band.badge}</span>}
       </div>
-      <div className={cn('text-xs font-medium mt-1', styles.text)}>
-        {format(band.start, 'HH:mm')}–{format(band.end, 'HH:mm')}
-      </div>
+      {!hideTime && (
+        <div className={cn('text-xs font-medium mt-1', styles.text)}>
+          {rangeLabel}
+        </div>
+      )}
       {band.subtitle && (
         <p className="text-[11px] truncate opacity-80 mt-0.5">
           {band.subtitle}

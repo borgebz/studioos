@@ -10,36 +10,25 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
-  AlertTriangle,
-  Ban,
-  CheckCircle2,
-  CircleDot,
   Gift,
   Heart,
   HeartHandshake,
-  ImageIcon,
   MessageSquare,
   Package,
   Pencil,
   Repeat,
   ShoppingBag,
-  Sparkles,
-  Star,
   Tag,
-  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 
 import { apiClient } from '@/api/api-client'
 import {
-  AcquisitionTypeEnum,
-  ConditionEnum,
   OwnerTypeEnum,
-  ProductVariantStatusEnum,
-  TargetGenderEnum,
   type ListingDetail,
   type ListingTypeEnum,
   type ListingVariant,
+  type TransactionDetail,
 } from '@/api/studioos-api'
 import { useAuth } from '@/auth/useAuth'
 import { usePermissions } from '@/auth/permissions'
@@ -56,12 +45,20 @@ import {
 import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { PAGE_CONTENT } from '@/lib/layout'
-import { CardSection } from '@/components/shared/CardSection'
 import { formatMarketplacePrice } from '@/components/shared/CurrencyAmountInput'
 import {
   ProductMediaGallery,
   sortProductMedia,
 } from '@/components/shared/ProductMediaGallery'
+import { ProductVariantList } from '@/components/shared/ProductVariantList'
+import { ProductSpecsSection } from '@/components/shared/ProductSpecsSection'
+import { ProductTransactionsSection } from '@/components/shared/ProductTransactionsSection'
+import {
+  fetchAllTransactions,
+  groupTransactionsByVariant,
+  txPageQuery,
+} from '@/components/shared/transaction-helpers'
+import { CardSection } from '@/components/shared/CardSection'
 import { paths } from '@/app/paths'
 import { parseApiError } from '@/lib/api-errors'
 import { getInitials } from '@/lib/user-utils'
@@ -84,70 +81,10 @@ const TYPE_LABEL_KEYS: Record<string, string> = {
   donate: 'marketplace.typeDonate',
 }
 
-const CONDITION_LABEL_KEYS: Record<string, string> = {
-  [ConditionEnum.New]: 'marketplace.conditionNew',
-  [ConditionEnum.Excellent]: 'marketplace.conditionExcellent',
-  [ConditionEnum.Good]: 'marketplace.conditionGood',
-  [ConditionEnum.Fair]: 'marketplace.conditionFair',
-  [ConditionEnum.Damaged]: 'marketplace.conditionDamaged',
-}
-
-const CONDITION_ICONS: Record<string, LucideIcon> = {
-  [ConditionEnum.New]: Sparkles,
-  [ConditionEnum.Excellent]: Star,
-  [ConditionEnum.Good]: CheckCircle2,
-  [ConditionEnum.Fair]: CircleDot,
-  [ConditionEnum.Damaged]: AlertTriangle,
-}
-
-const STATUS_LABEL_KEYS: Record<string, string> = {
-  [ProductVariantStatusEnum.Available]: 'marketplace.variantStatusAvailable',
-  [ProductVariantStatusEnum.Maintenance]: 'marketplace.variantStatusMaintenance',
-  [ProductVariantStatusEnum.Inactive]: 'marketplace.variantStatusInactive',
-  [ProductVariantStatusEnum.Sold]: 'marketplace.statusSold',
-  [ProductVariantStatusEnum.Donated]: 'marketplace.typeDonate',
-  [ProductVariantStatusEnum.Archived]: 'marketplace.statusDraft',
-}
-
-const STATUS_ICONS: Record<string, LucideIcon> = {
-  [ProductVariantStatusEnum.Available]: CheckCircle2,
-  [ProductVariantStatusEnum.Maintenance]: Wrench,
-  [ProductVariantStatusEnum.Inactive]: Ban,
-  [ProductVariantStatusEnum.Sold]: ShoppingBag,
-  [ProductVariantStatusEnum.Donated]: Gift,
-  [ProductVariantStatusEnum.Archived]: Ban,
-}
-
-const ACQUISITION_LABEL_KEYS: Record<string, string> = {
-  [AcquisitionTypeEnum.Purchased]: 'marketplace.acquisitionPurchased',
-  [AcquisitionTypeEnum.Donated]: 'marketplace.acquisitionDonated',
-  [AcquisitionTypeEnum.SchoolOwned]: 'marketplace.acquisitionSchoolOwned',
-  [AcquisitionTypeEnum.Other]: 'marketplace.acquisitionOther',
-}
-
-const GENDER_LABEL_KEYS: Record<string, string> = {
-  [TargetGenderEnum.Female]: 'marketplace.genderFemale',
-  [TargetGenderEnum.Male]: 'marketplace.genderMale',
-  [TargetGenderEnum.Unisex]: 'marketplace.genderUnisex',
-}
-
 interface OwnerDisplay {
   type?: 'school' | 'member'
   display_name?: string | null
   photo_url?: string | null
-}
-
-interface VariantColor {
-  id: number
-  name: string
-  hex_code: string
-}
-
-interface VariantMediaRef {
-  id: number
-  image: string
-  is_primary?: boolean
-  sort_order?: number
 }
 
 function buyCtaKey(type: ListingTypeEnum): string {
@@ -299,8 +236,35 @@ function LoadedListingDetail({
   const canManageListing =
     (isOwnedByMe && can('marketplace.view_own_listings')) ||
     (isSchoolProduct && can('marketplace.manage_school_listings'))
+  const mode = canManageListing ? 'owner' : 'viewer'
   const isFreeListing =
     listing.listing_type === 'lend' || listing.listing_type === 'donate'
+
+  // Owner-only: fetch transactions for this listing's variants (history + revenue).
+  const [transactions, setTransactions] = useState<TransactionDetail[]>([])
+  useEffect(() => {
+    if (!canManageListing) {
+      setTransactions([])
+      return
+    }
+    let active = true
+    const run = async () => {
+      const list = await fetchAllTransactions((page, pageSize) =>
+        isSchoolProduct
+          ? apiClient.api.marketplaceSchoolTransactionsRetrieve(
+              txPageQuery(page, pageSize)
+            )
+          : apiClient.api.marketplaceTransactionsMineRetrieve(
+              txPageQuery(page, pageSize)
+            )
+      )
+      if (active) setTransactions(list)
+    }
+    void run()
+    return () => {
+      active = false
+    }
+  }, [canManageListing, isSchoolProduct, listing.id])
 
   const media = useMemo(() => listing.product?.media ?? [], [listing.product?.media])
   const sortedMedia = useMemo(() => sortProductMedia(media), [media])
@@ -309,6 +273,16 @@ function LoadedListingDetail({
   const availableVariants = useMemo(
     () => variants.filter(isAvailable),
     [variants]
+  )
+
+  const ownerUserId = isSchoolProduct ? null : currentUserId
+  const productTransactions = useMemo(() => {
+    const ids = new Set(variants.map((v) => v.id))
+    return transactions.filter((tx) => ids.has(tx.variant_id))
+  }, [transactions, variants])
+  const txByVariant = useMemo(
+    () => groupTransactionsByVariant(productTransactions, variants.map((v) => v.id)),
+    [productTransactions, variants]
   )
 
   const typeLabel = t(TYPE_LABEL_KEYS[listing.listing_type] ?? '', {
@@ -394,30 +368,6 @@ function LoadedListingDetail({
     }
   }
 
-  // ── Specifications shown in the side info card ──
-  const specs: { label: string; value: string }[] = []
-  if (listing.product?.brand) {
-    specs.push({
-      label: t('marketplace.detail.specBrand'),
-      value: listing.product.brand,
-    })
-  }
-  if (listing.product?.material) {
-    specs.push({
-      label: t('marketplace.detail.specMaterial'),
-      value: listing.product.material,
-    })
-  }
-  if (listing.product?.target_gender) {
-    const key = GENDER_LABEL_KEYS[listing.product.target_gender]
-    if (key) {
-      specs.push({
-        label: t('marketplace.targetGender'),
-        value: t(key),
-      })
-    }
-  }
-
   return (
     <PageLayout>
       <div className={PAGE_CONTENT}>
@@ -451,24 +401,8 @@ function LoadedListingDetail({
             </CardSection>
 
             {/* Specifications */}
-            {specs.length > 0 && (
-              <CardSection title={t('marketplace.detail.specs')}>
-                <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
-                  {specs.map((s) => (
-                    <div
-                      key={s.label}
-                      className="flex items-baseline justify-between gap-3 border-b border-dashed border-border/60 pb-2 last:border-b-0 last:pb-0 sm:[&:nth-last-child(2)]:border-b-0 sm:[&:nth-last-child(2)]:pb-0"
-                    >
-                      <dt className="text-sm text-muted-foreground">
-                        {s.label}
-                      </dt>
-                      <dd className="truncate text-sm font-medium text-foreground">
-                        {s.value}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </CardSection>
+            {listing.product && (
+              <ProductSpecsSection product={listing.product} t={t} />
             )}
 
             {/* Variants — full inventory of options on this product */}
@@ -477,21 +411,28 @@ function LoadedListingDetail({
                 title={t('marketplace.detail.availableVariants')}
                 description={t('marketplace.detail.availableVariantsDesc')}
               >
-                <div className="space-y-3">
-                  {variants.map((variant, idx) => (
-                    <VariantRow
-                      key={variant.id}
-                      variant={variant}
-                      index={idx}
-                      fallbackImage={fallbackImage}
-                      listingAskingPrice={listing.asking_price ?? null}
-                      isFreeListing={isFreeListing}
-                      currency={currency}
-                      t={t}
-                    />
-                  ))}
-                </div>
+                <ProductVariantList
+                  variants={variants}
+                  fallbackImage={fallbackImage}
+                  fallbackPrice={listing.asking_price ?? null}
+                  isFreeListing={isFreeListing}
+                  currency={currency}
+                  mode={mode}
+                  txByVariant={txByVariant}
+                  ownerUserId={ownerUserId}
+                  t={t}
+                />
               </CardSection>
+            )}
+
+            {/* Transactions & revenue (owner only) */}
+            {canManageListing && (
+              <ProductTransactionsSection
+                transactions={productTransactions}
+                currency={currency}
+                ownerUserId={ownerUserId}
+                t={t}
+              />
             )}
           </div>
 
@@ -654,158 +595,5 @@ function LoadedListingDetail({
         />
       )}
     </PageLayout>
-  )
-}
-
-// ─── Variant row ───
-function VariantRow({
-  variant,
-  index,
-  fallbackImage,
-  listingAskingPrice,
-  isFreeListing,
-  currency,
-  t,
-}: {
-  variant: ListingVariant
-  index: number
-  fallbackImage: string | null
-  listingAskingPrice: string | null
-  isFreeListing: boolean
-  currency: string
-  t: (key: string, opts?: Record<string, unknown>) => string
-}) {
-  const variantMedia = (variant.media ?? []) as VariantMediaRef[]
-  const sortedVariantMedia = sortProductMedia(variantMedia)
-  const thumbImg = sortedVariantMedia[0]?.image ?? fallbackImage
-
-  const sizeLabel = variant.size?.name ?? null
-  const conditionKey = CONDITION_LABEL_KEYS[variant.condition]
-  const conditionLabel = conditionKey ? t(conditionKey) : variant.condition
-  const ConditionIcon = CONDITION_ICONS[variant.condition] ?? CircleDot
-
-  const statusKey = STATUS_LABEL_KEYS[variant.status]
-  const statusLabel = statusKey ? t(statusKey) : variant.status
-  const StatusIcon = STATUS_ICONS[variant.status] ?? CircleDot
-
-  const acquisitionKey = ACQUISITION_LABEL_KEYS[variant.acquisition_type]
-  const acquisitionLabel = acquisitionKey ? t(acquisitionKey) : null
-
-  const colors = (variant.colors ?? []) as VariantColor[]
-
-  const rawPrice =
-    variant.effective_price ?? variant.asking_price ?? listingAskingPrice
-  const priceText =
-    formatMarketplacePrice(rawPrice, currency) ??
-    (isFreeListing
-      ? t('marketplace.priceFree')
-      : t('marketplace.priceNegotiable'))
-
-  const isAvailable = variant.status === ProductVariantStatusEnum.Available
-  const statusTone = (() => {
-    switch (variant.status) {
-      case ProductVariantStatusEnum.Available:
-        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-      case ProductVariantStatusEnum.Maintenance:
-        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-      case ProductVariantStatusEnum.Sold:
-      case ProductVariantStatusEnum.Donated:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-      default:
-        return 'bg-muted text-muted-foreground'
-    }
-  })()
-
-  return (
-    <div
-      className={cn(
-        'group relative flex gap-4 rounded-lg border border-border bg-card p-4 transition-shadow hover:shadow-sm',
-        !isAvailable && 'opacity-75'
-      )}
-    >
-      {/* Thumbnail */}
-      <div className="size-20 shrink-0 overflow-hidden rounded-md border border-border bg-muted/40 sm:size-24">
-        {thumbImg ? (
-          <img
-            src={thumbImg}
-            alt=""
-            className="size-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center">
-            <ImageIcon className="size-6 text-muted-foreground/40" />
-          </div>
-        )}
-      </div>
-
-      {/* Details */}
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <p className="text-sm font-semibold leading-tight text-foreground">
-                {sizeLabel
-                  ? `${t('marketplace.detail.specSize')} ${sizeLabel}`
-                  : t('marketplace.variant', { number: index + 1 })}
-              </p>
-              {variant.sku && (
-                <span className="text-[11px] tabular-nums text-muted-foreground">
-                  · {variant.sku}
-                </span>
-              )}
-            </div>
-            <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-              <ConditionIcon className="size-3.5" />
-              {conditionLabel}
-            </div>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-sm font-semibold tabular-nums text-foreground">
-              {priceText}
-            </p>
-            <Badge
-              className={cn(
-                'mt-1 inline-flex gap-1 border-0 text-[10px] font-medium',
-                statusTone
-              )}
-            >
-              <StatusIcon className="size-3" />
-              {statusLabel}
-            </Badge>
-          </div>
-        </div>
-
-        {colors.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {colors.map((c) => (
-              <span
-                key={c.id}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background px-2 py-0.5 text-[11px] text-foreground/80"
-              >
-                <span
-                  className="size-2.5 rounded-full border border-border/40"
-                  style={{ backgroundColor: c.hex_code }}
-                  aria-hidden="true"
-                />
-                {c.name}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {variant.public_notes && (
-          <p className="rounded-md bg-muted/30 px-3 py-1.5 text-xs italic text-muted-foreground">
-            “{variant.public_notes}”
-          </p>
-        )}
-
-        {acquisitionLabel && (
-          <p className="text-[11px] text-muted-foreground/80">
-            {t('marketplace.acquisitionType')}: {acquisitionLabel}
-          </p>
-        )}
-      </div>
-    </div>
   )
 }

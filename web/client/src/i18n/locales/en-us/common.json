@@ -1098,6 +1098,54 @@
     "long": "Long (10s)"
   },
   "marketplace": {
+    "variantCalendar": {
+      "titleOwner": "Bookings",
+      "titleViewer": "Availability",
+      "busy": "Busy",
+      "free": "Free",
+      "bookingType": "Type",
+      "bookingStatus": "Status",
+      "dates": "Dates",
+      "legendBooked": "Booked",
+      "legendPending": "Pending",
+      "bookingCount_one": "{{count}} booking",
+      "bookingCount_other": "{{count}} bookings",
+      "busyCount_one": "{{count}} busy period",
+      "busyCount_other": "{{count}} busy periods",
+      "emptyOwner": "No bookings for this unit.",
+      "emptyViewer": "Available — no booked dates."
+    },
+    "transactions": {
+      "title": "Transactions & revenue",
+      "description": "Transaction history across this product's units. Revenue counts completed transactions only.",
+      "revenue": "Revenue",
+      "countsSummary": "{{completed}} completed · {{pending}} pending",
+      "empty": "No transactions yet.",
+      "variantRevenue": "Revenue",
+      "variantHistory": "Transactions",
+      "salesCount_one": "{{count}} completed",
+      "salesCount_other": "{{count}} completed",
+      "colVariant": "Unit",
+      "colType": "Type",
+      "colStatus": "Status",
+      "colCounterparty": "Counterparty",
+      "colDate": "Date",
+      "colPrice": "Price",
+      "type": {
+        "rent": "Rent",
+        "sell": "Sale",
+        "lend": "Loan",
+        "donate": "Donation"
+      },
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "completed": "Completed",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "blocked": "Blocked"
+      }
+    },
     "createTitle": "New Listing",
     "productInfo": "Product information",
     "productName": "Product name",
@@ -1185,6 +1233,7 @@
     "variant": "Variant {{number}}",
     "noVariants": "No variants added yet.",
     "noVariantsHint": "Add at least one variant with size and color details.",
+    "publishNeedsVariant": "Add at least one variant before publishing this listing.",
     "bulkEdit": "Bulk edit",
     "bulkEditTitle": "Bulk Edit Listings",
     "bulkEditDesc": "Edit multiple listings at once.",

@@ -17,6 +17,7 @@ import {
   type ProductDetail,
   type ProductVariantRead,
   type SchoolListingCreateMultipart,
+  type TransactionDetail,
 } from '@/api/studioos-api'
 import { enumOptions } from '@/lib/enum-options'
 import { Button } from '@/components/ui/button'
@@ -43,23 +44,24 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { PageLayout } from '@/components/shared/PageLayout'
 import { PAGE_CONTENT } from '@/lib/layout'
 import { CardSection } from '@/components/shared/CardSection'
-import { ProductMediaGallery } from '@/components/shared/ProductMediaGallery'
+import { ProductMediaGallery, sortProductMedia } from '@/components/shared/ProductMediaGallery'
+import { ProductVariantList } from '@/components/shared/ProductVariantList'
+import { ProductSpecsSection } from '@/components/shared/ProductSpecsSection'
+import { ProductTransactionsSection } from '@/components/shared/ProductTransactionsSection'
 import { ProductStatusBadge } from '@/components/shared/ProductStatusBadge'
+import {
+  fetchAllTransactions,
+  groupTransactionsByVariant,
+  txPageQuery,
+} from '@/components/shared/transaction-helpers'
 import { StatusBadge, listingTypeLabel } from '@/app/pages/marketplace/marketplace-helpers'
 import { paths } from '@/app/paths'
 import { parseApiError } from '@/lib/api-errors'
 import { usePermissions } from '@/auth/permissions'
+import { useAuth } from '@/auth/useAuth'
 import { toast } from 'sonner'
 
 const LISTING_TYPES = enumOptions(ListingTypeEnum, 'marketplace.type')
-
-const CONDITION_LABEL_KEYS: Record<string, string> = {
-  new: 'marketplace.conditionNew',
-  excellent: 'marketplace.conditionExcellent',
-  good: 'marketplace.conditionGood',
-  fair: 'marketplace.conditionFair',
-  damaged: 'marketplace.conditionDamaged',
-}
 
 interface ProductListingInfo {
   id: number
@@ -72,14 +74,11 @@ export interface ProductDetailPageProps {
   context: 'personal' | 'school'
 }
 
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 export function ProductDetailPage({ context }: ProductDetailPageProps) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { can } = usePermissions()
+  const { user } = useAuth()
   const { id } = useParams<{ id: string }>()
   const productId = id ? Number(id) : NaN
   const isSchool = context === 'school'
@@ -94,12 +93,24 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
 
   const [product, setProduct] = useState<ProductDetail | null>(null)
   const [variants, setVariants] = useState<ProductVariantRead[]>([])
+  const [transactions, setTransactions] = useState<TransactionDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [listOpen, setListOpen] = useState(false)
   const loaded = useRef<number | null>(null)
 
   const load = useMemo(
     () => async () => {
+      // Transactions paginate and have no server-side product filter, so pull
+      // every page concurrently with the product/variant fetch.
+      const txPromise = fetchAllTransactions((page, pageSize) =>
+        isSchool
+          ? apiClient.api.marketplaceSchoolTransactionsRetrieve(
+              txPageQuery(page, pageSize)
+            )
+          : apiClient.api.marketplaceTransactionsMineRetrieve(
+              txPageQuery(page, pageSize)
+            )
+      )
       const [prodRes, varRes] = await Promise.all([
         (isSchool
           ? apiClient.api.inventorySchoolProductsRetrieve2(productId)
@@ -115,6 +126,7 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
         | { results?: ProductVariantRead[] }
         | null
       setVariants(Array.isArray(vd) ? vd : (vd?.results ?? []))
+      setTransactions(await txPromise)
     },
     [isSchool, productId]
   )
@@ -131,6 +143,21 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
   }, [productId, load])
 
   const listing = (product?.listing ?? null) as ProductListingInfo | null
+
+  const fallbackImage = useMemo(() => {
+    const sorted = sortProductMedia(product?.media ?? [])
+    return sorted[0]?.image ?? null
+  }, [product?.media])
+
+  const ownerUserId = isSchool ? null : (user?.id ?? null)
+  const productTransactions = useMemo(() => {
+    const ids = new Set(variants.map((v) => v.id))
+    return transactions.filter((tx) => ids.has(tx.variant_id))
+  }, [transactions, variants])
+  const txByVariant = useMemo(
+    () => groupTransactionsByVariant(productTransactions, variants.map((v) => v.id)),
+    [productTransactions, variants]
+  )
 
   if (loading) {
     return (
@@ -192,6 +219,9 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
               </CardSection>
             )}
 
+            {/* Specifications */}
+            <ProductSpecsSection product={product} t={t} />
+
             {/* Variants */}
             <CardSection
               title={t('marketplace.variants')}
@@ -207,66 +237,25 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
                   })}
                 </p>
               ) : (
-                <div className="overflow-x-auto overflow-y-hidden">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                        <th className="py-2 pr-4 font-medium">
-                          {t('marketplace.detail.specSize')}
-                        </th>
-                        <th className="py-2 pr-4 font-medium">
-                          {t('marketplace.detail.specCondition')}
-                        </th>
-                        <th className="py-2 pr-4 font-medium">
-                          {t('marketplace.sku', { defaultValue: 'SKU' })}
-                        </th>
-                        <th className="py-2 pr-4 font-medium">
-                          {t('marketplace.col.status')}
-                        </th>
-                        <th className="py-2 font-medium">
-                          {t('marketplace.askingPrice', {
-                            defaultValue: 'Price',
-                          })}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {variants.map((v) => (
-                        <tr
-                          key={v.id}
-                          className="border-b border-border/60 last:border-0"
-                        >
-                          <td className="py-2.5 pr-4">{v.size?.name ?? '—'}</td>
-                          <td className="py-2.5 pr-4 text-muted-foreground">
-                            {v.condition
-                              ? t(CONDITION_LABEL_KEYS[v.condition] ?? '', {
-                                  defaultValue: v.condition,
-                                })
-                              : '—'}
-                          </td>
-                          <td className="py-2.5 pr-4 font-mono text-xs text-muted-foreground">
-                            {v.sku || '—'}
-                          </td>
-                          <td className="py-2.5 pr-4 text-xs text-muted-foreground">
-                            {t(
-                              `marketplace.variantStatus${capitalize(
-                                String(v.status)
-                              )}`,
-                              { defaultValue: String(v.status) }
-                            )}
-                          </td>
-                          <td className="py-2.5 tabular-nums">
-                            {v.asking_price
-                              ? `${t('common.currencySymbol')} ${v.asking_price}`
-                              : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ProductVariantList
+                  variants={variants}
+                  fallbackImage={fallbackImage}
+                  currency={t('common.currencySymbol')}
+                  mode="owner"
+                  txByVariant={txByVariant}
+                  ownerUserId={ownerUserId}
+                  t={t}
+                />
               )}
             </CardSection>
+
+            {/* Transactions & revenue (owner) */}
+            <ProductTransactionsSection
+              transactions={productTransactions}
+              currency={t('common.currencySymbol')}
+              ownerUserId={ownerUserId}
+              t={t}
+            />
           </div>
 
           {/* ─── Sidebar ─── */}
@@ -323,14 +312,6 @@ export function ProductDetailPage({ context }: ProductDetailPageProps) {
               defaultValue: 'Details',
             })}>
               <dl className="space-y-3 text-sm">
-                <MetaRow
-                  label={t('marketplace.detail.specBrand')}
-                  value={product.brand}
-                />
-                <MetaRow
-                  label={t('marketplace.detail.specMaterial')}
-                  value={product.material}
-                />
                 <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">
                     {t('marketplace.col.status')}

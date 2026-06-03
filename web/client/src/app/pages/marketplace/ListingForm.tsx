@@ -311,6 +311,14 @@ export function ListingForm({
     data: CreateListingFormValues,
     publishAfter: boolean
   ) => {
+    // Publishing requires at least one variant. Guard before any API call so we
+    // never create the product/listing and then fail on publish — that left an
+    // orphan draft behind. Saving a draft with no variants is still allowed.
+    if (publishAfter && variants.length === 0) {
+      toast.error(t('marketplace.publishNeedsVariant'))
+      return
+    }
+
     setIsSaving(true)
     try {
       const fd = buildListingFormData(data)

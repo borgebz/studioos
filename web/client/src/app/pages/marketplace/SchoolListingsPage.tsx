@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 
 import { apiClient } from '@/api/api-client'
 import { parseApiError } from '@/lib/api-errors'
-import { type ListingList, type ListingStatusEnum } from '@/api/studioos-api'
+import { type ListingList } from '@/api/studioos-api'
 import { ProductMediaFrame } from '@/components/shared/ProductMediaGallery'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { usePaginatedList } from '@/hooks/usePaginatedList'
@@ -369,14 +369,11 @@ export function SchoolListingsPage() {
   const handleSingleDelete = async () => {
     if (!deleteTarget) return
     try {
-      await apiClient.api.marketplaceSchoolListingsPartialUpdate(
-        deleteTarget.id,
-        { status: 'closed' as ListingStatusEnum } as Parameters<
-          typeof apiClient.api.marketplaceSchoolListingsPartialUpdate
-        >[1]
-      )
+      // Soft-delete on the backend (sets deleted_at). The generic listings
+      // DELETE endpoint authorizes school managers via manage_school_listings,
+      // and the list services exclude soft-deleted rows so it won't reappear.
+      await apiClient.api.marketplaceListingsDestroy(deleteTarget.id)
       setListings((prev) => prev.filter((l) => l.id !== deleteTarget.id))
-      toast.success(t('marketplace.deleteSuccess'))
     } catch (err) {
       toast.error(parseApiError(err, t) ?? t('common.unexpectedError'))
     } finally {
