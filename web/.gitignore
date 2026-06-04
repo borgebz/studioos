@@ -39,3 +39,8 @@ coverage/
 *.ntvs*
 *.njsproj
 *.sln
+
+# AI assistant / local tooling context
+.claude/
+CLAUDE.md
+.cursorrules

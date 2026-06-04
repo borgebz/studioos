@@ -8,12 +8,11 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config(
-    "SECRET_KEY",
-    default="REMOVED",
-)
+# No defaults: a missing SECRET_KEY must fail at startup, and DEBUG must be
+# opted into explicitly (see .env.example).
+SECRET_KEY = config("SECRET_KEY")
 
-DEBUG = config("DEBUG", default=True, cast=bool)
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
@@ -195,6 +194,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
     "DEFAULT_THROTTLE_RATES": {
         "anon": "5/min",
+        # Public enrollment form accepts anonymous file uploads.
+        "enrollment_submit": "20/hour",
     },
 }
 

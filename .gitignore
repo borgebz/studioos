@@ -1,0 +1,11 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+
+# AI assistant / local tooling context
+.claude/
+CLAUDE.md
+.cursorrules
+.cursorignore
+.cursorindexingignore

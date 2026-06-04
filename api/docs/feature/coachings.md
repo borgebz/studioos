@@ -1,0 +1,19 @@
+# Feature — Coachings
+
+Coachings are private or semi-private lessons that run outside the regular timetable. A parent requests a session with a specific teacher, the teacher confirms availability, and coordination approves the booking by assigning a studio and setting the price. After the session ends, both the teacher and participants confirm what happened, and coordination finalises the record. At that point, billing entries are created automatically and the Excel reconciliation that previously happened manually every month is eliminated.
+
+The same model also covers the regular annual timetable. Coordination creates annual classes directly in the system via `create_direct_coordination_coaching` as already-scheduled sessions, bypassing the request and approval flow. These are typically marked as non-billable since they're covered by the student's monthly tuition. Coordination can also create **recurring coachings** — a single operation that generates a series of sessions (daily, weekly, biweekly, or monthly) linked by a `RecurringCoaching` record. A recurring series can be bulk-cancelled in one action.
+
+**The full lifecycle has seven stages:**
+
+A coaching starts as `REQUESTED` — someone has asked for a session but nothing is confirmed. The assigned teacher can accept the request (moving it to `PENDING_APPROVAL`) or reject it. Once the teacher accepts, coordination reviews, assigns a physical studio, sets the total price, and schedules the session. Conflict detection runs at this point — the system checks that neither the teacher nor the studio is already booked for the same time window, using a database lock to prevent two approvals racing each other.
+
+After the session end time passes, a Celery task automatically moves the coaching to `WAITING_CONFIRMATION` and transitions all `ACTIVE` participants to `PENDING_COMPLETION`. This is the validation window. The teacher confirms the session happened and may add notes. Each participant in `PENDING_COMPLETION` (or their parent) marks themselves as attended or absent. Once the teacher has confirmed and every participant has a final status, the system auto-advances to `PENDING_COMPLETION_APPROVAL`. Coordination then completes the coaching, which generates the billing entries and fine candidates in the same database transaction.
+
+**Participants** have their own lifecycle within a coaching. When a student is added by staff they start as `INVITED` and become `ACTIVE` immediately upon accepting. When added through a peer request they need staff approval before becoming active. When a student cancels, the system checks how close the cancellation is to the session start. Cancellations within 48 hours (configurable via environment) are marked as `LATE_CANCELLED` and automatically generate a fine candidate for coordination to review. Earlier cancellations are a clean exit.
+
+**Billing entries** are created one per attended participant. The total price is split equally across all attended participants, with any residual cent going to the first in the roster. The description stored on each entry is human-readable and shows the modality, date, teacher name, and session format (Privada, Dueto, Trio, or Ensemble based on how many attended). This description goes straight into the accounting export without manual editing.
+
+**Fines** are created automatically at completion for any participant who was absent or late-cancelled. Coordination reviews each fine and either approves it (which creates a billing entry for the fine amount) or waives it with a mandatory justification note. The default fine amount is 25 EUR, configurable via environment.
+
+The system prevents duplicate participation, enforces modality capacity limits, and blocks any capacity or schedule change once the coaching is in a terminal state. The studio assigned must support the coaching's modality, enforced via the StudioModality link.

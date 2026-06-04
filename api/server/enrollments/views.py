@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 from core.decorators import require_perm
@@ -240,6 +241,8 @@ class EnrollmentSubmitView(APIView):
 
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "enrollment_submit"
 
     @extend_schema(
         request=EnrollmentSubmitSerializer,

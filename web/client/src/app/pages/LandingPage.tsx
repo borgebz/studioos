@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 // ---------------------------------------------------------------------------
 // Dancer SVG paths from logo-dancer.svg
@@ -441,51 +441,45 @@ function Awards({ t }: { t: (key: string) => string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Team – confirmed from studioos.dev "Corpo Docente" / "A nossa história"
+// Team – placeholder names; avatars render initials only
 // ---------------------------------------------------------------------------
 function Team({ t }: { t: (key: string) => string }) {
   const team = [
     {
       name: 'Ana Ribeiro',
       role: t('landing.teamRoleDirection'),
-      cred: t('landing.teamCredDiana'),
-      initials: 'DC',
-      photo: '/team/diana.jpg',
+      cred: t('landing.teamCredDirectionBallet'),
+      initials: 'AR',
     },
     {
       name: 'Rui Martins',
       role: t('landing.teamRoleDirection'),
-      cred: t('landing.teamCredPedro'),
-      initials: 'PA',
-      photo: '/team/pedro.png',
+      cred: t('landing.teamCredDirectionMusic'),
+      initials: 'RM',
     },
     {
       name: 'Sofia Costa',
       role: t('landing.teamRoleCoordination'),
-      cred: t('landing.teamCredMaria'),
-      initials: 'MB',
-      photo: '/team/maria.jpg',
+      cred: t('landing.teamCredCoordination'),
+      initials: 'SC',
     },
   ]
 
   const support = [
     {
       name: 'Teresa Lopes',
-      role: t('landing.teamRoleClotilde'),
-      initials: 'CD',
-      photo: '/team/clotilde.jpg',
+      role: t('landing.teamRoleAdmin'),
+      initials: 'TL',
     },
     {
       name: 'Inês Ferreira',
-      role: t('landing.teamRoleJoana'),
-      initials: 'JG',
-      photo: '/team/joana.jpg',
+      role: t('landing.teamRoleComms'),
+      initials: 'IF',
     },
     {
       name: 'Marta Sousa',
-      role: t('landing.teamRoleFilipa'),
-      initials: 'FC',
-      photo: '/team/filipa.png',
+      role: t('landing.teamRoleWellbeing'),
+      initials: 'MS',
     },
   ]
 
@@ -508,14 +502,8 @@ function Team({ t }: { t: (key: string) => string }) {
         <div className="mx-auto grid max-w-[920px] gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {team.map((p) => (
             <Card key={p.name} className="gap-3 py-0 overflow-hidden">
-              <div className="relative aspect-square overflow-hidden bg-muted">
-                <img
-                  src={p.photo}
-                  alt={p.name}
-                  className="h-full w-full object-cover grayscale"
-                  style={{ objectPosition: '50% 25%' }}
-                  loading="lazy"
-                />
+              <div className="landing-display flex aspect-square items-center justify-center bg-muted text-[72px] text-muted-foreground">
+                {p.initials}
               </div>
               <CardContent className="pb-5">
                 <h3 className="landing-display text-[20px]">{p.name}</h3>
@@ -533,12 +521,6 @@ function Team({ t }: { t: (key: string) => string }) {
           {support.map((s) => (
             <div key={s.name} className="flex items-center gap-4">
               <Avatar className="size-14">
-                <AvatarImage
-                  src={s.photo}
-                  alt={s.name}
-                  className="grayscale"
-                  style={{ objectPosition: '50% 25%' }}
-                />
                 <AvatarFallback>{s.initials}</AvatarFallback>
               </Avatar>
               <div>

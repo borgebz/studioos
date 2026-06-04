@@ -191,5 +191,11 @@ server/media
 
 .idea
 memory/
-docs/
 CLAUDE.md
+# AI assistant context (kept locally, not published)
+.github/copilot-instructions.md
+.github/studioos-backend-rules-full.md
+**/.DS_Store
+StudioOS_TODO.csv
+# Scratch docs not meant for publishing
+docs/TEMP_*.md
