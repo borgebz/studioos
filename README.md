@@ -207,63 +207,11 @@ The interface follows our own [UI guidelines](web/client/UI_GUIDELINES.md): an A
 
 ## Architecture
 
-### System context
+### System overview
 
-```mermaid
-flowchart LR
-    classDef person fill:#0F766E,stroke:#0F766E,color:#fff
-    classDef system fill:#1F2937,stroke:#111827,color:#fff
-    classDef external fill:#E5E7EB,stroke:#9CA3AF,color:#111827
+<img src="docs/media/diagrams/system-overview.png" alt="StudioOS system overview: users reach the React web app, Caddy proxies to the Django API, which uses PostgreSQL, Redis and media storage; Celery beat and workers run background jobs and send emails through an external SMTP provider" />
 
-    subgraph People["School community"]
-        D([Direction]):::person
-        C([Coordination]):::person
-        T([Teacher]):::person
-        S([Student]):::person
-        G([Guardian]):::person
-        F([Staff]):::person
-    end
-
-    SOS["<b>StudioOS</b><br/>Dance school management platform"]:::system
-    MAIL["Email provider<br/>(SMTP)"]:::external
-
-    People -->|use via browser, desktop or phone| SOS
-    SOS -->|transactional emails, reminders, digests| MAIL
-```
-
-### Containers
-
-```mermaid
-flowchart LR
-    classDef app fill:#1F2937,stroke:#111827,color:#fff
-    classDef store fill:#0F766E,stroke:#0F766E,color:#fff
-    classDef edge fill:#E5E7EB,stroke:#9CA3AF,color:#111827
-
-    B["Browser"]:::edge
-    subgraph VPS["Docker Compose on a VPS"]
-        CADDY["Caddy<br/>TLS, reverse proxy, static files"]:::edge
-        WEB["Web SPA<br/>React 19 + Vite, served by nginx"]:::app
-        API["API<br/>Django 5.2 + DRF on Daphne (ASGI)<br/>REST + WebSockets"]:::app
-        WORKER["Celery worker<br/>emails, notifications"]:::app
-        BEAT["Celery beat<br/>reminders, state changes, digests"]:::app
-        PG[("PostgreSQL 16")]:::store
-        REDIS[("Redis<br/>broker, channel layer, invite tokens")]:::store
-        MEDIA[("Media volume<br/>uploads")]:::store
-    end
-    SMTP["SMTP provider"]:::edge
-
-    B -->|HTTPS| CADDY
-    CADDY -->|/| WEB
-    CADDY -->|/api, /ws, /admin| API
-    CADDY -->|/media, /static| MEDIA
-    API --> PG
-    API --> REDIS
-    API --> MEDIA
-    BEAT -->|schedules| REDIS
-    REDIS -->|tasks| WORKER
-    WORKER --> PG
-    WORKER --> SMTP
-```
+Modelled in [IcePanel](https://icepanel.io) at the C4 container level. Everything runs with Docker Compose on a single VPS: Caddy terminates HTTPS, serves the SPA and uploaded media, and proxies `/api` and `/ws` to the API. Celery beat schedules recurring jobs (reminders, state changes, digests) through Redis, and the workers execute them.
 
 ### API modules
 
