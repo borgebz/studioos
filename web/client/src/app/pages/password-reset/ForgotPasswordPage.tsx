@@ -75,7 +75,7 @@ export function ForgotPasswordPage() {
             <div className="hidden sm:flex items-center gap-4 text-[10.5px] text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Phone className="size-3" />
-                +351 964 693 247
+                +351 900 000 000
               </span>
               <span className="flex items-center gap-1">
                 <Mail className="size-3" />

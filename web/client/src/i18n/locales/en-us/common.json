@@ -105,7 +105,7 @@
       "copyright": "© STUDIOOS · BRAGA",
       "support": "geral@studioos.dev",
       "marqueeHours": "STUDIO HOURS · MON — SAT · 09—22",
-      "marqueeAddress": "R. DR. MANUEL DE OLIVEIRA MACHADO 21",
+      "marqueeAddress": "RUA EXEMPLO 100",
       "emailLabel": "Email",
       "passwordLabel": "Password"
     },
@@ -2366,7 +2366,7 @@
     "heroTopLabel": "Dance school · Braga",
     "heroEyebrowLeft": "Since 2011",
     "heroSubtitle": "Artistic dance training for children, youth, and adults.",
-    "heroDescription": "Royal Academy of Dance registered school · Registration n.º 24116",
+    "heroDescription": "Dance school management platform · Academic project",
     "heroContinue": "Continue ↓",
     "modChapter": "Modalities",
     "modHeadingLine1": "One school,",

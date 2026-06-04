@@ -216,7 +216,7 @@ function Hero({ t }: { t: (key: string) => string }) {
             className="landing-mono hidden items-center gap-1.5 text-muted-foreground hover:text-foreground sm:inline-flex"
           >
             <ExternalLink className="size-3" />
-            41.5575°N 8.4201°W · Braga, Portugal
+            Braga, Portugal
           </a>
         </div>
         <Separator />
@@ -269,7 +269,7 @@ function Hero({ t }: { t: (key: string) => string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Modalidades – verified from studioos.dev Modalidades section
+// Modalidades
 // ---------------------------------------------------------------------------
 function Modalidades({ t }: { t: (key: string) => string }) {
   const list = [
@@ -536,23 +536,23 @@ function Team({ t }: { t: (key: string) => string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Projetos – confirmed from studioos.dev
+// Projetos
 // ---------------------------------------------------------------------------
 function Projetos({ t }: { t: (key: string) => string }) {
   const projects = [
     {
       tag: t('landing.projTagCompany'),
-      title: 'Motus Dance Project',
+      title: 'Resident Company',
       desc: t('landing.projDescMotus'),
     },
     {
       tag: t('landing.projTagScholarships'),
-      title: "Plataforma StudioOS",
+      title: 'Plataforma StudioOS',
       desc: t('landing.projDescPlatform'),
     },
     {
       tag: 'Festival',
-      title: 'Soma das Artes',
+      title: 'Summer Arts Festival',
       desc: t('landing.projDescFestival'),
     },
     {
@@ -704,9 +704,9 @@ function Footer() {
           <FooterCol
             title={t('landing.footerContact')}
             links={[
-              'Rua Dr. Manuel de Oliveira Machado, 21-23',
-              '4700-054 Braga',
-              '(+351) 964 693 247',
+              'Rua Exemplo, 100',
+              '4700-000 Braga',
+              '(+351) 900 000 000',
               'geral@studioos.dev',
             ]}
           />
@@ -715,7 +715,7 @@ function Footer() {
         <Separator />
         <div className="flex flex-wrap justify-between gap-3 pt-6 text-[11.5px] text-muted-foreground">
           <span className="landing-mono">
-            © 2011–2026 StudioOS · RAD® N.º 24116
+            © 2026 StudioOS · Academic project
           </span>
           <span className="landing-mono">Powered by StudioOS</span>
         </div>
