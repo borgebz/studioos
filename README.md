@@ -1,6 +1,9 @@
 <div align="center">
 
-<img src="web/client/public/logo-dancer.svg" alt="" width="64" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/brand/logo-dancer-dark-mode.svg" />
+  <img src="web/client/public/logo-dancer.svg" alt="" width="64" />
+</picture>
 
 # StudioOS
 
@@ -209,7 +212,10 @@ The interface follows our own [UI guidelines](web/client/UI_GUIDELINES.md): an A
 
 ### System overview
 
-<img src="docs/media/diagrams/system-overview.png" alt="StudioOS system overview: users reach the React web app, Caddy proxies to the Django API, which uses PostgreSQL, Redis and media storage; Celery beat and workers run background jobs and send emails through an external SMTP provider" />
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/media/diagrams/system-overview-dark.png" />
+  <img src="docs/media/diagrams/system-overview.png" alt="StudioOS system overview: users reach the React web app, Caddy proxies to the Django API, which uses PostgreSQL, Redis and media storage; Celery beat and workers run background jobs and send emails through an external SMTP provider" />
+</picture>
 
 Modelled in [IcePanel](https://icepanel.io) at the C4 container level. Everything runs with Docker Compose on a single VPS: Caddy terminates HTTPS, serves the SPA and uploaded media, and proxies `/api` and `/ws` to the API. Celery beat schedules recurring jobs (reminders, state changes, digests) through Redis, and the workers execute them.
 
@@ -219,9 +225,9 @@ One Django app per bounded context. Every app follows the same layers, enforced 
 
 ```mermaid
 flowchart TB
-    classDef core fill:#E5E7EB,stroke:#9CA3AF,color:#111827
-    classDef ctx fill:#1F2937,stroke:#111827,color:#fff
-    classDef main fill:#0F766E,stroke:#0F766E,color:#fff
+    classDef core fill:#64748B,stroke:#94A3B8,color:#F8FAFC
+    classDef ctx fill:#334155,stroke:#94A3B8,color:#F8FAFC
+    classDef main fill:#0F766E,stroke:#5EEAD4,color:#F8FAFC
 
     subgraph Contexts
         ACC[accounts<br/>users, roles, invites, guardians]:::ctx
